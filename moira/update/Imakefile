@@ -1,0 +1,31 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.1 1990-08-27 15:13:32 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for update.
+#
+
+SRCS=	auth_001.c checksum.c client.c exec_002.c get_file.c \
+	hostname.c inst_001.c log.c send_file.c smskeyu.c ticket.c \
+	update_server.c xfer_002.c
+SRCDIR=${SRCTOP}/update
+CODE=${SRCS} Imakefile
+SOBJS=	update_server.o auth_001.o inst_001.o xfer_002.o exec_002.o \
+	hostname.o log.o get_file.o checksum.o
+COBJS=	client.o ticket.o send_file.o checksum.o hostname.o
+
+#ifdef SVRBUILD
+all::	update_server moira_update.o
+#else
+all::	update_server
+#endif
+
+#ifdef SVRBUILD
+moira_update.o: ${COBJS}
+	${LD} -r -o moira_update.o ${COBJS}
+#endif
+
+program(update_server, ${SOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

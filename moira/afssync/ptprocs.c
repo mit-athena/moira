@@ -30,12 +30,12 @@
 #include "ptserver.h"
 #include "pterror.h"
 
-#ifdef CROSS_CELL
+#if defined(CROSS_CELL) && !defined(WhoIsThisWithName)
 static long WhoIsThisWithName();
 #endif
 
 
-RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.5 1992-05-31 21:33:10 probe Exp $")
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.6 1992-06-07 04:18:47 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern long Initdb();
@@ -62,6 +62,7 @@ static int CreateOK (ut, cid, oid, flag, admin)
     return 1;				/* OK! */
 }
 
+#if !defined(WhoIsThis)
 long WhoIsThis (acall, at, aid)
   struct rx_call *acall;
   struct ubik_trans *at;
@@ -135,6 +136,7 @@ long WhoIsThis (acall, at, aid)
     if (code && !pr_noAuth) return -1;
     return 0;
 }
+#endif
 
 long PR_INewEntry(call,aname,aid,oid)
   struct rx_call *call;
@@ -1173,7 +1175,7 @@ register char *s;
     }
 }
 
-#ifdef CROSS_CELL
+#if defined(CROSS_CELL) && !defined(WhoIsThisWithName)
 static long WhoIsThisWithName(acall, at, aid, aname)
     struct rx_call *acall;
     struct ubik_trans *at;

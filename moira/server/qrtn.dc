@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.6 1992-08-23 21:37:02 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.7 1992-10-17 22:24:54 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.6 1992-08-23 21:37:02 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.7 1992-10-17 22:24:54 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -891,9 +891,9 @@ int *uid;
     *kid = 0;
     *uid = 0;
 
-    EXEC SQL SELECT k.users_id, k.string_id INTO :u_id, :k_id
-      FROM krbmap k, strings s
-      WHERE k.string_id = s.string_id AND s.string = :krbname;
+    EXEC SQL SELECT km.users_id, km.string_id INTO :u_id, :k_id
+      FROM krbmap km, strings str
+      WHERE km.string_id = str.string_id AND str.string = :krbname;
 
     if (ingres_errno) return(mr_errcode);
     

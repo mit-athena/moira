@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.3 1993-10-19 11:40:25 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.4 1993-10-21 15:16:44 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -36,6 +36,8 @@ world::
 #else /* USELOCALTOOLS */
 
 world::
+	make ${MFLAGS} clean-imake
+	make ${MFLAGS} imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
 	make ${MFLAGS} depend
@@ -64,19 +66,19 @@ install::
 	-mkdir ${DESTDIR}${MANDIR}/man8
 	-mkdir ./bin
 
-#ifdef USELOCALTOOLS
+#ifndef USELOCALTOOLS
 depend:: makedepend
 #endif
 
-#ifdef USELOCALLIBS
+#ifndef USELOCALLIBS
 depend:: et ss
 #endif
 
 et:
-	cd util/et; make ${MFLAGS} DEPEND="$(DEPEND)" depend; make ${MFLAGS} all
+	cd util/et; make ${MFLAGS} DEPEND="$(BUILDTOP)/$(DEPEND)" depend; make ${MFLAGS} all
 
 ss:
-	cd util/ss; make ${MFLAGS} DEPEND="$(DEPEND)" depend; make ${MFLAGS} all
+	cd util/ss; make ${MFLAGS} DEPEND="$(BUILDTOP)/$(DEPEND)" depend; make ${MFLAGS} all
 
 makedepend:
 	cd util/makedepend; make

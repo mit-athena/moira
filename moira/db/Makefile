@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.10 1990-09-26 09:29:44 kostas Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.11 1990-09-26 09:47:42 kostas Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
 
 INGLIB=/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 SRCS=newmoira.c tables.c imembers.c class.c tables_sql.c
-OBJS=newmoira.o tables.o ../server/queries2.o tables_sql.o
+OBJS=newmoira.o tables.o tables_sql.o ../server/queries2.o
 CFLAGS= -I../include -O
 .SUFFIXES: .qc
 

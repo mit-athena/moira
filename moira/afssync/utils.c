@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.2 1989-09-23 18:44:59 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.3 1989-09-24 15:27:45 mar Exp $ */
 /* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v $ */
 
 
@@ -31,6 +31,8 @@
 #include "print.h"
 #include "prserver.h"
 #include "prerror.h"
+
+#define USERSMS	14487
 
 extern struct prheader cheader;
 extern struct ubik_dbase *dbase;
@@ -696,7 +698,7 @@ struct rx_call *acall;
 struct ubik_trans *at;
 long *aid;
 {
-    *aid = SYSADMINID;
+    *aid = USERSMS;
     return 0;
 }
 

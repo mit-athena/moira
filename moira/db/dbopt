@@ -59,6 +59,8 @@ index on filesys is i_fil_phys (phys_id)
 modify i_fil_phys to cbtree
 index on filesys is i_fil_grp (owners)
 modify i_fil_grp to btree
+index on filesys is i_fil_user (owner)
+modify i_fil_user to btree
 
 modify fsgroup to cbtree on group_id
 index on fsgroup is i_fsg_filsys (filsys_id)

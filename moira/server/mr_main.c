@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.15 1988-06-30 12:42:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.16 1988-07-08 14:03:35 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -15,7 +15,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.15 1988-06-30 12:42:30 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.16 1988-07-08 14:03:35 mar Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -149,6 +149,7 @@ main(argc, argv)
 	
 	com_err(whoami, 0, "started (pid %d)", getpid());
 	com_err(whoami, 0, rcsid_sms_main_c);
+	send_zgram("SMS", "server started");
 
 	/*
 	 * Run until shut down.
@@ -219,6 +220,7 @@ main(argc, argv)
 	}
 	com_err(whoami, 0, "%s", takedown);
 	sms_close_database();
+	send_zgram("SMS", takedown);
 	return 0;
 }
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.16 1990-03-17 17:10:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.17 1990-04-25 12:50:26 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.16 1990-03-17 17:10:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.17 1990-04-25 12:50:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -426,6 +426,7 @@ Bool verbose;
     return(SUB_NORMAL);
 }
 
+#ifndef ATHENA
 /*	Function Name: RealDeleteUser
  *	Description: Just Deletes the user.
  *	Arguments: name - name of User to delete
@@ -448,6 +449,7 @@ char * name;
     Put_message(buf);
     return(SUB_NORMAL);
 }
+#endif
 
 /*	Function Name: RealDeleteList
  *	Description: Just Deletes the list.
@@ -636,7 +638,9 @@ char ** argv;
     int status;
     char buf[BUFSIZ];
     char * name = argv[1];	/* name of the user we are deleting. */
+#ifndef ATHENA
     struct qelem *local, *member_of = NULL;
+#endif
 
     if (!ValidName(name))
 	return(DM_NORMAL);
@@ -652,14 +656,17 @@ char ** argv;
     if (status == 0) {
 	sprintf(buf,"User %s deleted.", name);
 	Put_message(buf);
+#ifdef ATHENA
 	/* delete this return if the policy decision below is reversed */
 	return(DM_NORMAL);
+#endif
     }
+#ifdef ATHENA
 /* Design decision not to allow registered users to be deleted.
  */
     Put_message("Sorry, registered users cannot be deleted from the database.");
     Put_message("Deactivate the user now, and the system manager will expunge later.");
-#ifdef notdef
+#else
     else if (status == MR_IN_USE) {
 
 /*

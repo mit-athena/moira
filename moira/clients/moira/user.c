@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.50 1998-08-07 18:29:36 danw Exp $
+/* $Id: user.c,v 1.51 1998-08-11 18:42:32 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.50 1998-08-07 18:29:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.51 1998-08-11 18:42:32 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -291,7 +291,7 @@ char **AskUserInfo(char **info, Bool name)
   if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
     return NULL;
 
-  if (!name)
+  if (!name || !atoi(info[U_STATE]))
     {
       if (YesNoQuestion("User needs secure Account Coupon to register",
 			atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE)

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.10 1998-03-20 18:25:41 danw Exp $
+/* $Id: qsupport.pc,v 2.11 1998-07-15 20:38:26 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.10 1998-03-20 18:25:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.11 1998-07-15 20:38:26 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -123,6 +123,10 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
   lid = *(int *)argv[0];
   mtype = argv[1];
   mid = *(int *)argv[2];
+
+  if (acl_access_check(lid, cl))
+    return MR_PERM;
+
   /* if the member is already a direct member of the list, punt */
   EXEC SQL SELECT COUNT(list_id) INTO :rowcnt FROM imembers
     WHERE list_id = :lid AND member_id = :mid
@@ -304,6 +308,10 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
   lid = *(int *)argv[0];
   mtype = argv[1];
   mid = *(int *)argv[2];
+
+  if (acl_access_check(lid, cl))
+    return MR_PERM;
+
   /* if the member is not a direct member of the list, punt */
   EXEC SQL SELECT COUNT(list_id) INTO :cnt FROM imembers
     WHERE list_id = :lid AND member_id = :mid
@@ -434,6 +442,34 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
   if (dbms_errno)
     return mr_errcode;
   return MR_SUCCESS;
+}
+
+
+/* Don't allow someone to add someone to a list which is the acl of a query
+   unless they're on the list acl, even if they're on the query acl! */
+int acl_access_check(int list_id, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int c1, c2, lid = list_id, acl_id;
+  char acl_type[LIST_ACL_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  /* Check if the list is directly a capacl */
+  EXEC SQL SELECT COUNT(list_id) INTO :c1 FROM capacls WHERE list_id=:lid;
+
+  /* Check if the list is a member (direct or indirect) of a list that
+     is a capacl */
+  EXEC SQL SELECT COUNT(l1.list_id) INTO :c2 FROM list l1, list l2,
+    imembers im, capacls c WHERE c.list_id = l2.list_id AND
+    im.list_id = l2.list_id AND im.member_type = 'LIST' AND
+    im.member_id = l1.list_id AND l1.list_id = :lid;
+
+  if (c1 == 0 && c2 == 0)
+    return 0;
+
+  EXEC SQL SELECT acl_type, acl_id INTO :acl_type, :acl_id
+    FROM list WHERE list_id=:lid;
+  return !find_member(acl_type, acl_id, cl);
 }
 
 

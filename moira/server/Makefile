@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v $
-#	$Author: kostas $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.3 1990-10-02 09:48:25 kostas Exp $
+#	$Author: genoa $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.4 1992-06-08 16:35:37 genoa Exp $
 #
 
 CFILES = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
@@ -21,6 +21,7 @@ GLUPOBJS=mr_glue.o qrtn.o queries2.o qsupport.o qsubs.o \
 	meinitlst.o mr_sbrk.o ../../rpc/profiled/krb_et.o mr_util.o \
 	increment.o cache.o 
 
+INGRESDIR=/usr/ingres
 
 LIBS=../rpc/libmoira.a ../gdb/libgdb.a 
 PLIBS=../../rpc/libmoira_p.a ../../gdb/libgdb_p.a 
@@ -28,7 +29,7 @@ PLIBS=../../rpc/libmoira_p.a ../../gdb/libgdb_p.a
 LLIBS= -L../lib -lzephyr -lkrb -ldes -lcom_err -lm
 PLLIBS= -L../../lib -lzephyr -lkrb -ldes -lcom_err_p -lm
 
-SLIBS= /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib 
+SLIBS= ${INGRESDIR}/lib/libqlib ${INGRESDIR}/lib/compatlib 
 
 COPTS= -O
 
@@ -48,12 +49,12 @@ ALL=moirad startmoira libmoiraglue.a # libmoiraglue_p.a
 
 .qc.c: 
 	rm -f $*.c
-	/usr/rtingres/bin/eqc -p $*
+	${INGRESDIR}/bin/eqc -p $*
 
 .dc.c:
 	rm -f $*.c
 	awk -f ingres.awk < $< > $*.sc
-	/usr/rtingres/bin/esqlc -p $*
+	${INGRESDIR}/bin/esqlc -p $*
 
 all: ${ALL}
 

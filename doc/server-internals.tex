@@ -35,10 +35,10 @@ For each connection, the server creates a client structure. The client
 structure contains connection state, authentication information, and
 the array of tuples currently waiting to be sent back to the client.
 
-The operations supported are {\bf noop, auth, motd, query, access} and
-{\bf proxy}. In {\tt server/mr\_scall.c(client\_read)}, these
-operations are decoded and dispatched. (If the database is closed,
-only the {\bf noop} and {\bf motd} operations are allowed.)
+The operations supported are {\bf noop, auth, motd, query, access,
+proxy} and {\bf version}. In {\tt server/mr\_scall.c(client\_read)},
+these operations are decoded and dispatched. (If the database is
+closed, only the {\bf noop} and {\bf motd} operations are allowed.)
 
 The {\bf auth} and {\bf proxy} operations are taken care of in {\tt
 server/mr\_sauth.c}. {\bf Auth} requires the client to send a Kerberos
@@ -76,6 +76,12 @@ of the query.
 The {\bf access} operation works similarly, calling {\tt
 server/mr\_qrtn.pc(mr\_check\_access)} to run the query's
 access-checking routines without executing the query.
+
+The {\bf version} operation tells the server what the highest query
+version the client knows about it. If no {\bf version} call is made,
+the server assumes the client is using query version 2. Passing ``-1''
+for the version parameter tells the server to use the highest-known
+query version by default.
 
 \subsection{Query processing}
 
@@ -223,6 +229,7 @@ struct query
 {
     char *name;			/* query name */
     char *shortname;		/* abbreviated query name */
+    int  version;		/* query version */
     enum query_type type;	/* query type */
     char *rvar;			/* range variable */
     enum tables rtable;		/* range table */
@@ -239,9 +246,19 @@ struct query
 The {\it name\/} is the full name of the query, as in
 `get\_user\_account\_by\_login'.
 
-The {\it shortname\/} is a 4 character abbreviation of the name.  If is
+The {\it shortname\/} is a 4 character abbreviation of the name.  It is
 important that this be exactly 4 characters long, and must be unique
 among all of the queries in the table.
+
+The {\it version\/} indicates the version number of the query.
+Multiple versions of a query can be defined, but it is important that
+the appear in the Queries table in order from oldest to newest.
+
+Note that versions behave like timestamps, in that the ``highest-known
+query version'' is a global value. When a query interface is changed,
+it should get a new version number which is 1 larger than the highest
+existing query version number, {\em not\/} necessarily a version
+number which is 1 larger than its own previous version number.
 
 The {\it type\/} is one of:
 

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.11 1988-08-02 01:41:38 qjb Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.12 1988-08-02 16:44:58 qjb Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,10 @@
  *      admin_server, and is a server for the userreg program.
  * 
  *      $Log: not supported by cvs2svn $
+ * Revision 1.11  88/08/02  01:41:38  qjb
+ * Yet another almost finished version.  Ready for attack of kerberos problems
+ * and testing.
+ * 
  * Revision 1.10  88/08/01  18:17:58  qjb
  * Almost finished version supporting new SMS protocol.
  * Kerberos problems.
@@ -46,7 +50,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.11 1988-08-02 01:41:38 qjb Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.12 1988-08-02 16:44:58 qjb Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -88,6 +92,9 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #define UID_LEN 7		/* Allow room for a 16 bit number */
 
 #define DEBUG
+/* This MUST be correct!  There isn't a good way of getting this without
+   hardcoding that would not make testing impractical. */
+#define KRB_HOST "dodo"
 
 extern char *strdup();
 extern char *malloc();
@@ -249,6 +256,13 @@ main(argc,argv)
 	format_pkt(packet, &pktlen, seqno, status, retval);
 	(void) sendto(s, packet, pktlen, 0, &sin, addrlen);
     }
+}
+
+/* This is necessary so that this server can know where to put its
+   tickets. */
+char *tkt_string()
+{
+    return("/tmp/tkt_ureg");
 }
 
 void format_pkt(packet, pktlenp, seqno, status, message)
@@ -718,7 +732,7 @@ int ureg_get_tkt()
     if (status == SUCCESS)
 	/* principal, instance, realm, service, service instance, life, file */
 	if (status = get_svc_in_tkt("register", "sms", realm, "changepw", 
-				    "kerberos",	1, KEYFILE))
+				    KRB_HOST,	1, KEYFILE))
 	    status += krb_err_base;
 
     return status;

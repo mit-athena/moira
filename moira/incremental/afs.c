@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.38 1992-08-28 12:31:57 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.39 1992-10-29 18:37:17 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -42,6 +42,7 @@ int do_quota();
 int run_cmd();
 int add_user_lists();
 int get_members();
+int check_user();
 int edit_group();
 int pr_try();
 int check_afs();
@@ -57,6 +58,7 @@ extern long pr_AddToGroup();
 extern long pr_RemoveUserFromGroup();
 
 static char tbl_buf[1024];
+static char hostname[64];
 
 main(argc, argv)
 char **argv;
@@ -120,7 +122,6 @@ char **after;
 int afterc;
 {
     int astate, bstate, auid, buid, code;
-    char hostname[64];
     char *av[2];
 
     auid = buid = astate = bstate = 0;
@@ -205,7 +206,6 @@ int afterc;
     register int agid, bgid;
     int ahide, bhide;
     long code, id;
-    char hostname[64];
     char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
     char *av[2];
 
@@ -282,7 +282,7 @@ int afterc;
 	}
 
 	/* We need to make sure the group is properly populated */
-	if (beforec < L_ACTIVE || atoi(before[L_ACTIVE]) == 0) return;
+	if (beforec < L_ACTIVE) return;
 
 	gethostname(hostname, sizeof(hostname));
 	code = mr_connect(hostname);
@@ -465,6 +465,15 @@ get_members(ac, av, group)
 }
 
 
+check_user(ac, av, ustate)
+    int ac;
+    char *av[];
+    int *ustate;
+{
+    *ustate = atoi(av[6]);
+}
+
+
 edit_group(op, group, type, member)
     int op;
     char *group;
@@ -473,7 +482,7 @@ edit_group(op, group, type, member)
 {
     char *p = 0;
     char buf[PR_MAXNAMELEN];
-    int code;
+    int code, ustate;
     static char local_realm[REALM_SZ+1] = "";
 
     /* The following KERBEROS code allows for the use of entities
@@ -492,15 +501,33 @@ edit_group(op, group, type, member)
     strcat(buf, group);
     code=pr_try(op ? pr_AddToGroup : pr_RemoveUserFromGroup, member, buf);
     if (code) {
-	if (op==0 && code == PRNOENT) return;
-	if (op==1 && code == PRIDEXIST) return;
-	if (strcmp(type, "KERBEROS") || code != PRNOENT) {
-	    critical_alert("incremental",
-			   "Couldn't %s %s %s %s: %s",
-			   op ? "add" : "remove", member,
-			   op ? "to" : "from", buf,
-			   error_message(code));
+	if (op==1 && code == PRIDEXIST) return;	/* Already added */
+
+	if (code == PRNOENT) {			/* Something is missing */
+	    if (op==0) return;			/* Already deleted */
+	    if (!strcmp(type, "KERBEROS"))	/* Special instances; ok */
+		return;
+
+	    /* Check whether the member being added is an active user */
+	    gethostname(hostname, sizeof(hostname));
+	    code = mr_connect(hostname);
+	    if (!code) code = mr_auth("afs.incr");
+	    if (!code) code = mr_query("get_user_by_login", 1, &member,
+				       check_user, &ustate);
+	    if (code) {
+		critical_alert("incremental",
+			       "Error contacting Moira server to lookup user %s: %s",
+			       member, error_message(code));
+	    }
+	    mr_disconnect();
+	    if (!code && ustate!=1 && ustate!=2) return; /* inactive user */
 	}
+
+	critical_alert("incremental",
+		       "Couldn't %s %s %s %s: %s",
+		       op ? "add" : "remove", member,
+		       op ? "to" : "from", buf,
+		       error_message(code));
     }
 }
 

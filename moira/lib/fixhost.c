@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.21 1999-01-27 19:36:18 danw Exp $
+/* $Id: fixhost.c,v 1.22 1999-12-14 20:43:58 danw Exp $
  *
  * Canonicalize a hostname
  *
@@ -22,7 +22,42 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.21 1999-01-27 19:36:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.22 1999-12-14 20:43:58 danw Exp $");
+
+static char *local_domain(void)
+{
+  static char *domain = NULL;
+  char *cp;
+  struct hostent *hp;
+
+  if (domain == NULL)
+    {
+      char hostbuf[256];
+
+      if (mr_host(hostbuf, sizeof(hostbuf)) == MR_SUCCESS)
+	{
+	  cp = strchr(hostbuf, '.');
+	  if (cp)
+	    domain = strdup(++cp);
+	}
+      else
+	{
+	  struct utsname name;
+	  uname(&name);
+	  hp = gethostbyname(name.nodename);
+	  if (hp)
+	    {
+	      cp = strchr(hp->h_name, '.');
+	      if (cp)
+		domain = strdup(++cp);
+	    }
+	}
+      if (!domain)
+	domain = "";
+    }
+
+  return domain;
+}
 
 /*
  * Canonicalize hostname:
@@ -39,7 +74,6 @@ char *canonicalize_hostname(char *host)
 {
   struct hostent *hp;
   int len;
-  int has_dot = 0;
   char *tbuf, *cp;
 
   len = strlen(host);
@@ -69,48 +103,22 @@ char *canonicalize_hostname(char *host)
   else
     {
       /* can't get name from nameserver; fix up the format a bit */
-      for (cp = host; *cp; cp++)
+      cp = strchr(host, '.');
+      if (!cp)
 	{
-	  if (islower(*cp))
-	    *cp = toupper(*cp);
-	  has_dot |= (*cp == '.');
-	}
-      if (!has_dot)
-	{
-	  static char *domain = NULL;
-
-	  if (domain == NULL)
-	    {
-	      char hostbuf[256];
-
-	      if (mr_host(hostbuf, sizeof(hostbuf)) == MR_SUCCESS)
-		{
-		  cp = strchr(hostbuf, '.');
-		  if (cp)
-		    domain = strdup(++cp);
-		}
-	      else
-		{
-		  struct utsname name;
-		  uname(&name);
-		  hp = gethostbyname(name.nodename);
-		  if (hp)
-		    {
-		      cp = strchr(hp->h_name, '.');
-		      if (cp)
-			domain = strdup(++cp);
-		    }
-		}
-	      if (!domain)
-		domain = "";
-	    }
-	  tbuf = malloc(strlen(host) + strlen(domain) + 2);
+	  tbuf = malloc(strlen(host) + strlen(local_domain()) + 2);
 	  if (!tbuf)
 	    return NULL;
-	  sprintf(tbuf, "%s.%s", host, domain);
+	  sprintf(tbuf, "%s.%s", host, local_domain());
 	  free(host);
 	  host = tbuf;
 	}
+      else if (strcasecmp(cp + 1, local_domain()) != 0)
+	return host;
+
+      /* This is a host in our local domain, so capitalize it. */
+      for (cp = host; *cp; cp++)
+	*cp = toupper(*cp);
       return host;
     }
 }

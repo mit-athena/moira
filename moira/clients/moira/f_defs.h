@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.15 1991-01-04 16:56:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.16 1991-10-29 14:57:50 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -27,6 +27,7 @@ char * malloc();
 /* attach.c */
 
 int GetFS();			/* Get information about named filsys. */
+int GetFSM();			/* Get filesys by machine */
 int AddFS();			/* Adds a new Filsys to the database. */
 int ChangeFS();			/* Changes information in a Filsys entry. */
 int DeleteFS();			/* Delete a filesystem from the database. */

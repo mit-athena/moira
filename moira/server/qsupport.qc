@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.52 1990-04-09 19:23:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.53 1990-05-31 17:13:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.52 1990-04-09 19:23:04 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.53 1990-05-31 17:13:39 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1496,6 +1496,40 @@ followup_aqot(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 ##}
+
+
+followup_gpce(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+{
+    register int i, j;
+    char **argv, *malloc();
+    int id, status;
+
+    i = q->vcnt - 2;
+    while (sq_get_data(sq, &argv)) {
+	id = atoi(argv[PCAP_QSERVER]);
+	status = id_to_name(id, "MACHINE", &argv[PCAP_QSERVER]);
+	if (status) return (status);
+	id = atoi(argv[i]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
 
 
 /* followup_gzcl:

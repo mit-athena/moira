@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.26 1990-07-14 15:50:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.27 1990-07-14 16:04:04 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.26 1990-07-14 15:50:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.27 1990-07-14 16:04:04 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -414,9 +414,10 @@ Bool junk;
     switch (stat) {
     case MR_NFS:
 	Put_message("That NFS filesystem is not exported.");
-	if (YesNoQuestion("Fix this now (Y/N)")) {
+	if (YesNoQuestion("Fix this now (Y/N)", TRUE) == TRUE) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
-	    if (YesNoQuestion("Retry filesystem update now (Y/N)")) {
+	    if (YesNoQuestion("Retry filesystem update now (Y/N)", TRUE)
+		== TRUE) {
 		if (stat = do_mr_query("update_filesys", CountArgs(args), args,
 					NullFunc, NULL))
 		    com_err(program_name, stat, " filesystem not updated");
@@ -488,9 +489,10 @@ int argc;
     switch (stat) {
     case MR_NFS:
 	Put_message("That NFS filesystem is not exported.");
-	if (YesNoQuestion("Fix this now (Y/N)")) {
+	if (YesNoQuestion("Fix this now (Y/N)", TRUE) == TRUE) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
-	    if (YesNoQuestion("Retry filesystem creation now (Y/N)")) {
+	    if (YesNoQuestion("Retry filesystem creation now (Y/N)", TRUE)
+		== TRUE) {
 		if (stat = do_mr_query("add_filesys", CountArgs(args), args,
 					NullFunc, NULL))
 		    com_err(program_name, stat, " in AddFS");

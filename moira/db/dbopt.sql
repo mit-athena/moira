@@ -90,7 +90,7 @@ create index i_usersids_usid on usersids (users_id);
 create index i_listsids_lid on listsids (list_id);
 
 create unique index i_containers_cntid on containers (cnt_id);
-create unique index i_containers_cname on containers (cname);
+create unique index i_containers_cname on containers (name);
 
 create unique index i_mcntmap_machid on mcntmap (mach_id);
 create index i_mcntmap_cntid on mcntmap (cnt_id);

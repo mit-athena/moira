@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.18 1989-08-16 21:25:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.19 1989-08-22 17:05:05 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -61,7 +61,8 @@ char **argv;
     changed = do_passwd();
     changed += do_filsys();
     changed += do_cluster();
-    changed += do_printers();
+    changed += do_printcap();
+    changed += do_palladium();
     changed += do_sloc();
     changed += do_service();
     changed += do_groups();
@@ -648,7 +649,7 @@ do_cluster()
 ##}
 
 
-do_printers()
+do_printcap()
 ##{
     FILE *out;
     char outf[64], outft[64];
@@ -692,6 +693,64 @@ do_printers()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of pcap.db\n");
+	exit(SMS_CCONFIG);
+    }
+    fix_file(outf);
+    return(1);
+##}
+
+
+do_palladium()
+##{
+    FILE *out;
+    char outf[64], outft[64];
+    struct stat sb;
+    time_t ftime;
+##  char name[33], rm[33], trans[129], *filetime;
+##  int flag, flag1, ident;
+
+    sprintf(outf, "%s/palladium.db", HESIOD_DIR);
+
+    if (stat(outf, &sb) == 0) {
+	ftime = sb.st_mtime;
+	filetime = ingres_date_and_time(ftime);
+##	retrieve (flag = int4(interval("min", tblstats.modtime - filetime)))
+##	    where tblstats.table = "palladium"
+##	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
+##	    where tblstats.table = "alias"
+	if (flag < 0 && flag1 < 0) {
+	    fprintf(stderr, "File palladium.db does not need to be rebuilt.\n");
+	    return(0);
+      }
+    }
+
+    sprintf(outft, "%s~", outf);
+    out = fopen(outft, "w");
+    if (!out) {
+	perror("cannot open palladium.db for write");
+	exit(SMS_OCONFIG);
+    }
+
+    fprintf(stderr, "Building palladium.db\n");
+
+##  range of p is palladium
+##  retrieve (name = p.#name, ident = p.#ident, rm = machine.#name)
+##    where machine.mach_id = p.mach_id {
+	strtrim(name);
+	strtrim(rm);
+	fprintf(out,
+		"%s.palladium\tHS UNSPECA \"%s %d %s interface directory\"\n",
+		name, rm, ident, name);
+##  }
+##  range of a is alias
+##  retrieve (name = a.#name, trans = a.#trans) where a.#type = "PALLADIUM" {
+    	strtrim(name);
+	strtrim(trans);
+	fprintf(out, "%s.palladium\tHS UNSPECA \"%s\"\n", name, trans);
+##  }
+
+    if (fclose(out)) {
+	fprintf(stderr, "Unsuccessful close of palladium.db\n");
 	exit(SMS_CCONFIG);
     }
     fix_file(outf);

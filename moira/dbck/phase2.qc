@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.5 1989-03-27 15:44:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.6 1989-07-19 14:37:41 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.5 1989-03-27 15:44:12 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.6 1989-07-19 14:37:41 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -651,7 +651,7 @@ phase2()
 	  sq_save_unique_data(sq1, id1);
 	if (!hash_lookup(clusters, id2))
 	  sq_save_unique_data(sq2, id2);
-	m->clucount++;
+	if (m) m->clucount++;
 ##  }
     generic_delete(sq1, show_mcm_mach, "mcmap", "mach_id", 1);
     generic_delete(sq2, show_mcm_clu, "mcmap", "clu_id", 1);
@@ -677,7 +677,8 @@ phase2()
 	strtrim(type);
 	if ((l = (struct list *) hash_lookup(lists, id1)) == NULL)
 	  sq_save_unique_data(sq1, id1);
-	l->members++;
+	else
+	  l->members++;
 	if (!strcmp(type, "USER") && !hash_lookup(users, id2))
 	  sq_save_unique_data(sq2, id2);
 	else if (!strcmp(type, "LIST") && !hash_lookup(lists, id2))

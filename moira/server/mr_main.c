@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.26 1989-10-06 19:10:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.27 1989-12-28 17:08:17 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.26 1989-10-06 19:10:47 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.27 1989-12-28 17:08:17 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -190,6 +190,8 @@ main(argc, argv)
 		if (status == -1) {
 		    	if (errno != EINTR)
 			  com_err(whoami, errno, " error from op_select");
+			if (!inc_running || now - inc_started > INC_TIMEOUT)
+			  next_incremental();
 			continue;
 		} else if (status != -2) {
 			com_err(whoami, 0, " wrong return from op_select_any");
@@ -197,6 +199,8 @@ main(argc, argv)
 		}
 		if (takedown) break;
 		time(&now);
+		if (!inc_running || now - inc_started > INC_TIMEOUT)
+		  next_incremental();
 #ifdef notdef
 		fprintf(stderr, "    tick\n");
 #endif notdef
@@ -477,6 +481,8 @@ void reapchild()
     int pid;
 
     while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
+	if (pid == inc_pid)
+	  inc_running = 0;
 	if  (!takedown && (status.w_termsig != 0 || status.w_retcode != 0))
 	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
 		  pid, status.w_termsig, status.w_retcode);

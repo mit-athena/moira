@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.9 1992-09-22 13:41:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.10 1993-04-29 14:45:12 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.9 1992-09-22 13:41:13 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.10 1993-04-29 14:45:12 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -18,7 +18,11 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <pwd.h>
 #include <moira.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
+#ifdef SOLARIS
+#include <termios.h>
+#endif
 #include "update.h"
 
 extern int auth_001(), inst_001();
@@ -28,7 +32,10 @@ extern int sync_proc(), quit();
 extern char *config_lookup();
 
 extern void gdb_debug();
-extern int exit(), abort(), errno;
+extern int abort(), errno;
+#ifndef sun
+extern int exit();
+#endif
 extern STRING instructions;
 
 CONNECTION conn;

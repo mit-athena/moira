@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.47 1989-12-28 17:21:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.48 1990-01-11 19:23:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.47 1989-12-28 17:21:04 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.48 1990-01-11 19:23:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -2215,18 +2215,64 @@ get_members_of_list(q, argv, cl, action, actarg)
     int (*action)();
     int actarg;
 ##{
-##  int list_id;
-##  char member_name[129];
+##  int list_id, member_id;
+##  char member_name[129], member_type[9];
     char *targv[2];
+    int members;
+    struct save_queue *sq;
 
     list_id = *(int *)argv[0];
-    targv[0] = "USER";
-    targv[1] = member_name;
+    members = 0;
+    sq = sq_create();
 
+##  repeat retrieve (member_type = imembers.#member_type,
+##		     member_id = imembers.#member_id)
+##	where imembers.#list_id = @list_id and imembers.direct = 1 {
+      if (members++ > 49)
+##	endretrieve
+      sq_save_data(sq, (member_type[0] << 24) | (member_id & 0xffffff));
+##  }
+    if (members <= 49) {
+	targv[1] = malloc(0);
+	while (sq_remove_data(sq, &member_id)) {
+	    switch (member_id >> 24) {
+	    case 'U':
+		targv[0] = "USER";
+		id_to_name(member_id & 0xffffff, "USER", &targv[1]);
+		(*action)(2, targv, actarg);
+		break;
+	    case 'L':
+		targv[0] = "LIST";
+		id_to_name(member_id & 0xffffff, "LIST", &targv[1]);
+		(*action)(2, targv, actarg);
+		break;
+	    case 'S':
+		targv[0] = "STRING";
+		id_to_name(member_id & 0xffffff, "STRING", &targv[1]);
+		(*action)(2, targv, actarg);
+		break;
+	    case 'K':
+		targv[0] = "KERBEROS";
+		id_to_name(member_id & 0xffffff, "STRING", &targv[1]);
+		(*action)(2, targv, actarg);
+		break;
+	    default:
+		sq_destroy(sq);
+		return(SMS_INTERNAL);
+	    }
+	}
+	free(targv[1]);
+	sq_destroy(sq);
+	return(SMS_SUCCESS);
+    }
+    sq_destroy(sq);
+
+    targv[1] = member_name;
+    targv[0] = "USER";
 ##  range of m is imembers
 ##  repeat retrieve (member_name = users.login)
-##             where m.#list_id = @list_id and m.member_type = "USER"
-##                   and m.member_id = users.users_id and m.direct = 1
+##             where m.#list_id = @list_id and m.#member_type = "USER"
+##                   and m.#member_id = users.users_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2235,8 +2281,8 @@ get_members_of_list(q, argv, cl, action, actarg)
 
     targv[0] = "LIST";
 ##  repeat retrieve (member_name = list.name)
-##             where m.#list_id = @list_id and m.member_type = "LIST"
-##                   and m.member_id = list.#list_id and m.direct = 1
+##             where m.#list_id = @list_id and m.#member_type = "LIST"
+##                   and m.#member_id = list.#list_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2245,8 +2291,8 @@ get_members_of_list(q, argv, cl, action, actarg)
 
     targv[0] = "STRING";
 ##  repeat retrieve (member_name = strings.string)
-##             where m.#list_id = @list_id and m.member_type = "STRING"
-##                   and m.member_id = strings.string_id and m.direct = 1
+##             where m.#list_id = @list_id and m.#member_type = "STRING"
+##                   and m.#member_id = strings.string_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2255,8 +2301,8 @@ get_members_of_list(q, argv, cl, action, actarg)
 
     targv[0] = "KERBEROS";
 ##  repeat retrieve (member_name = strings.string)
-##             where m.#list_id = @list_id and m.member_type = "KERBEROS"
-##                   and m.member_id = strings.string_id and m.direct = 1
+##             where m.#list_id = @list_id and m.#member_type = "KERBEROS"
+##                   and m.#member_id = strings.string_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);

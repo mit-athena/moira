@@ -139,7 +139,9 @@ sub athena_proc
     }
 
     if ($type eq "ORG") {
-	mkdir("$path/www",0755) || die "Unable to create subdirectories\n";
+	mkdir("$path/www",0755) &&
+	    chown(0,0,"$path/www") || 
+		die "Unable to create subdirectories\n";
 	system("$fs sa $path/www @acl system:anyuser rl -clear") &&
 	    die "Unable to set acl on www directory\n";
 

@@ -7,6 +7,10 @@
            MAKE = make
          RM_CMD = $(RM) *.CKP *.ln *.BAK *.bak *.o core errs ,* *~ *.a \
 			tags TAGS make.log
+             LN = cp
+        DESTDIR = 
+         SRCDIR = /mit/kerberos/src
+        SOURCES = imake.c ccflags.c Makefile
 
 all: imake
 
@@ -33,3 +37,10 @@ tags:
 install:
 
 Makefiles:
+
+config: $(SOURCES)
+	-mkdir $(DESTDIR)/util
+	-mkdir $(DESTDIR)/util/imake
+	for i in $(SOURCES); do \
+		$(RM) ${DESTDIR}/util/imake/$$i; \
+		$(LN) $$i ${DESTDIR}/util/imake/$$i; done

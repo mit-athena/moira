@@ -1,4 +1,4 @@
-#	$Id $
+#	$Id: db2rest.awk,v 1.9 1998-02-13 21:32:27 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.

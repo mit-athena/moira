@@ -1,4 +1,4 @@
-#	$Id $
+#	$Id: db2bkup.awk,v 1.13 1998-02-13 21:32:26 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.

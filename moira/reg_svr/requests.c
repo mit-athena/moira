@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.5 1992-05-13 13:19:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.6 1992-09-22 17:21:36 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.5 1992-05-13 13:19:49 mar Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.6 1992-09-22 17:21:36 mar Exp $";
 #endif lint
 
 /*
@@ -224,6 +224,7 @@ int format_pkt(packet, pktlenp, seqno, cl_status, message)
     /* Find out how much of the message to copy; truncate if too short. */
     /* How much room is there left? */
     len = *pktlenp - sizeof(U_32BIT)*3;
+    if (message == NULL) message = "";
     if (len < strlen(message) + 1) /* Room for null terminator */
     {
 	status = FAILURE;	/* Message was truncated */

@@ -68,28 +68,6 @@ AC_CHECK_FUNC(socket, :,
 					LIBS="-lsocket -lnsl $LIBS", :,
 					-lnsl)))
 
-# com_err (required, but can be built)
-AC_MSG_CHECKING(for com_err)
-AC_ARG_WITH(com_err,
-    [  --with-com_err=PREFIX   Specify location of com_err],
-    [AC_MSG_RESULT($withval)
-     if test $withval = "no"; then
-         AC_MSG_ERROR(com_err is required for Moira)
-     fi
-     if test $withval != "yes"; then
-	 MR_INCLUDE($withval/include)
-	 MR_LIBS($withval/lib)
-     fi
-     COMPILE_ET=compile_et],
-    [AC_MSG_RESULT(util/et)
-     COM_ERR_SUBDIR=util/et;
-     MR_INCLUDE(`pwd`/util/et)
-     MR_LIBS(`pwd`/util/et)
-     COMPILE_ET=`pwd`/util/et/compile_et
-     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
-AC_SUBST(COM_ERR_SUBDIR)
-AC_SUBST(COMPILE_ET)
-
 # Kerberos (required)
 AC_MSG_CHECKING(for Kerberos 4)
 AC_ARG_WITH(krb4,
@@ -115,6 +93,28 @@ AC_CHECK_LIB(krb4, krb_rd_req,
 			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
 			   $LIBPATH -ldes)],
 	     $LIBPATH -ldes425 -lkrb5 -lcrypto)
+
+# com_err (required, but can be built)
+AC_MSG_CHECKING(for com_err)
+AC_ARG_WITH(com_err,
+    [  --with-com_err=PREFIX   Specify location of com_err],
+    [AC_MSG_RESULT($withval)
+     if test $withval = "no"; then
+         AC_MSG_ERROR(com_err is required for Moira)
+     fi
+     if test $withval != "yes"; then
+	 MR_INCLUDE($withval/include)
+	 MR_LIBS($withval/lib)
+     fi
+     COMPILE_ET=compile_et],
+    [AC_MSG_RESULT(util/et)
+     COM_ERR_SUBDIR=util/et;
+     MR_INCLUDE(`pwd`/util/et)
+     MR_LIBS(`pwd`/util/et)
+     COMPILE_ET=`pwd`/util/et/compile_et
+     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
+AC_SUBST(COM_ERR_SUBDIR)
+AC_SUBST(COMPILE_ET)
 
 # Hesiod support
 AC_MSG_CHECKING(for Hesiod)
@@ -187,6 +187,35 @@ AC_SUBST(GDSS_SUBDIR)
 AC_SUBST(GDSS_OBJS)
 AC_SUBST(GDSS_CFILES)
 AC_SUBST(GDSS_TARGET)
+
+# RSAREF support (default: build util/rsaref if present)
+AC_MSG_CHECKING(for RSAREF)
+AC_ARG_WITH(rsaref,
+    [  --with-rsaref=PREFIX      Specify location of RSAREF],
+    [rsaref="$withval"
+     RSAREF_CPPFLAGS="-I$rsaref/include"
+     RSAREF_LIBS="$rsaref/lib/rsaref.a"],
+     RSAREF_SUBDIRS=reg_svr
+    [if test -d $srcdir/util/rsaref; then
+         rsaref=$srcdir/util/rsaref
+	 RSAREF_SUBDIRS="util/rsaref reg_svr"
+	 RSAREF_OUTPUT_FILES="util/rsaref/Makefile"
+	 # autoconf can't deal with creating util/rsaref if util doesn't exist
+	 if test ! -d util; then
+	     mkdir util
+	 fi
+	 RSAREF_CPPFLAGS="-I$(SRCTOP)/util/rsaref"
+	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
+     else
+         rsaref=no
+     fi])
+AC_MSG_RESULT($rsaref)
+if test "$rsaref" != no; then
+    MR_DEFINE(HAVE_RSAREF)
+fi
+AC_SUBST(RSAREF_CPPFLAGS)
+AC_SUBST(RSAREF_LIBS)
+AC_SUBST(RSAREF_SUBDIRS)
 
 # Oracle (default: yes, if $ORACLE_HOME is set)
 AC_MSG_CHECKING(for Oracle)
@@ -331,4 +360,4 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/mrcheck/Makefile clients/mrtest/Makefile \
 	  clients/passwd/Makefile clients/userreg/Makefile \
 	  update/Makefile man/Makefile \
-	  $SERVER_OUTPUT_FILES $GDSS_OUTPUT_FILES)
+	  $SERVER_OUTPUT_FILES $GDSS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)

@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.6 1998-02-23 19:23:29 danw Exp $
+/* $Id: phase2.pc,v 1.7 1998-04-18 13:01:33 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.6 1998-02-23 19:23:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.7 1998-04-18 13:01:33 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -696,12 +696,12 @@ int show_member_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, iid = (int)id, found = 1;
-  char mtype[IMEMBERS_MEMBER_TYPE_SIZE], *name = "";
+  char mtype[IMEMBERS_MEMBER_TYPE_SIZE], *name = NULL;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr204 CURSOR FOR
     SELECT member_type, member_id FROM imembers
-    WHERE list_id = :iid AND direct = 1;
+    WHERE list_id = :iid;
   EXEC SQL OPEN csr204;
   while (1)
     {
@@ -712,12 +712,30 @@ int show_member_list(void *id)
       strtrim(mtype);
       found = 0;
       if (mtype[0] == 'L')
-	name = ((struct list *) hash_lookup(lists, mid))->name;
+	{
+	  struct list *l = hash_lookup(lists, mid);
+	  if (l)
+	    name = l->name;
+	}
       else if (mtype[0] == 'U')
-	name = ((struct user *) hash_lookup(users, mid))->login;
+	{
+	  struct user *u = hash_lookup(users, mid);
+	  if (u)
+	    name = u->login;
+	}
       else if (mtype[0] == 'S' || mtype[0] == 'K')
-	name = ((struct string *) hash_lookup(strings, mid))->name;
-      printf("Non-existant list %d has member %s %s\n", iid, mtype, name);
+	{
+	  struct string *s = hash_lookup(strings, mid);
+	  if (s)
+	    name = s->name;
+	}
+      if (name)
+	printf("Non-existant list %d has member %s %s\n", iid, mtype, name);
+      else
+	{
+	  printf("Non-existant list %d has non-existent member %s %d\n",
+		 iid, mtype, mid);
+	}
     }
   EXEC SQL CLOSE csr204;
   return found;
@@ -728,20 +746,23 @@ int show_mem_user(void *id)
   EXEC SQL BEGIN DECLARE SECTION;
   int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
+  struct list *l;
 
   EXEC SQL DECLARE csr205 CURSOR FOR
     SELECT list_id FROM imembers
-    WHERE member_id = :iid AND member_type = 'USER' AND direct = 1;
+    WHERE member_id = :iid AND member_type = 'USER';
   EXEC SQL OPEN csr205;
   while (1)
     {
       EXEC SQL FETCH csr205 INTO :lid;
       if (sqlca.sqlcode)
 	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
 
       found = 0;
-      printf("List %s has non-existant user member, id %d\n",
-	     ((struct list *)hash_lookup(lists, lid))->name, iid);
+      printf("List %s has non-existant user member, id %d\n", l->name, iid);
     }
   EXEC SQL CLOSE csr205;
   return found;
@@ -752,20 +773,23 @@ int show_mem_list(void *id)
   EXEC SQL BEGIN DECLARE SECTION;
   int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
+  struct list *l;
 
   EXEC SQL DECLARE csr206 CURSOR FOR
     SELECT list_id FROM imembers
-    WHERE member_id = :iid AND member_type = 'LIST' AND direct = 1;
+    WHERE member_id = :iid AND member_type = 'LIST';
   EXEC SQL OPEN csr206;
   while (1)
     {
       EXEC SQL FETCH csr206 INTO :lid;
       if (sqlca.sqlcode)
 	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
 
       found = 0;
-      printf("List %s has non-existant list member, id %d\n",
-	     ((struct list *)hash_lookup(lists, lid))->name, iid);
+      printf("List %s has non-existant list member, id %d\n", l->name, iid);
     }
   EXEC SQL CLOSE csr206;
   return found;
@@ -776,20 +800,23 @@ int show_mem_str(void *id)
   EXEC SQL BEGIN DECLARE SECTION;
   int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
+  struct list *l;
 
   EXEC SQL DECLARE csr207 CURSOR FOR
     SELECT list_id FROM imembers
-    WHERE member_id = :iid AND member_type = 'STRING' AND direct = 1;
+    WHERE member_id = :iid AND member_type = 'STRING';
   EXEC SQL OPEN csr207;
   while (1)
     {
       EXEC SQL FETCH csr207 INTO :lid;
       if (sqlca.sqlcode)
 	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
 
       found = 0;
-      printf("List %s has non-existant string member, id %d\n",
-	     ((struct list *)hash_lookup(lists, lid))->name, iid);
+      printf("List %s has non-existant string member, id %d\n", l->name, iid);
     }
   EXEC SQL CLOSE csr207;
   return found;
@@ -801,20 +828,24 @@ int show_mem_krb(void *id)
   EXEC SQL BEGIN DECLARE SECTION;
   int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
+  struct list *l;
 
   EXEC SQL DECLARE csr208 CURSOR FOR
     SELECT list_id FROM imembers
-    WHERE member_id = :iid AND member_type = 'KERBEROS' AND direct = 1;
+    WHERE member_id = :iid AND member_type = 'KERBEROS';
   EXEC SQL OPEN csr208;
   while (1)
     {
       EXEC SQL FETCH csr208 INTO :lid;
       if (sqlca.sqlcode)
 	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
 
       found = 0;
       printf("List %s has non-existant kerberos member, id %d\n",
-	     ((struct list *)hash_lookup(lists, lid))->name, iid);
+	     l->name, iid);
     }
   EXEC SQL CLOSE csr208;
   return found;
@@ -828,7 +859,7 @@ void del_mem_user(void *id)
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'USER' AND
-    member_id = :iid AND direct = 1;
+    member_id = :iid;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
     printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
@@ -844,7 +875,7 @@ void del_mem_list(void *id)
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'LIST' AND
-    member_id = :iid AND direct = 1;
+    member_id = :iid;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
     printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
@@ -860,7 +891,7 @@ void del_mem_str(void *id)
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'STRING' AND
-    member_id = :iid AND direct = 1;
+    member_id = :iid;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
     printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
@@ -877,7 +908,7 @@ void del_mem_krb(void *id)
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'KERBEROS' AND
-    member_id = :iid AND direct = 1;
+    member_id = :iid;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
     printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");

@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.6 2001-03-16 20:18:18 zacheiss Exp $
+/* $Id: staff.pc,v 1.7 2004-02-25 01:41:33 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,12 +19,14 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.6 2001-03-16 20:18:18 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.7 2004-02-25 01:41:33 zacheiss Exp $");
 
 /* File format is:
  *
  * id number [9]
- * name (last, first middle) [30]
+ * last name [30]
+ * first name [30]
+ * middle name [30]
  * office address [24]
  * phone1 [12]
  * phone2 [12]
@@ -34,9 +36,13 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/re
 
 #define LOC_ID 0
 #define LEN_ID 9
-#define LOC_NAME (LOC_ID + LEN_ID)
-#define LEN_NAME 30
-#define LOC_OFFICE (LOC_NAME + LEN_NAME)
+#define LOC_LAST_NAME (LOC_ID + LEN_ID)
+#define LEN_LAST_NAME 30
+#define LOC_FIRST_NAME (LOC_LAST_NAME + LEN_LAST_NAME)
+#define LEN_FIRST_NAME 30
+#define LOC_MIDDLE_NAME (LOC_FIRST_NAME + LEN_FIRST_NAME)
+#define LEN_MIDDLE_NAME 30
+#define LOC_OFFICE (LOC_MIDDLE_NAME + LEN_MIDDLE_NAME)
 #define LEN_OFFICE 24
 #define LOC_PHONE (LOC_OFFICE + LEN_OFFICE)
 #define LEN_PHONE 12
@@ -137,7 +143,8 @@ struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
   static char buf[BUFSIZ];
-  static char name[LEN_NAME + 1], id[LEN_ID + 1];
+  static char last_name[LEN_LAST_NAME + 1], id[LEN_ID + 1];
+  static char first_name[LEN_FIRST_NAME + 1], middle_name[LEN_MIDDLE_NAME + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
@@ -147,41 +154,19 @@ struct entry *get_next_entry(FILE *in)
     return NULL;
 
   strlcpy(id, &buf[LOC_ID], LEN_ID + 1);
-  strlcpy(name, &buf[LOC_NAME], LEN_NAME + 1);
+  strlcpy(last_name, &buf[LOC_LAST_NAME], LEN_LAST_NAME + 1);
+  strlcpy(first_name, &buf[LOC_FIRST_NAME], LEN_FIRST_NAME + 1);
+  strlcpy(middle_name, &buf[LOC_MIDDLE_NAME], LEN_MIDDLE_NAME + 1);
   strlcpy(office, &buf[LOC_OFFICE], LEN_OFFICE + 1);
   strlcpy(phone, &buf[LOC_PHONE], LEN_PHONE + 1);
   strlcpy(phone2, &buf[LOC_PHONE2], LEN_PHONE2 + 1);
   strlcpy(dept, &buf[LOC_DEPT], LEN_DEPT + 1);
   strlcpy(title, &buf[LOC_TITLE], LEN_TITLE + 1);
 
-  p = strchr(name, ',');
-  if (p)
-    *p = '\0';
-  e.last = strtrim(name);
-  if (p)
-    {
-      p++;
-      while (isspace(*p))
-	p++;
-      e.first = p;
-      p = strchr(e.first, ' ');
-      if (p)
-	{
-	  *p = '\0';
-	  e.first = strtrim(e.first);
-	  e.middle = strtrim(p + 1);
-	}
-      else
-	{
-	  e.first = strtrim(e.first);
-	  e.middle = "";
-	}
-    }
-  else
-    {
-      e.first = "";
-      e.middle = "";
-    }
+  e.last = strtrim(last_name);
+  e.first = strtrim(first_name);
+  e.middle = strtrim(middle_name);
+
   ends_sr = ends_jr = ends_iii = ends_iv = ends_ii = ends_v = 0;
   LookForSt(e.last);
   LookForO(e.last);

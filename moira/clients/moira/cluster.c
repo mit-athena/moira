@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.40 2000-03-29 20:47:43 zacheiss Exp $
+/* $Id: cluster.c,v 1.41 2000-03-29 22:25:18 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -17,6 +17,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include "defs.h"
 #include "f_defs.h"

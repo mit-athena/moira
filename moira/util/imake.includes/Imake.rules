@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.1 1988-03-18 15:37:13 jtkohl Exp $
+/**/#	$Author: shanzer $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.2 1988-10-06 18:05:24 shanzer Exp $
 /**/#
 
 #ifdef __STDC__
@@ -71,19 +71,18 @@ clean:: 								@@\
 	$(RM) concat3(lib,libname,.a) concat3(lib,libname,_p.a)		@@\
 	$(RM) concat3(llib-l,libname,.ln)				@@\
 	$(RM) objs							@@\
-	$(RM) profiled/*.o						@@\
+	$(RM) profiled\/*.o						@@\
 									@@\
 install:: 								@@\
 	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(RANLIB) concat4($(DESTDIR)$(LIBDIR),lib,libname,.a)		@@\
+	$(RANLIB) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)		@@\
 	$(INSTALLFILE) concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
-	$(RANLIB) concat4($(DESTDIR)$(LIBDIR),lib,libname,_p.a)		@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LIBDIR)/lint,llib-l,libname,.ln)
+	$(RANLIB) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)		@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LIBDIR)/lint,llib-l,libname,.ln)	@@\
 
 /*
  * Rule for building utilities (binaries which don't get installed)
  */
-
 #define genutil(pgm,objs,localdeps,syslibs)				@@\
 all:: pgm								@@\
 									@@\
@@ -103,7 +102,7 @@ pgm: concat(pgm,.c) libs						@@\
 	$(HCC) $(HCFLAGS) -o $@ $@.c libs				@@\
 									@@\
 file: pgm								@@\
-	./pgm > file							@@\
+	./pgm file							@@\
 									@@\
 clean::									@@\
 	$(RM) file pgm concat(pgm,.o)					
@@ -127,6 +126,23 @@ pgm: concat(pgm,.c) locallibs						@@\
 									@@\
 clean::									@@\
 	$(RM) pgm concat(pgm,.o) 					@@\
+
+/* 
+ * Rule for compileing files with "et"
+ */
+
+#define comp_et(src)							@@\
+concat(src,.h):: concat(src,.et)					@@\
+	compile_et concat(src,.et)					@@\
+concat(src,.o):: concat(src,.et)					@@\
+	compile_et concat(src,.et)					@@\
+clean::									@@\
+	$(RM) concat(src,.o) concat(src,.h)				@@\
+
+#define comp_et_depend(src)						@@\
+	comp_et(src)							@@\
+									@@\
+depend:: concat(src,.h)							@@\
 
 /*
  * Rule for building some random object module
@@ -171,7 +187,7 @@ clean::									@@\
  */
 
 #define host_cplx_object(obj,interim,src,flags,localdeps)		@@\
-obj:	src localdeps							@@\
+obj:	interim	src localdeps 						@@\
 	$(HCC) $(HCFLAGS) flags -c src					@@\
 	$(MV) interim obj						@@\
 									@@\
@@ -179,7 +195,7 @@ clean::									@@\
 	$(RM) obj							@@\
 
 #define ro_cplx_object(obj,interim,src,flags,localdeps)			@@\
-obj:	src localdeps							@@\
+obj:	src localdeps interim						@@\
 	$(CCRO) $(CFLAGS) flags -c src					@@\
 	$(MV) interim obj						@@\
 									@@\
@@ -193,8 +209,8 @@ clean::									@@\
 #define program(pgm,objs,localdeps,syslibs,installdir)			@@\
 all:: pgm								@@\
 									@@\
-pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+pgm: localdeps objs							@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
 									@@\
 install::								@@\
 	$(INSTALLPROG) pgm ${DESTDIR}installdir/pgm			@@\
@@ -271,7 +287,7 @@ name::									@@\
 	@for d in subdirs; \						@@\
 	do \								@@\
 		(cd $$d; echo "### Making" name "in" `pwd`;	\	@@\
-			$(MAKE) $(MFLAGS) name ;	\		@@\
+			$(MAKE) $(MFLAGS) DESTDIR=$(DESTDIR) name ; \	@@\
 			echo "### Done with" `pwd`);		\	@@\
 	done
 

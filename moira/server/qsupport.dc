@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.10 1992-10-20 00:40:27 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.11 1992-12-06 20:40:25 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.10 1992-10-20 00:40:27 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.11 1992-12-06 20:40:25 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -700,17 +700,26 @@ int setup_dsin(q, argv)
     struct query *q;
     char **argv;
 {
+    EXEC SQL BEGIN DECLARE SECTION;     
     int ec;
+    char *svrname;
+    EXEC SQL END DECLARE SECTION;
 
     sprintf(stmt_buf,"SELECT service FROM serverhosts WHERE service = UPPERCASE('%s')",argv[0]);
     if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+	if(ec==MR_EXISTS) 
+	    return(MR_IN_USE); 
+	else 
+	    return(ec);
     }
 
-    sprintf(stmt_buf,"SELECT inprogress FROM servers WHERE name = UPPERCASE('%s')",argv[0]);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    svrname=argv[0];
+    EXEC SQL SELECT inprogress INTO :ec FROM servers 
+      WHERE name=UPPERCASE(:svrname);
+    if(ingres_errno) 
+	return(mr_errcode);
+    if(ec) 
+	return(MR_IN_USE); 
 
     return(MR_SUCCESS);
 }
@@ -726,15 +735,19 @@ int setup_dshi(q, argv)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id, ec;
+    char *svrname;
     EXEC SQL END DECLARE SECTION;
 
+    svrname=argv[0];
     id = *(int *)argv[1];
 
-    sprintf(stmt_buf,"SELECT inprogress FROM serverhosts \
-WHERE service = UPPERCASE('%s') AND mach_id = %d",argv[0],id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT inprogress INTO :ec FROM serverhosts 
+      WHERE service=UPPERCASE(:svrname) AND mach_id = :id;
+    if(ingres_errno) 
+	return(mr_errcode);
+    if(ec) 
+	return(MR_IN_USE); 
+
 
     return(MR_SUCCESS);
 }
@@ -794,11 +807,11 @@ setup_afil(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] == 0) return(MR_FILESYS_ACCESS);
 
-    if (!strcmp(type, "NFS"))
-	return (check_nfs(mach_id, name, access));
-
     if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
       return(mr_errcode);
+
+    if (!strcmp(type, "NFS"))
+	return (check_nfs(mach_id, name, access));
 
     return(MR_SUCCESS);
 }
@@ -836,13 +849,18 @@ setup_ufil(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] == 0) return(MR_FILESYS_ACCESS);
 
+    EXEC SQL SELECT type INTO :ftype FROM filesys
+      WHERE filsys_id = :fid;
+    strtrim(ftype);
+    if (ingres_errno) return(mr_errcode);
+
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
 	EXEC SQL UPDATE quota SET phys_id = :var_phys_id
 	  WHERE filsys_id = :fid;
 	if (ingres_errno) return(mr_errcode);
 	return(status);
-    } else if (!strcmp(type, "AFS")) {
+    } else if (!strcmp(type, "AFS") && strcmp(ftype, "AFS")) {
 	total = 0;
 	EXEC SQL REPEATED DELETE FROM quota
 	  WHERE type = 'ANY' AND filsys_id = :fid;
@@ -927,18 +945,25 @@ setup_dfil(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, total;
+    int id, total, phys_id;
+    short int none;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT SUM (quota) INTO :total FROM quota
+    EXEC SQL REPEATED SELECT SUM (quota) INTO :total:none FROM quota
+      WHERE filsys_id = :id;
+
+    if(none) total=0;
+
+    /** What if there are multiple phys_id's per f/s? (bad data) **/
+    EXEC SQL REPEATED SELECT phys_id INTO :phys_id FROM filesys
       WHERE filsys_id = :id;
     EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :total
-      WHERE nfsphys_id = filesys.phys_id AND filesys.filsys_id = :id;
-    /** Is SQL smart enough to do the PRODUCT above? */
-    /** Or should we code it using another SELECT?  */
+      WHERE nfsphys_id = :phys_id;
 
-    EXEC SQL REPEATED DELETE FROM quota WHERE filsys_id = :id;
+    if(!none) {
+	EXEC SQL REPEATED DELETE FROM quota WHERE filsys_id = :id;
+    }
     EXEC SQL REPEATED DELETE FROM fsgroup WHERE filsys_id = :id;
     EXEC SQL REPEATED DELETE FROM fsgroup WHERE group_id = :id;
     if (ingres_errno) return(mr_errcode);
@@ -1013,15 +1038,17 @@ setup_dqot(q, argv, cl)
 /* setup_sshi: don't exclusive lock the machine table during
  * set_server_host_internal.
  */
-
+/** Not allowed under (INGRES) SQL **/
 setup_sshi(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
 {
+#if 0
 #ifsql INGRES
     EXEC SQL set lockmode session where readlock = system;
 #endsql
+#endif
 }
 
 
@@ -1397,12 +1424,16 @@ followup_guax(q, sq, v, action, actarg, cl)
     EXEC SQL BEGIN DECLARE SECTION; 
     int timestamp, who;
     char *login;
+    varchar struct { short data_size; char data_buf[257];} rsig;
     EXEC SQL END DECLARE SECTION; 
 #endif /* GDSS */
     int id, status;
 
     i = q->vcnt - 2;
     while (sq_get_data(sq, &argv)) {
+#ifdef DEBUG
+	com_err(whoami, 0, "argv[SIGNATURE] = \"%s\"", argv[U_SIGNATURE]);
+#endif /* DEBUG */
 	id = atoi(argv[i]);
 	if (id > 0)
 	  status = id_to_name(id, "USER", &argv[i]);
@@ -1413,9 +1444,9 @@ followup_guax(q, sq, v, action, actarg, cl)
 #ifdef GDSS
 	if (q->vcnt == U_END && strlen(argv[U_SIGNATURE])) {
 	    login = argv[U_NAME];
-	    EXEC SQL REPEATED SELECT sigdate, sigwho 
-	      INTO :timestamp, :who FROM users
-	      WHERE login = LEFT(:login,SIZE(login));
+	    EXEC SQL REPEATED SELECT signature, sigdate, sigwho 
+	      INTO :rsig, :timestamp, :who FROM users
+	      WHERE login = :login;
 	    /** What about (INGRES) error handling? **/
 	    kname = malloc(1);
             status = id_to_name(who, "STRING", &kname);
@@ -1423,9 +1454,18 @@ followup_guax(q, sq, v, action, actarg, cl)
 	    si.SigInfoVersion = 0; /* XXXXX this isn't used */
 	    kname_parse(si.pname, si.pinst, si.prealm, kname);
             free(kname);
-            si.rawsig = (unsigned char *)argv[U_SIGNATURE];
+	    rsig.data_buf[rsig.data_size] = 0;
+            si.rawsig = (unsigned char *)strsave(rsig.data_buf);
+#ifdef DEBUG
+	    com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"", strlen(si.rawsig), si.rawsig);
+#endif /* DEBUG */
 	    GDSS_Recompose(&si, sigbuf);
+	    free(si.rawsig);
+	    free(argv[U_SIGNATURE]);
 	    argv[U_SIGNATURE] = strsave(sigbuf);
+#ifdef DEBUG
+	    com_err(whoami, 0, "generated signature length %d", strlen(sigbuf));
+#endif /* DEBUG */
 	}
 #endif /* GDSS */
 	(*action)(q->vcnt, argv, actarg);
@@ -1495,7 +1535,7 @@ followup_ausr(q, argv, cl)
                 sigwho++;
                 EXEC SQL REPEATED UPDATE numvalues SET value = :sigwho
 		  WHERE name='strings_id';
-                INSERT INTO strings (string_id, string) 
+                EXEC SQL INSERT INTO strings (string_id, string) 
 		  VALUES (:sigwho, :name);
             } else if (status)
               return(gdss2et(status));
@@ -1575,7 +1615,13 @@ followup_uuac(q, argv, cl)
         free(login);
         /* skip bytes for timestamp & kname */
         si.rawsig = (unsigned char *) rawsig;
+#ifdef DEBUG
+	com_err(whoami, 0, "verifying sig");
+#endif /* DEBUG */
         status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE+1], &si);
+#ifdef DEBUG
+	com_err(whoami, 0, "verified");
+#endif /* DEBUG */
 	if (strlen(rawsig) > mr_sig_length) {
 	    com_err(whoami, 0, "GDSS signature would be truncated.");  /** untested **/
 	    return(MR_INTERNAL);
@@ -1589,7 +1635,7 @@ followup_uuac(q, argv, cl)
                 sigwho++;
                 EXEC SQL REPEATED UPDATE numvalues SET value = :sigwho
 		  WHERE name='strings_id';
-                INSERT INTO strings (string_id, string) 
+                EXEC SQL INSERT INTO strings (string_id, string) 
 		  VALUES (:sigwho, :name);
             } else if (status)
               return(gdss2et(status));
@@ -1849,30 +1895,119 @@ followup_aqot(q, argv, cl)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int quota, id, fs, who, physid;
-    char *entity, *qtype;
+    char *entity, *qtype, *table_name;
     EXEC SQL END DECLARE SECTION;
+    char incr_qual[60];
+    char *incr_argv[2];
+    int status;
 
+    table_name=q->rtable;
     fs = *(int *)argv[0];
-    if (!strcmp(q->name, "add_quota") || !strcmp(q->name, "update_quota")) {
+    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys
+      WHERE filsys_id = :fs;
+    if(ingres_errno)
+	return(mr_errcode);
+
+    if (!strcmp(q->shortname, "aqot") || !strcmp(q->shortname, "uqot")) {
 	qtype = argv[1];
 	id = *(int *)argv[2];
 	quota = atoi(argv[3]);
+	sprintf(incr_qual,"q.filsys_id = %d",fs);
     } else {
 	qtype = "USER";
 	id = *(int *)argv[1];
 	quota = atoi(argv[2]);
+	sprintf(incr_qual,"q.filsys_id=%d AND q.type='%s' AND q.entity_id=%d",
+		fs,qtype,id);
     }
+
+    /* quota case of incremental_{before|after} only looks at slot 1 */
+    incr_argv[1]=qtype;
+
+    /* Follows one of many possible gross hacks to fix these particular
+     * conflicts between what is possible in the query table and what 
+     * is possible in SQL.    
+     */
+    if(q->type==APPEND) {
+	incremental_clear_before();
+	EXEC SQL INSERT INTO quota 
+	    (filsys_id, type, entity_id, quota, phys_id) 
+	  VALUES (:fs, :qtype, :id, :quota, :physid);
+	incremental_after(table_name, incr_qual, incr_argv);    
+    } else {
+	incremental_before(table_name, incr_qual, incr_argv);
+	EXEC SQL UPDATE quota SET quota = :quota
+	  WHERE filsys_id = :fs AND type = :qtype AND entity_id = :id;
+	status = mr_errcode;
+	incremental_after(table_name, incr_qual, incr_argv);
+    }
+
+    if (ingres_errno)
+	return(mr_errcode);
+    flush_name(argv[0], q->rtable);  
+    if(q->type==APPEND) {
+        EXEC SQL UPDATE tblstats SET appends = appends + 1, modtime = 'now'
+	  WHERE table_name = :table_name;
+    } else {
+        EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = 'now'
+	  WHERE table_name = :table_name;
+    }
+	
+    /* Proceed with original followup */
     who = cl->client_id;
     entity = cl->entity;
 
     EXEC SQL REPEATED UPDATE quota
       SET modtime = 'now', modby = :who, modwith = :entity
       WHERE filsys_id = :fs and type = :qtype and entity_id = :id;
-    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys
-      WHERE filsys_id = :fs;
     EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated + :quota
       WHERE nfsphys_id = :physid;
     if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* Necessitated by the requirement of a correlation name by the incremental
+ * routines, since query table deletes don't provide one. 
+ */
+followup_dqot(q,argv,cl)
+    struct query *q;
+    char **argv;
+    struct client *cl;
+{
+    char *qtype;
+    int id, fs;
+    char *incr_argv[2];
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char incr_qual[80];
+    char *tblname;
+    EXEC SQL END DECLARE SECTION; 
+
+    fs = *(int *)argv[0];
+    if (!strcmp(q->shortname, "dqot")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+    }
+    sprintf(incr_qual,"q.filsys_id=%d AND q.type='%s' AND q.entity_id=%d",
+	    fs,qtype,id);
+
+    /* quota case of incremental_{before|after} only looks at slot 1 */
+    incr_argv[1]=qtype;
+
+    incremental_before(q->rtable, incr_qual, incr_argv);
+    EXEC SQL DELETE FROM quota q WHERE :incr_qual;
+    incremental_clear_after();
+
+    if (ingres_errno) 
+	return(mr_errcode);
+    flush_name(argv[0], q->rtable);
+
+    tblname = q->rtable;
+    EXEC SQL UPDATE tblstats SET deletes = deletes + 1, modtime = 'now'
+      WHERE table_name = :tblname;
     return(MR_SUCCESS);
 }
 
@@ -2089,7 +2224,7 @@ int set_pobox(q, argv, cl)
 
     set_pobox_modtime(q, argv, cl);
     EXEC SQL REPEATED UPDATE tblstats SET updates = updates+1, modtime='now'
-      WHERE tblstats.table_name='users';
+      WHERE table_name='users';
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -2950,7 +3085,7 @@ gmol_internal(q, argv, cl, action, actarg, flag)
 
     targv[0] = "STRING";
     EXEC SQL DECLARE csr121 CURSOR FOR
-      SELECT str.string FROM strings str, imembers im
+      SELECT CHAR(str.string) FROM strings str, imembers im
 	WHERE im.list_id = :list_id AND im.member_type='STRING'
 	  AND im.member_id = str.string_id AND im.direct > :direct
 	ORDER BY 1;
@@ -2965,10 +3100,10 @@ gmol_internal(q, argv, cl, action, actarg, flag)
 
     targv[0] = "KERBEROS";
     EXEC SQL DECLARE csr122 CURSOR FOR
-      SELECT strings.string FROM strings, imembers
-	WHERE imembers.list_id = :list_id AND imembers.member_type='KERBEROS'
-	  AND imembers.member_id = strings.string_id 
-	  AND imembers.direct > :direct
+      SELECT CHAR(str.string) FROM strings str, imembers im
+	WHERE im.list_id = :list_id AND im.member_type='KERBEROS'
+	  AND im.member_id = str.string_id 
+	  AND im.direct > :direct
 	ORDER BY 1;
     EXEC SQL OPEN csr122;
     while(1) {
@@ -3065,7 +3200,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     }
 
     rargv[0] = SQLDA->sqlvar[0].sqldata;
-    sprintf(stmt_buf,"SELECT %s.%s FROM %s %s WHERE %s",q->rtable,field,q->rtable,q->rvar,qual); /** Should first rtabl be rvar ??? **/
+    sprintf(stmt_buf,"SELECT CHAR(%s.%s) FROM %s %s WHERE %s",range,field,q->rtable,range,qual);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf;
     if(sqlca.sqlcode)
       return(MR_INTERNAL);
@@ -3107,7 +3242,6 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     char *rargv[2], buf[32];
     int i, rowcount;
 
-    /** the uppercase() function is INGRES-specific */
     sprintf(qual, "m.mach_id = sh.mach_id AND sh.service = uppercase('%s')",
 	    argv[0]);
     for (i = 1; i < q->argc; i++) {
@@ -3303,11 +3437,12 @@ register_user(q, argv, cl)
 
     /* set quota */
     if (def_quota == 0) {
-	EXEC SQL REPEATED SELECT value INTO :quota FROM numvalues
+	EXEC SQL REPEATED SELECT value INTO :def_quota FROM numvalues
 	  WHERE name='def_quota';
 	if (ingres_errno) return(mr_errcode);
 	if (sqlca.sqlerrd[2] != 1)
 	  return(MR_NO_QUOTA);
+	
     }
     incremental_clear_before();
     EXEC SQL REPEATED INSERT INTO quota
@@ -3551,7 +3686,7 @@ validate_id(q, argv, vo)
 	    EXEC SQL SELECT value INTO :id FROM numvalues
 	      WHERE name = 'strings_id';
 	    id++;
-	    EXEC SQL UPDATE numvalues SET value = :id WHERE name = 'string_id';
+	    EXEC SQL UPDATE numvalues SET value = :id WHERE name = 'strings_id';
 	    EXEC SQL INSERT INTO strings (string_id, string) VALUES (:id, :name);
 	    cache_entry(name, "STRING", id);
 	    *(int *)argv[vo->index] = id;
@@ -3958,8 +4093,8 @@ prefetch_filesys(q,argv,cl)
     if(ingres_errno) return(mr_errcode);
 
     argc=q->argc+q->vcnt;
-    sprintf(argv[argc++],"%d",fid);
-    sprintf(argv[argc],"%d",phid);
+    sprintf(argv[argc++],"%d",phid);
+    sprintf(argv[argc],"%d",fid);
 
     return(MR_SUCCESS);
 }

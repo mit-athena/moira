@@ -4,7 +4,7 @@
 # Copyright 1987, 1989 MIT Student Information Processing Board
 # For copyright info, see mit-sipb-copyright.h.
 #
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/Makefile,v 1.1 1996-07-08 22:28:45 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/Makefile,v 1.2 1997-01-29 23:30:14 danw Exp $
 #	$Locker:  $
 #
 
@@ -148,18 +148,18 @@ depend: ${CFILES} et_lex.lex.c
 
 compile_et.o: /usr/include/stdio.h /usr/include/sys/types.h
 compile_et.o: /usr/include/sys/file.h /usr/include/string.h
-compile_et.o: /usr/include/strings.h /usr/include/sys/param.h
+compile_et.o: /usr/include/string.h /usr/include/sys/param.h
 compile_et.o: /usr/include/machine/machparam.h /usr/include/sys/signal.h
-compile_et.o: ../../include/mit-sipb-copyright.h compiler.h
+compile_et.o: mit-sipb-copyright.h compiler.h
 error_table.o: /usr/include/stdio.h /usr/include/string.h
-error_table.o: /usr/include/strings.h /usr/include/assert.h
+error_table.o: /usr/include/string.h /usr/include/assert.h
 error_table.o: /usr/include/ctype.h /usr/include/sys/types.h
 error_table.o: /usr/include/sys/time.h /usr/include/sys/time.h internal.h
-error_table.o: ../../include/mit-sipb-copyright.h error_table.h et_lex.lex.c
+error_table.o: mit-sipb-copyright.h error_table.h et_lex.lex.c
 error_message.o: /usr/include/stdio.h error_table.h
-error_message.o: ../../include/mit-sipb-copyright.h internal.h
-et_name.o: error_table.h ../../include/mit-sipb-copyright.h internal.h
+error_message.o: mit-sipb-copyright.h internal.h
+et_name.o: error_table.h mit-sipb-copyright.h internal.h
 init_et.o: /usr/include/stdio.h error_table.h
-init_et.o: ../../include/mit-sipb-copyright.h
-com_err.o: /usr/include/stdio.h ../../include/mit-sipb-copyright.h
+init_et.o: mit-sipb-copyright.h
+com_err.o: /usr/include/stdio.h mit-sipb-copyright.h
 com_err.o: /usr/include/varargs.h error_table.h internal.h com_err.h

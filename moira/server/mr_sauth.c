@@ -1,33 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.7 1987-09-12 20:42:05 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.8 1988-06-30 12:37:36 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.6  87/08/04  02:40:47  wesommer
- * Clean up messages.
- * 
- * Revision 1.5  87/07/14  00:40:18  wesommer
- * Rearranged logging.
- * 
- * Revision 1.4  87/06/30  20:03:46  wesommer
- * Put parsed kerberos principal name into the per-client structure.
- * 
- * Revision 1.3  87/06/21  16:40:10  wesommer
- * Performance work, rearrangement of include files.
- * 
- * Revision 1.2  87/06/04  01:34:35  wesommer
- * Added logging of arguments for some perverse reason.
- * 
- * Revision 1.1  87/06/02  20:06:57  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.7 1987-09-12 20:42:05 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.8 1988-06-30 12:37:36 mar Exp $";
 #endif lint
 
 extern int krb_err_base;
@@ -55,18 +36,24 @@ do_auth(cl)
 	int status;
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
 	extern int krb_err_base;
+	static char *unknown = "???";
 	
 	if (cl->clname) {
 		free(cl->clname);
 		cl->clname = 0;
+		cl->users_id = 0;
 		bzero(&cl->kname, sizeof(cl->kname));
+	}
+	if (cl->entity && cl->entity != unknown) {
+		free(cl->entity);
+		cl->entity = 0;
 	}
 	
 	auth.length = cl->args->sms_argl[0];
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
 	auth.mbz = 0;
 	
-	if ((status = rd_ap_req (&auth, "sms", "sms", cl->haddr.sin_addr,
+	if ((status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
 				 &ad, "")) != KSUCCESS) {
 		status += krb_err_base;
 		cl->reply.sms_status = status;
@@ -90,7 +77,19 @@ do_auth(cl)
 	cl->clname = (char *)malloc((unsigned)(strlen(buf)+1));
 	(void) strcpy(cl->clname, buf);
 	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
-	if (log_flags & LOG_RES) {
-		com_err(whoami, 0, "Authenticated to %s", cl->clname);
+
+	cl->users_id = get_users_id(cl->kname.name);
+
+	if (cl->args->sms_version_no == SMS_VERSION_2) {
+	    unsigned len = strlen(cl->args->sms_argv[1]) + 1;
+
+	    cl->entity = (char *)malloc(len);
+	    bcopy(cl->args->sms_argv[1], cl->entity, len+1);
+	} else {
+	    cl->entity = unknown;
 	}
+
+	if (log_flags & LOG_RES)
+	    com_err(whoami, 0, "Authenticated to %s using %s, id %d",
+		    cl->clname, cl->entity, cl->users_id);
 }

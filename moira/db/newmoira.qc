@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.13 1990-03-23 12:24:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.14 1990-03-30 19:24:52 mar Exp $
  *
  * Creates a new sms database
  *
@@ -75,6 +75,9 @@ struct alias { char *name;
 		   {"pobox", "TYPE", "SMTP"},
 		   {"pobox", "TYPE", "NONE"},
 		   {"pobox", "TYPE", "POP"},
+		   {"quota_type", "TYPE", "USER"},
+		   {"quota_type", "TYPE", "GROUP"},
+		   {"quota_type", "TYPE", "ANY"},
 		   {"rmember", "TYPE", "LIST"},
 		   {"rmember", "TYPE", "STRING"},
 		   {"rmember", "TYPE", "USER"},
@@ -91,7 +94,9 @@ struct alias { char *name;
 		   {"slabel", "TYPE", "USRLIB"},
 		   {"slabel", "TYPE", "SYSLIB"},
 		   {"slabel", "TYPE", "ZEPHYR"},
+		   {"ANY", "TYPEDATA", "none"},
 		   {"KERBEROS", "TYPEDATA", "string"},
+		   {"GROUP", "TYPEDATA", "list"},
 		   {"LIST", "TYPEDATA", "list"},
 		   {"NONE", "TYPEDATA", "none"},
 		   {"POP", "TYPEDATA", "machine"},
@@ -401,3 +406,6 @@ int add_member_to_list() {}
 int delete_member_from_list() {}
 int setup_akum() {}
 int followup_gnfq() {}
+int followup_gqot() {}
+int followup_aqot() {}
+int setup_dqot() {}

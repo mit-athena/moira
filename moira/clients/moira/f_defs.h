@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.14 1990-07-31 18:41:28 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.15 1991-01-04 16:56:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -165,6 +165,7 @@ int TableStats(), ShowClients(), ShowValue(), ShowAlias();
  */
 
 void EncryptMITID();		/* Encrypts an mit id number. */
+char **CopyInfo();		/* Copies a NULL terminated array of strings */
 void FreeInfo();		/* Frees a NULL terminated array of strings. */
 void FreeQueue();		/* Frees an entire queue. */
 void FreeAndClear();		/* Frees a single pointer. */
@@ -197,6 +198,6 @@ Bool Confirm();			/* Confirms a delete operation, with user. */
 Bool YesNoQuestion();		/* Asks a user a yes no type question. */
 Bool YesNoQuitQuestion();	/* Asks a user a yes - no - quit question. */
 
-#endif _f_defs_			/* Do Not Add Anything After This Line */
+#endif /* _f_defs_ */		/* Do Not Add Anything After This Line */
 
 

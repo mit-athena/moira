@@ -1,10 +1,16 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.2 1990-04-13 17:36:59 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.3 1992-05-31 21:38:34 probe Exp $
 
-CFLAGS = -I/mit/afsdev/build/vax/include -I../include -O
+AFSDIR = /mit/afsdev/bld/dest
+CFLAGS = -I$(AFSDIR)/include -I$(AFSDIR)/include/afs -I../include -O
 
-OBJS = prprocs.o prutils.o utils.o ubik.o
-LIBS= -L../lib -lmoira -lcom_err \
+OBJS= ptprocs.o utils.o ubik.o
+LIBS= -L../lib -lmoira -lcom_err -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
+
+AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
+	$(AFSDIR)/lib/libubik.a       $(AFSDIR)/lib/afs/util.a \
+	$(AFSDIR)/lib/librxkad.a      $(AFSDIR)/lib/afs/libsys.a \
+	$(AFSDIR)/lib/librx.a         $(AFSDIR)/lib/liblwp.a
 
 .SUFFIXES: .qc
 
@@ -12,25 +18,14 @@ LIBS= -L../lib -lmoira -lcom_err \
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: sync resync
+all: sync ptdump
 
 sync: sync.o $(OBJS)
-	cc -o sync sync.o $(OBJS) $(LIBS)
+	$(CC) -o sync sync.o $(OBJS) $(AFSLIBS) $(LIBS)
 sync.c: sync.qc
 
-resync: resync.o $(OBJS)
-	cc -o resync resync.o $(OBJS) $(LIBS)
-resync.c: resync.qc
-
-prnewuser: prnewuser.o $(OBJS)
-	cc -o prnewuser prnewuser.o $(OBJS)
-
-prnewlist: prnewlist.o $(OBJS)
-	cc -o prnewlist prnewlist.o $(OBJS)
-
-startsync: startsync.o
-	cc -o startsync startsync.o
-
+ptdump: ptdump.o
+	cc -o ptdump ptdump.o $(AFSLIBS) -lkrb -ldes
 
 clean:
 	rm -f *.o resync.c sync.c resync sync startsync prnewlist prnewuser

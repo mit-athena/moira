@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id: winstats.sh,v 1.3 2003-12-16 20:46:54 zacheiss Exp $
 
 dir=/var/ops/populate/stats
 tarfile=/var/tmp/winstats.out
@@ -28,6 +29,9 @@ if [ $? != 0 ]; then
 fi
 
 chmod 644 *
+
+# load the data.  This sends mail if it fails.
+$dir/winstats-load.pl
 
 rm -f $tarfile
 rm -f $0

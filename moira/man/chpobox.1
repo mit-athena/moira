@@ -1,5 +1,5 @@
 .TH CHPOBOX 1 "5 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.5 1990-03-19 12:44:37 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.6 1998-01-07 17:06:33 danw Exp $
 .SH NAME
 chpobox \- change address at which user receives mail
 .SH SYNOPSIS
@@ -34,7 +34,7 @@ is not specified) is displayed.
 
 In the second use, this command sets the 
 actual address that will receive mail sent to 
-.I username@ATHENA.MIT.EDU
+.I username@MIT.EDU
 (where 
 .I username
 is your own name if you have not specified it on the command line).
@@ -48,7 +48,7 @@ command is used instead of the file
 which would be used with standard UNIX mail. 
 
 In order to change the address that receives mail sent to 
-.I username@ATHENA.MIT.EDU,
+.I username@MIT.EDU,
 use the 
 .B -s
 option.  Specifically, to reroute your mail to
@@ -75,7 +75,7 @@ or
 may be used at a time.
 
 Note that the actual change will not take place on the mail hub
-for several hours.  
+until the following day.
 
 Regular users may change and retrieve information about only
 their own post office boxes.  Moira database administrators can
@@ -93,9 +93,9 @@ reason you don't want to have the hostname canonicalized, put
 in double-quotes.  For example, the command
 .nf
 .nj
-	chpobox -s jrhacker@\\"lcs.mit.edu\\"
+	chpobox -s jrhacker@\\"cd.mit.edu\\"
 .fi
-will not be canonicalized to jrhacker@ptt.lcs.mit.edu, as it would
+will not be canonicalized to jrhacker@ls.mit.edu, as it would
 otherwise.  Also note that the double-quotes were preceded by
 backslashes to get them past the shell.
 

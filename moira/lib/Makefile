@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.11 1990-02-14 11:25:09 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.12 1990-02-15 14:22:15 mar Exp $
 #
 #	Makefile for SMS library.
 #
@@ -43,14 +43,17 @@ libsms.a: ${LIBOBJ}
 smslib.dvi: smslib.tex
 	latex smslib.tex
 
-krb_et.c krb_et.h: krb_et.et
+krb_et.c krb_et.h: krb_et.et ../et/compile_et
 	../et/compile_et krb_et.et
 
-sms_et.c sms_et.h: sms_et.et
+sms_et.c sms_et.h: sms_et.et ../et/compile_et
 	../et/compile_et sms_et.et
 
-ureg_err.c ureg_err.h: ureg_err.et
+ureg_err.c ureg_err.h: ureg_err.et ../et/compile_et
 	../et/compile_et ureg_err.et
+
+../et/compile_et:
+	cd ../et; make compile_et
 
 ../include/sms_et.h: sms_et.h
 

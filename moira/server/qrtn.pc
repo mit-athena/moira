@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.24 2001-07-20 22:18:35 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.25 2002-03-11 18:47:13 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.24 2001-07-20 22:18:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.25 2002-03-11 18:47:13 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -44,7 +44,7 @@ extern int QueryCount, max_version;
 extern struct query Queries[];
 
 /* Put this in a variable so that we can patch it if necessary */
-int max_row_count = 4096;
+int max_row_count = 8192;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
 int do_retrieve(struct query *q, char *pqual,

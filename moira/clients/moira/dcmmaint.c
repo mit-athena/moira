@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.2 1988-09-02 12:39:19 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.3 1988-09-30 17:05:40 mar Exp $
  */
 
 #include <stdio.h>
@@ -130,14 +130,14 @@ int argc;
 char **argv;
 char **cargv;
 {
-    cargv[0] = argv[0];
-    cargv[1] = argv[1];
-    cargv[2] = argv[2];
-    cargv[3] = argv[3];
-    cargv[4] = argv[6];
-    cargv[5] = argv[7];
-    cargv[6] = argv[11];
-    cargv[7] = argv[12];
+    cargv[0] = strsave(argv[0]);
+    cargv[1] = strsave(argv[1]);
+    cargv[2] = strsave(argv[2]);
+    cargv[3] = strsave(argv[3]);
+    cargv[4] = strsave(argv[6]);
+    cargv[5] = strsave(argv[7]);
+    cargv[6] = strsave(argv[11]);
+    cargv[7] = strsave(argv[12]);
     return(SMS_CONT);
 }
 
@@ -306,12 +306,12 @@ int argc;
 char **argv;
 char **cargv;
 {
-    cargv[0] = argv[0];
-    cargv[1] = argv[1];
-    cargv[2] = argv[2];
-    cargv[3] = argv[10];
-    cargv[4] = argv[11];
-    cargv[5] = argv[12];
+    cargv[0] = strsave(argv[0]);
+    cargv[1] = strsave(argv[1]);
+    cargv[2] = strsave(argv[2]);
+    cargv[3] = strsave(argv[10]);
+    cargv[4] = strsave(argv[11]);
+    cargv[5] = strsave(argv[12]);
     return(SMS_CONT);
 }
 

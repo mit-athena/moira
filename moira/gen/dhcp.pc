@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc,v 1.4 2003-12-04 19:50:40 zacheiss Exp $
+/* $Id: dhcp.pc,v 1.5 2003-12-30 07:13:05 zacheiss Exp $
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.4 2003-12-04 19:50:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.5 2003-12-30 07:13:05 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -63,13 +63,15 @@ int main(int argc, char **argv)
   EXEC SQL WHENEVER SQLERROR DO sqlerr();
 
   /* Get print spoolers for allow lists. */
-  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts
-    WHERE service = 'PRINT';
+  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m
+    WHERE sh.service = 'PRINT' AND sh.mach_id = m.mach_id 
+    AND m.status = 1 AND m.address != 'unassigned';
   allowlist = malloc(alcount * sizeof(*allowlist));
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
     SELECT m.address, sh.value3 FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT';
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT'
+    AND m.status = 1 AND m.address != 'unassigned';
   EXEC SQL OPEN csr_spool;
   for (i = 0; i < alcount; i++)
     {
@@ -96,7 +98,6 @@ int main(int argc, char **argv)
     FROM printers pr, machine m, machine m2
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
-    AND m.status = 1 AND m.address != 'unassigned'
     ORDER BY m.hwaddr;
   EXEC SQL OPEN csr_boot;
   while (1)

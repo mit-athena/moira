@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.27 2002-02-26 09:00:57 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.28 2002-03-22 06:55:03 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -150,6 +150,11 @@
 #define UF_WORKSTATION_TRUST_ACCOUNT    0x1000
 #define UF_SERVER_TRUST_ACCOUNT         0x2000
 
+#define OWNER_SECURITY_INFORMATION       (0x00000001L)
+#define GROUP_SECURITY_INFORMATION       (0x00000002L)
+#define DACL_SECURITY_INFORMATION        (0x00000004L)
+#define SACL_SECURITY_INFORMATION        (0x00000008L)
+
 #ifndef BYTE
 #define BYTE unsigned char
 #endif
@@ -249,8 +254,14 @@ typedef struct lk_entry {
 #define STOP_FILE "/moira/winad/nowinad"
 #define file_exists(file) (access((file), F_OK) == 0)
 
+#define N_SD_BER_BYTES   5
 #define LDAP_BERVAL struct berval
 #define MAX_SERVER_NAMES 32
+
+#define HIDDEN_GROUP                "HiddenGroup.g"
+#define HIDDEN_GROUP_WITH_ADMIN     "HiddenGroupWithAdmin.g"
+#define NOT_HIDDEN_GROUP            "NotHiddenGroup.g"
+#define NOT_HIDDEN_GROUP_WITH_ADMIN "NotHiddenGroupWithAdmin.g"
 
 #define ADD_ATTR(t, v, o) 		\
   mods[n] = malloc(sizeof(LDAPMod));	\
@@ -272,6 +283,7 @@ char  group_ou_neither[] = "OU=special,OU=lists,OU=moira";
 char  group_ou_both[] = "OU=mail,OU=group,OU=lists,OU=moira";
 char  orphans_machines_ou[] = "OU=Machines,OU=Orphans";
 char  orphans_other_ou[] = "OU=Other,OU=Orphans";
+char  security_template_ou[] = "OU=security_templates";
 char *whoami;
 char ldap_domain[256];
 int  mr_connections = 0;
@@ -290,6 +302,8 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                char *Win2kPassword, char *Win2kUser, char *default_server,
                int connect_to_kdc);
 void ad_kdc_disconnect();
+int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
+int checkAce(LDAP *ldap_handle, char *dn_path, char *Name);
 void check_winad(void);
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId);
 /* containers */
@@ -310,13 +324,18 @@ int container_update(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
 
 int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name, 
                     char *fs_type, char *fs_pack, int operation);
+int GetAceInfo(int ac, char **av, void *ptr);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou);
+int ProcessAce(LDAP *ldap_handle, char *dn_path, char *group_name, char *Type,
+               int UpdateGroup, int *ProcessGroup);
 int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                   char *group_name, char *group_ou, char *group_membership, 
                   int group_security_flag, int type);
 int process_lists(int ac, char **av, void *ptr);
+int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName, 
+                         int HiddenGroup, char *AceType, char *AceName);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
                        char *user_name, char *MoiraId, int operation);
@@ -684,6 +703,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc)
 {
   int   updateGroup;
+  int   ProcessGroup;
   long  rc;
   char  group_membership[6];
   char  list_id[32];
@@ -848,6 +868,14 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           return;
         }
 
+      ProcessGroup = 0;
+      if (ProcessAce(ldap_handle, dn_path, after[L_NAME], "LIST", 0, &ProcessGroup))
+        return;
+      if (ProcessGroup)
+        {
+          if (ProcessAce(ldap_handle, dn_path, after[L_NAME], "LIST", 1, &ProcessGroup))
+            return;
+        }
       if (make_new_group(ldap_handle, dn_path, list_id, after[L_NAME], 
                          group_ou, group_membership, security_flag, updateGroup))
         {
@@ -861,7 +889,6 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
       moira_disconnect();
     }
-
   return;
 }
 
@@ -894,6 +921,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   char  *pUserOu;
   int   security_flag;
   int   rc;
+  int   ProcessGroup;
 
   pUserOu = NULL;
   ptr = NULL;
@@ -1015,6 +1043,14 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
 
       com_err(whoami, 0, "creating group %s", group_name);
+      ProcessGroup = 0;
+      if (ProcessAce(ldap_handle, dn_path, ptr[LM_LIST], "LIST", 0, &ProcessGroup))
+        return;
+      if (ProcessGroup)
+        {
+          if (ProcessAce(ldap_handle, dn_path, ptr[LM_LIST], "LIST", 1, &ProcessGroup))
+            return;
+        }
       if (make_new_group(ldap_handle, dn_path, moira_list_id, ptr[LM_LIST], 
                          group_ou, group_membership, security_flag, 0))
         {
@@ -1964,7 +2000,7 @@ int group_create(int ac, char **av, void *ptr)
         free(mods[i]);
       if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
         {
-          com_err(whoami, 0, "Unable to create/update list %s in AD : %s",
+          com_err(whoami, 0, "Unable to create list %s in AD : %s",
                   av[L_NAME], ldap_err2string(rc));
           callback_rc = rc;
           return(rc);
@@ -1998,7 +2034,17 @@ int group_create(int ac, char **av, void *ptr)
       rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
       for (i = 0; i < n; i++)
         free(mods[i]);
+      if (rc != LDAP_SUCCESS)
+        {
+          com_err(whoami, 0, "Unable to update list %s in AD : %s",
+                  av[L_NAME], ldap_err2string(rc));
+          callback_rc = rc;
+          return(rc);
+        }
     }
+
+  ProcessGroupSecurity((LDAP *)call_args[0], call_args[1], av[L_NAME], 
+                       atoi(av[L_HIDDEN]),  av[L_ACE_TYPE], av[L_ACE_NAME]);
 
   sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
   if (strlen(call_args[5]) != 0)
@@ -2041,6 +2087,256 @@ int group_create(int ac, char **av, void *ptr)
         linklist_free(group_base);
     }
   return(LDAP_SUCCESS);
+}
+
+int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName, 
+                         int HiddenGroup, char *AceType, char *AceName)
+{
+  char          filter_exp[1024];
+  char          *attr_array[5];
+  char          search_path[512];
+  char          root_ou[128];
+  char          TemplateDn[512];
+  char          TemplateSamName[128];
+  char          TargetDn[512];
+  char          TargetSamName[128];
+  char          AceSamAccountName[128];
+  char          AceDn[256];
+  unsigned char AceSid[128];
+  unsigned char UserTemplateSid[128];
+  char          acBERBuf[N_SD_BER_BYTES];
+  char          GroupSecurityTemplate[256];
+  int           AceSidCount;
+  int           UserTemplateSidCount;
+  int           group_count;
+  int           n;
+  int           i;
+  int           rc;
+  int           nVal;
+  ULONG         dwInfo;
+  int           array_count = 0;
+  LDAPMod       *mods[20];
+  LK_ENTRY      *group_base;
+  LDAP_BERVAL   **ppsValues;
+  LDAPControl sControl = {"1.2.840.113556.1.4.801",
+                          { N_SD_BER_BYTES, acBERBuf },
+                          TRUE
+                         };
+  LDAPControl *apsServerControls[] = {&sControl, NULL};
+  LDAPMessage *psMsg;
+
+  dwInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION;
+  BEREncodeSecurityBits(dwInfo, acBERBuf);
+
+  sprintf(search_path, "%s,%s", group_ou_root, dn_path);
+  sprintf(filter_exp, "(sAMAccountName=%s_group)", TargetGroupName);
+  attr_array[0] = "sAMAccountName";
+  attr_array[1] = NULL;
+  group_count = 0;
+  group_base = NULL;
+  if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
+                               &group_base, &group_count) != 0))
+    return(1);
+  if (group_count != 1)
+    {
+      linklist_free(group_base);
+      return(1);
+    }
+  strcpy(TargetDn, group_base->dn);
+  strcpy(TargetSamName, group_base->value);
+  linklist_free(group_base);
+  group_base = NULL;
+  group_count = 0;
+
+  UserTemplateSidCount = 0;
+  memset(UserTemplateSid, '\0', sizeof(UserTemplateSid));
+  memset(AceSamAccountName, '\0', sizeof(AceSamAccountName));
+  memset(AceSid, '\0', sizeof(AceSid));
+  AceSidCount = 0;
+  group_base = NULL;
+  group_count = 0;
+  if (strlen(AceName) != 0)
+    {
+      if (!strcmp(AceType, "LIST"))
+        {
+          sprintf(AceSamAccountName, "%s_group", AceName);
+          strcpy(root_ou, group_ou_root);
+        }
+      else if (!strcmp(AceType, "USER"))
+        {
+          sprintf(AceSamAccountName, "%s", AceName);
+          strcpy(root_ou, user_ou);
+        }
+      if (strlen(AceSamAccountName) != 0)
+        {
+          sprintf(search_path, "%s,%s", root_ou, dn_path);
+          sprintf(filter_exp, "(sAMAccountName=%s)", AceSamAccountName);
+          attr_array[0] = "objectSid";
+          attr_array[1] = NULL;
+          group_count = 0;
+          group_base = NULL;
+          if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
+                                   &group_base, &group_count) != 0))
+            return(1);
+          if (group_count == 1)
+            {
+              strcpy(AceDn, group_base->dn);
+              AceSidCount = group_base->length;
+              memcpy(AceSid, group_base->value, AceSidCount);
+            }
+          linklist_free(group_base);
+          group_base = NULL;
+          group_count = 0;
+        }
+    }
+  if (AceSidCount == 0)
+    {
+      com_err(whoami, 0, "Group %s: Administrator: %s, Type: %s - does not have an AD SID.", TargetGroupName, AceName, AceType);
+      com_err(whoami, 0, "   Non-admin security group template will be used.");
+    }
+  else
+    {
+      sprintf(search_path, "%s,%s", security_template_ou, dn_path);
+      sprintf(filter_exp, "(sAMAccountName=%s)", "UserTemplate.u");
+      attr_array[0] = "objectSid";
+      attr_array[1] = NULL;
+
+      group_count = 0;
+      group_base = NULL;
+      if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
+                                   &group_base, &group_count) != 0))
+        return(1);
+      if ((rc != 0) || (group_count != 1))
+        {
+          com_err(whoami, 0, "Couldn't process user security template: %s", "UserTemplate");
+          AceSidCount = 0;
+        }
+      else
+        {
+          UserTemplateSidCount = group_base->length;
+          memcpy(UserTemplateSid, group_base->value, UserTemplateSidCount);
+        }
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+    }
+
+  if (HiddenGroup)
+    {
+      if (AceSidCount == 0)
+        {
+          strcpy(GroupSecurityTemplate, HIDDEN_GROUP);
+          sprintf(filter_exp, "(sAMAccountName=%s)", HIDDEN_GROUP);
+        }
+      else
+        {
+          strcpy(GroupSecurityTemplate, HIDDEN_GROUP_WITH_ADMIN);
+          sprintf(filter_exp, "(sAMAccountName=%s)", HIDDEN_GROUP_WITH_ADMIN);
+        }
+    }
+  else
+    {
+      if (AceSidCount == 0)
+        {
+          strcpy(GroupSecurityTemplate, NOT_HIDDEN_GROUP);
+          sprintf(filter_exp, "(sAMAccountName=%s)", NOT_HIDDEN_GROUP);
+        }
+      else
+        {
+          strcpy(GroupSecurityTemplate, NOT_HIDDEN_GROUP_WITH_ADMIN);
+          sprintf(filter_exp, "(sAMAccountName=%s)", NOT_HIDDEN_GROUP_WITH_ADMIN);
+        }
+    }
+
+  sprintf(search_path, "%s,%s", security_template_ou, dn_path);
+  attr_array[0] = "sAMAccountName";
+  attr_array[1] = NULL;
+  group_count = 0;
+  group_base = NULL;
+  if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
+                               &group_base, &group_count) != 0))
+    return(1);
+  if (group_count != 1)
+    {
+      linklist_free(group_base);
+      com_err(whoami, 0, "Couldn't process group security template: %s - security not set", GroupSecurityTemplate);
+      return(1);
+    }
+  strcpy(TemplateDn, group_base->dn);
+  strcpy(TemplateSamName, group_base->value);
+  linklist_free(group_base);
+  group_base = NULL;
+  group_count = 0;
+
+  sprintf(filter_exp, "(sAMAccountName=%s)", TemplateSamName);
+  rc = ldap_search_ext_s(ldap_handle,
+                         TemplateDn,
+                         LDAP_SCOPE_SUBTREE,
+                         filter_exp,
+                         NULL,
+                         0,
+                         apsServerControls,
+                         NULL,
+                         NULL,
+                         0,
+                         &psMsg);
+
+  if ((psMsg = ldap_first_entry(ldap_handle, psMsg)) == NULL)
+    {
+      com_err(whoami, 0, "Couldn't find group security template: %s - security not set", GroupSecurityTemplate);
+      return(1);
+    }
+  ppsValues = ldap_get_values_len(ldap_handle, psMsg, "ntSecurityDescriptor");
+  if (ppsValues == NULL)
+    {
+      com_err(whoami, 0, "Couldn't find group security descriptor for group %s - security not set", GroupSecurityTemplate);
+      return(1);
+    }
+
+  if (AceSidCount != 0)
+    {
+      for (nVal = 0; ppsValues[nVal] != NULL; nVal++)
+        {
+          for (i = 0; i < (int)(ppsValues[nVal]->bv_len - UserTemplateSidCount); i++)
+            {
+              if (!memcmp(&ppsValues[nVal]->bv_val[i], UserTemplateSid, UserTemplateSidCount))
+                {
+                  memcpy(&ppsValues[nVal]->bv_val[i], AceSid, AceSidCount);
+                  break;
+                }
+            }
+        }
+    }
+
+  n = 0;
+  ADD_ATTR("ntSecurityDescriptor", (char **)ppsValues, LDAP_MOD_REPLACE | LDAP_MOD_BVALUES);
+  mods[n] = NULL;
+
+  rc = ldap_modify_s(ldap_handle, TargetDn, mods);
+  for (i = 0; i < n; i++)
+    free(mods[i]);
+  ldap_value_free_len(ppsValues);
+  ldap_msgfree(psMsg);
+  if (rc != LDAP_SUCCESS)
+    {
+      com_err(whoami, 0, "Couldn't set security settings for group %s : %s",
+              TargetGroupName, ldap_err2string(rc));
+      if (AceSidCount != 0)
+        {
+          com_err(whoami, 0, "Trying to set security for group %s without admin.",
+                  TargetGroupName);
+          if (rc = ProcessGroupSecurity(ldap_handle, dn_path, TargetGroupName, 
+                                        HiddenGroup, "", ""))
+            {
+              com_err(whoami, 0, "Unable to set security for group %s.",
+                      TargetGroupName);
+              return(rc);
+            }
+        }
+      return(rc);
+    }
+  com_err(whoami, 0, "Security set for group %s.", TargetGroupName);
+  return(rc);
 }
 
 int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name, 
@@ -2087,6 +2383,15 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
     }
 
   return(0);
+}
+
+int BEREncodeSecurityBits(ULONG uBits, char *pBuffer)
+{
+    *pBuffer++ = 0x30;
+    *pBuffer++ = 0x03;
+    *pBuffer++ = 0x02;
+    *pBuffer++ = 0x00;
+    return(N_SD_BER_BYTES);
 }
 
 int process_lists(int ac, char **av, void *ptr)
@@ -3238,6 +3543,147 @@ void AfsToWinAfs(char* path, char* winPath)
     }
 }
 
+int GetAceInfo(int ac, char **av, void *ptr)
+{
+  char **call_args;
+  int   security_flag;
+
+  call_args = ptr;
+
+  strcpy(call_args[0], av[L_ACE_TYPE]);
+  strcpy(call_args[1], av[L_ACE_NAME]);
+  security_flag = 0;
+  get_group_membership(call_args[2], call_args[3], &security_flag, av);
+  return(LDAP_SUCCESS);
+
+}
+
+int checkAce(LDAP *ldap_handle, char *dn_path, char *Name)
+{
+  char filter[128];
+  char *attr_array[3];
+  int  group_count;
+  int  rc;
+  LK_ENTRY  *group_base;
+
+  group_count = 0;
+  group_base = NULL;
+
+  sprintf(filter, "(sAMAccountName=%s)", Name);
+  attr_array[0] = "sAMAccountName";
+  attr_array[1] = NULL;
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                           &group_base, &group_count)) != 0)
+    {
+      com_err(whoami, 0, "LDAP server couldn't process ACE name %s : %s",
+              Name, ldap_err2string(rc));
+      return(1);
+    }
+
+  linklist_free(group_base);
+  group_base = NULL;
+  if (group_count == 0)
+    return(0);
+  return(1);
+}
+
+#define MAX_ACE 7
+
+int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int UpdateGroup, int *ProcessGroup)
+{
+  char  *av[2];
+  char  GroupName[256];
+  char  *call_args[7];
+  int   rc;
+  char  *AceInfo[4];
+  char  AceType[32];
+  char  AceName[128];
+  char  AceMembership[2];
+  char  AceOu[256];
+  char  temp[128];
+
+  strcpy(GroupName, Name);
+
+  if (strcasecmp(Type, "LIST"))
+    return(1);
+  while (1)
+    {
+      av[0] = GroupName;
+      AceInfo[0] = AceType;
+      AceInfo[1] = AceName;
+      AceInfo[2] = AceMembership;
+      AceInfo[3] = AceOu;
+      memset(AceType, '\0', sizeof(AceType));
+      memset(AceName, '\0', sizeof(AceName));
+      memset(AceMembership, '\0', sizeof(AceMembership));
+      memset(AceOu, '\0', sizeof(AceOu));
+      callback_rc = 0;
+      if (rc = mr_query("get_list_info", 1, av, GetAceInfo, AceInfo))
+        {
+          com_err(whoami, 0, "Couldn't get ACE info for list %s : %s", GroupName, error_message(rc));
+          return(1);
+        }
+      if (callback_rc)
+        {
+          com_err(whoami, 0, "Couldn't get ACE info for list %s", GroupName);
+          return(1);
+        }
+      if ((strcasecmp(AceType, "USER")) && (strcasecmp(AceType, "LIST")))
+        return(0);
+      strcpy(temp, AceName);
+      if (!strcasecmp(AceType, "LIST"))
+        sprintf(temp, "%s_group", AceName);
+      if (!UpdateGroup)
+        {
+          if (checkAce(ldap_handle, dn_path, temp))
+            return(0);
+          (*ProcessGroup) = 1;
+        }
+      if (!strcasecmp(AceInfo[0], "LIST"))
+        {
+          if (make_new_group(ldap_handle, dn_path, "", AceName, AceOu, AceMembership, 0, UpdateGroup))
+            return(1);
+        }
+      else if (!strcasecmp(AceInfo[0], "USER"))
+        {
+          av[0] = AceName;
+          call_args[0] = (char *)ldap_handle;
+          call_args[1] = dn_path;
+          call_args[2] = "";
+          call_args[3] = NULL;
+          sid_base = NULL;
+          sid_ptr = &sid_base;
+          callback_rc = 0;
+          if (rc = mr_query("get_user_account_by_login", 1, av, user_create, call_args))
+            {
+              com_err(whoami, 0, "Couldn't process user ACE %s for group %s.", Name, AceName);
+              return(1);
+            }
+          if (callback_rc)
+            {
+              com_err(whoami, 0, "Couldn't process user Ace %s for group %s", Name, AceName);
+              return(1);
+            }
+          if (sid_base != NULL)
+            {
+              sid_update(ldap_handle, dn_path);
+              linklist_free(sid_base);
+              sid_base = NULL;
+            }
+          return(0);
+        }
+      else
+        return(1);
+      if (!strcasecmp(AceType, "LIST"))
+        {
+          if (!strcasecmp(GroupName, AceName))
+            return(0);
+        }
+      strcpy(GroupName, AceName);
+    }
+  return(1);
+}
+
 int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                    char *group_name, char *group_ou, char *group_membership, 
                    int group_security_flag, int updateGroup)
@@ -3615,8 +4061,11 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
     }
   if ((*linklist_count) == 1)
     {
-      strcpy(rFilter, filter);
-      return(0);
+      if (!memcmp(&(*linklist_base)->value[3], group_name, strlen(group_name)))
+        {
+          strcpy(rFilter, filter);
+          return(0);
+        }
     }
 
   linklist_free((*linklist_base));
@@ -3977,7 +4426,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
           attr_array[1] = NULL;
           group_count = 0;
           group_base = NULL;
-          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                    &group_base, &group_count)) == LDAP_SUCCESS)
             {
               if (group_count == 1)

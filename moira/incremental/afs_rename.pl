@@ -76,6 +76,21 @@ if ($oldtype eq "AFS") {
 if ($newtype eq "AFS") {
     &run("$fs mkm $newpath $newvname");
     push(@clean, "$fs rmm $newpath");
+    $oldfilespath = $newpath . "/OldFiles";
+    open(FS, "$fs lsm $oldfilespath|");
+    chop($_ = <FS>);
+    close(FS);
+    if (! $?) {
+	($oldofvname = $_) =~ s/^.* volume '.(.*)'$/\1/;
+	$newofvname = $newvname . ".backup";
+	&run("$fs sa $newpath sms all");
+	push(@clean, "$fs sa $newpath sms none");
+	&run("$fs rmm $oldfilespath");
+	push(@clean, "$fs mkm $oldfilespath $oldofvname");
+	&run("$fs mkm $oldfilespath $newofvname");
+	push(@clean, "$fs rmm $oldfilespath");
+	&run("$fs sa $newpath sms none");
+    }
     &release_parent($newpath);
 }
 

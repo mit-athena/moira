@@ -44,10 +44,12 @@ The database is the core of SMS.  It provides the storage mechanism for
 the complete system.  This section focuses on the fields of the
 database, their expandability, and their limitations.
 
-For now, the database is written using RTI INGRES, a commercially
+The database is written using RTI INGRES, a commercially
 available database toolkit.  Its advantage is that it is available and
 it works.  INGRES provides the Athena plant with a complete query
 system, a C library of routines, and a command interface language.
+SMS does not depend on any special feature of INGRES.  In fact,
+SMS can easily utilize other relational databases.
 
 A complete description of the INGRES design can be found in RTI's INGRES
 users' manuals; this paper does not discuss the structure of INGRES.
@@ -104,6 +106,10 @@ not the same as the Unix uid.
 @I(last, first, middle)@\The user's full name, broken down for convenient
 indexing. 
 
+@I(shell)@\the user's default shell.
+
+@I(home)@\name of the users home file system.
+
 @I(status)@\contains flags for the user.  The only currently defined flag is
 bit 0, which when set indicates that the user is active.  (An active user is
 one who has been assigned system resources such as a mailbox, a home
@@ -111,13 +117,14 @@ directory, and who may be a member of one or more lists.)
 
 @I(mit_id)@\the user's encrypted MIT id.
 
-@I(shell)@\the user's default shell.
-
 @I(expdate)@\the expiration date of the user and the user's resources (the user
 becomes inactive.)
 
 @I(modtime)@\the time that the user record was last modified (or created).
+
 @End(Description)
+
+Please see section @ref(Users) for a complete discussion of interfaces.
 
 There are no entries for password, uid, and primary gid because these are
 being subsumed by other services (Kerberos, ACLS).  There is no entry for
@@ -151,6 +158,8 @@ below on User Filesys Mapping).]
 
 @I(modtime)@\time finger record was last modified.
 
+Please see section @ref(Finger) for a complete discussion of interfaces.
+
 @End(Description)]
 
 @C(machine)@\@Multiple[Machine Information.  
@@ -173,7 +182,10 @@ below on User Filesys Mapping).]
 
 @I(sys_type)@\system type (for use by release engineering and operations).
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Machine) for a complete discussion of interfaces.
+]
 
 @C(cluster)@\@Multiple[Cluster Infomation.  There are several named clusters
 throughout Athena that correspond roughly to subnets and/or geographical
@@ -189,9 +201,10 @@ areas.
 
 @I(cluster_id)@\internal database identifier for this record.
 
-@I(acl_id)@\id for an access control list for cluster specific data.
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Queries), subsection @ref(Cluster)  for a complete 
+discussion of interfaces.]
 
 @C(svc)@\@Multiple[For each cluster there is a set of services that serve the
 machines in that cluster.  These services are described by an environment
@@ -209,7 +222,30 @@ particular cluster.
 
 @I(serv_cluster)@\specific service cluster name (e.g. "e40-prcluster")
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Svc) for a complete discussion of interfaces.
+]
+
+@C(servers)@\@Multiple[Server Information.  This table contains information
+needed by the Data Control Manager or applications for each known server.
+
+@Begin(Description)
+
+@I(service)@\name of service.
+
+@I(machine)@\location of service.
+
+@I(update_int)@\server update interval in minutes (for DCM).
+
+@I(target_dir)@\target directory on server for DCM generated server files.
+
+@I(value)@\server-specific data used by applications.
+
+@End(Description)
+
+Please see section @ref(Servers) for a complete discussion of interfaces.
+]
 
 @C(services)@\@Multiple[TCP/UDP Port Information.  This is the information
 currently in /etc/services.  In a workstation environment with SMS and the
@@ -224,7 +260,10 @@ server.
 
 @I(port)@\port number.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Services) for a complete discussion of interfaces.
+]
 
 @C(filesys)@\@Multiple[File System Information.  This section desribes the file
 system information necessary for a workstation to attach a file system.
@@ -243,21 +282,10 @@ system information necessary for a workstation to attach a file system.
 
 @I(access)@\default access mode for file system.
 
-@I(acl_id)@\access control list for file system.
+@End(Description)
 
-@End(Description)]
-
-@C(ufs)@\@Multiple[User File System Mapping.  Each user has a default set of
-file systems that are attached at login time.  This table provides the
-mapping for these file sytems.
-
-@Begin(Description)
-
-@I(users_id)@\id of @C(users) entry.
-
-@I(filesys_label)@\file system label.
-
-@End(Description)]
+Please see section @ref(Filesys) for a complete discussion of interfaces.
+]
 
 @C(rvdsrv)@\@Multiple[RVD Server Information.  This table contains the top
 level access control lists for each rvd server.  Any other per-server
@@ -273,7 +301,10 @@ information should be added here.
 
 @I(shutdown_acl)@\shutdown access control list.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Rvdsrv) for a complete discussion of interfaces.
+]
 
 @C(rvdphys)@\@Multiple[Physical device partition table.
 
@@ -289,7 +320,10 @@ information should be added here.
 
 @I(modified)@\modification time.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Rvdphys) for a complete discussion of interfaces.
+]
 
 @C(rvdvirt)@\@Multiple[Virtual device table.  This table contains the list of
 virtual devices for each rvd server machine.  Information per device
@@ -330,7 +364,10 @@ password (not used with acl's?).
 
 @I(modified)@\modification time.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Rvdvirt) for a complete discussion of interfaces.
+]
 
 @C(nfsphys)@\@Multiple[NFS Server Information.  This table contains for each
 nfs server machine a list of the physical device partitions from which
@@ -345,7 +382,26 @@ is provided.
 
 @I(acl_id)@\access control list.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Nfsphys) for a complete discussion of interfaces.
+]
+
+@C(nfsquota)@\@Multiple[NFS Server Quota Information.  This table contains
+per user per server quota information.
+
+@Begin(Description)
+
+@I(machine_id)@\nfs server machine.
+
+@I(users_id)@\user id.
+
+@I(quota)@\user quota in blocks.
+
+@End(Description)
+
+Please see section @ref(Nfsquota) for a complete discussion of interfaces.
+]
 
 @C(printer)@\@Multiple[Printer Information.
 
@@ -359,10 +415,10 @@ is provided.
 
 @I(machine_id)@\print server machine for this printer.
 
-@I(acl_id)@\access control list specifying who may modify the attributes of
-this printer in the database.
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Printer) for a complete discussion of interfaces.
+]
 
 @C(prability)@\@Multiple[Printer abilities.
 
@@ -372,7 +428,10 @@ this printer in the database.
 
 @I(ability)@\printer ability: one of TEXT, POSTSCRIPT, WINDOWDUMP, etc.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Prability) for a complete discussion of interfaces.
+]
 
 @C(queue)@\@Multiple[Printer queues.  This table contains a list of unique
 queue names and the attributes of each queue.  Attributes of queue are its
@@ -391,10 +450,10 @@ list.
 
 @I(status)@\queue status string (used by MDQS).
 
-@I(acl_id)@\access control list specifying who may modify the attributes of
-this queue in the database.
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Queue) for a complete discussion of interfaces.
+]
 
 @C(pqm)@\@Multiple[Printer to queue mapping.  This table provides the mapping
 between printers and queues.
@@ -405,7 +464,10 @@ between printers and queues.
 
 @I(queue_id)@\queue id.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Pqm) for a complete discussion of interfaces.
+]
 
 @C(qdev)@\@Multiple[MDQS device information.  Each MDQS server has a device
 table that assigns a logical name and status information to each known
@@ -423,9 +485,10 @@ physical printer device.
 
 @I(status)@\status string kept by MDQS.
 
-@I(acl_id)@\access control list for device.
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Qdev) for a complete discussion of interfaces.
+]
 
 @C(qdm)@\@Multiple[MDQS queue to device mapping.  This table ties together
 the queue and device information for each MDQS server.  Printer names are
@@ -443,7 +506,10 @@ using the @C(pqm) table information described above.
 @I(server)@\name of a server program to invoke for jobs using this queue and
 device. 
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Qdm) for a complete discussion of interfaces.
+]
 
 @C(printcap)@\@Multiple[Berkeley line printer software printcap entries.
 
@@ -453,7 +519,10 @@ device.
 
 @I(string)@\printcap string.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Printcap) for a complete discussion of interfaces.
+]
 
 @C(pobox)@\@Multiple[Post Office Information.  This list matches users with
 one or more post office boxes.  A post office box is identified by its type
@@ -470,21 +539,22 @@ machine.
 
 @I(box)@\mailbox name on server.
 
-@End(Description)]
+@End(Description)
 
-@C(list)@\@Multiple[Lists are used to associate a group of names with a
-particular label.  The definition of this table should be generic enough to
-support many types of lists.  List members are specified in the @c(members)
-table.  Associated with each members is a list of flags indicating access
-control and list administrator permissions.  There must be at least one list
-administrator for a list; there can be many.  In fact a list may be
-administered by all of the members of another list.  
+Please see section @ref(Pobox) for a complete discussion of interfaces.
+]
+
+@C(list)@\@Multiple[Lists are used as a general purpose means of grouping
+serveral objects togther.  This table contains descriptive information for
+each list; the @c[members] table contains the the list of objects that are
+in the list.  The ability to add or delete objects in a list is controlled
+by an access control list associated with the list.  An access control list,
+which is itself a list, contains as members a set of users who have the
+capability to manipulate the object specifying the access control list.
 
 @Begin(Description)
 
 @I(name)@\list name.
-
-@I(type)@\list type: currently one of MAIL, ACL, GROUP
 
 @I(list_id)@\internal database id for this list.
 
@@ -493,16 +563,20 @@ are used for mailing lists.)
 
 @I(description)@\description of list.
 
+@I(acl_id)@\a list id for the administrators' list.
+
 @I(expdate)@\expiration date of list.
 
 @I(modtime)@\time list was last modified (@c(list) entry or @C(members)
 entry). 
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(List) for a complete discussion of interfaces.
+]
 
 @C(members)@\@Multiple[List members.  Members are specified by a member type
-and a member id pair.  Each member entry also has a status field which
-contains access control information.
+and a member id pair.
 
 @Begin(Description)
 
@@ -513,33 +587,10 @@ contains access control information.
 @I(member_id)@\id of a member (a @c[users] id, @c[list] id, or @c[string]
 id.)
 
-@I(member_status)@\@Multiple[access control and list administrator
-permissions.  Current values are:
+@End(Description)
 
-@Begin(Format, Above .8, LeftMargin +.375inch, Size -1)
-@TabSet(+1.2inch)
-@U(Bit)@\@U(Function)
-0@\Read
-1@\Write
-2@\Delete
-3@\Append
-4@\Administrator
-5@\Master Administrator
-6@\Super Administrator (Owner(s))
-@End(Format)
-
-The first three bits specify standard read/write/delete access.  The first
-four bits specify database access capabilities (Retrieve, Replace, Delete,
-and Append) for table access control lists.  In the case of MAIL and GROUP
-lists these permission bits may have no meaning; however, since a list of
-one type may contain as a member a list of another type, these bits can be
-used to indicate allowable access when referenced through an access control
-list.  The last three bits are list administration capabilities.
-
-NOTE: Need to determine how to mask the status field of members of type LIST
-with the status fields of the corresponding list members.]
-
-@End(Description)]
+Please see section @ref(Members) for a complete discussion of interfaces.
+]
 
 @C(strings)@\@Multiple[Used for list members of @i(string) type.  An
 optimization for dealing with (usually long) foreign mail addresses.
@@ -550,46 +601,102 @@ optimization for dealing with (usually long) foreign mail addresses.
 
 @I(string)@\string.
 
-@End(Description)]
+@End(Description)
+
+Please see section @ref(Strings) for a complete discussion of interfaces.
+]
+
+@C(maillists)@\@Multiple[This table contains the set of list ids for the
+lists which are to be used as mailing lists.
+
+@Begin(Description)
+
+@I(list_id)@\a list id.
+
+@End(Description)
+
+Please see section @ref(Maillists) for a complete discussion of interfaces.
+]
+
+@C(groups)@\@Multiple[This table contains the set of list ids for the lists
+which are to be used as groups.
+
+@Begin(Description)
+
+@I(list_id)@\a list id.
+
+@End(Description)
+
+Please see section @ref(Groups) for a complete discussion of interfaces.
+]
+
+@C(acls)@\@Multiple[This table contains a set of list id, machine id pairs
+which define the access control lists that are stored for each server
+machine. 
+
+@Begin(Description)
+
+@I(list_id)@\a list id.
+
+@I(machine_id)@\a machine id.
+
+@End(Description)
+
+Please see section @ref(Acls) for a complete discussion of interfaces.
+]
+
+@C(capacls)@\@Multiple[This table associates access control lists with
+particular capabilities.  An important use of this table is for defining the
+access allowed for executing each of the SMS predefined queries.  Each query
+name appears as a capability name in this list.
+
+@Begin(Description)
+
+@I(capability)@\a string.
+
+@I(list_id)@\a list id.
+
+@End(Description)
+
+Please see section @ref(Capacls) for a complete discussion of interfaces.
+]
 
 @C(alias)@\@Multiple[Aliases are used by several different services to
 provide alternative names for objects or a mapping one type of object and
 another.  Some examples of alias usage are printer aliases, service aliases,
 cluster aliases, file system aliases, print cluster to printer maps, and the
-machine to cluster map.
+machine to cluster map.  As an integrity constraint it is required that all
+aliases be of a known type.  The list of known alias types is actually
+stored in the database as the set of translations of aliases with name
+"alias" and type "type".  Therefore, it is also quite easy to add new alias
+types. 
 
 @Begin(Description)
 
 @I(name)@\alias name.
 
-@I(type)@\alias type: currently one of PRINTER, SERVICE, CLUSTER, FILESYS,
-PRCLUSTER, MACH-CLU-MAP.
+@I(type)@\alias type: currently one of TYPE, PRINTER, SERVICE, CLUSTER,
+FILESYS, PRCLUSTER, MACH-CLU-MAP.
 
 @I(trans)@\alias translation.
 
-@I(trans_type)@\translation object type: alias type dependent (usually
-STRING) (possibly unnecessary)
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Alias) for a complete discussion of interfaces.
+]
 
-@C(tbinfo)@\@Multiple[Table Info.  This table contains table specific
-information such as access control lists for each table, and current maximum
-values for unique ids.  Table names will in general correspond directly to
-the list of tables described in this section.  However logical table names
-may be used that correspond to a part of larger table.  For example, there
-is a separate entry for each alias type ("alias-printer", "alias-service",
-etc.) 
+@C(values)@\@Multiple[Values needed by the server or application programs.
 
 @Begin(Description)
 
-@I(table)@\table name.
+@I(name)@\value name.
 
-@I(value)@\currently is used to specify the current maximum unique id for
-tables with unique id fields.
+@I(value)@\value.
 
-@I(acl_id)@\access control list for specified table.
+@End(Description)
 
-@End(Description)]
+Please see section @ref(Values) for a complete discussion of interfaces.
+]
 
 @End(Description)
 
@@ -604,10 +711,14 @@ that provide sufficient flexibility to meet all of the needs of the Data
 Control Manager and each of the indivual application programs.  However,
 since the database can be modified and extended in the future, the server
 and application library have been designed to allow for the easy addtion of
-queries.
+queries.  
 
+Providing a generallized layer of functions affords SMS the capability
+of being database independent.  Today, we are using INGRES; however,
+in the future, if a different database is required, the application
+interface will not change.  The only change needed at that point will
+be a new SMS server, linking the pre-defined queries to a new
+set of data manipulation procedures.  
 
-
-
-
-
+See Section @Ref(Queries) for a complete list and description of
+the predefined queries.

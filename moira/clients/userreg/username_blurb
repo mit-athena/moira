@@ -1,7 +1,11 @@
-Your username is the name you give to the computer to tell it who you
-are; it will also be used by friends and colleagues to communicate on
-the computer.  No two people may have the same name.  Most people
-choose a username which is similar to their real name.  A username is
-restricted to a maximum of 8 characters (a minimum of 3) and must be
-all lowercase letters or numbers.
+Each time you begin working on Athena, you tell it who you are by typing
+your USERNAME.  Friends, colleagues, and others will use your username
+to send you messages on Athena.
+
+A username must be at least 3 characters, and not more than 8, and must be
+all lowercase letters or numbers.  No two people may have the same username.
+(After you select one, we'll check to make sure.)
+
+We suggest the username "%s", but you may make up another one instead.
+(Most people choose a username which is similar to their real name.)
 

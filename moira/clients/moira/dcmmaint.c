@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.9 1990-04-25 12:42:04 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.10 1990-07-14 16:04:51 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -43,7 +43,8 @@ char **argv;
     info[0] = "dcm_enable";
     if (status = do_mr_query("get_value", 1, info, genable, info))
       com_err(whoami, status, " while getting value of dcm_enable");
-    GetValueFromUser("Enable value", &info[1]);
+    if (GetValueFromUser("Enable value", &info[1]) == SUB_ERROR)
+      return(DM_NORMAL);
     if (status = do_mr_query("update_value", 2, info, Scream, NULL))
       com_err(whoami, status, " while updating value of dcm_enable");
     FreeAndClear(&info[0], FALSE);
@@ -113,27 +114,39 @@ int argc;
 char **argv;
 {
     int status;
-    char *info[SC_END];
+    char *info[SC_END], **askserv();
 
     initserv(argv[1], info);
-    askserv(info);
+    if (askserv(info) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     if (status = do_mr_query("add_server_info", SC_END, info, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     FreeInfo(info);
     return(DM_NORMAL);
 }
 
-askserv(info)
+char **askserv(info)
 char **info;
 {
-    GetValueFromUser("Interval", &info[SC_INTERVAL]);
-    GetValueFromUser("Target", &info[SC_TARGET]);
-    GetValueFromUser("Script", &info[SC_SCRIPT]);
-    GetTypeFromUser("Service type", "service", &info[SC_TYPE]);
-    GetValueFromUser("Enable", &info[SC_ENABLE]);
-    GetTypeFromUser("ACE type", "ace_type", &info[SC_ACE_TYPE]);
+    if (GetValueFromUser("Interval", &info[SC_INTERVAL]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Target", &info[SC_TARGET]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Script", &info[SC_SCRIPT]) == SUB_ERROR)
+      return(NULL);
+    if (GetTypeFromUser("Service type", "service", &info[SC_TYPE]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Enable", &info[SC_ENABLE]) == SUB_ERROR)
+      return(NULL);
+    if (GetTypeFromUser("ACE type", "ace_type", &info[SC_ACE_TYPE]) ==
+	SUB_ERROR)
+      return(NULL);
     if (strcasecmp("none", info[SC_ACE_TYPE]))
-      GetValueFromUser("Ace name", &info[SC_ACE_NAME]);
+      if (GetValueFromUser("Ace name", &info[SC_ACE_NAME]) == SUB_ERROR)
+	return(NULL);
+    return(info);
 }
 
 
@@ -187,7 +200,10 @@ char **argv;
 	com_err(whoami, status, " while getting server info");
 	return(DM_NORMAL);
     }
-    askserv(qargv);
+    if (askserv(qargv) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     if (status = do_mr_query("update_server_info", SC_END, qargv, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     return(DM_NORMAL);
@@ -357,13 +373,18 @@ char **info;
 }
 
 
-askhost(info)
+char **askhost(info)
 char **info;
 {
-    GetValueFromUser("Enable", &info[SHI_ENABLE]);
-    GetValueFromUser("Value 1", &info[SHI_VALUE1]);
-    GetValueFromUser("Value 2", &info[SHI_VALUE2]);
-    GetValueFromUser("Value 3", &info[SHI_VALUE3]);
+    if (GetValueFromUser("Enable", &info[SHI_ENABLE]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Value 1", &info[SHI_VALUE1]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Value 2", &info[SHI_VALUE2]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Value 3", &info[SHI_VALUE3]) == SUB_ERROR)
+      return(NULL);
+    return(info);
 }
 
 
@@ -381,7 +402,10 @@ char **argv;
 	com_err(whoami, status, " while getting server/host info");
 	return(DM_NORMAL);
     }
-    askhost(info);
+    if (askhost(info) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     if (status = do_mr_query("update_server_host_info", SHI_END, info,
 			      Scream, NULL))
       com_err(whoami, status, " while updating server/host info");
@@ -400,7 +424,10 @@ char **argv;
     info[SHI_SERVICE] = strsave(argv[1]);
     info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
     inithost(info);
-    askhost(info);
+    if (askhost(info) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     if (status = do_mr_query("add_server_host_info", SHI_END, info,
 			     Scream, NULL))
       com_err(whoami, status, " while adding server/host info");

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.35 1992-07-31 12:26:25 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.36 1992-08-18 15:30:36 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -351,37 +351,45 @@ int afterc;
 	return;
     }
     
-    /* What do we do?  When do we use FS_CREATE?
-     *
-     * Currently, we use FS_CREATE to indicate that Moira should attempt
-     * to update the file servers (rename, creation, ownership change).
-     * 
-     * Howerver, at this time, we there is no back-end support to handle:
-     *   TYPE change       (eg. AFS -> ERR)
-     *   LOCKERTYPE change (eg. PROJECT -> COURSE)
-     *   PACK change       (eg. /afs/athena/foo -> /afs/athena/bar)
-     *   LABEL change      (eg. "foo" -> "bar")
-     *   Locker Deletion
-     */
-
     btype = !strcmp(before[FS_TYPE], "AFS");
     if (afterc < FS_CREATE) {
 	if (btype)
 	    critical_alert("incremental",
-			   "Could not delete AFS filesystem %s: Operation not supported",
+			   "Cannot delete AFS filesystem %s: Operation not supported",
 			   before[FS_NAME]);
 	return;
-    } if (acreate && atype) {
-	if (btype) {
-	    critical_alert("incremental",
-			   "Cannot change attributes of AFS filesystem %s: Operation not supported",
-			   after[FS_NAME]);
-	} else {
-	    critical_alert("incremental",
-			   "Cannot convert %s to an AFS filesystem: Operation not supported",
-			   after[FS_NAME]);
-	}
     }
+
+    if (!acreate)
+	return;
+
+    /* Are we dealing with AFS lockers (could be type ERR lockers) */
+    if (!atype && !btype)
+	if (strcmp(before[FS_TYPE], "ERR") || strcmp(after[FS_TYPE], "ERR"))
+	    return;
+						    
+    /* By now, we know we are simply changing AFS filesystem attributes.
+     * Operations supported:
+     *    Name change:  rename/remount
+     *    Path change:  remount
+     *    Type change:  ERR<-->AFS
+     */
+    
+    if (strcmp(before[FS_OWNER], after[FS_OWNER]) ||
+	strcmp(before[FS_OWNERS], after[FS_OWNERS)))
+    {
+	critical_alert("incremental",
+		       "Cannot change ownership of filesystem %s: Operation not yet supported",
+		       after[FS_NAME]);
+    }
+
+    sprintf(cmd, "%s/perl -I%s %s/afs_rename.pl %s %s %s %s %s %s %s %s %s %s",
+	    BIN_DIR, BIN_DIR, BIN_DIR,
+	    before[FS_NAME], before[FS_CELL], before[FS_TYPE],
+	    before[FS_L_TYPE], before[FS_PACK],
+	    after[FS_NAME], after[FS_CELL], after[FS_TYPE],
+	    after[FS_L_TYPE], after[FS_PACK]);
+    run_cmd(cmd);
 }
 
 

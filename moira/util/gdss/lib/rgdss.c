@@ -1,7 +1,7 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/gdss/lib/rgdss.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/gdss/lib/rgdss.c,v 1.1 1997-07-10 23:56:19 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/gdss/lib/rgdss.c,v 1.2 1998-08-10 17:39:04 danw Exp $
  */
 /*
  * GDSS The Generic Digital Signature Service
@@ -161,11 +161,11 @@ unsigned char *rawsig;
     *cp++ = hash[i];
   if (*cp++ != 0x44) return (GDSS_E_BVERSION); /* Bad Version */
   ip = (unsigned char *) name;
-  while (*ip++ = *cp++);
+  while (*ip++ = *cp++ && ip < name + ANAME_SZ);
   ip = (unsigned char *) instance;
-  while (*ip++ = *cp++);
+  while (*ip++ = *cp++ && ip < instance + INST_SZ);
   ip = (unsigned char *) realm;
-  while (*ip++ = *cp++);
+  while (*ip++ = *cp++ && ip < realm + REALM_SZ);
   *the_time = 0;
   *the_time |= *cp++ << 24;
   *the_time |= *cp++ << 16;

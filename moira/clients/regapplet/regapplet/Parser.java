@@ -53,6 +53,14 @@ public class Parser {
           worker.setState(Worker.SENDWORDS);
           worker.applet.showWordsDiag();
         }
+     } else if (pdat[1].equals("GETI")) {
+       if (!pdat[2].equals("")) {
+	  worker.setState(Worker.DIALOG, Worker.SENDPIN);
+	  worker.applet.showMessage(pdat[2], true);
+       } else {
+	 worker.setState(Worker.SENDPIN);
+	 worker.applet.showPinDiag();
+       }
      } else if (pdat[1].equals("GETL")) {
        if (!pdat[4].equals("")) {
 	 worker.applet.guesslogin = pdat[4];

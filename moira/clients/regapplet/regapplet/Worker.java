@@ -14,6 +14,7 @@ public class Worker implements Runnable {
   public static final int INIT = 4;
   public static final int DIALOG = 5;
   public static final int INIT1 = 6;
+  public static final int SENDPIN = 7;
   int oldstate = INIT;
   int state = INIT;
   int nextstate = INIT;
@@ -33,7 +34,10 @@ public class Worker implements Runnable {
            case SENDWORDS:
                 applet.showWordsDiag();
                 break;
-           case SENDNAME:
+	   case SENDPIN:
+	        applet.showPinDiag();
+		break;
+	   case SENDNAME:
                 applet.showNameDiag();
                 break;
            case SENDLOGIN:
@@ -123,6 +127,11 @@ public class Worker implements Runnable {
 		       applet.Word5.getText(),
 		       applet.Word6.getText());
 	break;
+      case SENDPIN:
+	applet.showMessage("Please wait...");
+	send.SendPin(applet.Pin.getText());
+	break;
+
       case SENDLOGIN:
 	applet.showMessage("Please wait...");
 	send.SendLogin(applet.LoginName.getText());

@@ -58,6 +58,16 @@ public class Regapplet extends Applet {
   GridBagLayout gridBagLayout2 = new GridBagLayout();
   GridLayout gridLayout1 = new GridLayout(3, 1);
   Button ExitButton = new Button();
+
+  // PIN Panel.
+  Panel PinPanel = new Panel();
+  TextBlock PinInstructions = new TextBlock(600,40);
+  Button PinCancelButton = new Button();
+  Button PinContButton = new Button();
+  TextField Pin = new TextField("", 9);
+  Label PinLabel = new Label();
+  GridBagLayout gridBagLayout7 = new GridBagLayout();
+
   Panel LoginPanel = new Panel();
   TextBlock LoginNameBanner = new TextBlock(600,30);
   Label LoginNameLabel = new Label();
@@ -135,6 +145,17 @@ public class Regapplet extends Applet {
     WordContButton.setBackground(Color.white);
     WordCancelButton.setLabel("Cancel");
     WordCancelButton.setBackground(Color.white);
+
+    // PIN initialization.
+    PinInstructions.setText(res.getString("geti"));
+    PinLabel.setText("PIN:");
+    PinLabel.setBackground(Color.white);
+    PinContButton.setLabel("Continue");
+    PinContButton.setBackground(Color.white);
+    PinCancelButton.setLabel("Cancel");
+    PinCancelButton.setBackground(Color.white);
+    Pin.setEchoCharacter('*');
+
     ExitButton.setLabel("Exit");
     ExitButton.setBackground(Color.white);
     LoginNameLabel.setText("Chosen Login Name: ");
@@ -230,6 +251,22 @@ public class Regapplet extends Applet {
     WordPanel.add(WordCancelButton);
     gridBagLayout1.setConstraints(WordCancelButton, new GridBagConstraints2(4, 3, 2, 2, 0.0, 1.0
             ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 10, 0), 0, 0));
+
+    this.add("PinPanel", PinPanel);
+    PinPanel.add(PinInstructions);
+        gridBagLayout7.setConstraints(PinInstructions, new GridBagConstraints2(0, 0, 4, 1, 0.0, 0.0, GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(20, 10, 10, 20), 0, 0));
+    PinPanel.add(PinLabel);
+    gridBagLayout7.setConstraints(PinLabel, new GridBagConstraints2(0, 1, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(20, 10, 0, 0), 0, 0));
+    PinPanel.add(Pin);
+    gridBagLayout7.setConstraints(Pin, new GridBagConstraints2(1, 1, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(20, 0, 0, 10), 2, 0));
+    PinPanel.add(PinContButton);
+    gridBagLayout7.setConstraints(PinContButton, new GridBagConstraints2(1, 2, 1, 1, 0.0, 1.0
+            ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 10, 10, 10), 0, 0));
+    PinPanel.add(PinCancelButton);
+    gridBagLayout7.setConstraints(PinCancelButton, new GridBagConstraints2(3, 2, 1, 1, 0.0, 1.0
+            ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 10, 10, 10), 0, 0));
     this.add("LoginPanel", LoginPanel);
     LoginPanel.add(LoginNameBanner);
     gridBagLayout3.setConstraints(LoginNameBanner, new GridBagConstraints2(0, 0, 4, 1, 0.0, 0.0
@@ -317,6 +354,7 @@ public class Regapplet extends Applet {
     Word4.setText("");
     Word5.setText("");
     Word6.setText("");
+    Pin.setText("");
     guesslogin = "";
   }
 
@@ -369,6 +407,11 @@ public class Regapplet extends Applet {
   public void showWordsDiag() {
     cardLayout1.show(this, "WordPanel");
     Word1.requestFocus();
+  }
+
+  public void showPinDiag() {
+    cardLayout1.show(this, "PinPanel");
+    Pin.requestFocus();
   }
 
   public void showLoginDiag() {
@@ -453,6 +496,7 @@ public class Regapplet extends Applet {
       }
       return true;
     } else if ((evt.target == WordContButton) ||
+	       (evt.target == PinContButton) || 
                (evt.target == LoginContButton) ||
                (evt.target == PasswordContButton) ||
                (evt.target == NameContButton) ||
@@ -468,6 +512,7 @@ public class Regapplet extends Applet {
       if (isStandalone) System.exit (0);
     } else if (evt.target == NameCancelButton ||
 		evt.target == WordCancelButton ||
+	        evt.target == PinCancelButton ||
 		evt.target == LoginCancelButton ||
 		evt.target == PasswordCancelButton) {
       doBale();

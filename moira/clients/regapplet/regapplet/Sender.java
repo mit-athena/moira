@@ -63,6 +63,11 @@ public class Sender {
 	 + Word3 + '\0' + Word4 + '\0' + Word5 + '\0' + Word6 + '\0';
      sendstring(s);
   }
+  public void SendPin(String Pin) {
+     String s;
+     s = "v1" + "\0" + "SPIN" + '\0' + Pin + '\0';
+     sendstring(s);
+  }
   public void SendLogin(String Login) {
      String s;
      s = "v1" + '\0' + "LOGN" + '\0' + Login + '\0';

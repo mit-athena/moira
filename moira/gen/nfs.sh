@@ -2,7 +2,7 @@
 # This script performs nfs updates on servers.
 #
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.10 1990-03-19 19:07:18 mar Exp $'
+echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.11 1990-04-09 18:32:03 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -52,6 +52,8 @@ foreach type (dirs quotas)
 	if ($status) exit $status
 	if ($type == quotas) ./zero_quotas $dev < $i
 	if ($status) exit $status
+	# save the files used here for later debugging
+	mv $i /tmp
      endif
    end
 end

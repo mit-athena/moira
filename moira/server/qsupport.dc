@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.18 1993-01-12 16:23:50 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.19 1993-01-12 16:35:29 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.18 1993-01-12 16:23:50 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.19 1993-01-12 16:35:29 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1523,6 +1523,7 @@ followup_ausr(q, argv, cl)
 	      src++;
 	    *dst++ = *src++;
 	}
+	*dst = 0;
         sprintf(databuf, "%s:%s", argv[U_NAME], argv[U_MITID]);
         /* skip bytes for timestamp & kname */
         si.rawsig = (unsigned char *) rawsig;
@@ -1623,6 +1624,7 @@ followup_uuac(q, argv, cl)
 	      src++;
 	    *dst++ = *src++;
 	}
+	*dst = 0;
         login = malloc(1);
         status = id_to_name(id, "USER", &login);
         sprintf(databuf, "%s:%s", login, argv[U_MITID+1]);

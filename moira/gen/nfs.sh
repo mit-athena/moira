@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.22 1999-01-20 00:11:02 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.23 1999-09-02 21:39:03 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -56,27 +56,34 @@ foreach type (dirs quotas)
    end
 end
 
+# find credentials directory (not robust, but works for the current
+# situation)
+set creddir = /var/athena
+if (-d /usr/etc) then
+    set creddir = /usr/etc
+endif
+
 # build new credentials files.
-rm -f /usr/etc/credentials.new
-cp ${uchost}.cred /usr/etc/credentials.new
+rm -f $creddir/credentials.new
+cp ${uchost}.cred $creddir/credentials.new
 if ($status) exit $MR_NOCRED
-if (-e /usr/etc/credentials.local) then
-    cat /usr/etc/credentials.local >> /usr/etc/credentials.new
+if (-e $creddir/credentials.local) then
+    cat $creddir/credentials.local >> $creddir/credentials.new
 endif
 
 # After this point, if /tmp gets cleared out by reactivate (which
 # happens on a combined server/workstation) we don't care.
-mkcred /usr/etc/credentials.new
+mkcred $creddir/credentials.new
 if ($status) exit $MR_MKCRED
 
 # Try to install the files
 foreach e ( "" .dir .pag)
-   mv -f /usr/etc/credentials.new$e /usr/etc/credentials$e
+   mv -f $creddir/credentials.new$e $creddir/credentials$e
 end
 
 # If any of them didn't get installed, fail
 foreach e ( "" .dir .pag)
-   if (! -e /usr/etc/credentials$e) exit $MR_NOCRED
+   if (! -e $creddir/credentials$e) exit $MR_NOCRED
 end
 
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.13 1990-03-13 13:19:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.14 1990-03-17 00:50:18 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.13 1990-03-13 13:19:44 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.14 1990-03-17 00:50:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -36,7 +36,7 @@ extern errno;
 ureg_init()
 {
     struct servent *sp;
-    char *host, **p;
+    char *host, **p, *s;
     struct hostent *hp;
     struct sockaddr_in sin;
     extern char *getenv(), **hes_resolve();
@@ -55,7 +55,8 @@ ureg_init()
 #endif HESIOD
     if (!host || (strlen(host) == 0)) {
 	host = strsave(SMS_SERVER);
-	*index(host, ':') = 0;
+	s = index(host, ':');
+	if (s) *s = 0;
     }
     hp = gethostbyname(host);
     if (hp == NULL) return UNKNOWN_HOST;

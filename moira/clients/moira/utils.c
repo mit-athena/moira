@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.10 1988-09-01 16:04:37 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.11 1988-10-03 17:51:24 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.10 1988-09-01 16:04:37 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.11 1988-10-03 17:51:24 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -896,13 +896,30 @@ char  **pointer;
 }
 
 
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */
+do_sms_query(name, argc, argv, proc, hint)
+char *name;
+int argc;
+char **argv;
+int (*proc)();
+char *hint;
+{
+    int status;
+    extern char *whoami;
+
+    status = sms_query(name, argc, argv, proc, hint);
+    if (status != SMS_ABORTED)
+      return(status);
+    status = sms_connect();
+    if (status) {
+	com_err(whoami, status, " while re-connecting to server");
+	return(SMS_ABORTED);
+    }
+    status = sms_auth(whoami);
+    if (status) {
+	com_err(whoami, status, " while re-authenticating to server");
+	return(SMS_ABORTED);
+    }
+    status = sms_query(name, argc, argv, proc, hint);
+    return(status);
+}
+

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.52 2000-08-21 04:54:45 zacheiss Exp $
+/* $Id: blanche.c,v 1.53 2000-08-25 23:08:28 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.52 2000-08-21 04:54:45 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.53 2000-08-25 23:08:28 zacheiss Exp $");
 
 struct member {
   int type;
@@ -660,19 +660,21 @@ int main(int argc, char **argv)
 	    }
 	case M_STRING:
 	  status = mrcl_validate_string_member(memberstruct->name);
-	  mrcl_com_err(whoami);
-	  if (status == MRCL_REJECT)
-	    {
-	      success = 0;
-	      break;
-	    }
-	  else if (memberstruct->type == M_ANY && status != MR_SUCCESS)
+	  if (memberstruct->type == M_ANY && status == MRCL_WARN)
 	    {
 	      /* if user is trying to add something which isn't a
 		 remote string, or a list, or a user, and didn't
 		 explicitly specify `STRING:', it's probably a typo */
 	      com_err(whoami, MR_NO_MATCH, "while adding member %s to %s",
 		      memberstruct->name, listname);
+	      success = 0;
+	      break;
+	    }
+	  else
+	    mrcl_com_err(whoami);
+
+	  if (status == MRCL_REJECT)
+	    {
 	      success = 0;
 	      break;
 	    }

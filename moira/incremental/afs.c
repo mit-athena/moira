@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.62 1998-02-23 19:23:54 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.63 1998-11-18 19:22:05 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -668,6 +668,8 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
 
       if (code == UNOQUORUM)
 	sleep(90);
+      else if (code == PRPERM)
+	system("/bin/athena/aklog");
       else
 	sleep(15);
 

@@ -1,6 +1,8 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.16 1998-11-16 00:26:06 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.17 1998-11-18 19:22:06 danw Exp $
 
 use Fcntl;
+
+system("/bin/athena/aklog");
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";

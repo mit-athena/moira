@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.34 1997-01-29 23:09:38 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.35 1997-02-04 20:05:51 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.34 1997-01-29 23:09:38 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.35 1997-02-04 20:05:51 danw Exp $";
 #endif /* lint */
 
 #include <mit-copyright.h>
@@ -29,10 +29,10 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include "readline.h"
 #endif
 
-int recursion = 0;
+int recursion = 0, interactive;
 extern int errno;
 extern int sending_version_no;
-int count, quit=0;
+int count, quit=0, cancel=0;
 char *whoami;
 #ifdef POSIX
 sigjmp_buf jb;
@@ -59,6 +59,7 @@ main(argc, argv)
 #endif
 	
 	whoami = argv[0];
+	interactive = (isatty(0) && isatty(1));
 	
 	initialize_sms_error_table();
 	initialize_krb_error_table();
@@ -95,11 +96,18 @@ int
 discard_input()
 {
   putc('\n', stdout);
+
+  /* if we're inside a script, we have to clean up file descriptors,
+     so don't jump out yet */
+  if(recursion) {
+    cancel=1;
+  } else {
 #ifdef POSIX
-  siglongjmp(jb, 1);
+    siglongjmp(jb, 1);
 #else
-  longjmp(jb, 1);
+    longjmp(jb, 1);
 #endif
+  }
 }
 
 char *mr_gets(prompt, buf, len)
@@ -108,7 +116,7 @@ char *mr_gets(prompt, buf, len)
 {
   char *in;
 #ifdef USE_READLINE
-  if(isatty(0) && isatty(1)) {
+  if(interactive) {
     in=readline(prompt);
     
     if (!in) return NULL;
@@ -318,7 +326,7 @@ char *argv[];
 
     recursion++;
 
-    for(;;) {
+    while(!cancel) {
 	if (fgets(input, BUFSIZ, inp) == NULL)
 	  break;
 	if ((cp = strchr(input, '\n')) != (char *)NULL)
@@ -337,6 +345,7 @@ char *argv[];
     }
 
     recursion--;
+    if(!recursion) cancel=0;
 
     fclose(inp);
     if (argc == 3) {
@@ -370,13 +379,33 @@ test_query(argc, argv)
 	char **argv;
 {
 	int status;
+#ifdef POSIX
+	sigset_t sigs;
+#else
+	int mask;
+#endif
+
 	if (argc < 2) {
 		com_err("moira (query)", 0, "Usage: query handle [ args ... ]");
 		return;
 	}
 
 	count = 0;
+	/* Don't allow ^C during the query: it will confuse libmoira's
+	   internal state. (Yay static variables) */
+#ifdef POSIX
+	sigemptyset(&sigs);
+	sigaddset(&sigs, SIGINT);
+	sigprocmask(SIG_BLOCK, &sigs, NULL);
+#else
+	mask = sigblock(SIGINT);
+#endif
 	status = mr_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
+#ifdef POSIX
+	sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+#else
+	sigsetmask(mask);
+#endif
 	printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
 	if (status) com_err("moira (query)", status, "");
 }

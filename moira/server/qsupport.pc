@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.34 2001-05-02 21:44:12 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.35 2001-07-27 08:18:10 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.34 2001-05-02 21:44:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.35 2001-07-27 08:18:10 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1976,7 +1976,7 @@ int get_machines_of_container(struct query *q, char *argv[], client *cl,
   rargv[1] = containername;
 
   cnt_id = *(int *)argv[0];
-  isrecursive = *(int *)argv[1];
+  isrecursive = atoi(argv[1]);
 
   /* get the container name */
   
@@ -2037,7 +2037,7 @@ int get_subcontainers_of_container(struct query *q, char *argv[], client *cl,
   rargv[0] = subcontainername;
 
   cnt_id = *(int *)argv[0];
-  isrecursive = *(int *)argv[1];
+  isrecursive = atoi(argv[1]);
 
   /* get the container name */
   

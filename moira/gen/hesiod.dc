@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.3 1991-01-11 16:45:24 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.4 1991-07-01 16:07:50 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -148,7 +148,7 @@ do_passwd()
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], shell[33], fullname[33], oa[17], op[13], hp[17];
     char nn[17], ptype[9];
-    int uid, flag1, flag2, id, pid;
+    int uid, flag1, flag2, id, pid, status;
     EXEC SQL END DECLARE SECTION;
 
     sprintf(poutf, "%s/passwd.db", hesiod_dir);
@@ -192,13 +192,13 @@ do_passwd()
     users = create_hash(12001);
     EXEC SQL DECLARE u_cursor CURSOR FOR
       SELECT login, uid, shell, fullname, nickname, office_addr,
-      	     office_phone, home_phone, users_id, pop_id, potype
+      	     office_phone, home_phone, users_id, pop_id, potype, status
       FROM users
-      WHERE status = 1;
+      WHERE status = 1 or status = 6;
     EXEC SQL OPEN u_cursor;
     while (1) {
         EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname, :nn,
-                       :oa, :op, :hp, :id, :pid, :ptype;
+                       :oa, :op, :hp, :id, :pid, :ptype, :status;
             if (sqlca.sqlcode != 0) break;
 	    strtrim(login);
 	    dequote(fullname);
@@ -211,9 +211,12 @@ do_passwd()
 	    strcpy(u->name, login);
 	    u->lists = NULL;
 	    hash_store(users, id, u);
-    	    fprintf(pout, "%s.passwd\tHS %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
-		    login, HTYPE, login, uid, fullname, nn, oa, op, hp, login, shell);
-	    fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
+	    if (status == 1) {
+		fprintf(pout, "%s.passwd\tHS %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
+			login, HTYPE, login, uid, fullname, nn, oa, op, hp,
+			login, shell);
+		fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
+	    }
 	    if (ptype[0] == 'P' && (mach = hash_lookup(machines, pid))) {
 		fprintf(bout, "%s.pobox\tHS %s \"POP %s %s\"\n",
 			login, HTYPE, mach, login);

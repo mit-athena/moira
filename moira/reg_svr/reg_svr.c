@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.3 1987-09-03 03:05:18 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.4 1987-09-04 23:33:19 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/09/03  03:05:18  wesommer
+ * Version used for userreg tests.
+ * 
  * Revision 1.2  87/08/22  18:39:45  wesommer
  * User registration server.
  * 
@@ -20,7 +23,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.3 1987-09-03 03:05:18 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.4 1987-09-04 23:33:19 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -718,18 +721,4 @@ create_group(login)
  * c-label-offset: -4
  * End:
  */
-char *get_krbhst(a1, a2)
-	char *a1;
-	char *a2;
-{
-	strcpy(a1, "ICARUS.MIT.EDU");
-	return 0;
-}
-
-char *get_krbrlm(a1)
-	char *a1;
-{
-	strcpy(a1, "ATHENA.MIT.EDU");
-	return 0;
-}
 

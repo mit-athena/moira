@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.7 1990-03-17 17:10:15 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.8 1990-03-27 11:40:41 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -164,7 +164,7 @@ char **argv;
     argv[SC_INTERVAL] = strsave("1440");
     sprintf(tmp, "/tmp/%s.out", name);
     argv[SC_TARGET] = strsave(tmp);
-    sprintf(tmp, "/u1/mr/bin/%s.sh", name);
+    sprintf(tmp, "%s/%s.sh", BIN_DIR, name);
     argv[SC_SCRIPT] = strsave(tmp);
     argv[SC_TYPE] = strsave("UNIQUE");
     argv[SC_ENABLE] = strsave("1");

@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.29 2000-08-18 11:50:37 zacheiss Exp $
+/* $Id: moira.h,v 1.30 2003-04-09 23:53:10 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -163,7 +163,7 @@ int mr_version(int version);
 
 
 #ifdef __GNUC__
-#if __GNUC_MINOR__ < 7
+#if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 7)
 #define __attribute__(x)
 #endif
 #else /* ! __GNUC __ */

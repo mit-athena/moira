@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.1 1990-01-30 16:01:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.2 1990-01-30 16:07:39 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.1 1990-01-30 16:01:40 mar Exp $";
+static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.2 1990-01-30 16:07:39 mar Exp $";
 
 #endif	lint
 
@@ -63,6 +63,7 @@ ReadAndFixNextUser(s, querc, querv)
     char ilnm[LAST_NAME_MAX_ILEN + 1];
     char ifnm[FIRST_NAME_MAX_ILEN + 1 + 6];	/* extra for ", Jr.", et al */
     char iyr[MIT_YEAR_ILEN + 1];
+    int ends_sr = 0;		/* 1 if name ends in "SR" or "SR." */
     int ends_jr = 0;		/* 1 if name ends in "JR" or "JR." */
     int ends_iii = 0;		/* 1 if name ends in "III" */
     int ends_iv = 0;		/* 1 if name ends in "IV" */
@@ -147,7 +148,7 @@ ReadAndFixNextUser(s, querc, querv)
 	/* Last name ... */
 
 	TrimTrailingSpace(ilnm);
-	LookForJrAndIII(ilnm, &ends_jr, &ends_iii, &ends_iv);
+	LookForJrAndIII(ilnm, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
 	LookForSt(ilnm);
 	LookForO(ilnm);
 	FixCase(ilnm);
@@ -156,7 +157,7 @@ ReadAndFixNextUser(s, querc, querv)
 	/* First name  & middle initial ... */
 
 	TrimTrailingSpace(ifnm);
-	LookForJrAndIII(ifnm, &ends_jr, &ends_iii, &ends_iv);
+	LookForJrAndIII(ifnm, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
 
 	GetMidInit(ifnm, querv[6]);
 	FixCase(ifnm);
@@ -164,7 +165,7 @@ ReadAndFixNextUser(s, querc, querv)
 
 
 	/* okay, finish up first name */
-	AppendJrOrIII(ifnm, &ends_jr, &ends_iii, &ends_iv);
+	AppendJrOrIII(ifnm, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
 
 	/* MIT Year ... */
 
@@ -223,13 +224,17 @@ GetMidInit(nm, mi)
     *mi = '\0';
 }
 
-AppendJrOrIII(nm, phas_jr, phas_iii, phas_iv)
+AppendJrOrIII(nm, phas_sr, phas_jr, phas_iii, phas_iv)
     register char *nm;
+    register int *phas_sr;
     register int *phas_jr;
     register int *phas_iii;
     register int *phas_iv;
 {
-    if (*phas_jr) {
+    if (*phas_sr) {
+	(void) strcat(nm, ", Sr.");
+    }
+    else if (*phas_jr) {
 	(void) strcat(nm, ", Jr.");
     }
     else if (*phas_iii) {
@@ -261,21 +266,30 @@ FixCase(p)
     }
 }
 
-LookForJrAndIII(nm, pends_jr, pends_iii, pends_iv)
+LookForJrAndIII(nm, pends_sr, pends_jr, pends_iii, pends_iv)
     register char *nm;
+    register int *pends_sr;
     register int *pends_jr;
     register int *pends_iii;
     register int *pends_iv;
 {
     register int len = strlen(nm);
 
-    if (len >= 4 && !strcmp(nm + len - 3, " JR")) {
+    if (len >= 4 && !strcmp(nm + len - 3, " SR")) {
+	*pends_sr = 1;
+	nm[len - 3] = '\0';
+    }
+    else if (len >= 4 && !strcmp(nm + len - 3, " JR")) {
 	*pends_jr = 1;
 	nm[len - 3] = '\0';
     }
     else if (len >= 4 && !strcmp(nm + len - 3, " IV")) {
 	*pends_iv = 1;
 	nm[len - 3] = '\0';
+    }
+    else if (len >= 5 && !strcmp(nm + len - 4, " SR.")) {
+	*pends_sr = 1;
+	nm[len - 4] = '\0';
     }
     else if (len >= 5 && !strcmp(nm + len - 4, " JR.")) {
 	*pends_jr = 1;

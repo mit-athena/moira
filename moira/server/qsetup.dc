@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v $
- *	$Author: tom $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.8 1994-06-08 10:47:14 tom Exp $
+ *	$Author: nocuser $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.9 1994-10-28 13:41:46 nocuser Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.8 1994-06-08 10:47:14 tom Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.9 1994-10-28 13:41:46 nocuser Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -977,17 +977,35 @@ setup_ahst(q,argv,cl)
     }
     if (value == 0) return(MR_ADDRESS);
     if (value != -1) {
+        /*
+         * an address or unique was specified.
+         */
 	id = *(int *)argv[8+row];
 	EXEC SQL SELECT saddr, mask, high, low INTO :addr, :mask, :high, :low
 	  FROM subnet WHERE snet_id = :id;
 	if (ingres_errno) return(mr_errcode);
 	if (value != -2) {
+            /*
+             * someone specified an IP address for the host record
+             */
 	    if ((value & mask) != addr) return(MR_ADDRESS);
-	    name = argv[9+row];
+            /* 
+             * run the address argument through inet_addr(). This
+             * has the effect that any out of bounds host addrs will
+             * be converted to a valid host addr. We do this now
+             * so that the uniqueness check works. We should also
+             * link in an inet_addr() that returns an error for
+             * this case. 
+             */
+	    name = inet_ntoa(inet_addr(argv[9+row]));
 	    EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
 	      WHERE address = :name;
 	    if (ingres_errno) return(mr_errcode);
 	    if (cnt > 0) {
+                /*
+                 * make IP address is unique. If this a modify request
+                 * (row == 1), then we expect one record to exist.
+                 */
 		if (row == 0 || row == 1 && cnt > 1) return(MR_ADDRESS);
 		if (row == 1 && cnt == 1) {
 		    EXEC SQL SELECT mach_id INTO :id FROM machine
@@ -996,6 +1014,11 @@ setup_ahst(q,argv,cl)
 		}
 	    }
 	} else {
+            /*
+             * a "unique" address was specified. Walk through the
+             * range specified in the network record, return
+             * error if no room left.
+             */
 	    for (id = low; id <= high; id++) {
 		if (((id & 0xff) == 0) ||
 		    ((id & 0xff) == 255))
@@ -1012,6 +1035,9 @@ setup_ahst(q,argv,cl)
 	    else
 	      value = htonl(value);
 	}
+        /*
+         * we have an address in value. Convert it to a string and store it.
+         */
 	value = htonl(value);
 	strcpy(argv[9+row], inet_ntoa(value));
     } else {

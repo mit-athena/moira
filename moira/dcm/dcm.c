@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.2 1988-08-09 19:16:12 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.3 1988-08-11 11:56:17 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.2 1988-08-09 19:16:12 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.3 1988-08-11 11:56:17 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -344,7 +344,8 @@ struct service *svc;
 	    goto free_mach;
 	}
 	if (!shost.enable || shost.hosterror ||
-	    (shost.success && shost.lastsuccess > svc->dfgen)) {
+	    (shost.success && !shost.override &&
+	     shost.lastsuccess > svc->dfgen)) {
 	    if (dbg & DBG_TRACE)
 	      com_err(whoami, 0, "not updating %s:%s", svc->service, machine);
 	    goto free_mach;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/query.h,v 2.2 1997-01-20 18:26:34 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/query.h,v 2.3 1997-01-29 23:27:25 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  */
@@ -93,6 +93,6 @@ int check_query_access(struct query *q, char *argv[], client *cl);
 int set_next_object_id(char *objectx, enum tables table, int limit);
 
 /* prototypes from qsubs.c */
-void list_queries(int version, int (*action)(), int actarg);
-void help_query(struct query *q, int (*action)(), int actarg);
+void list_queries(int version, int (*action)(), char *actarg);
+void help_query(struct query *q, int (*action)(), char *actarg);
 struct query *get_query_by_name(char *name, int version);

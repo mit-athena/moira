@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.6 1997-01-20 18:26:06 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.7 1997-01-29 23:27:03 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -18,10 +18,10 @@ SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	qfollow.c
 CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	mr_srvdata.c mr_shutdown.c mr_util.c \
-	mr_server.h query.h qrtn.h qrtn.dc \
-	qsupport.dc qsubs.c queries2.c increment.dc \
-	cache.dc mr_glue.c qvalidate.dc Imakefile \
-	qaccess.dc qsetup.dc qfollow.dc
+	mr_server.h query.h qrtn.h qrtn.pc \
+	qsupport.pc qsubs.c queries2.c increment.pc \
+	cache.pc mr_glue.c qvalidate.pc Imakefile \
+	qaccess.pc qsetup.pc qfollow.pc
 SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_srvdata.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
 	increment.o cache.o qvalidate.o \
@@ -42,7 +42,7 @@ program(startmoira, startmoira.o,${MR_LIBDEP} ${GDB_LIBDEP},\
 	.././gdb/libmrgdb.a -lcom_err -lkrb -ldes -lhesiod,\
 	${PROGDIR})
 library_obj_rule()
-install_library_target(mrglue,$(GLUOBJS),$(SRCS),)
+install_library_target(mrglue,$(GLUOBJS),$(SRCS))
 
 sqlfile(cache)
 sqlfile(increment)

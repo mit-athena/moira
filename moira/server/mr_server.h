@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.26 1997-01-20 18:26:17 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.27 1997-01-29 23:27:10 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -129,9 +129,9 @@ int op_select(LIST_OF_OPERATIONS, int, fd_set *, fd_set *, fd_set *,
 
 /* prototypes from libmoira */
 struct save_queue *sq_create(void);
-void sq_save_data(struct save_queue *sq, void *data);
-void sq_save_unique_data(struct save_queue *sq, void *data);
-void sq_save_args(int argc, void *argv[], struct save_queue *sq);
+int sq_save_data(struct save_queue *sq, void *data);
+int sq_save_unique_data(struct save_queue *sq, void *data);
+int sq_save_args(int argc, void *argv[], struct save_queue *sq);
 int sq_get_data(struct save_queue *sq, void *data);
 int sq_remove_data(struct save_queue *sq, void *data);
 int sq_empty(struct save_queue *sq);

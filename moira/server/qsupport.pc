@@ -1,7 +1,7 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.29 1997-01-20 18:26:28 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.1 1997-01-29 23:27:24 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.29 1997-01-20 18:26:28 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.1 1997-01-29 23:27:24 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -136,7 +136,7 @@ int get_list_info(q, aargv, cl, action, actarg)
     {
         EXEC SQL FETCH csr102 INTO :id;
 	if(sqlca.sqlcode!=0) break;
-	sq_save_data(sq, id);
+	sq_save_data(sq, (char *)id);
         rowcount++;
     }
     EXEC SQL CLOSE csr102;
@@ -538,7 +538,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 
     sq = sq_create();
     if (!strcmp(atype, "RLIST")) {
-	sq_save_data(sq, aid);
+	sq_save_data(sq, (char *)aid);
 	/* get all the list_id's of containing lists */
 	EXEC SQL DECLARE csr107 CURSOR FOR
 	  SELECT list_id FROM imembers
@@ -551,7 +551,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	while(1) {
 	    EXEC SQL FETCH csr107 INTO :listid;
 	    if(sqlca.sqlcode != 0) break;
-	    sq_save_unique_data(sq, listid);
+	    sq_save_unique_data(sq, (char *)listid);
 	}
 	EXEC SQL CLOSE csr107;
 	/* now process each one */
@@ -573,7 +573,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	while(1) {
 	    EXEC SQL FETCH csr108 INTO :listid;
 	    if(sqlca.sqlcode != 0) break;
-	    sq_save_data(sq, listid);
+	    sq_save_data(sq, (char *)listid);
 	}
 	EXEC SQL CLOSE csr108;
 	/* now process each one */
@@ -597,7 +597,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	while(1) {
 	    EXEC SQL FETCH csr109 INTO :listid;
 	    if(sqlca.sqlcode != 0) break;
-	    sq_save_data(sq, listid);
+	    sq_save_data(sq, (char*)listid);
 	}
 	EXEC SQL CLOSE csr109;
 	/* now process each one */
@@ -947,7 +947,8 @@ int gmol_internal(q, argv, cl, action, actarg, flag)
 	if (sqlca.sqlcode != 0) break;
 	if (members++ > 49)
 	  break;
-	sq_save_data(sq, ((int)member_type[0] << 24) | (member_id & 0xffffff));
+	sq_save_data(sq, (char *)(((int)member_type[0] << 24) |
+				  (member_id & 0xffffff)));
     }
     EXEC SQL CLOSE csr118;
 

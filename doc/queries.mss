@@ -1,4 +1,4 @@
-@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.3 1990-04-25 14:48:29 mar Exp $)
+@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.4 1993-11-30 16:07:49 mar Exp $)
 @Device(PostScript)
 @Pagefooting(center "Draft of @value(date)")
 @MajorHeading(Moira Queries)
@@ -47,8 +47,9 @@ The returned info is a summary of the account info, not the complete
 information.]
 
 @multiple[
-@b[get_user_by_login, gubl(]@i[login]@b[) =>] @i[login, uid, shell, last, first, mi,
-state, mitid, class, modtime, modby, modwith]
+@b[get_user_account_by_login, gual(]@i[login]@b[) =>] @i[login, uid,
+shell, last, first, mi, state, mitid, class, comments, signature,
+secure, modtime, modby, modwith]
 
 Returns complete account information on the named account.  Wildcards
 may be used in the @i(login) name specified.  If the person executing
@@ -56,8 +57,9 @@ the query is not on the query ACL, then the query only succeeds if the
 only retrieved information is about the user making the request.]
 
 @multiple[@b[
-get_user_by_uid, gubu(]@i[uid]@b[) =>]@i[ login, uid, shell, last, first, mi,
-state, mitid, class, modtime, modby, modwith]
+get_user_account_by_uid, guau(]@i[uid]@b[) =>]@i[ login, uid, shell,
+last, first, mi, state, mitid, class, comments, signature, secure,
+modtime, modby, modwith]
 
 Returns complete account information on any account with the specified
 @i(uid).  If the person executing the query is not on the query ACL,
@@ -65,8 +67,9 @@ then the query only succeeds if the only retrieved information is
 about the user making the request.]
 
 @multiple[@b[
-get_user_by_name, gubn(]@i[first, last]@b[) =>]@i[ login, uid, shell,
-last, first, mi, state, mitid, class, modtime, modby, modwith]
+get_user_account_by_name, guan(]@i[first, last]@b[) =>]@i[ login, uid, shell,
+last, first, mi, state, mitid, class, comments, signature, secure, modtime,
+modby, modwith]
 
 Returns complete account information on any account with matching
 @i(first) and @i(last) name fields.  Either or both names may contain
@@ -74,37 +77,103 @@ wildcards, so that this query can do the equivalent of lookup by
 firstname or lookup by lastname.]
 
 @multiple[@b[
-get_user_by_class, gubc(]@i[class]@b[) =>]@i[ login, uid, shell, last,
-first, mi, state, mitid, class, modtime, modby, modwith]
+get_user_account_by_class, guac(]@i[class]@b[) =>]@i[ login, uid, shell, last,
+first, mi, state, mitid, class, comments, signature, secure, modtime,
+modby, modwith]
 
 Returns complete account information on any account with a matching
 class field.  The given class may contain wildcards.]
 
 @multiple[@b[
-get_user_by_mitid, gubm(]@i[crypt(id]@b[)) =>]@i[ login, uid, shell, last, first,
-mi, state, mitid, class, modtime, modby, modwith]
+get_user_account_by_id, guai(]@i[id]@b[) =>]@i[ login, uid, shell, last, first,
+mi, state, mitid, class, comments, signature, secure, modtime, modby, modwith]
 
 Returns complete account information on any account with a matching
 MIT ID field.  The given id may contain wildcards.]
+
+@multiple[
+@b[get_user_by_login, gubl(]@i[login]@b[) =>] @i[login, uid, shell,
+last, first, mi, state, mitid, class, modtime, modby, modwith]
+
+@b(Obsolete.)  Returns complete account information on the named
+account.  Wildcards may be used in the @i(login) name specified.  If
+the person executing the query is not on the query ACL, then the query
+only succeeds if the only retrieved information is about the user
+making the request.]
+
+@multiple[@b[
+get_user_by_uid, gubu(]@i[uid]@b[) =>]@i[ login, uid, shell, last, first, mi,
+state, mitid, class, modtime, modby, modwith]
+
+@b(Obsolete.)  Returns complete account information on any account
+with the specified @i(uid).  If the person executing the query is not
+on the query ACL, then the query only succeeds if the only retrieved
+information is about the user making the request.]
+
+@multiple[@b[
+get_user_by_name, gubn(]@i[first, last]@b[) =>]@i[ login, uid, shell,
+last, first, mi, state, mitid, class, modtime, modby, modwith]
+
+@b(Obsolete.)  Returns complete account information on any account
+with matching @i(first) and @i(last) name fields.  Either or both
+names may contain wildcards, so that this query can do the equivalent
+of lookup by firstname or lookup by lastname.]
+
+@multiple[@b[
+get_user_by_class, gubc(]@i[class]@b[) =>]@i[ login, uid, shell, last,
+first, mi, state, mitid, class, modtime, modby, modwith]
+
+@b(Obsolete.)  Returns complete account information on any account
+with a matching class field.  The given class may contain wildcards.]
+
+@multiple[@b[
+get_user_by_mitid, gubm(]@i[crypt(id]@b[)) =>]@i[ login, uid, shell, last, first,
+mi, state, mitid, class, modtime, modby, modwith]
+
+@b(Obsolete.)  Returns complete account information on any account
+with a matching MIT ID field.  The given id may contain wildcards.]
+
+@multiple{@b[
+add_user_account, auac(]@i[login, uid, shell, last, first, mi, state, mitid,
+class, comments, signature, secure]@b[) =>]@i[]
+
+Adds a new user to the database.  @i(login) must not match any
+existing @i(login)s.  @i(uid) and @i(state) must be integers.  If the
+given uid is @b(UNIQUE_UID) as defined in @i(<moira.h>), the next
+unused uid will be assigned.  If @i(login) is @b(UNIQUE_LOGIN) as
+defined in @i(<moira.h>), the login name will be a "#" followed by the
+uid.  For example, when adding a person so that they may register
+later, the query ausr(UNIQUE_LOGIN, UNIQUE_UID, /bin/csh, @i(Last,
+First, M), 0, [encrypted ID], @i(class)) is used.  The @i(class) field
+must contain a value specified as a @b(TYPE) alias for @b(class).  The
+@i(comments) field can contain any string.  The @i(signature) is a
+binary record from the GDSS authenticating the mapping from ID to
+login.  This query also initializes the finger record for this user
+with just their full name, and sets their pobox to @b(NONE).  It
+updates the modtime on the user, finger and pobox records.  Errors:
+MR_NOT_UNIQUE "Arguments not unique" if the login name is not unique,
+or MR_BAD_CLASS "Specified class is not known" if the class is not in
+the alias database.}
 
 @multiple{@b[
 add_user, ausr(]@i[login, uid, shell, last, first, mi, state, mitid,
 class]@b[) =>]@i[]
 
-Adds a new user to the database.  @i(login) must not match any
-existing @i(login)s.  @i(uid) and @i(state) must be integers.  If the
-given uid is @b(UNIQUE_UID) as defined in @i(<moira.h>), the next unused
-uid will be assigned.  If @i(login) is @b(UNIQUE_LOGIN) as defined in
-@i(<moira.h>), the login name will be a "#" followed by the uid.  For
-example, when adding a person so that they may register later, the
-query ausr(UNIQUE_LOGIN, UNIQUE_UID, /bin/csh, @i(Last, First, M), 0,
-[encrypted ID], @i(class)) is used.  The @i(class) field must contain
-a value specified as a @b(TYPE) alias for @b(class).  This query also
-initializes the finger record for this user with just their full name,
-and sets their pobox to @b(NONE).  It updates the modtime on the user,
-finger and pobox records.  Errors: MR_NOT_UNIQUE "Arguments not
-unique" if the login name is not unique, or MR_BAD_CLASS "Specified
-class is not known" if the class is not in the alias database.}
+@b(Obsolete.)  Adds a new user to the database.  @i(login) must not
+match any existing @i(login)s.  @i(uid) and @i(state) must be
+integers.  If the given uid is @b(UNIQUE_UID) as defined in
+@i(<moira.h>), the next unused uid will be assigned.  If @i(login) is
+@b(UNIQUE_LOGIN) as defined in @i(<moira.h>), the login name will be a
+"#" followed by the uid.  For example, when adding a person so that
+they may register later, the query ausr(UNIQUE_LOGIN, UNIQUE_UID,
+/bin/csh, @i(Last, First, M), 0, [encrypted ID], @i(class)) is used.
+The @i(class) field must contain a value specified as a @b(TYPE) alias
+for @b(class).  This query also initializes the finger record for this
+user with just their full name, and sets their pobox to @b(NONE).  It
+updates the modtime on the user, finger and pobox records.  Errors:
+MR_NOT_UNIQUE "Arguments not unique" if the login name is not unique,
+or MR_BAD_CLASS "Specified class is not known" if the class is not in
+the alias database.}
 
 @multiple[@b[
 register_user, rusr(]@i[uid, login, fstype]@b[) =>]@i[]
@@ -126,8 +195,8 @@ not specify exactly one user; MR_IN_USE "Object is in use" if the
 login name is already taken.]
 
 @multiple[@b[
-update_user, uusr(]@i[login, newlogin, uid, shell, last, first, mi, state,
-mitid, class]@b[) =>]@i[]
+update_user_account, uuac(]@i[login, newlogin, uid, shell, last,
+first, mi, state, mitid, class, comments, signature, secure]@b[) =>]@i[]
 
 Updates the info in a user entry.  @i(login) specifies the existing
 login name, the remaining arguments will replace the current values
@@ -145,6 +214,26 @@ if the new login name is not unique, or MR_BAD_CLASS "Specified class
 is not known" if the class is not in the alias database.]
 
 @multiple[@b[
+update_user, uusr(]@i[login, newlogin, uid, shell, last, first, mi, state,
+mitid, class]@b[) =>]@i[]
+
+@b(Obsolete.)  Updates the info in a user entry.  @i(login) specifies
+the existing login name, the remaining arguments will replace the
+current values of those fields.  This is not equivalent to deleting
+the user and adding a new one, as all references to this user will
+still exist, even if the login name is changed.  All fields must be
+specified, even if the value is to remain unchanged.  @i(login) must
+match exactly one user in the database.  @i(newlogin) must either
+match the existing login or be unique in the database.  The @i(class)
+field must contain a value specified as a @b(TYPE) alias for
+@b(class).  @i(uid) and @i(state) must be integers.  The modtime
+fields in the user's record will be updated.  Errors: MR_USER "No such
+user" if the login name does not match exactly one user, MR_NOT_UNIQUE
+"Arguments not unique" if the new login name is not unique, or
+MR_BAD_CLASS "Specified class is not known" if the class is not in the
+alias database.]
+
+@multiple[@b[
 update_user_shell, uush(]@i[login, shell]@b[) =>]@i[]
 
 Updates a user's shell.  @i(login) must match exactly one user.  The
@@ -160,6 +249,14 @@ Updates a user's @i(status).  @i(login) must match exactly one user.
 The modtime fields in the user's record will be updated.  Errors:
 MR_USER "No such user" if the login name does not match exactly one
 user.]
+
+@multiple[@b[
+update_user_security_status, uuss(]@i[login, status]@b[) =>]@i[]
+
+Updates a user's @i(secure)ity field.  @i(login) must match exactly
+one user.  The modtime fields in the user's record will be updated.
+Errors: MR_USER "No such user" if the login name does not match
+exactly one user.]
 
 @multiple[@b[
 delete_user, dusr(]@i[login]@b[) =>]@i[]
@@ -303,50 +400,106 @@ match exactly one user.]
 
 @Heading(Machines and Clusters)
 
+@multiple[@b[ 
+get_host, ghst(]@i[name, address, location, contact]@b[) =>]@i[ name,
+vendor, model, os, location, contact, use, status, statuschanged,
+subnet, address, owner_type, owner_name, admin_comment, op_comment,
+created, creator, inuse modtime, modby, modwith]
+
+Any of the arguments may contain wildcards.]
+
+@multiple[@b[ 
+
+add_host, ahst(]@i[name, vendor, model, os, location, contact, use,
+status, subnet, address, owner_type, owner_name, admincomment,
+opcomment]@b[)]
+
+Name will be upcased and must be unique among hosts and host aliases.
+They also must meet the following sanity check: must start with a
+letter, remaining chars letter, numbers, and hyphen, must not end with
+a hyphen.  Vendor, model, os, and location will be upcased.  Use is an
+integer whose values are determined by the client (if entity
+performing the query is not on the query ACL, the use field must be
+zero).  Status must be 1 (active) or 3 (reserved).  Subnet must name
+an existing subnet.  Address must be unique among hosts, or "unqiue"
+or "unassigned".  The address must be a legal address on the subnet,
+though if it is specified by the user, it need not fall within the
+assignable range moira knows about.  The owner_type must be USER,
+LIST, KERBEROS, or NONE, and the owner_name must name a valid instance
+of that type.  Statuschange, created, and modtime will be set to the
+current time.  Creator and modby will be set to the user.]
+
+@multiple[@b[
+update_host, uhst(]@i[name, newname, vendor, model, os, location,
+contact, use, status, subnet, address, owner_type, owner_name,
+acomment, ocomment, inuse]@b[)]
+
+newname must either match the old name, or be unique among hosts and
+host aliases.  If the name is changed, it is sanity checked as
+described in add_host.  use may not be changed except by someone on
+the query ACL.  status may be set to 1 (active), 3 (reserved) or 4
+(deleted).  address may only be changed to "unassigned" or "unique"
+(which assigns a unique address).  If status changes, statuschange
+will be set to the current date.  All other fields are as in add_host.]
+
+@multiple[@b[
+delete_host, dhst(]@i[name]@b[)]
+
+Name must match exactly one entry.  If the status on that entry is 3
+(deleted), then the entry will be deleted.]
+
 @multiple[@b[
 get_machine, gmac(]@i[name]@b[) =>]@i[ name, type, modtime, modby, modwith]
 
-Get all the information on the specified machine(s).  Wildcarding may
-be used in the machine @i(name).  All machine names are case
-insensitive, and are returned in uppercase.  It is safe for the query
-ACL to be the list containing everybody.]
+@b(OBSOLETE) Get all the information on the specified machine(s).
+Wildcarding may be used in the machine @i(name).  All machine names
+are case insensitive, and are returned in uppercase.  It is safe for
+the query ACL to be the list containing everybody.]
 
 @multiple[@b[
-add_machine, amac(]@i[name, type]@b[) =>]@i[]
+get_hostalias, ghal(]@i[alias, host]@b[) =>]@i[ alias, host]
 
-Enters a new machine into the database.  The given @i(name) will be
-converted to uppercase.  Then it will be checked for uniqueness in the
-database.  The @i(type) field will be checked against the aliases
-database for valid @b(mach_type)s.  Currently defined @b(mach_types)
-are @b(RT) and @b(VAX).  The modtime fields will be set.  Errors:
-MR_NOT_UNIQUE "Arguments not unique" if a machine with the given
-@i(name) already exists, or MR_TYPE "Invalid type" if the given
-@i(type) is not in the alias database.]
+Either of the arguments may contain wildcards.]
 
 @multiple[@b[
-update_machine, umac(]@i[name, newname, type]@b[) =>]@i[  ]
+add_hostalias, ahal(]@i[alias, host]@b[)]
 
-Update the information on a machine.  The @i(name) must match exactly
-one machine.  The @i(newname) must either be the same as the old name,
-or must be unique among machine names in the database after being
-converted to uppercase.  The type field will be checked against the
-aliases database for valid @b(mach_type)s.  The modtime fields will be
-set.  Errors: MR_MACH "No such machine" if the old @i(name) does not
-match exactly one machine, MR_NOT_UNIQUE "Arguments not unique" if
-the @i(newname) does not either match the old name or is unique, or
-MR_TYPE "Invalid type" if the given @i(type) is not in the alias
-database.]
+Assigns a new alias to host.  Updates the modtime on the host.]
 
 @multiple[@b[
-delete_machine, dmac(]@i[name]@b[) =>]@i[]
+delete_hostalias, dhal(]@i[alias, host]@b[)]
 
-Delete a machine from the database.  The given @i(name) must match
-exactly one machine.  A machine that is in use (post office, file
-system, printer spooling host, server_host_access, or DCM service
-update) cannot be deleted.  Errors: MR_MACH "No such machine" if the
-@i(name) does not match exactly one machine, or MR_IN_USE "Object is
-in use" if the machine is being referenced as a post office,
-filesystem, spooling host, or server updated by the DCM.]
+Removes an alias from a host.  Updates the modtime on the
+host.]
+
+@multiple[@b[
+get_subnet, gsnt(]@i[name]@b[) =>]@i[ name, description, address,
+mask, low, high, owner_type, owner_name, modtime, modby, modwith]
+
+The name argument may contain wildcards.]
+
+@multiple[@b[
+add_subnet, asnt(]@i[name, description, address, mask, low, high, owner_type,
+owner_name]@b[)]
+
+Name and address each must be unique among subnets.  Owner_type
+is typechecked as an ace_type, one of USER, KERBEROS, LIST, or NONE.
+Owner_name must name a corresponding item (users or lists must exist).]
+
+@multiple[@b[
+update_subnet, usnt(]@i[name, newname, description, address, mask, low, high,
+owner_type, owner_name]@b[)]
+
+Newname and address each must be unique among subnets.  Owner_type
+is typechecked as an ace_type, one of USER, KERBEROS, LIST, or NONE.
+Owner_name must name a corresponding item (users or lists must exist).]
+
+@multiple[@b[
+delete_subnet, dsnt(]@i[name]@b[)]
+
+There must be no hosts currently assigned to this subnet
+before it can be removed.]
+
 
 @multiple[@b[
 get_cluster, gclu(]@i[name]@b[) =>]@i[ name, description, location,
@@ -891,6 +1044,16 @@ specified group as the owners list.  The @i(list) must match exactly
 one existing list.  This query may be executed by a member of the
 target list.  Errors: MR_LIST "No such list" if the given list does
 not match exactly one list in the database.]
+
+@multiple[@b[
+get_filesys_by_path, gfsp(]@i[path]@b[) =>]@i[ name, fstype,
+machine, packname, mountpoint, access, comments, owner, owners,
+create, lockertype, modtime, modby, modwith]
+
+Retrieves the information about all filesystems that have the
+specified path as the packname.  This query may be executed by a
+member of the target list.  Errors: MR_LIST "No such list" if the
+given list does not match exactly one list in the database.]
 
 @multiple[@b[
 add_filesys, afil(]@i[name, fstype, machine, packname, mountpoint,
@@ -1450,4 +1613,12 @@ port_number, connect_time, client_number]
 Returns a list of every client currently using the Moira server.  This
 query may be executed by anyone.]
 
+@multiple[@b[
+_set_debug_level, _sdl(]@i[level]@b[) =>]@i[]
+
+Sets the log_flags variable in the server to adjust the logging level.
+See server/mr_server.h for the meaning of the bits in this variable.
+]
+
 @end(description)
+

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.3 1988-07-28 21:33:00 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.4 1988-08-01 00:02:52 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -12,9 +12,21 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+
 #define HESIOD_DIR	"/u1/sms/dcm/hesiod"
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
+struct hash *machines = NULL;
+struct hash *users = NULL;
+
+struct grp {
+    struct grp *next;
+    int id;
+};
+struct user {
+    char name[9];
+    struct grp *lists;
+};
 
 char *malloc(), *strsave();
 char *ingres_date_and_time(), *ingres_time(), *ingres_date();
@@ -33,8 +45,8 @@ char **argv;
     }
 
 ##  ingres sms
-##  set lockmode session where readlock = nolock
 
+##  begin transaction
     changed = do_passwd();
     changed += do_pobox();
     changed += do_filsys();
@@ -43,6 +55,7 @@ char **argv;
     changed += do_sloc();
     changed += do_service();
     changed += do_groups();
+##  end transaction
 
 ##  exit
 
@@ -53,6 +66,7 @@ char **argv;
     }
 
     if (argc == 2) {
+	fprintf(stderr, "Building tar file.\n");
 	sprintf(cmd, "cd %s; tar cf %s .", HESIOD_DIR, argv[1]);
 	if (system(cmd))
 	  exit(SMS_TAR_FAIL);
@@ -62,14 +76,30 @@ char **argv;
 }
 
 
+get_mach()
+##{
+##  int id;
+##  char name[33];
+
+    if (machines)
+      return;
+
+    machines = create_hash(1000);
+##  retrieve (name = machine.#name, id = machine.mach_id) {
+	hash_store(machines, id, strsave(strtrim(name)));
+##  }
+##}
+
+
 do_passwd()
 ##{
     FILE *pout, *uout;
     char poutf[64], uoutf[64], poutft[64], uoutft[64];
     struct stat psb, usb;
     time_t ftime;
+    struct user *u;
 ##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
-##  int uid, flag;
+##  int uid, flag, id;
 
     sprintf(poutf, "%s/passwd.db", HESIOD_DIR);
     sprintf(uoutf, "%s/uid.db", HESIOD_DIR);
@@ -100,17 +130,22 @@ do_passwd()
 
     fprintf(stderr, "Building passwd.db and uid.db\n");
 
+    users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
 ##	      fullname = u.#fullname, oa = u.office_addr,
-##	      op = u.office_phone, hp = u.home_phone)
-##	where u.status = 1 sort by #login {
-	    trim(login);
-	    trim(fullname);
-	    trim(oa);
-	    trim(op);
-	    trim(hp);
-	    trim(shell);
+##	      op = u.office_phone, hp = u.home_phone, id = u.users_id)
+##	where u.status = 1 {
+	    strtrim(login);
+	    strtrim(fullname);
+	    strtrim(oa);
+	    strtrim(op);
+	    strtrim(hp);
+	    strtrim(shell);
+	    u = (struct user *) malloc(sizeof(struct user));
+	    strcpy(u->name, login);
+	    u->lists = NULL;
+	    hash_store(users, id, u);
     	    fprintf(pout, "%s.passwd\tHS UNSPECA \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
 		    login, login, uid, fullname, oa, op, hp, login, shell);
 	    fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
@@ -129,11 +164,11 @@ do_passwd()
 do_pobox()
 ##{
     FILE *out;
-    char outf[64], outft[64];
+    char outf[64], outft[64], *mach;
     struct stat sb;
     time_t ftime;
-##  char login[9], mach[33], *filetime;
-##  int flag1, flag2;
+##  char login[9], *filetime;
+##  int flag1, flag2, id;
 
     sprintf(outf, "%s/pobox.db", HESIOD_DIR);
 
@@ -158,15 +193,15 @@ do_pobox()
     }
 
     fprintf(stderr, "Building pobox.db\n");
+    get_mach();
 
 ##  range of u is users
-##  range of m is machine
-##  retrieve (login = u.#login, mach = m.#name)
-##	where u.status = 1 and u.potype = "POP" and m.mach_id = u.pop_id {
-	    trim(login);
-	    trim(mach);
-	    fprintf(out, "%s.pobox\tHS UNSPECA \"POP %s %s\"\n",
-		    login, mach, login);
+##  retrieve (login = u.#login, id = u.pop_id)
+##	where u.status = 1 and u.potype = "POP" {
+	    strtrim(login);
+	    if (mach = hash_lookup(machines, id))
+	      fprintf(out, "%s.pobox\tHS UNSPECA \"POP %s %s\"\n",
+		      login, mach, login);
 ##  }
 
     if (fclose(out)) {
@@ -187,14 +222,16 @@ do_pobox()
 do_groups()
 ##{
     FILE *iout, *gout, *lout;
-    char ioutf[64], goutf[64], loutf[64], buf[256];
-    char **groups;
+    char ioutf[64], goutf[64], loutf[64], buf[256], *l;
+    struct hash *groups;
+    register struct bucket *b, **p;
+    struct grp *g;
+    struct user *u;
     struct stat isb, gsb, lsb;
     time_t ftime;
     register struct save_queue *sq;
     struct save_queue *sq_create();
-    register int first, i;
-    register char **p;
+    register int i;
 ##  char name[33], *filetime;
 ##  int gid, id, lid, flag1, flag2, flag3, maxid;
 
@@ -240,21 +277,15 @@ do_groups()
     fprintf(stderr, "Building gid.db, group.db, and grplist.db\n");
 
     /* make space for group list */
-##  range of l is list
-##  retrieve (maxid = max(l.#list_id))
-    groups = (char **)malloc((maxid + 1) * sizeof(char *));
-    if (groups == NULL) {
-	fprintf(stderr, "unable to malloc space for groups\n");
-	exit(1);
-    }
-    bzero(groups, (maxid + 1) * sizeof(char *));
+    groups = create_hash(15000);
 
     /* retrieve simple groups */
+##  range of l is list
 ##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
 ##	where l.group != 0 and l.active != 0 {
-	    trim(name);
+	    strtrim(name);
 	    sprintf(buf, "%s:%d", name, gid);
-	    groups[lid] = strsave(buf);
+	    hash_store(groups, lid, strsave(buf));
 	    fprintf(iout, "%d.gid\tHS CNAME %s.group\n", gid, name);
 	    fprintf(gout, "%s.group\tHS UNSPECA \"%s:*:%d:\"\n",
 		    name, name, gid);
@@ -268,17 +299,17 @@ do_groups()
     sq = sq_create();
 ##  range of m is members
 ##  retrieve (name = list.#name, gid = list.#gid, lid = l.list_id)
-##	where l.group = 0 and m.member_type = "LIST" and
+##	where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = list.list_id and
 ##		list.group != 0 {
-	trim(name);
-	if (groups[lid]) {
-	    sprintf(buf, "%s:%s:%d", groups[lid], name, gid);
-	    free(groups[lid]);
+	strtrim(name);
+	if (l = hash_lookup(groups, lid)) {
+	    sprintf(buf, "%s:%s:%d", l, name, gid);
+	    free(l);
 	} else {
 	    sprintf(buf, "%s:%d", name, gid);
 	}
-	groups[lid] = strsave(buf);
+	hash_store(groups, lid, strsave(buf));
     	sq_save_data(sq, lid);
 ##  }
 
@@ -286,47 +317,64 @@ do_groups()
 ##	repeat retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
 ##	    where l.group = 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = @id {
-	    trim(name);
-	    sprintf(buf, "%s:%d", name, gid);
-	    groups[lid] = strsave(buf);
+	    strtrim(name);
+	    if (l = hash_lookup(groups, lid)) {
+		sprintf(buf, "%s:%s:%d", l, name, gid);
+		free(l);
+	    } else {
+		sprintf(buf, "%s:%d", name, gid);
+	    }
+	    hash_store(groups, lid, strsave(buf));
 	    sq_save_unique_data(sq, lid);
 ##	}
     }
     sq_destroy(sq);
 
     /* now do grplists */
-    sq = sq_create();
-##  range of u is users
-##  retrieve (id = u.users_id) where u.status = 1 {
-	sq_save_data(sq, id);
-##  }
-    while (sq_get_data(sq, &id)) {
-	first = 1;
-##	repeat retrieve (lid = m.list_id, name = u.login)
-##		where m.member_type = "USER" and m.member_id = @id and
-##			u.users_id = @id {
-	    if (groups[lid]) {
-		if (first) {
-		    trim(name);
-		    fprintf(lout, "%s.grplist\tHS UNSPECA \"%s",
-			    name, groups[lid]);
-		} else
-		  fprintf(lout, ":%s", groups[lid]);
-		first = 0;
-	    }
+    if (users == NULL) {
+	users = create_hash(10000);
+##	range of u is users
+##	retrieve (id = u.users_id, name = u.login) where u.status = 1 {
+	  u = (struct user *) malloc(sizeof(struct user));
+	  strcpy(u->name, strtrim(name));
+	  u->lists = NULL;
+	  hash_store(users, id, u);
 ##	}
-	if (!first)
-	  fprintf(lout, "\"\n");
     }
+
+##  repeat retrieve (lid = m.list_id, id = m.member_id)
+##	where m.member_type = "USER" {
+      if (u = (struct user *) hash_lookup(users, id)) {
+	  g = (struct grp *) malloc(sizeof(struct grp));
+	  g->next = u->lists;
+	  u->lists = g;
+	  g->id = lid;
+      }
+##  }
+
+    for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    fprintf(lout, "%s.grplist\tHS UNSPECA \"",
+		    ((struct user *)b->data)->name);
+	    for (g = ((struct user *)b->data)->lists; g; g = g->next)
+	      if (l = hash_lookup(groups, g->id))
+		fprintf(lout, "%s%s", l, g->next ? ":" : "");
+	    fputs("\"\n", lout);
+	}
+    }
+
 #ifdef notdef
 /* This is commented out because it takes on the order of 30 minutes to 
  * run.  Instead, we never free the memory, but the program will exit
  * shortly anyway.
  */
     sq_destroy(sq);
-    for (p = &groups[maxid-1]; p >= groups; p--)
-      if (*p)
-	free(*p);
+    {
+	register char **p;
+	for (p = &groups[maxid-1]; p >= groups; p--)
+	  if (*p)
+	    free(*p);
+    }
     free(groups);
 #endif
 
@@ -344,12 +392,12 @@ do_groups()
 do_filsys()
 ##{
     FILE *out;
-    char outf[64], outft[64];
+    char outf[64], outft[64], *mach;
     struct stat sb;
     time_t ftime;
-##  char name[33], type[9], loc[33], mach[33], access[2], mount[33], trans[257];
+##  char name[33], type[9], loc[33], access[2], mount[33], trans[257];
 ##  char *filetime, comments[65];
-##  int flag1, flag2, flag3;
+##  int flag1, flag2, flag3, id;
 
     sprintf(outf, "%s/filsys.db", HESIOD_DIR);
 
@@ -376,32 +424,31 @@ do_filsys()
     }
 
     fprintf(stderr, "Building filsys.db\n");
+    get_mach();
 
 ##  range of f is filesys
-##  range of m is machine
-##  retrieve (name = f.label, type = f.#type, loc = f.#name, mach = m.#name,
-##	      access = f.#access, mount = f.#mount, comments = f.#comments)
-##	where m.mach_id = f.mach_id {
-	    trim(name);
-	    trim(type);
+##  retrieve (name = f.label, type = f.#type, loc = f.#name, id = f.mach_id,
+##	      access = f.#access, mount = f.#mount, comments = f.#comments) {
+	    strtrim(name);
+	    strtrim(type);
 	    if (strcmp(type, "ERR")) {
-		trim(loc);
-		trim(mach);
-		trim(access);
-		trim(mount);
-		fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
-			name, type, loc, mach, access, mount);
+		strtrim(loc);
+		strtrim(access);
+		strtrim(mount);
+		if (mach = hash_lookup(machines, id))
+		  fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
+			  name, type, loc, mach, access, mount);
 	    } else {
-		trim(comments);
-		fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s\"\n",
-			name, type, comments);
+		strtrim(comments);
+		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
+			name, comments);
 	    }
 ##  }
 
 ##  range of a is alias
 ##  retrieve (name = a.#name, trans = a.#trans) where a.#type = "FILESYS" {
-    	trim(name);
-	trim(trans);
+    	strtrim(name);
+	strtrim(trans);
     	fprintf(out, "%s.filsys\tHS CNAME %s.filsys\n", name, trans);
 ##  }
 
@@ -436,11 +483,11 @@ typedef long	set_mask;
 do_cluster()
 ##{
     FILE *out;
-    char outf[64], outft[64];
+    char outf[64], outft[64], *mach;
     struct stat sb;
     time_t ftime;
 ##  int flag1, flag2, flag3, flag4, maxmach, maxclu, mid, cid, id;
-##  char name[33], label[17], data[33], mach[33], *filetime;
+##  char name[33], label[17], data[33], *filetime;
     set_mask **machs, *ms, *ps;
 
     sprintf(outf, "%s/cluster.db", HESIOD_DIR);
@@ -470,6 +517,7 @@ do_cluster()
     }
 
     fprintf(stderr, "Building cluster.db\n");
+    get_mach();
 
 ##  range of c is cluster
 ##  retrieve (maxclu = max(c.clu_id))
@@ -497,8 +545,8 @@ do_cluster()
 	    if (SET_ISSET(cid, ms)) {
 ##		repeat retrieve (label = d.serv_label, data = d.serv_cluster)
 ##		    where d.clu_id = @cid {
-		    trim(label);
-		    trim(data);
+		    strtrim(label);
+		    strtrim(data);
 		    fprintf(out,
 			    "smsinternal-%d.cluster\tHS UNSPECA \"%s %s\"\n",
 			    mid, label, data);
@@ -506,18 +554,16 @@ do_cluster()
 	    }
 	}
 
-##	repeat retrieve (mach = m.#name) where m.mach_id = @mid
-	trim(mach);
-	fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
-		mach, mid);
+	if (mach = hash_lookup(machines, mid))
+	  fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+		  mach, mid);
 	for (id = mid + 1; id < maxmach; id++) {
 	    if ((ps = machs[id]) && !SET_CMP(ms, ps)) {
 		free(ps);
 		machs[id] = NULL;
-##		repeat retrieve (mach = m.#name) where m.mach_id = @id
-		trim(mach);
-		fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
-			mach, mid);
+		if (mach = hash_lookup(machines, id))
+		  fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+			  mach, mid);
 	    }
 	}
 	free(ms);
@@ -527,9 +573,9 @@ do_cluster()
 
 ##  retrieve (name = c.#name, label = d.serv_label, data = d.serv_cluster)
 ##	where c.clu_id = d.clu_id {
-	    trim(name);
-	    trim(label);
-	    trim(data);
+	    strtrim(name);
+	    strtrim(label);
+	    strtrim(data);
 	    fprintf(out, "%s.cluster\tHS UNSPECA \"%s %s\"\n",
 		    name, label, data);
 ##  }
@@ -576,8 +622,8 @@ do_printers()
 
 ##  range of p is printcap
 ##  retrieve (name = p.#name, pcap = p.#pcap) {
-	trim(name);
-	trim(pcap);
+	strtrim(name);
+	strtrim(pcap);
 	fprintf(out, "%s.pcap\tHS UNSPECA \"%s\"\n", name, pcap);
 ##  }
 
@@ -593,12 +639,12 @@ do_printers()
 do_sloc()
 ##{
     FILE *out, *old, *new;
-    char outf[64], outft[64];
+    char outf[64], outft[64], *mach;
     struct stat sb;
     time_t ftime;
     register int c;
-##  char mach[33], service[17], *filetime;
-##  int port, flag1, flag2;
+##  char service[17], *filetime;
+##  int port, flag1, flag2, id;
 
     sprintf(outf, "%s/sloc.db", HESIOD_DIR);
 
@@ -623,14 +669,14 @@ do_sloc()
     }
 
     fprintf(stderr, "Building sloc.db\n");
+    get_mach();
 
 ##  range of s is serverhosts
-##  range of m is machine
-##  retrieve (service = s.#service, mach = m.name)
-##	where m.mach_id = s.mach_id sort by #service {
-	    trim(service);
-	    trim(mach);
-	    fprintf(out, "%s.sloc\tHS UNSPECA %s\n", service, mach);
+##  retrieve (service = s.#service, id = s.mach_id)
+##	sort by #service {
+	    strtrim(service);
+	    if (mach = hash_lookup(machines, id))
+	      fprintf(out, "%s.sloc\tHS UNSPECA %s\n", service, mach);
 ##  }
 
     if (fclose(out)) {
@@ -638,24 +684,8 @@ do_sloc()
 	exit(SMS_CCONFIG);
     }
 
-    /* diff outf & outft.  If they are the same, report "nothing changed" */
-    old = fopen(outf, "r");
-    new = fopen(outft, "r");
-    while ((c = getc(old)) != EOF)
-      if (c != getc(new))
-	break;
-    if (c != EOF || !feof(new)) {
-	fix_file(outf);
-	fclose(old);
-	fclose(new);
-	return(1);
-    } else {
-	fprintf(stderr, "Nothing in sloc.db has changed.\n");
-	fclose(old);
-	fclose(new);
-	unlink(outft);
-	return(0);
-    }
+    fix_file(outf);
+    return(1);
 ##}
 
 do_service()
@@ -692,16 +722,16 @@ do_service()
 ##  range of s is services
 ##  retrieve (service = s.name, protocol = lowercase(s.#protocol),
 ##	      port = s.#port) {
-	trim(service);
-	trim(protocol);
+	strtrim(service);
+	strtrim(protocol);
 	fprintf(out, "%s.service\tHS UNSPECA \"%s %s %d\"\n",
 		service, service, protocol, port);
 ##  }
 
 ##  range of a is alias
 ##  retrieve (service = a.name, altserv = a.trans) where a.type = "SERVICE" {
-	trim(service);
-	trim(altserv);
+	strtrim(service);
+	strtrim(altserv);
 	fprintf(out, "%s.service\tHS CNAME %s.service\n", service, altserv);
 ##    }
 

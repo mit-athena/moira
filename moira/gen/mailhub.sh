@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.12 2002-05-15 20:25:05 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.13 2003-04-18 22:06:03 jweiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
@@ -55,8 +55,7 @@ if [ $? != 0 ]; then
     exit $MR_MKCRED
 fi
 
-kill `ps -ef | grep "sendmail" | egrep -v "grep|mqueue.stall" | awk '{print $2}'`
-sleep 60
+sh /etc/init.d/sendmail stop
 
 mv $root/etc/aliases $root/etc/aliases.old
 mv $root/etc/aliases.db $root/etc/aliases.old.db

@@ -1,20 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.2 1987-11-02 17:10:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.3 1988-08-23 11:49:52 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.2 1987-11-02 17:10:42 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.3 1988-08-23 11:49:52 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include "gdb.h"
+#include <gdb.h>
+#include <sms.h>
 #include "update.h"
-#include "sms_update_int.h"
 #include "kludge.h"
-#include "smsu_int.h"
 
 extern CONNECTION conn;
 extern int code, errno;
@@ -55,16 +54,17 @@ exec_002(str)
 	} while (n != -1 && n != pid);
 	sigsetmask(mask);
 	if (waitb.w_status) {
+	    n = waitb.w_retcode + sms_err_base;
 	    log_priority = log_ERROR;
-	    com_err(whoami, 0, "child exited with status %d", waitb.w_status);
+	    com_err(whoami, n, " child exited with status %d", waitb.w_retcode);
 	    code = send_object(conn, (char *)&n, INTEGER_T);
-	    if (code)
+	    if (code) {
 		exit(1);
-	}
-	else {
+	    }
+	} else {
 	    code = send_ok();
 	    if (code)
-		exit(1);
+	      exit(1);
 	}
     }
 }

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.14 1990-03-17 17:27:19 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.15 1990-04-06 17:20:04 mar Exp $
 #
 #	Makefile for Moira library.
 #
@@ -26,9 +26,9 @@ LINTFLAGS= -uhv
 ALL=libmoira.a llib-lmoira.ln # libmoira_p.a
 
 .c.o:
-	${CC} -c -pg ${CFLAGS} $*.c
-	ld -x -r $*.o
-	mv a.out profiled/$*.o
+#	${CC} -c -pg ${CFLAGS} $*.c
+#	ld -x -r $*.o
+#	mv a.out profiled/$*.o
 	${CC} -c ${CFLAGS} $*.c
 	ld -x -r $*.o
 	mv a.out $*.o
@@ -68,8 +68,8 @@ clean:
 install:
 	install -c -m 644 libmoira.a ${DESTDIR}/usr/athena/lib/libmoira.a
 	ranlib ${DESTDIR}/usr/athena/lib/libmoira.a
-	install -c -m 644 libmoira_p.a ${DESTDIR}/usr/athena/lib/libmoira_p.a
-	ranlib ${DESTDIR}/usr/athena/lib/libmoira_p.a
+#	install -c -m 644 libmoira_p.a ${DESTDIR}/usr/athena/lib/libmoira_p.a
+#	ranlib ${DESTDIR}/usr/athena/lib/libmoira_p.a
 	install -c -m 644 llib-lmoira.ln ${DESTDIR}/usr/lib/lint/llib-lmoira.ln
 
 TAGS:	$(CFILES)

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.40 1999-05-13 18:53:41 danw Exp $
+/* $Id: blanche.c,v 1.41 1999-09-21 22:59:21 jweiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.40 1999-05-13 18:53:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.41 1999-09-21 22:59:21 jweiss Exp $");
 
 struct member {
   int type;
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
   while (sq_get_data(addlist, &memberstruct))
     {
       /* canonicalize string if necessary */
-      if (memberstruct->type == M_STRING &&
+      if (memberstruct->type != M_KERBEROS &&
 	  (p = strchr(memberstruct->name, '@')))
 	{
 	  char *host = canonicalize_hostname(strdup(++p));
@@ -498,8 +498,9 @@ int main(int argc, char **argv)
 		{
 		  host = strdup(memberstruct->name);
 		  *(strchr(memberstruct->name, '@')) = 0;
-		  memberstruct->type = M_ANY;
-		  fprintf(stderr, "Warning: \"STRING:%s\" converted to "
+		  if (memberstruct->type == M_STRING)
+		      memberstruct->type = M_ANY;
+		  fprintf(stderr, "Warning: \"%s\" converted to "
 			  "\"%s\" because it is a local name.\n",
 			  host, memberstruct->name);
 		  break;

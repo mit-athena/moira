@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.15 1990-03-28 18:12:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.16 1990-03-28 19:02:06 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.15 1990-03-28 18:12:07 mar Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.16 1990-03-28 19:02:06 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -216,8 +216,10 @@ void reapchild()
     int pid;
 
     while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
-	if (pid == inc_pid)
-	  next_incremental();
+	if (pid == inc_pid) {
+	    inc_running = 0;
+	    next_incremental();
+	}
 	if  (status.w_termsig != 0 || status.w_retcode != 0)
 	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
 		  pid, status.w_termsig, status.w_retcode);

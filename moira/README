@@ -1,8 +1,8 @@
-$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/README,v 1.1 1988-12-27 16:30:21 mar Exp $
+$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/README,v 1.2 1989-01-27 18:29:41 mar Exp $
 
-This is SMS version 2.0.  See the file INSTALLATION in this directory
-for instructions on building and installing SMS.  Contents of this
-distribution:
+This is the beta test version of Moira (version 2.0).  See the
+document doc/install for building and installation instructions.
+Contents of this distribution:
 
 backup: source to smsbackup & smsrestore.  Depends on files in ~/db
 
@@ -18,14 +18,17 @@ dbck: database consistency checker
 
 dcm: the Data Control Manager
 
-doc: Documentation
+doc: Documentation.  There are a few smaller documents in this
+	directory.  the tech_plan subdirectory contains the most
+	detailed document on the design and operation of moira.
 
 et: Sources to com_err stuff.  This is a private copy so that the
 	com_err() routine supports printf style arguments.
 
 gdb: Noah Mendelsohn's GDB library (which forms the core of our RPC
 	mechanism)  This is a private copy because the startup
-	negotiation is different.
+	negotiation is different.  This directory also contains
+	documentation on the GDB library.
 
 gen: server config file generators.  These are the programs that
 	extract info from the database.  The shell scripts that
@@ -44,8 +47,6 @@ man: man pages for SMS programs
 reg_svr: the daemon to handle the back end of user registration
 
 regtape: a program to read the tape from the registrar's office
-
-regtest: a sample of what the homedirectory for "register" should look like
 
 rpc: The code for the RPC mechanism: libsms.a is built here.
 

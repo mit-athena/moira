@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.4 1988-09-13 15:51:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.5 1988-12-07 17:21:49 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -9,7 +9,8 @@
 
 #include <mit-copyright.h>
 #include <ctype.h>
-#include "sms_app.h"
+#include <sms.h>
+
 #define NULL 0
 
 

@@ -1,7 +1,7 @@
 # Makefile for SMS 2.0 clients.
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v 1.10 1988-12-01 12:45:30 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v 1.11 1989-01-21 16:26:43 mar Exp $
 #	$Author: mar $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -10,7 +10,7 @@
 
 DESTDIR=
 
-SUBDIRS= mailmaint passwd sms userreg blanche smscheck
+SUBDIRS= mailmaint passwd moira userreg blanche mrcheck
 
 all:
 	for i in ${SUBDIRS}; do \

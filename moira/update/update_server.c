@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.8 1992-08-25 14:46:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.9 1992-09-22 13:41:13 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.8 1992-08-25 14:46:20 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.9 1992-09-22 13:41:13 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -22,7 +22,7 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include "update.h"
 
 extern int auth_001(), inst_001();
-extern int xfer_002(), exec_002();
+extern int xfer_002(), xfer_003(), exec_002();
 
 extern int sync_proc(), quit();
 extern char *config_lookup();
@@ -52,6 +52,7 @@ struct _dt {
      { "INST_001", inst_001 },
      { "AUTH_001", auth_001 },
      { "XFER_002", xfer_002 },
+     { "XFER_003", xfer_003 },
      { "EXEC_002", exec_002 },
      { "quit", quit },
      { (char *)NULL, abort }
@@ -220,7 +221,7 @@ quit(str)
      (void) send_ok();
      sever_connection(conn);
      mr_log_info("Closing connection.");
-     exit(0);
+     return(exit(0));
 }
 
 

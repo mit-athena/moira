@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.2 1988-09-13 14:26:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.3 1989-07-11 16:48:29 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.2 1988-09-13 14:26:04 mar Exp $";
+static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.3 1989-07-11 16:48:29 mar Exp $";
 #endif	lint
 
 
@@ -431,8 +431,12 @@ struct robj_data *arg;
         * to local byte order, and allocate the space for the receive.
         */
 	arg->len = (int) ntohl((u_long)arg->len);
+	if (arg->len > 65536)
+	  return OP_CANCELLED;
 
 	arg->flattened = db_alloc(arg->len);
+	if (arg->flattened == NULL)
+	  return OP_CANCELLED;
        /*
         * Now start receiving the encoded object itself.  If it all comes in
         * synchronously, then just go on to the c2 routine to decode it and
@@ -571,7 +575,7 @@ struct lis_data {
 int g_ilis();
 int g_clis();
 
-int
+void
 gdb_start_listening(op, con, otherside, lenp, fdp)
 OPERATION op;
 CONNECTION con;
@@ -708,7 +712,7 @@ struct acc_data {
 int g_iacc();
 int g_i2acc();
 
-int
+void
 start_accepting_client(listencon, op, conp, otherside, lenp, tuplep)
 CONNECTION listencon;
 OPERATION op;

@@ -4,11 +4,10 @@
 #
 #
 BKUPDIRDIR=/backup
-PATH=/bin:/athena/bin:/usr/athena/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
-. /usr/ingres/sqluser.profile
+PATH=/usr/athena/bin:/bin:/usr/bin:/usr/ucb; export PATH
+ORACLE_HOME=/usr/oracle; export ORACLE_HOME
+ORACLE_SID=moira; export ORACLE_SID
 chdir ${BKUPDIRDIR}
-
-# /moira/bin/counts </dev/null	
 
 if [ -d in_progress ] 
 then
@@ -61,23 +60,23 @@ fi
 
 if [ -d stale ]
 then
-	echo -n "Stale backup "
+	/usr/ucb/echo -n "Stale backup "
 	rm -r stale
 	echo "removed"
 fi
-echo -n "Shifting backups "
+/usr/ucb/echo -n "Shifting backups "
 
 mv backup_3 stale
-echo -n "3 "
+/usr/ucb/echo -n "3 "
 mv backup_2 backup_3
-echo -n "2 "
+/usr/ucb/echo -n "2 "
 mv backup_1 backup_2
-echo -n "1 "
+/usr/ucb/echo -n "1 "
 mv in_progress backup_1
 echo
-/bin/df /moira/moira.log | /usr/ucb/tail -1
+/bin/df -k /moira/moira.log | /usr/ucb/tail -1
 echo 
-echo -n "deleting last backup"
+echo "deleting last backup"
 rm -rf stale
 echo
 echo "Shipping over the net"

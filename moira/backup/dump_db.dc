@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.4 1993-07-14 12:07:26 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.5 1997-01-20 18:14:10 danw Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,11 +13,12 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.4 1993-07-14 12:07:26 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.5 1997-01-20 18:14:10 danw Exp $";
 #endif lint
 
 #include <stdio.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <ctype.h>
 #include <mit-copyright.h>
 EXEC SQL INCLUDE sqlca;
@@ -32,6 +33,9 @@ EXEC SQL INCLUDE sqlca;
 FILE *open_file();
 
 char act[257];
+EXEC SQL BEGIN DECLARE SECTION;
+char *db="moira";
+EXEC SQL END DECLARE SECTION;
 
 main(argc, argv)
     int argc;
@@ -46,7 +50,7 @@ main(argc, argv)
     }
     prefix = argv[1];
 
-    bzero(act, 256);
+    memset(act, 0, 256);
 
     for (i=0; i<' '; i++) act[i]=2;
     for (i=128; i<256; i++) act[i]=2;
@@ -54,12 +58,11 @@ main(argc, argv)
     act['\\']=1;
     act[127]=2;
     
-    EXEC SQL CONNECT moira;
-    EXEC SQL set lockmode session where level = table;
+    EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
     do_backups(prefix);
 
-    EXEC SQL DISCONNECT;
+    EXEC SQL COMMIT;
     exit(0);
 }
 
@@ -81,12 +84,11 @@ dump_str(f, str)
     register FILE *f;
     register char *str;
 {
-    char  *strtrim();
-    register char *ibp = strtrim(str);
+    register char *ibp;
     register int c;		/* PCC doesn't put chars in registers.. */
     register int t;
 
-    for (; c = (unsigned char) *ibp; ibp++) {
+    for (ibp = str; c = (unsigned char) *ibp; ibp++) {
 	switch(act[c]) {
 	case 1:
 	    if (putc1('\\', f) < 0) wpunt();

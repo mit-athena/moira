@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.2 1993-07-14 10:40:12 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.3 1997-01-20 18:14:14 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,11 +10,12 @@
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.2 1993-07-14 10:40:12 mar Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.3 1997-01-20 18:14:14 danw Exp $";
 #endif lint
 
 #include <sys/file.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <ctype.h>
 #include <mit-copyright.h>
 EXEC SQL INCLUDE sqlca;
@@ -38,7 +39,7 @@ main(argc, argv)
     }
     db = argv[1];
 
-    if (!yes_or_no("Do you *REALLY* want to wipe the SMS database?")) {
+    if (!yes_or_no("Do you *REALLY* want to wipe the moira database?")) {
 	printf("I didn't think so\n");
 	exit(1);
     }
@@ -50,13 +51,11 @@ main(argc, argv)
     
     printf("Opening database: ");
     (void) fflush(stdout);
-    EXEC SQL CONNECT :db;
+    EXEC SQL CONNECT :db IDENTIFIED BY :db;
     if (sqlca.sqlcode != 0) {
 	com_err(argv[0], 0, "Ingres database open failed");
 	exit(1);
     }
-    EXEC SQL SET AUTOCOMMIT ON;
-
     printf(" done\n");
 
     printf("Prefix of backup to restore: ");
@@ -73,7 +72,6 @@ main(argc, argv)
     do_restores(prefix);
     printf("Restore complete\n");
     EXEC SQL COMMIT;
-    EXEC SQL DISCONNECT;
     exit(0);
     /*NOTREACHED*/
 }
@@ -138,14 +136,14 @@ int parse_int(f)
     return(val * sign);
 }
 
-void parse_str(f, buf, len)
+void parse_str(f, buf, maxlen)
     register FILE *f;
     register char *buf;
-    register int len;		/* incl trailing NULL */
+    register int maxlen;
 {
-    register int c;
+    register int c, len=0;
 
-    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len > 0) {
+    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len < maxlen) {
 	if (c == '\\') {
 	    c = getc(f);
 	    if (isdigit(c)) {
@@ -157,15 +155,17 @@ void parse_str(f, buf, len)
 		    punt("Broken \\###");
 		/* Convert to ASCII code: */
 		*buf++ =  (((c-'0')<<6) + ((c1-'0')<<3) + c2-'0');
+		len++;
 	    } else if (c == '\\' || c == SEP_CHAR) {
 		*buf++ = c;
-		--len;
+		len++;
 	    } else punt ("Broken '\\'");
 	} else {
 	    *buf++ = c;
-	    --len;
+	    len++;
 	}
     }
+    *buf='\0';
     if (c == EOF)
 	return;
     
@@ -174,7 +174,6 @@ void parse_str(f, buf, len)
 	while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n');
 	(void) ungetc(c, f);
     } else {
-	*buf++ = 0;
 	(void) ungetc(c, f);
     }
 }

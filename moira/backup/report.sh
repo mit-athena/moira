@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.5 1992-08-17 15:08:15 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.6 1997-01-20 18:14:13 danw Exp $
 
 chdir($ARGV[0]);
 
@@ -28,7 +28,7 @@ print "\n";
 undef %TYPES;
 
 
-open(CLUSTERS, "cluster") || die "Cannot open cluster file for input.\n";
+open(CLUSTERS, "clusters") || die "Cannot open clusters file for input.\n";
 
 $total = 0;
 

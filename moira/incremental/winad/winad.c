@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.15 2001-06-08 21:09:49 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.16 2001-06-11 21:11:09 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -1505,6 +1505,9 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      *name_v[] = {NULL, NULL};
   char      *desc_v[] = {NULL, NULL};
   char      *samAccountName_v[] = {NULL, NULL};
+  char      *groupTypeControl_v[] = {NULL, NULL};
+  u_int     groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
+  char      groupTypeControlStr[80];
   int       n;
   int       i;
   int       rc;
@@ -1558,12 +1561,17 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   name_v[0] = after_group_name;
   samAccountName_v[0] = sam_name;
   desc_v[0] = after_desc;
+  if (after_security_flag)
+    groupTypeControl |= ADS_GROUP_TYPE_SECURITY_ENABLED;
+  sprintf(groupTypeControlStr, "%ld", groupTypeControl);
+  groupTypeControl_v[0] = groupTypeControlStr;
   n = 0;
   ADD_ATTR("samAccountName", samAccountName_v, LDAP_MOD_REPLACE);
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
   if (strlen(after_desc) == 0)
     desc_v[0] = NULL;
   ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+  ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
   mods[n] = NULL;
   sprintf(new_dn, "cn=%s,%s,%s", after_group_name, after_group_ou, dn_path);
   if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)

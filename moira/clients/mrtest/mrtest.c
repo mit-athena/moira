@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.5 1988-01-22 12:26:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.6 1988-08-04 14:04:44 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.5 1988-01-22 12:26:13 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.6 1988-08-04 14:04:44 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -20,6 +20,7 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 int ss;
 int recursion = 0;
 extern ss_request_table sms_test;
+extern int sending_version_no;
 
 #ifndef __SABER__
 main(argc, argv)
@@ -42,7 +43,7 @@ sms()
 	init_sms_err_tbl();
 	init_krb_err_tbl();
 
-	ss = ss_create_invocation("sms", "1.0", (char *)NULL,
+	ss = ss_create_invocation("sms", "2.0", (char *)NULL,
 				  &sms_test, &status);
 	if (status != 0) {
 		com_err(whoami, status, "Unable to create invocation");
@@ -61,6 +62,16 @@ test_noop()
 	if (status) ss_perror(ss, status, 0);
 }
 
+test_new()
+{
+	sending_version_no = SMS_VERSION_2;
+}
+
+test_old()
+{
+	sending_version_no = SMS_VERSION_1;
+}
+
 test_connect()
 {
 	int status = sms_connect();
@@ -75,7 +86,9 @@ test_disconnect()
 
 test_auth()
 {
-	int status = sms_auth();
+	int status;
+
+	status = sms_auth("smstest");
 	if (status) ss_perror(ss, status, 0);
 }
 
@@ -224,6 +237,7 @@ test_query(argc, argv)
 		ss_perror(ss, 0, "Usage: query handle [ args ... ]");
 		return;
 	}
+
 	count = 0;
 	status = sms_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
 	printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
@@ -242,4 +256,3 @@ test_access(argc, argv)
 	status = sms_access(argv[1], argc-2, argv+2);
 	if (status) ss_perror(ss, status, 0);
 }
-

@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.29 2002-12-03 21:22:26 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.30 2003-05-22 17:03:55 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.29 2002-12-03 21:22:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.30 2003-05-22 17:03:55 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -41,7 +41,52 @@ int access_user(struct query *q, char *argv[], client *cl)
     return MR_SUCCESS;
 }
 
+int access_update_user(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int users_id, unix_uid, status, comments, secure;
+  char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
+  char winconsoleshell[USERS_WINCONSOLESHELL_SIZE], last[USERS_LAST_SIZE];
+  char first[USERS_FIRST_SIZE], middle[USERS_MIDDLE_SIZE];
+  char clearid[USERS_CLEARID_SIZE], type[USERS_TYPE_SIZE];
+  char signature[USERS_SIGNATURE_SIZE];
+  EXEC SQL END DECLARE SECTION;
 
+  /* The two fields we let users update themselves didn't appear until
+   * version 11.
+   */
+  if (q->version < 11)
+    return MR_PERM;
+
+  if (cl->users_id != *(int *)argv[0])
+    return MR_PERM;
+
+  users_id = *(int *)argv[0];
+
+  EXEC SQL SELECT u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last,
+    u.first, u.middle, u.status, u.clearid, u.type, u.comments, u.signature,
+    u.secure INTO :login, :unix_uid, :shell, :winconsoleshell, :last, :first,
+    :middle, :status, :clearid, :type, :comments, :signature, :secure
+    FROM USERS u WHERE u.users_id = :users_id;
+
+  /* None of these things can have changed. */
+  if (strcmp(argv[1], strtrim(login)) ||
+      (unix_uid != atoi(argv[2])) ||
+      strcmp(argv[3], strtrim(shell)) ||
+      strcmp(argv[4], strtrim(winconsoleshell)) ||
+      strcmp(argv[5], strtrim(last)) ||
+      strcmp(argv[6], strtrim(first)) ||
+      strcmp(argv[7], strtrim(middle)) ||
+      (status != atoi(argv[8])) ||
+      strcmp(argv[9], strtrim(clearid)) ||
+      strcmp(argv[10], strtrim(type)) ||
+      (comments != *(int *)argv[11]) ||
+      strcmp(argv[12], strtrim(signature)) ||
+      (secure != atoi(argv[13])))
+    return MR_PERM;
+
+  return MR_SUCCESS;
+}
 
 /* access_login - verify that client name equals specified login name
  *

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.12 1988-07-01 20:43:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.13 1988-08-03 18:57:57 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.12 1988-07-01 20:43:43 mar Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.13 1988-08-03 18:57:57 mar Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -16,7 +16,6 @@ static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <strings.h>
 #include <sys/types.h>
-#include <zephyr/zephyr.h>
 
 extern char *whoami;
 
@@ -137,28 +136,4 @@ register char *s;
 	else
 	  p[1] = 0;
     }
-}
-
-
-/* Sends a zephyrgram of class "SMS", instance as a parameter.  Ignores
- * errors while sending message.
- */
-
-send_zgram(inst, msg)
-char *inst;
-char *msg;
-{
-    ZNotice_t znotice;
-
-    bzero (&znotice, sizeof (znotice));
-    znotice.z_kind = UNSAFE;
-    znotice.z_class = "SMS";
-    znotice.z_class_inst = inst;
-    znotice.z_default_format = "SMS $instance:\n $message\n";
-    (void) ZInitialize ();
-    znotice.z_message = msg;
-    znotice.z_message_len = strlen(msg) + 1;
-    znotice.z_opcode = "";
-    znotice.z_recipient = "";
-    ZSendNotice(&znotice, ZNOAUTH);
 }

@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.14 2000-02-26 22:50:50 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.15 2000-03-29 20:07:17 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.14 2000-02-26 22:50:50 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.15 2000-03-29 20:07:17 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -92,7 +92,19 @@ int access_login(struct query *q, char *argv[], client *cl)
 
 int access_spob(struct query *q, char *argv[], client *cl)
 {
-  if (cl->users_id != *(int *)argv[0] || !strcmp(argv[1], "IMAP"))
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id;
+  EXEC SQL END DECLARE SECTION;
+
+  if (!strcmp(argv[1], "IMAP"))
+      {
+	EXEC SQL SELECT owner INTO :id FROM filesys f 
+	  WHERE f.label = :argv[2] AND f.type = 'IMAP' AND
+	  f.lockertype = 'USER';
+	if (cl->users_id != id)
+	  return MR_PERM;
+      }
+  if (cl->users_id != *(int *)argv[0])
     return MR_PERM;
   else
     return MR_SUCCESS;

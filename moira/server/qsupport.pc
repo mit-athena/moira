@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.33 2001-04-26 21:26:10 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.34 2001-05-02 21:44:12 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.33 2001-04-26 21:26:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.34 2001-05-02 21:44:12 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1923,7 +1923,8 @@ int update_container(struct query *q, char *argv[], client *cl)
       EXEC SQL FETCH csr_ucon INTO :childname, :childid;
       if (sqlca.sqlcode)
 	      break;
-      
+
+      strcpy(childname, strtrim(childname));
       /* concatenate the new parent name with the existing sub-container name
        * we get the sub-containers new name */
       tmpchar = childname + strlen(name);

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.83 2001-04-26 21:26:11 zacheiss Exp $
+/* $Id: queries2.c,v 2.84 2001-05-02 21:44:13 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -3218,6 +3218,19 @@ static struct valobj amcn_valobj[] =	/* ADD_MACHINE_TO_CONTAINER */
 };
 
 static struct validate amcn_validate = /* for amtn and dmfn */
+{
+  amcn_valobj,
+  2,
+  "mach_id",
+  "mach_id = %d",
+  1,
+  0,
+  access_container,
+  0,
+  set_mach_modtime_by_id,
+};
+
+static struct validate dmcn_validate = /* for amtn and dmfn */
 {
   amcn_valobj,
   2,
@@ -6685,7 +6698,7 @@ struct query Queries[] = {
     "mach_id = %d AND cnt_id = %d",
     2,
     NULL,
-    &amcn_validate,
+    &dmcn_validate,
   },
 
   {

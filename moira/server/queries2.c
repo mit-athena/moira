@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.86 2001-07-20 22:12:25 zacheiss Exp $
+/* $Id: queries2.c,v 2.87 2001-07-30 16:08:00 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -854,13 +854,13 @@ static struct validate ahst2_validate = {
   set_uppercase_modtime,
 };
 
-static char *ahst_fields[] = {
+static char *ahst6_fields[] = {
   "name", "vendor", "model", "os", "location", "contact", "billing_contact",
   "use", "status", "subnet", "address", "ace_type", "ace_name",
   "admin_comment", "ops_comment",
 };
 
-static struct valobj ahst_valobj[] = {
+static struct valobj ahst6_valobj[] = {
   {V_CHAR, 0, MACHINE_TABLE, "name"},
   {V_CHAR, 1, MACHINE_TABLE, "vendor"},
   {V_CHAR, 2, MACHINE_TABLE, "model"},
@@ -877,9 +877,45 @@ static struct valobj ahst_valobj[] = {
   {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
+static struct validate ahst6_validate = {
+  ahst6_valobj,
+  14,
+  "name",
+  "name = UPPER('%s')",
+  1,
+  "mach_id",
+  access_host,
+  setup_ahst,
+  set_uppercase_modtime,
+};
+
+static char *ahst_fields[] = {
+  "name", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "account_number", "use", "status", "subnet", "address", "ace_type", 
+  "ace_name", "admin_comment", "ops_comment",
+};
+
+static struct valobj ahst_valobj[] = {
+  {V_CHAR, 0, MACHINE_TABLE, "name"},
+  {V_CHAR, 1, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 2, MACHINE_TABLE, "model"},
+  {V_CHAR, 3, MACHINE_TABLE, "os"},
+  {V_CHAR, 4, MACHINE_TABLE, "location"},
+  {V_CHAR, 5, MACHINE_TABLE, "contact"},
+  {V_CHAR, 6, MACHINE_TABLE, "billing_contact"},
+  {V_CHAR, 7, MACHINE_TABLE, "account_number"},
+  {V_NUM, 8},
+  {V_NUM, 9},
+  {V_ID, 10, SUBNET_TABLE, "name", "snet_id", MR_SUBNET},
+  {V_TYPE, 12, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 13, 0, 0, 0, MR_ACE},
+  {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 15, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+};
+
 static struct validate ahst_validate = {
   ahst_valobj,
-  14,
+  15,
   "name",
   "name = UPPER('%s')",
   1,
@@ -926,14 +962,14 @@ static struct validate uhst2_validate = {
   set_modtime_by_id,
 };
 
-static char *uhst_fields[] = {
+static char *uhst6_fields[] = {
   "name",
   "newname", "vendor", "model", "os", "location", "contact", "billing_contact",
   "use", "status", "subnet", "address", "ace_type", "ace_name",
   "admin_comment", "ops_comment",
 };
 
-static struct valobj uhst_valobj[] = {
+static struct valobj uhst6_valobj[] = {
   {V_CHAR, 0, MACHINE_TABLE, "name"},
   {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
   {V_RENAME, 1, MACHINE_TABLE, "name", "mach_id", MR_NOT_UNIQUE},
@@ -952,9 +988,48 @@ static struct valobj uhst_valobj[] = {
   {V_ID, 15, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
+static struct validate uhst6_validate = {
+  uhst6_valobj,
+  16,
+  0,
+  0,
+  0,
+  "mach_id",
+  access_host,
+  setup_ahst,
+  set_modtime_by_id,
+};
+
+static char *uhst_fields[] = {
+  "name",
+  "newname", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "account_number", "use", "status", "subnet", "address", "ace_type", 
+  "ace_name", "admin_comment", "ops_comment",
+};
+
+static struct valobj uhst_valobj[] = {
+  {V_CHAR, 0, MACHINE_TABLE, "name"},
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_RENAME, 1, MACHINE_TABLE, "name", "mach_id", MR_NOT_UNIQUE},
+  {V_CHAR, 2, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 3, MACHINE_TABLE, "model"},
+  {V_CHAR, 4, MACHINE_TABLE, "os"},
+  {V_CHAR, 5, MACHINE_TABLE, "location"},
+  {V_CHAR, 6, MACHINE_TABLE, "contact"},
+  {V_CHAR, 7, MACHINE_TABLE, "billing_contact"},
+  {V_CHAR, 8, MACHINE_TABLE, "account_number"},
+  {V_NUM, 9},
+  {V_NUM, 10},
+  {V_ID, 11, SUBNET_TABLE, "name", "snet_id", MR_SUBNET},
+  {V_TYPE, 13, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 14, 0, 0, 0, MR_ACE},
+  {V_ID, 15, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 16, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+};
+
 static struct validate uhst_validate = {
   uhst_valobj,
-  16,
+  17,
   0,
   0,
   0,
@@ -4340,8 +4415,25 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "INTO machine (name, vendor, model, os, location, contact, billing_contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
-    ahst_fields,
+    ahst6_fields,
     15,
+    0,
+    0,
+    NULL,
+    &ahst6_validate,
+  },
+
+  {
+    /* Q_AHST - ADD_HOST, v9 */ /* uses prefetch_value() for mach_id */
+    "add_host",
+    "ahst",
+    9,
+    APPEND,
+    "m",
+    MACHINE_TABLE,
+    "INTO machine (name, vendor, model, os, location, contact, billing_contact, account_number, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
+    ahst_fields,
+    16,
     0,
     0,
     NULL,
@@ -4374,8 +4466,25 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
-    uhst_fields,
+    uhst6_fields,
     15,
+    "mach_id = %d",
+    1,
+    NULL,
+    &uhst6_validate,
+  },
+
+  {
+    /* Q_UHST - UPDATE_HOST, v9 */
+    "update_host",
+    "uhst",
+    9,
+    UPDATE,
+    "m",
+    MACHINE_TABLE,
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), account_number = NVL('%s', CHR(0)). use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
+    uhst_fields,
+    16,
     "mach_id = %d",
     1,
     NULL,

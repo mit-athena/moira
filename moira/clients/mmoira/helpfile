@@ -1,4 +1,4 @@
-$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/helpfile,v 1.4 1992-12-14 11:58:05 mar Exp $
+$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/helpfile,v 1.5 1993-10-21 14:54:42 mar Exp $
 *no_more_help
 Sorry, no further help is available.
 *show_user
@@ -779,3 +779,5 @@ To see a string variable, use type VALUE.  Tye AFSPATH contains
 information for turning a lockername and locker type into the
 appropriate mountpoint for the locker.  The remaining types are just
 for alias names.
+*quota_after_filsys
+Add a new quota now for the filesystem you just added to the database.

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.16 1989-08-04 11:45:28 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.17 1989-08-16 20:40:42 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -53,6 +53,7 @@ char **argv;
     }
 
     IIseterr(ingerr);
+    initialize_sms_error_table ();
 
 ##  ingres sms
 ##  set lockmode session where level = table
@@ -250,7 +251,7 @@ do_groups()
 ##	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
 ##	    where tblstats.table = "list"
 ##	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
-##	    where tblstats.table = "members"
+##	    where tblstats.table = "imembers"
 	if (flag1 < 0 && flag2 < 0 && flag3 < 0) {
 	    fprintf(stderr, "Files gid.db, group.db and grplist.db do not need to be rebuilt.\n");
 	    return(0);
@@ -283,6 +284,7 @@ do_groups()
 
     /* retrieve simple groups */
 ##  range of l is list
+##  range of m is imembers
 ##  begin transaction
     /* get lock records */
 ##  retrieve (name = l.modtime) where l.list_id = 0
@@ -300,41 +302,6 @@ do_groups()
 
     fflush(iout);
     fflush(gout);
-
-    /* get special cases: lists that aren't groups themselves but are
-     * members of groups. */
-    sq = sq_create();
-##  range of m is members
-##  retrieve (name = list.#name, gid = list.#gid, lid = l.list_id)
-##	where l.active != 0 and list.active != 0 and m.member_type = "LIST" and
-##		m.member_id = l.list_id and m.list_id = list.list_id and
-##		list.group != 0 {
-	strtrim(name);
-	if (l = hash_lookup(groups, lid)) {
-	    sprintf(buf, "%s:%s:%d", l, name, gid);
-	    free(l);
-	} else {
-	    sprintf(buf, "%s:%d", name, gid);
-	}
-	hash_store(groups, lid, strsave(buf));
-    	sq_save_unique_data(sq, lid);
-##  }
-
-    while (sq_get_data(sq, &id)) {
-##	repeat retrieve (lid = l.list_id) where m.member_type = "LIST" and
-##		m.list_id = @id and m.member_id = l.list_id and l.active != 0 {
-	    if (l = hash_lookup(groups, lid)) {
-		sprintf(buf, "%s:%s", l, hash_lookup(groups, id));
-		free(l);
-		l = strsave(buf);
-	    } else {
-		l = hash_lookup(groups, id);
-	    }
-	    hash_store(groups, lid, l);
-	    sq_save_unique_data(sq, lid);
-##	}
-    }
-    sq_destroy(sq);
 
     /* now do grplists */
     if (users == NULL) {
@@ -373,10 +340,6 @@ do_groups()
 		    strcat(buf, ":");
 	      }
 	    strcat(buf, "\"\n");
-	    /* Do duplicate detection here */
-	    if (i > 1) {
-		remove_duplicate_groups(buf);
-	    }
 	    if (i > 0)
 		fputs(buf, lout);
 	}
@@ -406,39 +369,6 @@ do_groups()
     fix_file(loutf);
     return(1);
 ##}
-
-
-#define MAXGROUPS 256
-
-remove_duplicate_groups(p)
-register char *p;
-{
-    register char *pp;
-    char *index();
-    register int *mp;
-    int memory[MAXGROUPS], i, *mg = &memory[MAXGROUPS-1];
-
-    bzero(memory, MAXGROUPS * sizeof(int));
-    while (p = index(p, ':')) {
-	i = atoi(++p);
-	for (mp = memory; *mp && mp < mg; mp++)
-	  if (*mp == i) {
-	      if (p = index(p, ':'))
-		strcpy(pp, ++p);
-	      else {
-		  strcpy(--pp, "\"\n");
-	      }
-	      p = pp;
-	      break;
-	  }
-	if (*mp == i)
-	  continue;
-	*mp = i;
-	if (!(p = index(p, ':')))
-	  return;
-	pp = ++p;
-    }
-}
 
 
 do_filsys()

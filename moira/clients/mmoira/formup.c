@@ -15,9 +15,10 @@
 #include	<Xm/ToggleBG.h>
 #include	<Xm/RowColumn.h>
 #include	<Xm/Separator.h>
+#include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.5 1991-06-05 12:15:12 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.6 1992-10-13 11:24:55 mar Exp $";
 
 #define	MAX(a,b)	((a > b) ? a : b)
 #define	MIN(a,b)	((a < b) ? a : b)
@@ -35,6 +36,8 @@ void	radio_callback();
 void	string_callback();
 void	boolean_callback();
 void	menu_callback();
+void	newvalue();
+EntryForm *WidgetToForm();
 
 extern void	UpdateForm();
 extern int	PopupErrorMessage();
@@ -59,25 +62,7 @@ Widget		w;
 EntryForm	*client_data;
 XmAnyCallbackStruct	*call_data;
 {
-	char	output[100];
-	static int	mode = 0;
-
-/*	sprintf (output, "Button %x was hit...\n", w);
-	if (mode) {
-		MakeWatchCursor(toplevel);
-		MakeWatchCursor(entryformwidget);
-		mode = 0;
-	}
-	else {
-		MakeNormalCursor(toplevel);
-		MakeNormalCursor(entryformwidget);
-		mode = 1;
-	}
-	AppendToLog(output);
-	PopupErrorMessage("Sorry, no functionality here!\nSecond line", "No further help is available");
-*/
 	XtUnmanageChild(client_data->formpointer);
-
 }
 
 
@@ -132,6 +117,9 @@ int		orientation;
 					XmSTRING_DEFAULT_CHARSET);
 		n = 0;
 		XtSetArg(wargs[n], XmNlabelString, label);	n++;
+		if (curmenuitem->accel) {
+		    XtSetArg(wargs[n], XmNmnemonic, *(curmenuitem->accel)); n++;
+		}
 
 		if (curmenuitem->submenu) {
 #ifdef	DEBUG
@@ -200,6 +188,7 @@ EntryForm	*spec;
 	n = 0;
 	XtSetArg(wargs[n], XmNautoUnmanage, False);		n++;
 	bb = XmCreateBulletinBoardDialog(parent, "board", wargs, n);
+	MapWidgetToForm(bb, spec);
 
 	spec->formpointer = bb;
 
@@ -303,6 +292,16 @@ EntryForm	*spec;
 /*
 ** First, make the prompt
 */
+		if (current->type == FT_KEYWORD) {
+		    char *p;
+
+		    p = index(current->prompt, '|');
+		    if (p) {
+			*p++ = 0;
+			current->keyword_name = p;
+		    }
+		}
+
 		label = XmStringCreate(	current->prompt, 
 					XmSTRING_DEFAULT_CHARSET);
 		n = 0;
@@ -317,6 +316,24 @@ EntryForm	*spec;
 		if (width > maxleftwidth)
 			maxleftwidth = width;
 
+		if (current->type == FT_KEYWORD && current->keyword_name) {
+		    label = XmStringCreate("add new value",
+					   XmSTRING_DEFAULT_CHARSET);
+		    n = 0;
+		    XtSetArg(wargs[n], XmNlabelString, label);	n++;
+		    XtSetArg(wargs[n], XtNy, localy + *pheight + height); n++;
+		    XtSetArg(wargs[n], XtNx, height); n++;
+		    child = XtCreateManagedWidget("newvalue",
+						  xmPushButtonWidgetClass,
+						  parent, wargs, n);
+		    XtAddCallback(child, XmNactivateCallback,
+				  newvalue, current);
+
+		    GETSIZE(child);
+		    leftheight += height;
+		    if (width + height > maxleftwidth)
+		      maxleftwidth = width + height;
+		}
 /*
 ** Second, make the input widget
 */
@@ -366,7 +383,8 @@ EntryForm	*spec;
 
 		case FT_KEYWORD:
 			children[i] = 
-				MakeRadioField(parent, current, &rightheight);
+				MakeRadioField(parent, current,
+					       &rightheight, spec);
 			XtManageChild(children[i]);
 			XtSetValues(children[i], wargs, n);
 			GETSIZE (children[i]);
@@ -379,6 +397,9 @@ EntryForm	*spec;
 			break;
 		}
 		XmAddTabGroup(children[i]);
+		MapWidgetToForm(children[i], spec);
+		current->parent = (caddr_t) spec;
+
 		current->mywidget = children[i];
 
 		localy += MAX(rightheight, leftheight) + vpad;
@@ -403,10 +424,11 @@ EntryForm	*spec;
 */
 
 Widget
-MakeRadioField(parent, prompt, pheight)
+MakeRadioField(parent, prompt, pheight, spec)
 Widget		parent;
 UserPrompt	*prompt;
 Dimension	*pheight;
+EntryForm	*spec;
 {
 	Widget	radioparent, child;
 	char	*current;
@@ -415,7 +437,6 @@ Dimension	*pheight;
 	XmString	label;	/* accursed compound string required */
 	Dimension	height, width;
 	char	**keywords;
-
 
 	if (!prompt->keywords) {
 		fprintf (stderr, "Warning:  No list of keywords for widget\n");
@@ -441,7 +462,6 @@ Dimension	*pheight;
 		XtSetArg(wargs[n], XmNorientation, XmVERTICAL);	n++;
 		XtSetArg(wargs[n], XmNpacking, XmPACK_COLUMN);	n++;
 	}
-
 	radioparent = XmCreateRadioBox(parent, "radio", wargs, n);
 
 	keywords = prompt->keywords;
@@ -459,6 +479,7 @@ Dimension	*pheight;
 		child = XtCreateManagedWidget(	current,
 						xmToggleButtonWidgetClass,
 						radioparent, wargs, n);
+		MapWidgetToForm(child, spec);
 
 		XtAddCallback(	child, XmNvalueChangedCallback,
 				radio_callback, prompt);
@@ -561,6 +582,8 @@ XmAnyCallbackStruct	*call_data;
 	if (prompt->returnvalue.stringvalue &&
 			(strcmp(prompt->returnvalue.stringvalue, XtName(w)))) {
 		strcpy(prompt->returnvalue.stringvalue, XtName(w));
+		if (prompt->valuechanged)
+		  (*prompt->valuechanged)(WidgetToForm(w), prompt);
 	}
 
 }
@@ -590,6 +613,9 @@ XmAnyCallbackStruct	*call_data;
 	n = 0;
 	XtSetArg(wargs[n], XmNlabelString, label);		n++;
 	XtSetValues (w, wargs, n);
+
+	if (current->valuechanged)
+	  (*current->valuechanged)(WidgetToForm(w), current);
 
 #if DEBUG
 	printf ("boolean_callback:  button %x is %s\n", 
@@ -631,6 +657,130 @@ XmAnyCallbackStruct	*call_data;
 				current->returnvalue.stringvalue,
 				newvalue);
 */		strcpy(current->returnvalue.stringvalue, newvalue);
+		if (current->valuechanged)
+		  (*current->valuechanged)(WidgetToForm(w), current);
 	}
 	XtFree(newvalue);
+}
+
+
+void
+newvalue(w, client_data, call_data)
+Widget	w;
+XmAnyCallbackStruct	*client_data;
+XmAnyCallbackStruct	*call_data;
+{
+    UserPrompt	*current = (UserPrompt *)client_data;
+    EntryForm	*form, *f;
+    int i;
+    static MenuItem *mi = NULL;
+
+    if (current->keyword_name == NULL) {
+	PopupErrorMessage("Sorry, that keyword cannot be changed.", NULL);
+	return;
+    }
+    form = (EntryForm *)current->parent;
+    for (i = 0; form->inputlines[i]; i++)
+      if (form->inputlines[i] == current)
+	break;
+    f = GetAndClearForm("add_new_value");
+    if (mi == NULL) {
+	mi = (MenuItem *)malloc(sizeof(*mi));
+	mi->operation = MM_NEW_VALUE;
+	mi->query = "add_alias";
+	mi->argc = 3;
+    }
+    mi->form = form->formname;
+    mi->accel = (char *) i;
+    f->menu = mi;
+    f->extrastuff = current->keyword_name;
+    DisplayForm(f);
+}
+
+
+/* WARNING: This routine uses Motif internal undocumented routines.
+ * It was the only way to get carriage return to Do The Right Thing.
+ * If you are in a single-item tab group, this routine will call
+ * MoiraFormComplete() (same as pressing OK on the bottom of the form).
+ * otherwise, it advances the focus the same as pressing TAB.
+ */
+
+void EnterPressed(w, event, argv, count)
+Widget w;
+XEvent *event;
+char **argv;
+Cardinal *count;
+{
+    Widget next;
+    EntryForm *form;
+
+    next = _XmFindNextTabGroup(w);
+    if (next == w) {
+	form = WidgetToForm(w);
+	MoiraFormComplete(NULL, form);
+    } else {
+	_XmMgrTraversal(w, XmTRAVERSE_NEXT_TAB_GROUP);
+    }
+}
+
+
+void CancelForm(w, event, argv, count)
+Widget w;
+XEvent *event;
+char **argv;
+Cardinal *count;
+{
+    EntryForm *form;
+
+    form = WidgetToForm(w);
+    if (form)
+      XtUnmanageChild(form->formpointer);    
+}
+
+
+void ExecuteForm(w, event, argv, count)
+Widget w;
+XEvent *event;
+char **argv;
+Cardinal *count;
+{
+    EntryForm *form;
+
+    form = WidgetToForm(w);
+    if (form)
+      MoiraFormComplete(NULL, form);
+}
+
+
+void DoHelp(w, event, argv, count)
+Widget w;
+XEvent *event;
+char **argv;
+Cardinal *count;
+{
+    EntryForm *form;
+
+    form = WidgetToForm(w);
+    if (form)
+      help(form->formname);
+}
+
+
+extern struct hash *create_hash();
+static struct hash *WFmap = NULL;
+
+MapWidgetToForm(w, f)
+Widget *w;
+EntryForm *f;
+{
+    if (WFmap == NULL) {
+	WFmap = create_hash(101);
+    }
+    hash_store(WFmap, w, f);
+}
+
+EntryForm *WidgetToForm(w)
+Widget *w;
+{
+    return((EntryForm *) hash_lookup(WFmap, w));
 }

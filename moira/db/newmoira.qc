@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.6 1989-08-04 13:31:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.7 1989-08-16 20:34:15 mar Exp $
  *
  * Creates a new sms database
  *
@@ -62,6 +62,7 @@ struct alias { char *name;
 		   {"lockertype", "TYPE", "UNKNOWN"},
 		   {"mac_type", "TYPE", "RT"},
 		   {"mac_type", "TYPE", "VAX"},
+		   {"member", "TYPE", "KERBEROS"},
 		   {"member", "TYPE", "LIST"},
 		   {"member", "TYPE", "STRING"},
 		   {"member", "TYPE", "USER"},
@@ -71,11 +72,14 @@ struct alias { char *name;
 		   {"rmember", "TYPE", "LIST"},
 		   {"rmember", "TYPE", "STRING"},
 		   {"rmember", "TYPE", "USER"},
+		   {"rmember", "TYPE", "KERBEROS"},
 		   {"rmember", "TYPE", "RLIST"},
 		   {"rmember", "TYPE", "RSTRING"},
 		   {"rmember", "TYPE", "RUSER"},
+		   {"rmember", "TYPE", "RKERBEROS"},
 		   {"service", "TYPE", "REPLICAT"},
 		   {"service", "TYPE", "UNIQUE"},
+		   {"KERBEROS", "TYPEDATA", "string"},
 		   {"LIST", "TYPEDATA", "list"},
 		   {"NONE", "TYPEDATA", "none"},
 		   {"POP", "TYPEDATA", "machine"},
@@ -363,3 +367,5 @@ int get_list_info() {}
 int register_user() {}
 int access_vis_list_by_name() {}
 int set_uppercase_modtime() {}
+int add_member_to_list() {}
+int delete_member_from_list() {}

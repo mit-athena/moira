@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.6 1992-06-07 04:33:22 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.7 1992-06-08 17:02:29 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -45,20 +45,15 @@ char **argv;
 	exit(1);
     }	
     IIseterr(ingerr);
-    initialize_sms_error_table ();
+    initialize_sms_error_table();
+    initialize_pt_error_table();
+    Initdb();
 
 ##  ingres sms
 ##  set lockmode session where level = table
 ##  begin transaction
 
     do_passwd();
-#if 0
-#define USERSMS 14487
-    status = PR_AddToGroup(NULL, USERSMS, SYSADMINID);
-    if (status) {
-	prserror(status, "adding MR to system:administrators", 0, 0);
-    }
-#endif
     do_groups();
 
 ##  end transaction
@@ -93,53 +88,6 @@ static int ingerr(num)
 }
 
 
-prserror(status, msg, arg1, arg2)
-int status;
-char *msg;
-unsigned long arg1, arg2;
-{
-    char buf[512];
-
-    sprintf(buf, msg, arg1, arg2);
-    switch (status) {
-    case PREXIST:
-	msg = "name already exists";
-	break;
-    case PRIDEXIST:
-	msg = "ID already exists";
-	break;
-    case PRNOIDS:
-	msg = "no IDs available";
-	break;
-    case PRDBFAIL:
-	msg = "database failed";
-	break;
-    case PRNOENT:
-	msg = "no space left in database";
-	break;
-    case PRPERM:
-	msg = "permission denied";
-	break;
-    case PRNOTGROUP:
-	msg = "not a group";
-	break;
-    case PRNOTUSER:
-	msg = "not a user";
-	break;
-    case PRBADNAM:
-	msg = "bad name";
-	break;
-    case 0:
-	msg = "no error";
-	break;
-    default:
-	msg = "unknown code";
-	break;
-    }
-    fprintf(stderr, "%s (%d): %s\n", msg, status, buf);
-}
-
-
 
 do_passwd()
 ##{
@@ -150,13 +98,17 @@ do_passwd()
     users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, id = u.users_id)
-##	where u.#status = 1 or u.#status = 2 {
+##	where u.#uid > 0 and (u.#status = 1 or u.#status = 2) {
 	    strtrim(login);
 	    hash_store(users, id, uid);
-	    status = PR_INewEntry(NULL, login, uid, 0);
-	    if (status) {
-		prserror(status, "adding user %s uid %d", login, uid);
-	    }
+	    if (FindByID (0, uid))
+		status = PRIDEXIST;
+	    else
+		status = CreateEntry(0, login, &uid, 1/*idflag*/, 0/*gflag*/,
+				     SYSADMINID/*oid*/, SYSADMINID/*cid*/);
+	    if (status)
+		fprintf(stderr, "Error adding user %s uid %d: %s\n",
+			login, uid, error_message(status));
 ##  }
 ##}
 
@@ -165,10 +117,12 @@ do_passwd()
 do_groups()
 ##{
     struct hash *groups;
-    long u, g, status;
+    long u, g, status, gpos, upos;
+    struct prentry gentry, uentry;
 ##  char name[33], namebuf[128];
 ##  int gid, id, lid, hide;
-
+    int aid;
+    
     fprintf(stderr, "Doing groups\n");
 
     /* make space for group list */
@@ -182,21 +136,32 @@ do_groups()
 ##  retrieve (name = users.modtime) where users.users_id = 0
 
 ##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id, hide = l.hidden)
-##	where l.group != 0 and l.active != 0 {
+##	where l.group != 0 and l.active != 0 and l.#gid > 0 {
 	    strtrim(name);
 	    sprintf(namebuf, "system:%s", name);
 	    hash_store(groups, lid, -gid);
-	    status = PR_INewEntry(NULL, namebuf, -gid, SYSADMINID);
+	    aid = -gid;
+	    if (gpos = FindByID (0, aid))
+		status = PRIDEXIST;
+	    else
+		status = CreateEntry(0,namebuf,&aid,1/*idflag*/,PRGRP/*gflag*/,
+				     SYSADMINID/*oid*/, SYSADMINID/*cid*/);
 	    if (status)
-		prserror(status, "adding list %s gid %d", namebuf, -gid);
-	    if (hide) {
-		status = PR_SetFieldsEntry
-		    (NULL/*call*/, -gid,
-		     PR_SF_ALLBITS/*mask*/,
-		     PRP_STATUS_MEM >> PRIVATE_SHIFT /*flags*/,
-		     0/*ngroups*/, 0/*nusers*/, 0/*spare1*/, 0/*spare2*/);
+		fprintf(stderr, "Error adding group %s id %d: %s\n",
+			namebuf, aid, error_message(status));
+
+	    /* If this list is hidden, set the pts entry to be s---- */
+	    if (hide && (status==0 || status==PRIDEXIST)) {
+		if (!gpos)
+		    gpos = FindByID(0, aid);
+		status = pr_ReadEntry(0, 0, gpos, &gentry);
+		if (!status) {
+		    gentry.flags = PRGRP|PRACCESS|PRP_STATUS_ANY;
+		    status = pr_WriteEntry(0, 0, gpos, &gentry);
+		}
 		if (status)
-		    prserror(status, "setting flags on list %s", namebuf);
+		    fprintf(stderr, "Error setting flags on group %s: %s\n",
+			    namebuf, error_message(status));
 	    }
 ##  }
 
@@ -207,10 +172,19 @@ do_groups()
 ##	where m.member_type = "USER" {
       if ((u = (long) hash_lookup(users, id)) &&
 	  (g = (long) hash_lookup(groups, lid))) {
-	  status = PR_AddToGroup(NULL, u, g);
-	  if (status) {
-	      prserror(status, "adding %d to group %d", u, -g);
+	  if (g==ANYUSERID || g==AUTHUSERID || u==ANONYMOUSID) {
+	      status = PRPERM;
+	  } else if ((gpos = FindByID(0, g)) && (upos = FindByID(0, u))) {
+	      status = pr_ReadEntry(0,0,upos,&uentry);
+	      if (!status) status = pr_ReadEntry(0,0,gpos,&gentry);
+	      if (!status) status = AddToEntry (0, &gentry, gpos, u);
+	      if (!status) status = AddToEntry (0, &uentry, upos, g);
+	  } else {
+	      status = PRNOENT;
 	  }
+	  if (status)
+	      fprintf(stderr, "Error adding uid %d to group %d: %s\n",
+		      u, -g, error_message(status));
       }
 ##  }
 

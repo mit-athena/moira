@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: danw $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.30 1997-01-29 23:12:30 danw Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.31 1998-01-05 14:51:43 danw Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.30 1997-01-29 23:12:30 danw Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.31 1998-01-05 14:51:43 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -258,7 +258,7 @@ dolook()
 		return (0);
 	}
 	display_text_line(0);
-	display_text_line("Looking you up in the database.... This may take from 30 seconds to 10");
+	display_text_line("Looking you up in the database.... This may take from a few seconds to a few");
 	display_text_line("minutes, depending on how busy the system is at the moment.");
 
 	timer_off();
@@ -298,7 +298,7 @@ dolook()
 		 */	
 		user_is_valid = 0;
 		display_text_line("You are already registered.  An account for you probably already exists");
-		display_text_line("(if not, it will appear within 12 hours).");
+		display_text_line("(if not, it will appear within 24 hours).");
 		display_text_line("");
 		display_text_line("Refer to the document 'Working on Athena' for help logging in.");
 		strcpy(user.u_login, db_user.u_login);

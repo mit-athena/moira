@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.4 1989-01-30 15:51:17 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.5 1989-04-18 12:51:39 mar Exp $
 
 LIBS= -L../lib -lsms -lcom_err -lzephyr -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
@@ -39,7 +39,12 @@ clean:
 	rm -f nfs.c nfs.gen
 
 install: all
-	install passwd.gen ../bin
-	install aliases.gen ../bin
-	install hesiod.gen ../bin
-	install nfs.gen ../bin
+	install -c passwd.gen ../bin
+	install -c aliases.gen ../bin
+	install -c hesiod.gen ../bin
+	install -c nfs.gen ../bin
+	install -c aliases.sh ../bin
+	install -c hesiod.sh ../bin
+	install -c install_dirs ../bin
+	install -c install_quotas ../bin
+	install -c nfs.sh ../bin

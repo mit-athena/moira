@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.24 1988-08-11 22:45:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.25 1988-08-16 00:29:57 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.24 1988-08-11 22:45:36 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.25 1988-08-16 00:29:57 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -389,19 +389,18 @@ int setup_spop(q, argv)
 struct query *q;
 char **argv;
 ##{
-##  int id, flag;
+##  int id, mid, flag;
 ##  char type[9];
 
     id = *(int *)argv[0];
-##  repeat retrieve (type = u.potype, flag = any(machine.name
-##					where machine.mach_id = u.pop_id 
-##						and u.pop_id != 0
-##						and u.users_id = @id))
+##  repeat retrieve (type = u.potype, mid = u.pop_id,
+##		     flag = any(machine.name where machine.mach_id = u.pop_id 
+##				     and u.pop_id != 0 and u.users_id = @id))
 ##	where u.users_id = @id
     if (!flag)
       return(SMS_MACHINE);
-    if (strcmp(type, "POP"))
-      set_pop_usage(id, 1);
+    if (strcmp(strtrim(type), "POP"))
+      set_pop_usage(mid, 1);
     return(SMS_SUCCESS);
 ##}
 
@@ -419,7 +418,7 @@ char **argv;
 ##  repeat retrieve (type = u.potype, id = u.pop_id)
 ##		where u.users_id = @user
 
-    if (strcmp(type, "POP"))
+    if (!strcmp(strtrim(type), "POP"))
       set_pop_usage(id, -1);
     return(SMS_SUCCESS);
 ##}
@@ -450,7 +449,7 @@ int setup_dmac(q, argv)
 ##  repeat retrieve (flag = any(hostaccess.mach_id where hostaccess.mach_id=@id))
     if (flag)
 	return(SMS_IN_USE);
-##  repeat retrieve (flag = any(pcap.mach_id where pcap.mach_id=@id))
+##  repeat retrieve (flag = any(printcap.mach_id where printcap.mach_id=@id))
     if (flag)
 	return(SMS_IN_USE);
 
@@ -660,14 +659,18 @@ setup_afil(q, argv)
 }
 
 
+/* Verify the arguments, depending on the FStype.  Also, if this is an
+ * NFS filesystem, then update any quotas for that filesystem to reflect
+ * the new phys_id.
+ */
+
 setup_ufil(q, argv)
     struct query *q;
     char *argv[];
-{
-    char *type;
-    int mach_id;
-    char *name;
-    char *access;  
+##{
+    int mach_id, status;
+    char *type, *name, *access;  
+##  int fid;
 
     type = argv[2];
     mach_id = *(int *)argv[3];
@@ -675,11 +678,14 @@ setup_ufil(q, argv)
     access = argv[6];
     var_phys_id = 0;
 
-    if (!strcmp(type, "NFS"))
-	return (check_nfs(mach_id, name, access));
-    else
-	return(SMS_SUCCESS);
-}
+    if (!strcmp(type, "NFS")) {
+	status = check_nfs(mach_id, name, access);
+	fid = *(int *)argv[0];
+##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filesys_id = fid
+	return(status);
+    } else
+      return(SMS_SUCCESS);
+##}
 
 
 /* Find the NFS physical partition that the named directory is on.
@@ -1494,7 +1500,7 @@ int set_pobox(q, argv, cl)
 
 ##  repeat retrieve (id = users.pop_id, potype = users.#potype)
 ##		where users.users_id = @user
-    if (!strcmp(potype, "POP"))
+    if (!strcmp(strtrim(potype), "POP"))
       set_pop_usage(id, -1);
 
     if (!strcmp(argv[1], "POP")) {
@@ -2254,8 +2260,8 @@ register_user(q, argv, cl)
     if (rowcount != 1)
       return(SMS_NO_QUOTA);
 ##  repeat append nfsquota (#users_id = @users_id, filsys_id = values.value,
-##			    #quota = @quota, modtime = "now", modby = @who,
-##			    modwith = @entity)
+##			    #quota = @quota, phys_id = @pid, modtime = "now",
+##			    modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)

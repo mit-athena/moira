@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.8 1992-10-28 16:05:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.9 1992-11-04 17:56:17 mar Exp $
  */
 
 #include <stdio.h>
@@ -424,6 +424,10 @@ int remove;
 	    qy = "get_filesys_by_group";
 	    argv[0] = stringval(form, 3);
 	    argc = 1;
+	} else if (*stringval(form, 4)) {
+	    qy = "get_filesys_by_path";
+	    argv[0] = stringval(form, 4);
+	    argc = 1;
 	}
 	/* fall through to */
     case MM_SHOW_FSGROUP:
@@ -530,10 +534,21 @@ int remove;
 	if (s) *s = 0;
 	break;
     case MM_SHOW_FS_ALIAS:
+	if (!*stringval(form, 0))
+	  argv[2] = "*";
+	else
+	  argv[2] = stringval(form, 0);
+	if (!*stringval(form, 1))
+	  argv[0] = "*";
+	else
+	  argv[0] = stringval(form, 1);
+	argv[1] = "FILESYS";
+	break;
     case MM_ADD_FS_ALIAS:
     case MM_DEL_FS_ALIAS:
+	argv[0] = stringval(form, 1);
 	argv[1] = "FILESYS";
-	argv[2] = stringval(form, 1);
+	argv[2] = stringval(form, 0);
 	break;
     case MM_SHOW_NFS:
 	StoreHost(form, NFS_NAME, &argv[NFS_NAME]);

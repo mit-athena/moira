@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.8 1989-08-09 17:57:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.9 1989-08-16 20:38:02 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -44,6 +44,7 @@ char **argv;
     int ingerr();
 
     IIseterr(ingerr);
+    initialize_sms_error_table();
 ##  ingres sms
 ##  set lockmode session where level = table
 

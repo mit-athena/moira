@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.15 1988-12-07 18:48:16 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.16 1989-03-27 15:02:25 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.15 1988-12-07 18:48:16 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.16 1989-03-27 15:02:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -38,6 +38,10 @@
 #define MACHINE      1
 #define GROUP        2
 #define ALIAS        3
+
+#define NO_MACHINE	 ("\\[NONE\\]")	/* C will remove one of the /'s here,
+					 * and the other quotes the [ for
+					 * ingres' regexp facility. */
 
 #define DEFAULT_TYPE     ("NFS")
 #define DEFAULT_MACHINE  DEFAULT_NONE
@@ -146,6 +150,20 @@ char ** info;
     return(info[ALIAS_NAME]);
 }
 
+static int fsgCount = 1;
+
+static char *
+PrintFSGMembers(info)
+char ** info;
+{
+    char print_buf[BUFSIZ];
+
+    sprintf(print_buf, "  %d. Filesystem: %-32s (sort key: %s)", fsgCount++, info[0], info[1]);
+    Put_message(print_buf);
+    return(info[0]);
+}
+
+
 /*	Function Name: PrintFSInfo
  *	Description: Prints the filesystem information.
  *	Arguments: info - a pointer to the filesystem information.
@@ -157,28 +175,53 @@ PrintFSInfo(info)
 char ** info;
 {
     char print_buf[BUFSIZ];
+
     FORMFEED;
-    sprintf(print_buf,"%20s Filesystem: %s", 
+    sprintf(print_buf,"%20s Filesystem Group: %s", 
 	    " ",info[FS_NAME]);
     Put_message(print_buf);
-    sprintf(print_buf,"Type: %-40s Machine: %-15s",
-	    info[FS_TYPE], info[FS_MACHINE]);
-    Put_message(print_buf);
-    sprintf(print_buf,"Default Access: %-2s Packname: %-17s Mountpoint %s ",
-	    info[FS_ACCESS], info[FS_PACK], info[FS_M_POINT]);
-    Put_message(print_buf);
-    sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
-    Put_message(print_buf);
-    sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
-	    info[FS_OWNER], info[FS_OWNERS]);
-    Put_message(print_buf);
-    sprintf(print_buf, "Auto Create: %-34s Locker Type: %s",
-	    atoi(info[FS_CREATE]) ? "ON" : "OFF", 
-	    info[FS_L_TYPE]);
-    Put_message(print_buf);
-    sprintf(print_buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
-	    info[FS_MODWITH]);
-    Put_message(print_buf);
+
+    if (!strcmp(info[FS_TYPE], "FSGROUP")) {
+	int stat;
+	struct qelem *elem = NULL;
+
+	sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
+	Put_message(print_buf);
+	sprintf(print_buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
+		info[FS_MODWITH]);
+	Put_message(print_buf);
+	Put_message("Containing the filesystems (in order):");
+	if ((stat = do_sms_query("get_fsgroup_members", 1, &info[FS_NAME],
+				 StoreInfo, (char *)&elem)) != 0) {
+	    if (stat == SMS_NO_MATCH)
+	      Put_message("    [no members]");
+	    else
+	      com_err(program_name, stat, NULL);
+	} else {
+	    fsgCount = 1;
+	    Loop(QueueTop(elem), (void *) PrintFSGMembers);
+	    FreeQueue(elem);
+	}
+    } else {
+	sprintf(print_buf,"Type: %-40s Machine: %-15s",
+		info[FS_TYPE], info[FS_MACHINE]);
+	Put_message(print_buf);
+	sprintf(print_buf,"Default Access: %-2s Packname: %-17s Mountpoint %s ",
+		info[FS_ACCESS], info[FS_PACK], info[FS_M_POINT]);
+	Put_message(print_buf);
+	sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
+	Put_message(print_buf);
+	sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
+		info[FS_OWNER], info[FS_OWNERS]);
+	Put_message(print_buf);
+	sprintf(print_buf, "Auto Create: %-34s Locker Type: %s",
+		atoi(info[FS_CREATE]) ? "ON" : "OFF", 
+		info[FS_L_TYPE]);
+	Put_message(print_buf);
+	sprintf(print_buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
+		info[FS_MODWITH]);
+	Put_message(print_buf);
+    }
     return(info[FS_NAME]);
 }
 
@@ -197,6 +240,7 @@ char ** info;
 Bool name;
 {
     char temp_buf[BUFSIZ], *newname;
+    int fsgroup = 0;
 
     Put_message("");
     sprintf(temp_buf, "Changing Attributes of filesystem %s.", 
@@ -211,18 +255,28 @@ Bool name;
     }
 
     GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]);
-    GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
-    strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
-    free(info[FS_MACHINE]);
-    info[FS_MACHINE] = Strsave(temp_buf);
-    GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);
-    GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]);
-    GetValueFromUser("Filesystem's Default Access", &info[FS_ACCESS]);
+    if (!strcmp(info[FS_TYPE], "FSGROUP") || !strcmp(info[FS_TYPE], "fsgroup"))
+      fsgroup++;
+    if (fsgroup) {
+	free(info[FS_MACHINE]);
+	info[FS_MACHINE] = Strsave(NO_MACHINE);
+    } else {
+	GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
+	strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
+	free(info[FS_MACHINE]);
+	info[FS_MACHINE] = Strsave(temp_buf);
+    }
+    if (!fsgroup) {
+	GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);
+	GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]);
+	GetValueFromUser("Filesystem's Default Access", &info[FS_ACCESS]);
+    }
     GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
     GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);
     GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
-    GetYesNoValueFromUser("Automatically create this filesystem",
-		     &info[FS_CREATE]);
+    if (!fsgroup)
+      GetYesNoValueFromUser("Automatically create this filesystem",
+			    &info[FS_CREATE]);
     GetTypeFromUser("Filesystem's lockertype", "lockertype", &info[FS_L_TYPE]);
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
@@ -424,6 +478,209 @@ int argc;
     return (DM_NORMAL);
 }
 
+/*	Function Name: SortAfter
+ *	Description: choose a sortkey to cause an item to be added after 
+ *		the count element in the queue
+ *	Arguments: queue of filesys names & sortkeys, queue count pointer
+ *	Returns: sort key to use.
+ */
+
+/* ARGSUSED */
+char *
+SortAfter(elem, count)
+struct qelem *elem;
+int count;
+{
+    char *prev, *next, prevnext, *key, keybuf[9];
+
+    /* first find the two keys we need to insert between */
+    prev = "A";
+    for (; count > 0; count--) {
+	prev = ((char **)elem->q_data)[1];
+	if (elem->q_forw)
+	  elem = elem->q_forw;
+	else
+	  break;
+    }
+    if (count > 0)
+      next = "Z";
+    else
+      next = ((char **)elem->q_data)[1];
+
+    /* now copy the matching characters */
+    for (key = keybuf; *prev && *prev == *next; next++) {
+	*key++ = *prev++;
+    }
+
+    /* and set the last character */
+    if (*prev == 0)
+      *prev = prevnext = 'A';
+    else
+      prevnext = prev[1];
+    if (prevnext == 0)
+      prevnext = 'A';
+    if (*next == 0)
+      *next = 'Z';
+    if (*next - *prev > 1) {
+	*key++ = (*next + *prev)/2;
+    } else {
+	*key++ = *prev;
+	*key++ = (prevnext + 'Z')/2;
+    }
+    *key = 0;
+    return(Strsave(keybuf));
+}
+
+/*	Function Name: AddFSToGroup
+ *	Description: add a filesystem to an FS group
+ *	Arguments: arc, argv - name of group in argv[1], filesys in argv[2].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+AddFSToGroup(argc, argv)
+char **argv;
+int argc;
+{
+    int stat, count;
+    struct qelem *elem = NULL;
+    char buf[BUFSIZ], *args[5], *bufp;
+
+    if ((stat = do_sms_query("get_fsgroup_members", 1, argv+1, StoreInfo,
+			     (char *)&elem)) != 0) {
+	if (stat != SMS_NO_MATCH)
+	  com_err(program_name, stat, " in AddFSToGroup");
+    }
+    if (elem == NULL) {
+	args[0] = argv[1];
+	args[1] = argv[2];
+	args[2] = "M";
+	stat = do_sms_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+	if (stat)
+	  com_err(program_name, stat, " in AddFSToGroup");
+	return(DM_NORMAL);
+    }
+    elem = QueueTop(elem);
+    fsgCount = 1;
+    Loop(elem, (void *) PrintFSGMembers);
+    sprintf(buf, "%d", QueueCount(elem));
+    bufp = Strsave(buf);
+    stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
+    count = atoi(bufp);
+    free(bufp);
+    args[2] = SortAfter(elem, count);
+
+    FreeQueue(QueueTop(elem));
+    args[0] = argv[1];
+    args[1] = argv[2];
+    stat = do_sms_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+    if (stat == SMS_EXISTS) {
+	Put_message("That filesystem is already a member of the group.");
+	Put_message("Use the order command if you want to change the sorting order.");
+    } else if (stat)
+      com_err(program_name, stat, " in AddFSToGroup");
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: RemoveFSFromGroup
+ *	Description: delete a filesystem from an FS group
+ *	Arguments: arc, argv - name of group in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+RemoveFSFromGroup(argc, argv)
+char **argv;
+int argc;
+{
+    int stat;
+    char buf[BUFSIZ];
+
+    sprintf(buf, "Delete filesystem %s from FS group %s", argv[2], argv[1]);
+    if (!Confirm(buf))
+      return(DM_NORMAL);
+    if ((stat = do_sms_query("remove_filesys_from_fsgroup", 2, argv+1,
+			     Scream, NULL)) != 0) {
+	com_err(program_name, stat, ", not removed.");
+    }
+    return(DM_NORMAL);
+}
+
+/*	Function Name: ChangeFSGroupOrder
+ *	Description: change the sortkey on a filesys in an FSgroup
+ *	Arguments: arc, argv - name of group in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+ChangeFSGroupOrder(argc, argv)
+char **argv;
+int argc;
+{
+    int stat, src, dst;
+    struct qelem *elem = NULL, *top;
+    char buf[BUFSIZ], *bufp, *args[3];
+
+    if ((stat = do_sms_query("get_fsgroup_members", 1, argv+1, StoreInfo,
+			     (char *)&elem)) != 0) {
+	if (stat == SMS_NO_MATCH) {
+	    sprintf(buf, "Ether %s is not a filesystem group or it has no members", argv[1]);
+	    Put_message(buf);
+	} else
+	  com_err(program_name, stat, " in ChangeFSGroupOrder");
+	return(DM_NORMAL);
+    }
+    top = QueueTop(elem);
+    fsgCount = 1;
+    Loop(top, (void *) PrintFSGMembers);
+    while (1) {
+	bufp = Strsave("1");
+	stat = GetValueFromUser("Enter number of the filesystem to move:",
+				&bufp);
+	src = atoi(bufp);
+	free(bufp);
+	if (src < 0) {
+	    Put_message("You must enter a positive number (or 0 to abort).");
+	    continue;
+	} else if (src == 0) {
+	    Put_message("Aborted.");
+	    return(DM_NORMAL);
+	}
+	for (elem = top; src-- > 1 && elem->q_forw; elem = elem->q_forw);
+	if (src > 1) {
+	    Put_message("You entered a number that is too high");
+	    continue;
+	}
+	break;
+    }
+    bufp = Strsave("0");
+    stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
+    dst = atoi(bufp);
+    free(bufp);
+    if (src == dst || src == dst + 1) {
+	Put_message("That has no effect on the sorting order!");
+	return(DM_NORMAL);
+    }
+    args[2] = SortAfter(top, dst);
+    args[0] = argv[1];
+    args[1] = ((char **)elem->q_data)[0];
+    if ((stat = do_sms_query("remove_filesys_from_fsgroup", 2, args,
+			     Scream, NULL)) != 0) {
+	com_err(program_name, stat, " in ChangeFSGroupOrder");
+	return(DM_NORMAL);
+    }
+    if ((stat = do_sms_query("add_filesys_to_fsgroup", 3, args,
+			     Scream, NULL)) != 0) {
+	com_err(program_name, stat, " in ChangeFSGroupOrder");
+    }
+    return(DM_NORMAL);
+}
+
+
 /* -------------- Top Level Menu ---------------- */
 
 /*	Function Name: GetFSAlias
@@ -575,16 +832,42 @@ int
 AttachHelp()
 {
     static char *message[] = {
-      "These are the options:\n\n",
-      "get - get information about a filesystem.\n",
-      "add - add a new filesystem to the data base.\n",
-      "update - update the information in the database on a filesystem.\n",
-      "delete - delete a filesystem from the database.\n",
-      "check - check information about association of a name and a filesys.\n",
-      "alias - associate a name with a filesystem.\n",
-      "unalias - disassociate a name with a filesystem.\n",
-      "verbose - toggle the request for delete confirmation.\n",
+      "These are the options:",
+      "",
+      "get - get information about a filesystem.",
+      "add - add a new filesystem to the data base.",
+      "update - update the information in the database on a filesystem.",
+      "delete - delete a filesystem from the database.",
+      "check - check information about association of a name and a filesys.",
+      "alias - associate a name with a filesystem.",
+      "unalias - disassociate a name with a filesystem.",
+      "verbose - toggle the request for delete confirmation.",
 	NULL,
+    };
+
+    return(PrintHelp(message));
+}
+
+/*	Function Name: FSGroupHelp
+ *	Description: Print help info on fsgroups.
+ *	Arguments: none
+ *	Returns: DM_NORMAL.
+ */
+
+int
+FSGroupHelp()
+{
+    static char *message[] = {
+	"A filesystem group is a named sorted list of filesystems.",
+	"",
+	"To create, modify, or delete a group itself, use the menu above",
+	"  this one, and manipulate a filesystem of type FSGROUP.",
+	"Options here are:",
+	"  get - get info about a group and show its members",
+	"  add - add a new member to a group.",
+	"  remove - remove a member from a group.",
+	"  order - change the sorting order of a group.",
+	NULL
     };
 
     return(PrintHelp(message));

@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.10 1988-10-05 13:13:57 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.11 1989-03-27 14:58:09 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -30,6 +30,11 @@ int GetFS();			/* Get information about named filsys. */
 int AddFS();			/* Adds a new Filsys to the database. */
 int ChangeFS();			/* Changes information in a Filsys entry. */
 int DeleteFS();			/* Delete a filesystem from the database. */
+
+int AddFSToGroup();		/* Add a filesystem to an fsgroup */
+int RemoveFSFromGroup();	/* remove a filesystem from an fsgroup */
+int ChangeFSGroupOrder();	/* change the sortorder on an fsgrouop */
+int FSGroupHelp();		/* print info about fsgroups */
 
 int GetFSAlias();		/* Gets the value for a Filsys alias. */
 int CreateFSAlias();		/* Creates a new alias in the database. */

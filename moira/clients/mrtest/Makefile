@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.9 1990-02-05 13:03:22 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.10 1990-02-14 11:39:58 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -8,7 +8,7 @@
 
 
 LIBS = ../rpc/libsms.a ../gdb/libgdb.a 
-LLIBS= -L../lib -lhesiod -lkrb -ldes -lss -lcom_err -lm -lc 
+LLIBS= -L../lib -lhesiod -lkrb -ldes -lhesiod -lss -lcom_err -lm -lc 
 
 SRCS= test.c
 
@@ -33,7 +33,7 @@ clean:
 	rm -f mrtest
 
 install: mrtest
-	install -s mrtest ${DESTDIR}/usr/etc/mrtest
+	install -c -s mrtest ${DESTDIR}/usr/etc/mrtest
 
 depend:
 	mkdep ${CFLAGS} ${SRCS}

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.5 1993-10-26 16:43:00 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.6 1996-10-24 21:34:47 danw Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -19,7 +19,7 @@
 
 extern int debug, mode, fast, dcmenable, warn;
 extern struct hash *users, *machines, *clusters, *lists;
-extern struct hash *filesys, *nfsphys, *strings, *subnets;
+extern struct hash *filesys, *nfsphys, *strings, *subnets, *string_dups;
 
 #define MAX_ID_VALUE 32765
 #define MIN_ID_VALUE 100
@@ -27,27 +27,44 @@ extern struct hash *filesys, *nfsphys, *strings, *subnets;
 #define dprintf		if (debug) printf
 
 struct user {
-    char login[9];
-    char potype;
-    char *fullname;
-    int status;
-    int users_id;
-    int pobox_id;
+  char login[9];
+  char potype;
+  char *fullname;
+  int status;
+  int users_id;
+  int pobox_id;
+  int comment;
+  int modby;
+  int fmodby;
+  int pmodby;
+  int sigwho;
 };
 
 struct machine {
-    char name[33];
-    char owner_type;
-    int owner_id;
-    int snet_id;
-    int mach_id;
-    int clucount;
-    
+  char name[33];
+  char owner_type;
+  int owner_id;
+  int snet_id;
+  int mach_id;
+  int clucount;
+  int acomment;
+  int ocomment;
+  int creator;
+  int modby;
+};
+
+struct subnet {
+  char name[33];
+  char owner_type;
+  int owner_id;
+  int snet_id;
+  int modby;
 };
 
 struct cluster {
     char name[33];
     int clu_id;
+    int modby;
 };
 
 struct list {

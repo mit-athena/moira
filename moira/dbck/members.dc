@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.dc,v 1.2 1993-10-21 15:07:11 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.dc,v 1.3 1996-10-24 21:34:58 danw Exp $
  */
 
 #include <stdio.h>
@@ -63,8 +63,8 @@ char **argv;
 /*  range of m is imembers */
     /* No equivalent */
 
-    lists = create_hash(10000);
-    members = create_hash(10000);
+    lists = create_hash(50000);
+    members = create_hash(300000);
     records = 0;
 
     load_members();
@@ -98,7 +98,6 @@ char **argv;
 
     exit(0);
 }
-
 
 
 load_members()
@@ -356,7 +355,10 @@ struct member *m;
 	}
 	l->next = NULL;
 	l->member = m;
-	hash_store(lists, m->list_id, l);
+	if( hash_store(lists, m->list_id, l) == -1 ) {
+	  fprintf(stderr,"Out of mem while storing lists in hash table\n");
+	  exit(1);
+	}
 	return;
     }
     for (l1 = l; l1; l1 = l1->next)
@@ -394,7 +396,10 @@ struct member *m;
 	}
 	l->next = NULL;
 	l->member = m;
-	hash_store(members, m->member_id, l);
+	if( hash_store(members, m->member_id, l) == -1 ) {
+	  fprintf(stderr,"Out of mem while storing members in hash table\n");
+	  exit(1);
+	}
 	return;
     }
 

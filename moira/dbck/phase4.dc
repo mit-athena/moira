@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.4 1993-02-09 18:35:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.5 1996-10-24 21:35:23 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.4 1993-02-09 18:35:53 mar Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.5 1996-10-24 21:35:23 danw Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -21,13 +21,15 @@ struct hash *boxes;
     int i;
 
     if (u->potype == 'P') {
-	if (i = (int) hash_lookup(boxes, u->pobox_id))
-	  hash_store(boxes, u->pobox_id, i+1);
-	else {
+      if (i = (int) hash_lookup(boxes, u->pobox_id)) {
+	  if( hash_store(boxes, u->pobox_id, i+1) == -1 ) {
+	    out_of_mem("storing poboxes in hash table");
+	  }
+      } else {
 	  printf("User %s(%s) has pobox on non-POP server %d\n",
 		 u->fullname, u->login, u->pobox_id);
 	  printf("Not fixing this error\n");
-        }
+      }
     }
 }
 
@@ -115,8 +117,12 @@ phase4()
 	  break;
 	} 
 	
-	hash_store(boxes, id, 1);
-	hash_store(counts, id, cnt);
+	if( hash_store(boxes, id, 1) == -1 ) {
+	    out_of_mem("storing poboxes");
+	}
+	if( hash_store(counts, id, cnt) == -1 ) {
+	    out_of_mem("storing pobox counts? in hash table");
+	}
     }
     EXEC SQL CLOSE csr401; 
     hash_step(users, count_boxes, boxes);
@@ -139,7 +145,7 @@ count_only_setup()
     struct machine *m;
 
     dprintf("Loading users...\n");
-    users = create_hash(10000);
+    users = create_hash(30000);
     EXEC SQL DECLARE csr402 CURSOR FOR
 	SELECT users_id, login, last, first, status, 
 	       potype, pop_id, box_id FROM users
@@ -173,12 +179,14 @@ count_only_setup()
 	default:
 	    u->pobox_id = 0;
 	}
-	hash_store(users, id, u);
+	if( hash_store(users, id, u) == -1 ) {
+	  out_of_mem("storing users in hash table");
 	}
+    }
     EXEC SQL CLOSE csr402; 
 
     dprintf("Loading machines...\n");
-    machines = create_hash(1000);
+    machines = create_hash(20000);
     EXEC SQL DECLARE csr403 CURSOR FOR
 	SELECT mach_id, name FROM machine;
     if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
@@ -195,7 +203,9 @@ count_only_setup()
 	  out_of_mem("storing machines");
 	strcpy(m->name, strtrim(name));
 	m->mach_id = id;
-	hash_store(machines, id, m);
+	if( hash_store(machines, id, m) == -1 ) {
+	  out_of_mem("storing users in hash table");
+	}
     }
     EXEC SQL CLOSE csr403; 
 
@@ -220,7 +230,9 @@ count_only_setup()
 	n->nfsphys_id = id;
 	n->allocated = id3;
 	n->count = 0;
-	hash_store(nfsphys, id, n);
+	if( hash_store(nfsphys, id, n) == -1 ) {
+	  out_of_mem("storing nfsphys in hash table");
+	}
 	}
     EXEC SQL CLOSE csr404; 
 

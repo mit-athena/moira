@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.7 1993-10-26 16:43:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.8 1996-10-24 21:35:09 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -7,11 +7,12 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <stdio.h>
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.7 1993-10-26 16:43:01 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.8 1996-10-24 21:35:09 danw Exp $";
 
 
 show_user_id(u)
@@ -178,16 +179,34 @@ struct string *s;
     return(0);
 }
 
+print_str_id(id)
+     int id;
+{
+  printf("String %d is a duplicate\n", id);
+  return(0);
+}
+
+print_dup_map(key, data, hint)
+	int key;
+	int data;
+	char *hint;
+{
+	printf("String %d is a duplicate of string %d\n", key, data);
+
+}
 
 phase1()
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     char name[81], name1[81], last[17], first[17], buf[257];
-    int id, id2, id3, aid, aid2, status, sid, sid2, sid3, sid4, sid5;
+    int id, id1, id2, id3, aid, aid2, status;
+    int sid, sid2, sid3, sid4, sid5;
     EXEC SQL END DECLARE SECTION; 
+    int i, q, retval, tmp;
     struct save_queue *sq;
     struct user *u;
     struct machine *m;
+    struct subnet *sn;
     struct list *l;
     struct cluster *c;
     struct string *s;
@@ -196,45 +215,98 @@ phase1()
 
     printf("Phase 1 - Looking for duplicates\n");
 
-    dprintf("Loading strings...\n");
-    sq = sq_create();
-    strings = create_hash(5000);
+    /* self-join strings table on "string" to get duplicate strings, then
+       build a duplicates table to merge them. */
 
-    EXEC SQL DECLARE csr101 CURSOR FOR
-      SELECT string_id, string FROM strings ORDER BY string_id;
+    dprintf("Looking for duplicate strings...\n");
+    string_dups = create_hash( 100 );
+    if(!string_dups) out_of_mem("storing duplicate strings");
+    
+    EXEC SQL DECLARE csr116 CURSOR FOR
+      SELECT s1.string_id, s2.string_id FROM strings s1, strings s2
+	where s1.string = s2.string and s1.string_id < s2.string_id;
+    EXEC SQL OPEN csr116;
     if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
-    EXEC SQL OPEN csr101;
+    /*  The SELECT gives us two columns, both with non-negative integers.
+     *  The number in the left column is always the smaller of the two,
+     *  and each row includes string IDs for identical strings.  We use
+     *  them to make a mapping from id-to-delete to id-to-keep for all
+     *	superflous IDs.
+     */
+    q=0;
     while(1) {
-	EXEC SQL FETCH csr101 INTO :id, :buf;
+	EXEC SQL FETCH csr116 INTO :id1, :id2;
 	if (sqlca.sqlcode != 0) {
 	  ingerr(&sqlca.sqlcode);
 	  break;
 	}
+	q++;
+	/*  If id2 is already stored, skip this row. */
+	i = int_hash_lookup( string_dups, id2 );
+	if( i > 0 ) { continue; }
+	/*  Follow the chain of id1 equivalent IDs back to the lowest one. */
+	id=id1;
+	while((tmp=int_hash_lookup(string_dups, id))>0)
+	  id=tmp;
+	int_hash_store( string_dups, id2, id );
+    }
+    EXEC SQL CLOSE csr116;
+    dprintf("found %d duplicates\n", q);
+    int_hash_step(string_dups, print_dup_map, NULL);
+    /* We don't want to delete the duplicates now because if the dbck
+       is cancelled, a LOT of state will be lost. So, we'll just let
+       them not get marked as used and then phase3 will clean them up */
 
-    	s = (struct string *) malloc(sizeof(struct string));
+    dprintf("Loading strings...\n");
+    sq = sq_create();
+    strings = create_hash(75000);
+    if(!sq || !strings) out_of_mem("loading strings");
+
+    EXEC SQL DECLARE csr101 CURSOR FOR
+      SELECT string_id, string, tid FROM strings ORDER BY string_id;
+    EXEC SQL OPEN csr101;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+    q=0;
+    while(1) {
+	EXEC SQL FETCH csr101 INTO :id, :buf, :id1;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
+	q++;
+	s = (struct string *) malloc(sizeof(struct string));
 	if (s == NULL)
 	  out_of_mem("storing strings");
 	s->name = strsave(strtrim(buf));
 	s->string_id = id;
 	s->refc = 0;
-	if (hash_store(strings, id, s)) {
-	    sq_save_data(sq, hash_lookup(strings, id));
-	    sq_save_data(sq, s);
+	retval = hash_store(strings, id, s);
+	if ( retval == -1 ) {
+	  out_of_mem("storing strings in hash table");
+	} else if ( retval == 1 ) { /* duplicate string_id*/
+	  sq_save_data(sq, hash_lookup(strings, id));
+	  sq_save_data(sq, s);
 	}
     }
     EXEC SQL CLOSE csr101;
-    generic_delete(sq, show_str_id, "strings", "string_id", 0);
+    /* I'm not at all convinced this will work, so...
+       generic_delete(sq, show_str_id, "strings", "string_id", 0);
+    */
     string_check(0);
+
+    printf("Loaded %d strings\n", q);
 
     dprintf("Loading users...\n");
     sq = sq_create();
-    users = create_hash(10000);
+    users = create_hash(30000);
+    if(!sq || !users) out_of_mem("loading users");
 
     EXEC SQL DECLARE csr102 CURSOR FOR 
       SELECT users_id, login, last, first, status, potype, pop_id, box_id,
-	  modby, fmodby, pmodby, comment, sigwho FROM users ORDER BY users_id;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+	  modby, fmodby, pmodby, comment, sigwho FROM users
+	ORDER BY users_id;
     EXEC SQL OPEN csr102;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr102 INTO :id, :name, :last, :first, :status,
             :buf, :id2, :id3, :sid, :sid2, :sid3, :sid4, :sid5;
@@ -252,30 +324,29 @@ phase1()
 	u->fullname = strsave(buf);
 	u->status = status;
 	u->users_id = id;
+	u->modby = sid;
+	u->fmodby = sid2;
+	u->pmodby = sid3;
+	u->comment = sid4;
+	u->sigwho = sid5;
 	switch (u->potype) {
 	case 'P':
 	    u->pobox_id = id2;
 	    break;
 	case 'S':
+	    /*  If potype is SMTP, box_id is a string_id for the strings tbl */
 	    u->pobox_id = id3;
 	    break;
 	default:
 	    u->pobox_id = 0;
 	}
-	if (hash_store(users, id, u)) {
+	retval = hash_store(users, id, u);
+	if ( retval == -1 ) {
+	    out_of_mem("storing users in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(users, id));
 	    sq_save_data(sq, u);
 	}
-	if (sid < 0)
-	  string_check(-sid);
-	if (sid2 < 0)
-	  string_check(-sid2);
-	if (sid3 < 0)
-	  string_check(-sid3);
-	if (sid4)
-	  string_check(sid4);
-	if (sid5)
-	  string_check(sid5);
     }
     EXEC SQL CLOSE csr102; 
 
@@ -283,12 +354,13 @@ phase1()
 
     if (!fast) {
 	sq = sq_create();
+	if(!sq) out_of_mem("finding duplicate logins");
 
 	EXEC SQL DECLARE csr103 CURSOR FOR 
 	    SELECT u1.users_id FROM users u1, users u2
 	    WHERE u1.login = u2.login and u1.tid != u2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	EXEC SQL OPEN csr103;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	while(1) {
 	    EXEC SQL FETCH csr103 INTO :id;
 	    if (sqlca.sqlcode != 0) {
@@ -301,16 +373,55 @@ phase1()
 	handle_duplicate_logins(sq);
     }
 
+    if (!fast) {
+	dprintf("Scanning krbmap...\n");
+
+	EXEC SQL DECLARE csr113 CURSOR FOR
+	    SELECT k1.users_id FROM krbmap k1, krbmap k2
+		WHERE k1.users_id = k2.users_id AND k1.tid != k2.tid;
+	EXEC SQL OPEN csr113;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+	while(1) {
+	    EXEC SQL FETCH csr113 INTO :id;
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
+
+	    printf("User %d is in the krbmap more than once!\n", id);
+	    printf("Not fixing this error\n");
+	}
+	EXEC SQL CLOSE csr113; 
+
+	EXEC SQL DECLARE csr114 CURSOR FOR
+	    SELECT k1.string_id FROM krbmap k1, krbmap k2
+		WHERE k1.string_id = k2.string_id AND k1.tid != k2.tid;
+	EXEC SQL OPEN csr114;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+	while(1) {
+	    EXEC SQL FETCH csr114 INTO :id;
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
+
+	    printf("Principal %d is in the krbmap more than once!\n", id);
+	    printf("Not fixing this error\n");
+	}
+	EXEC SQL CLOSE csr114; 
+    }
+
     dprintf("Loading machines...\n");
-    machines = create_hash(1000);
     sq = sq_create();
+    machines = create_hash(20000);
+    if(!sq || !machines) out_of_mem("loading machines");
 
     EXEC SQL DECLARE csr104 CURSOR FOR
 	SELECT mach_id, name, snet_id, owner_type, owner_id,
       		acomment, ocomment, creator, modby
 	FROM machine ORDER BY mach_id;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr104;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr104 INTO :id, :name, :id2, :buf, :id3, :sid2,
 		:sid3, :sid4, :sid;
@@ -328,26 +439,30 @@ phase1()
 	m->snet_id = id2;
 	m->mach_id = id;
 	m->clucount = 0;
-	if (hash_store(machines, id, m)) {
+	m->acomment=sid2;
+	m->ocomment=sid3;
+	m->creator=sid4;
+	m->modby=sid;
+	retval = hash_store(machines, id, m);
+	if ( retval == -1 ) {
+	    out_of_mem("storing machines in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(machines, id));
 	    sq_save_data(sq, m);
 	}
-	if (sid2) string_check(sid2);
-	if (sid3) string_check(sid3);
-	if (sid4 < 0) string_check(-sid4);
-	if (sid < 0) string_check(-sid);
     }
     EXEC SQL CLOSE csr104; 
     generic_fix(sq, show_mach_id, "Change ID", fix_mach_id, 0);
 
     if (!fast) {
 	sq = sq_create();
+	if(!sq) out_of_mem("looking for duplicate machine names");
 
 	EXEC SQL DECLARE csr105 CURSOR FOR
 	    SELECT m1.mach_id FROM machine m1, machine m2
 		WHERE m1.name = m2.name AND m1.tid != m2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	EXEC SQL OPEN csr105;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	while(1) {
 	    EXEC SQL FETCH csr105 INTO :id;
 	    if (sqlca.sqlcode != 0) {
@@ -359,23 +474,74 @@ phase1()
 	}
 	EXEC SQL CLOSE csr105; 
 	generic_fix(sq, show_mach_name, "Change name", cant_fix, 0);
+
+	EXEC SQL DECLARE csr_hal1 CURSOR FOR
+	  SELECT h1.name, m1.mach_id, m2.mach_id
+	  FROM hostalias h1, machine m1, hostalias h2, machine m2
+	  WHERE h1.name=h2.name AND h1.mach_id!=h2.mach_id
+	  AND m1.mach_id=h1.mach_id AND m2.mach_id=h2.mach_id;
+	EXEC SQL OPEN csr_hal1;
+	if(sqlca.sqlcode!=0) ingerr(&sqlca.sqlcode);
+	while(1) {
+	  EXEC SQL FETCH csr_hal1 INTO :name, :id1, :id2;
+	  if(sqlca.sqlcode!=0) {
+	    ingerr(&sqlca.sqlcode);
+	    break;
+	  }
+	  printf("Aliases for machines %d and %d have duplicate name %s\n",
+		 id1, id2, strtrim(name));
+	  cant_fix();
+	}
+	EXEC SQL CLOSE csr_hal1;
+
+	EXEC SQL DECLARE csr_hal2 CURSOR FOR
+	  SELECT h1.name, m1.mach_id, m2.mach_id
+	  FROM hostalias h1, machine m1, machine m2
+	  WHERE h1.name=m1.name AND h1.mach_id=m2.mach_id;
+	EXEC SQL OPEN csr_hal2;
+	if(sqlca.sqlcode!=0) ingerr(&sqlca.sqlcode);
+	while(1) {
+	  EXEC SQL FETCH csr_hal2 INTO :name, :id1, :id2;
+	  if(sqlca.sqlcode!=0) {
+	    ingerr(&sqlca.sqlcode);
+	    break;
+	  }
+	  printf("Machine %d has alias `%s' that conflicts with machine %d\n",
+		 id2, strtrim(name), id1);
+	  cant_fix();
+	}
+	EXEC SQL CLOSE csr_hal2;
     }	
 
     dprintf("Loading subnets...\n");
     subnets = create_hash(254);
+    if(!subnets) out_of_mem("loading subnets");
 
     EXEC SQL DECLARE csr115 CURSOR FOR
-      SELECT snet_id, name from subnet;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+      SELECT snet_id, name, owner_type, owner_id, modby from subnet;
     EXEC SQL OPEN csr115;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
-	EXEC SQL FETCH csr115 INTO :id, :name;
+	EXEC SQL FETCH csr115 INTO :id, :name, :buf, :id2, :sid;
 	if (sqlca.sqlcode != 0) {
 	  ingerr(&sqlca.sqlcode);
 	  break;
-	} 
-	if (hash_store(subnets, id, name)) {
+	}
+
+	sn = (struct subnet *) malloc(sizeof(struct machine));
+	if (sn == NULL)
+	  out_of_mem("storing subnets");
+	strcpy(sn->name, strtrim(name));
+	sn->owner_type=buf[0];
+	sn->owner_id = id2;
+	sn->snet_id = id;
+	sn->modby = sid;
+	retval = hash_store(subnets, id, sn);
+	if ( retval == -1 ) {
+	    out_of_mem("storing subnets in hash table");
+	} else if ( retval == 1 ) {
 	    printf("Duplicate subnet ID: %d (%s)\n", id, name);
+	    /* should add code to delete */
 	}
     }
     EXEC SQL CLOSE csr115;
@@ -383,11 +549,12 @@ phase1()
     dprintf("Loading clusters...\n");
     sq = sq_create();
     clusters = create_hash(100);
+    if(!sq || !clusters) out_of_mem("loading clusters");
 
     EXEC SQL DECLARE csr106 CURSOR FOR
 	SELECT clu_id, name, modby FROM cluster;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr106;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr106 INTO :id, :name, :sid;
 	if (sqlca.sqlcode != 0) {
@@ -400,24 +567,27 @@ phase1()
 	  out_of_mem("storing clusters");
 	strcpy(c->name, strtrim(name));
 	c->clu_id = id;
-	if (hash_store(clusters, id, c)) {
+	c->modby = sid;
+	retval = hash_store(clusters, id, c);
+	if ( retval == -1 ) {
+	    out_of_mem("storing clusters in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(clusters, id));
 	    sq_save_data(sq, c);
 	}
-	if (sid < 0)
-	  string_check(-sid);
     }
     EXEC SQL CLOSE csr106; 
     generic_fix(sq, show_clu_id, "Change ID", fix_clu_id, 0);
 
     if (!fast) {
 	sq = sq_create();
+	if(!sq) out_of_mem("looking for duplicate cluster names");
 
 	EXEC SQL DECLARE csr107 CURSOR FOR
 	    SELECT c1.clu_id FROM cluster c1, cluster c2
 		WHERE c1.name=c2.name AND c1.tid != c2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	EXEC SQL OPEN csr107;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	while(1) {
 	    EXEC SQL FETCH csr107 INTO :id;
 	    if (sqlca.sqlcode != 0) {
@@ -433,13 +603,14 @@ phase1()
 
     dprintf("Loading lists...\n");
     sq = sq_create();
-    lists = create_hash(10000);
+    lists = create_hash(50000);
+    if(!sq || !lists) out_of_mem("loading lists");
 
     EXEC SQL DECLARE csr108 CURSOR FOR
 	SELECT list_id, name, acl_id, acl_type, modby  FROM list 
 	ORDER BY list_id;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr108;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr108 INTO :id, :name, :aid, :buf, :sid;
 	if (sqlca.sqlcode != 0) {
@@ -454,24 +625,26 @@ phase1()
 	l->acl_id = aid;
 	l->list_id = id;
 	l->members = 0;
-	if (hash_store(lists, id, l)) {
+	retval = hash_store(lists, id, l);
+	if ( retval == -1 ) {
+	    out_of_mem("storing lists in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(lists, id));
 	    sq_save_data(sq, l);
 	}
-	if (sid < 0)
-	  string_check(-sid);
     }
     EXEC SQL CLOSE csr108; 
     generic_fix(sq, show_list_id, "Change ID", fix_list_id, 0);
 
     if (!fast) {
 	sq = sq_create();
+	if(!sq) out_of_mem("looking for duplicate list names");
 
 	EXEC SQL DECLARE csr109 CURSOR FOR
 	    SELECT l1.list_id FROM list l1, list l2
 		WHERE l1.name=l2.name AND l1.tid != l2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	EXEC SQL OPEN csr109;
+	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
 	while(1) {
 	    EXEC SQL FETCH csr109 INTO :id;
 	    if (sqlca.sqlcode != 0) {
@@ -487,13 +660,14 @@ phase1()
 
     dprintf("Loading filesys...\n");
     sq = sq_create();
-    filesys = create_hash(10000);
+    filesys = create_hash(30000);
+    if(!sq || !filesys) out_of_mem("loading filesys");
 
     EXEC SQL DECLARE csr110 CURSOR FOR
 	SELECT filsys_id, label, owner, owners, phys_id, mach_id,
 	        type, name, modby FROM filesys ORDER BY filsys_id;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr110;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr110 INTO :id, :name, :aid, :aid2, :id2, :id3, 
 	    :buf, :name1, :sid;
@@ -513,12 +687,13 @@ phase1()
 	f->phys_id = id2;
 	f->mach_id = id3;
 	f->type = buf[0];
-	if (hash_store(filesys, id, f)) {
+	retval = hash_store(filesys, id, f);
+	if ( retval == -1 ) {
+	    out_of_mem("storing filesys in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(filesys, id));
 	    sq_save_data(sq, f);
 	}
-	if (sid < 0)
-	  string_check(-sid);
     }
     EXEC SQL CLOSE csr110;
 
@@ -527,11 +702,12 @@ phase1()
     dprintf("Loading nfsphys...\n");
     sq = sq_create();
     nfsphys = create_hash(500);
+    if(!sq || !nfsphys) out_of_mem("loading nfsphs");
 
     EXEC SQL DECLARE csr111 CURSOR FOR
 	SELECT nfsphys_id, dir, mach_id, allocated, modby FROM nfsphys;
-    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr111;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     while(1) {
 	EXEC SQL FETCH csr111 INTO :id, :name, :id2, :id3, :sid;
 	if (sqlca.sqlcode != 0) {
@@ -547,73 +723,18 @@ phase1()
 	n->nfsphys_id = id;
 	n->allocated = id3;
 	n->count = 0;
-	if (hash_store(nfsphys, id, n)) {
+	retval = hash_store(nfsphys, id, n);
+	if ( retval == -1 ) {
+	    out_of_mem("storing nfsphys in hash table");
+	} else if ( retval == 1 ) {
 	    sq_save_data(sq, hash_lookup(nfsphys, id));
 	    sq_save_data(sq, n);
 	}
-	if (sid < 0)
-	  string_check(-sid);
     }
     EXEC SQL CLOSE csr111;
 
     generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
-    if (!fast) {
-
-	dprintf("Checking for duplicate strings...\n");
-	EXEC SQL DECLARE csr112 CURSOR FOR
-	    SELECT s1.string_id, s1.string FROM strings s1, strings s2
-		WHERE s1.string=s2.string AND s1.tid != s2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
-	EXEC SQL OPEN csr112;
-	while(1) {
-	    EXEC SQL FETCH csr112 INTO :id, :buf;
-	    if (sqlca.sqlcode != 0) {
-		ingerr(&sqlca.sqlcode);
-		break;
-	    } 
-
-	    printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
-	    printf("Not fixing this error\n");
-	}
-	EXEC SQL CLOSE csr112;
-    }
-
-    if (!fast) {
-	dprintf("Scanning krbmap...\n");
-
-	EXEC SQL DECLARE csr113 CURSOR FOR
-	    SELECT k1.users_id FROM krbmap k1, krbmap k2
-		WHERE k1.users_id = k2.users_id AND k1.tid != k2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
-	EXEC SQL OPEN csr113;
-	while(1) {
-	    EXEC SQL FETCH csr113 INTO :id;
-	    if (sqlca.sqlcode != 0) {
-		ingerr(&sqlca.sqlcode);
-		break;
-	    } 
-
-	    printf("User %d is in the krbmap more than once!\n", id);
-	    printf("Not fixing this error\n");
-	}
-	EXEC SQL CLOSE csr113; 
-
-	EXEC SQL DECLARE csr114 CURSOR FOR
-	    SELECT k1.string_id FROM krbmap k1, krbmap k2
-		WHERE k1.string_id = k2.string_id AND k1.tid != k2.tid;
-	if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
-	EXEC SQL OPEN csr114;
-	while(1) {
-	    EXEC SQL FETCH csr114 INTO :id;
-	    if (sqlca.sqlcode != 0) {
-		ingerr(&sqlca.sqlcode);
-		break;
-	    } 
-
-	    printf("Principal %d is in the krbmap more than once!\n", id);
-	    printf("Not fixing this error\n");
-	}
-	EXEC SQL CLOSE csr114; 
-    }
+    /* csr112 */
+    
 }

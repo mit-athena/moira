@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.5 1993-10-26 16:42:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.6 1996-10-24 21:34:42 danw Exp $
  *
  * Moira database consistency checker
  *
@@ -12,9 +12,10 @@
 #include <strings.h>
 #include <signal.h>
 #include "dbck.h"
+EXEC SQL INCLUDE sqlca;
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.5 1993-10-26 16:42:57 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.6 1996-10-24 21:34:42 danw Exp $";
 
 
 int debug = 0;
@@ -23,7 +24,7 @@ int fast = 0;
 int warn = 1;
 int abort_p = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
-struct hash *strings, *members, *subnets;
+struct hash *strings, *members, *subnets, *string_dups;
 EXEC SQL BEGIN DECLARE SECTION; 
 int dcmenable;
 EXEC SQL END DECLARE SECTION; 
@@ -123,7 +124,6 @@ EXEC SQL END DECLARE SECTION;
 	EXEC SQL COMMIT WORK;
     }
     phase4();
-
     EXEC SQL COMMIT WORK;
 
     cleanup();
@@ -134,8 +134,14 @@ EXEC SQL END DECLARE SECTION;
 ingerr(num)
 int	*num;
 {
+EXEC SQL BEGIN DECLARE SECTION;
+    char buf[512];
+EXEC SQL END DECLARE SECTION;
+
     if (*num == 100) return;
-    printf("An ingres error occuurred, code %d\n", *num);
+    printf("An ingres error occurred, code %d\n", *num);
+    EXEC SQL INQUIRE_SQL(:buf = errortext);
+    printf("%s\n", buf);
     printf("Aborting...\n");
     if (!abort_p) {
 	abort_p++;

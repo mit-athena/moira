@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.3 1996-10-24 21:35:22 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 #define NULL 0
 
-static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.3 1996-10-24 21:35:22 danw Exp $";
 
 
 empty_list_check(id, l, hint)
@@ -51,7 +51,12 @@ struct string *s;
     }
 }
 
-
+/*  This test was disabled because the MIT Moira server, which
+ * initially only managed host information for workstations and
+ *  servers in the Athena Computing Environment, has been extended to
+ *  manage all hosts in the MIT.EDU domain (but not subdomains).
+ */
+/*
 noclu_mach_check(id, m, hint)
 int id, hint;
 struct machine *m;
@@ -59,22 +64,24 @@ struct machine *m;
     if (m->clucount == 0 && m->mach_id != 0)
       printf("Warning: machine %s is not in any clusters\n", m->name);
 }
-
+*/
 
 phase3()
 {
     printf("Phase 3 - Finding unused objects\n");
 
     if (warn) {
-	dprintf("Checking machines...\n");
-	hash_step(machines, noclu_mach_check, NULL);
-
+/*	dprintf("Checking machines...\n");
+ *	hash_step(machines, noclu_mach_check, NULL);
+ */
 	dprintf("Checking lists...\n");
 	hash_step(lists, empty_list_check, NULL);
     }
 
+    EXEC SQL SET autocommit on;
     dprintf("Checking strings...\n");
     hash_step(strings, unref_string_check, NULL);
+    EXEC SQL SET autocommit off;
 
 }
 

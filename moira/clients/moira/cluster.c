@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.23 1993-11-24 11:17:30 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.24 1993-11-24 11:37:26 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.23 1993-11-24 11:17:30 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.24 1993-11-24 11:37:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,6 +34,7 @@
 #include <sys/utsname.h>
 #endif
 #include <netdb.h>
+#include <ctype.h>
 
 #include "mit-copyright.h"
 #include "defs.h"

@@ -1,5 +1,5 @@
 .TH SETQUOTA 8 "23 Jan 1989" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/setquota.8,v 1.1 1990-01-26 20:36:21 jnrees Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/setquota.8,v 1.2 1990-01-26 20:44:35 jnrees Exp $
 .UC 4
 .SH NAME
 setquota \- set the disk usage quotas for a given user and partition
@@ -40,9 +40,16 @@ are set to the given quota (plus usage with the
 .B \-u
 option).
 .SH DIAGNOSTICS
-An error will occur if you attempt to set the quota for a user whose
-uid is higher than any other recorded in the quotas file.  To fix
-this, you must grow the quotas file first.
+.B setquota
+will return a non-zero status if the user is not root, if the uid is
+not between 0 and 32767 inclusive, if the low-uid is higher than the
+high-uid, if the quota is less than zero, or if quotas are not enabled
+on the given device or partition.
+
+The previous bug which required the user to manually grow the quotas
+file is fixed.
+.B setquota
+automatically grows the quotas file if necessary.
 .SH AUTHORS
 Bill Sommerfeld, MIT Project Athena
 .br

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.39 1989-08-28 18:53:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.40 1989-08-31 12:48:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.39 1989-08-28 18:53:39 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.40 1989-08-31 12:48:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -116,13 +116,6 @@ access_list(q, argv, cl)
 	  return(SMS_PERM);
     }
 
-    if (!strcmp(strtrim(acl_type), "LIST")) {
-	if (!client_is_member(cl, acl_id))
-	  return(SMS_PERM);
-	else
-	  return(SMS_SUCCESS);
-    }
-
     /* check for client in access control list */
     status = find_member(acl_type, acl_id, client_type, client_id, 0);
     if (!status) return(SMS_PERM);
@@ -157,13 +150,6 @@ access_visible_list(q, argv, cl)
     if (!flags)
 	return(SMS_SUCCESS);
 
-
-    if (!strcmp(strtrim(acl_type), "LIST")) {
-	if (!client_is_member(cl, acl_id))
-	  return(SMS_PERM);
-	else
-	  return(SMS_SUCCESS);
-    }
 
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
@@ -205,13 +191,6 @@ access_vis_list_by_name(q, argv, cl)
       return(SMS_NO_MATCH);
     if (!flags)
 	return(SMS_SUCCESS);
-
-    if (!strcmp(strtrim(acl_type), "LIST")) {
-	if (!client_is_member(cl, acl_id))
-	  return(SMS_PERM);
-	else
-	  return(SMS_SUCCESS);
-    }
 
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
@@ -284,13 +263,6 @@ access_service(q, argv, cl)
     if (rowcount > 1)
       return(SMS_PERM);
 
-    if (!strcmp(strtrim(acl_type), "LIST")) {
-	if (!client_is_member(cl, acl_id))
-	  return(SMS_PERM);
-	else
-	  return(SMS_SUCCESS);
-    }
-
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
 	return(status);
@@ -327,10 +299,13 @@ access_filesys(q, argv, cl)
       return(SMS_PERM);
     if (users_id == cl->users_id)
       return(SMS_SUCCESS);
-    if (!client_is_member(cl, list_id))
-      return(SMS_PERM);
-    else
+    if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
+      return(status);
+    status = find_member("LIST", list_id, client_type, client_id, 0);
+    if (status)
       return(SMS_SUCCESS);
+    else
+      return(SMS_PERM);
 ##}
 
     

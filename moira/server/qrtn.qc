@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.32 1989-08-28 18:37:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.33 1989-08-31 12:47:49 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.32 1989-08-28 18:37:19 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.33 1989-08-31 12:47:49 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -536,40 +536,13 @@ check_query_access(q, argv, cl)
     if (q->everybody)
       return(SMS_SUCCESS);
 
-    if (client_is_member(cl, acl_id))
+    if (get_client(cl, &client_type, &client_id) != SMS_SUCCESS)
+      return(SMS_PERM);
+    if (find_member("LIST", acl_id, client_type, client_id, 0))
       return(SMS_SUCCESS);
     else
       return(SMS_PERM);
 ##}
-
-
-/* If this client has cached list information, use that.  Otherwise, 
- * use the general get_client & find_member routines to determine if
- * the user is a member of the list.
- */
-
-int client_is_member(cl, id)
-client *cl;
-int id;
-{
-    char *client_type;
-    int client_id, status;
-
-    if (cl->lists[0]) {
-	register int i;
-	for (i = 0; cl->lists[i] && i < NLISTS; i++)
-	  if (cl->lists[i] == id)
-	    return(1);
-	return(0);
-    }
-
-    /* parse client name */
-    if (get_client(cl, &client_type, &client_id) != SMS_SUCCESS)
-      return(0);
-
-    /* see if client is in the list (or any of its sub-lists) */
-    return(find_member("LIST", id, client_type, client_id, 0));
-}
 
 
 get_client(cl, client_type, client_id)
@@ -885,42 +858,6 @@ int *uid;
     *uid = get_users_id(login);
     if (*kid == 0)
       *kid = *uid;
-##}
-
-
-/* Cache the lists that the client is a member of.  These will be used
- * to speed up access checking later.
- */
-
-set_client_lists(cl)
-client *cl;
-##{
-##  int lid, mid;
-##  char *type;
-    int count = 0;
-
-    cl->lists[count] = 0;
-    if (cl->users_id != 0) {
-	type = "USER";
-	mid = cl->users_id;
-    } else if (cl->client_id != 0) {
-	type = "KERBEROS";
-	mid = -cl->client_id;
-    } else
-      return;
-
-##  range of m is members
-##  repeat retrieve (lid = m.list_id) where m.member_type = @type and 
-##    	m.member_id = @mid {
-	    cl->lists[count++] = lid;
-	    if (count >= NLISTS)
-##	      endretrieve
-##  }
-    if (count >= NLISTS) {
-	cl->lists[0] = 0;
-	com_err(whoami, 0, "too many lists to cache");
-    } else
-      cl->lists[count] = 0;
 ##}
 
 

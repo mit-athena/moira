@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.3 2000-10-08 03:16:24 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.4 2000-10-11 06:16:46 zacheiss Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -261,6 +261,7 @@ do_groups()
 
 		aid = 0;
 		root_flag = 0;
+		ustatus = NULL;
 		strtrim(string);
 
 		if (p = strchr(string, '@')) 

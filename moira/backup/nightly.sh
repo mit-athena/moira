@@ -51,10 +51,8 @@ echo
 echo -n "deleting last backup"
 rm -rf stale
 echo "Shipping over the net:"
-su wesommer -fc "rdist -c ${BKUPDIRDIR} apollo:/site/sms/sms_backup"
-su wesommer -fc "rdist -c ${BKUPDIRDIR} zeus:/site/sms/sms_backup"
-su wesommer -fc "rdist -c ${BKUPDIRDIR} jason:/site/sms/sms_backup"
-su wesommer -fc "rdist -c ${BKUPDIRDIR} trillian:/site/sms/sms_backup"
+su smsdba -fc "rdist -c ${BKUPDIRDIR} themis:/site/sms/sms_backup"
+su smsdba -fc "rdist -c ${BKUPDIRDIR} odysseus:/site/sms/sms_backup"
 
 if [ "`/usr/bin/find /u1/sms/critical.log -mtime -1 -print`" = "/u1/sms/critical.log" ]; then
 	(/bin/echo "To: dbadmin";\

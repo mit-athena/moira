@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 1999-07-12 16:21:03 danw Exp $
+# $Id: Makefile.in,v 1.10 1999-09-17 21:25:23 mwhitson Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -38,7 +38,8 @@ GDSS_TARGET=warehouse.gen
 TARGET=	boot.gen hesiod.gen nfs.gen mailhub.gen pobox.gen hosts.gen \
 	print.gen printng.gen network.gen directory.gen ndb.gen @GDSS_TARGET@
 
-SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh warehouse.sh
+SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh \
+	sapprint.gen sapprint.sh warehouse.sh
 
 .SUFFIXES: .pc
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.1 1992-04-06 14:33:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.1.1.1 1992-09-15 01:03:20 genoa Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -33,10 +33,10 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -62,11 +62,15 @@ char **argv;
 	outf = NULL;
     }
 
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL DECLARE x CURSOR FOR SELECT 
-      mit_id, login
-	FROM users WHERE status != 3 and potype="POP";
+      clearid, login
+	FROM users WHERE status != 3 and potype='POP';
     EXEC SQL OPEN x;
     while (1) {
 	EXEC SQL FETCH x INTO :id, :login;
@@ -80,9 +84,9 @@ char **argv;
     EXEC SQL CLOSE x;
 
     EXEC SQL DECLARE y CURSOR FOR SELECT 
-      u.mit_id, s.string
+      u.clearid, s.string
 	FROM users u, strings s
-	WHERE u.status != 3 and u.potype="SMTP" and u.box_id = s.string_id;
+	WHERE u.status != 3 and u.potype='SMTP' and u.box_id = s.string_id;
     EXEC SQL OPEN y;
     while (1) {
 	EXEC SQL FETCH y INTO :id, :string;

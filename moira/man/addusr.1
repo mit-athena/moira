@@ -1,5 +1,5 @@
-.TH ADDUSR 1 "6 Jul 1992" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.1 1992-07-06 15:56:31 mar Exp $
+.TH ADDUSR 1 "12 Jan 1996" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.2 1996-01-12 17:19:19 jweiss Exp $
 .SH NAME
 addusr \- add and/or register users in Moira
 .SH SYNOPSIS
@@ -50,7 +50,9 @@ This specifies the account status that will be used for all users added
 in this invocation.  If not specified, \fI0 (registerable)\fR will be used.
 .IP \fB-shell\ \fIshell\ \fRor\ \fB-h\ \fIshell\fR:
 This specifies the login shell that will be stored for all users added
-in this invocation.  If not specified, \fI/bin/csh\fR will be used.
+in this invocation.  If not specified, a default will be used.  At MIT
+Athena the default is \fI/bin/athena/tcsh\fR, elsewhere it is likely to be 
+\fI/bin/csh\fR.
 .IP \fB-register\ \fRor\ \fB-R\fR:
 This instructs \fBaddusr\fR to both add the users to the database and
 then to immediately register them.

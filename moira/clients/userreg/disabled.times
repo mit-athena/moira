@@ -1,4 +1,0 @@
-25-60 0 * * *	the nightly database propagation is in progress.
-0-60 1-2 * * *	the nightly database propagation is in progress.
-55-60 4 * * *	the nightly database backup is in progress.
-0-60 5-6 * * *	the nightly database backup is in progress.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: zephyr.sh,v 1.2 2000-01-22 03:11:42 danw Exp $
+# $Id: zephyr.sh,v 1.3 2000-04-04 21:03:18 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -22,7 +22,8 @@ tar xf $TARFILE || exit $MR_TARERR
 # Copy over each file which is new or has changed
 for file in *; do
     if [ -f ../acl/$file ]; then
-	if cmp -s $file ../acl/$file; then
+	cmp -s $file ../acl/$file	
+	if [ $? != 0 ]; then
 	    mv $file ../acl/$file
 	    hup=yes
 	fi

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.10 2000-01-28 00:03:31 danw Exp $
+# $Id: Makefile.in,v 1.11 2000-07-12 22:11:41 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -26,11 +26,11 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-STUDENT_OBJS=student.o
-STAFF_OBJS=staff.o
+STUDENT_OBJS=student.o common.o
+STAFF_OBJS=staff.o common.o
 VOTE_OBJS=vote.o
 
-CFILES=student.c staff.c vote.c
+CFILES=student.c staff.c common.c vote.c
 
 TARGET=student staff vote
 
@@ -45,7 +45,7 @@ TARGET=student staff vote
 all: $(TARGET)
 
 clean:
-	rm -f $(STDENTS_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
+	rm -f $(STUDENT_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
 	rm -f $(CFILES) $(TARGET)
 
 cleandir distclean: clean

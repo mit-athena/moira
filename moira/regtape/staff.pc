@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.3 2000-04-21 19:49:36 zacheiss Exp $
+/* $Id: staff.pc,v 1.4 2000-07-12 22:11:41 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -11,84 +11,51 @@
 #include <moira.h>
 #include <moira_site.h>
 #include <moira_schema.h>
+#include "common.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
 EXEC SQL INCLUDE sqlca;
-extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.3 2000-04-21 19:49:36 zacheiss Exp $");
-
-#define WHO 11859		/* root */
-#define PROG "emp-tape"
-
-#define MAX_ID_VALUE	31999
-#define MIN_ID_VALUE	101
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.4 2000-07-12 22:11:41 zacheiss Exp $");
 
 /* File format is:
-
-0-8	id number
-9-38	name
-39-62	office address
-63-74	phone1
-75-86	phone2
-87-106	dept
-107-156	title
-157-186	username
-187-241	host
-
-*/
+ *
+ * id number [9]
+ * name (last, first middle) [30]
+ * office address [24]
+ * phone1 [12]
+ * phone2 [12]
+ * dept [50]
+ * title [50]
+ */
 
 #define LOC_ID 0
-#define LOC_NAME 9
-#define LOC_OFFICE 39
-#define LOC_PHONE 63
-#define LOC_PHONE2 75
-#define LOC_DEPT 87
-#define LOC_TITLE 137
-#define LOC_USERNAME 187
-#define LOC_HOST 217
-
 #define LEN_ID 9
+#define LOC_NAME (LOC_ID + LEN_ID)
 #define LEN_NAME 30
+#define LOC_OFFICE (LOC_NAME + LEN_NAME)
 #define LEN_OFFICE 24
+#define LOC_PHONE (LOC_OFFICE + LEN_OFFICE)
 #define LEN_PHONE 12
+#define LOC_PHONE2 (LOC_PHONE + LEN_PHONE)
 #define LEN_PHONE2 12
+#define LOC_DEPT (LOC_PHONE2 + LEN_PHONE2)
 #define LEN_DEPT 50
+#define LOC_TITLE (LOC_DEPT + LEN_DEPT)
 #define LEN_TITLE 50
-#define LEN_USERNAME 30
-#define LEN_HOST 55
-
-
-struct entry {
-  char *name;
-  char *last;
-  char *first;
-  char *middle;
-  char *title;
-  char *class;
-  char *id;
-  char *dept;
-  char *address;
-  char *phone;
-  char *phone2;
-};
 
 struct entry *get_next_entry(FILE *in);
-void process_entry(struct entry *e);
-void newuser(struct entry *e);
-int set_next_users_id(int limit);
-int set_next_uid(void);
-void sqlexit(void);
-void dbmserr(char *where, int what);
+void process_entry(struct entry *e, int secure);
+
+EXEC SQL BEGIN DECLARE SECTION;
+int who;
+char *prog = "stafload";
+EXEC SQL END DECLARE SECTION;
 
 char *whoami;
-
-#define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
-#define SQL_DUPLICATE -2112
-
 
 int main(int argc, char **argv)
 {
@@ -114,7 +81,7 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "-w"))
 	wait++;
       else if (file)
-	fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
+	fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
       else
 	file = argv[i];
     }
@@ -135,9 +102,11 @@ int main(int argc, char **argv)
       exit(1);
     }
 
+  EXEC SQL SELECT users_id INTO :who FROM users WHERE login = 'root';
+
   while ((e = get_next_entry(in)))
     {
-      process_entry(e);
+      process_entry(e, 0);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
 	{
@@ -162,31 +131,19 @@ struct entry *get_next_entry(FILE *in)
   static char name[LEN_NAME + 1], sname[LEN_NAME + 1], id[LEN_ID + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
-  static char username[LEN_USERNAME + 1], host[LEN_HOST + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
   char *p, *q;
 
   if (!fgets(buf, sizeof(buf), in))
     return NULL;
 
-  strncpy(id, &buf[LOC_ID], LEN_ID);
-  id[LEN_ID] = '\0';
-  strncpy(name, &buf[LOC_NAME], LEN_NAME);
-  name[LEN_NAME] = '\0';
-  strncpy(office, &buf[LOC_OFFICE], LEN_OFFICE);
-  office[LEN_OFFICE] = '\0';
-  strncpy(phone, &buf[LOC_PHONE], LEN_PHONE);
-  phone[LEN_PHONE] = '\0';
-  strncpy(phone2, &buf[LOC_PHONE2], LEN_PHONE2);
-  phone2[LEN_PHONE2] = '\0';
-  strncpy(dept, &buf[LOC_DEPT], LEN_DEPT);
-  dept[LEN_DEPT] = '\0';
-  strncpy(title, &buf[LOC_TITLE], LEN_TITLE);
-  title[LEN_TITLE] = '\0';
-  strncpy(username, &buf[LOC_USERNAME], LEN_USERNAME);
-  username[LEN_USERNAME] = '\0';
-  strncpy(host, &buf[LOC_HOST], LEN_HOST);
-  host[LEN_HOST] = '\0';
+  strlcpy(id, &buf[LOC_ID], LEN_ID + 1);
+  strlcpy(name, &buf[LOC_NAME], LEN_NAME + 1);
+  strlcpy(office, &buf[LOC_OFFICE], LEN_OFFICE + 1);
+  strlcpy(phone, &buf[LOC_PHONE], LEN_PHONE + 1);
+  strlcpy(phone2, &buf[LOC_PHONE2], LEN_PHONE2 + 1);
+  strlcpy(dept, &buf[LOC_DEPT], LEN_DEPT + 1);
+  strlcpy(title, &buf[LOC_TITLE], LEN_TITLE + 1);
 
   strcpy(sname, name);
   e.name = strtrim(sname);
@@ -200,7 +157,8 @@ struct entry *get_next_entry(FILE *in)
       while (isspace(*p))
 	p++;
       e.first = p;
-      if ((p = strchr(e.first, ' ')))
+      p = strchr(e.first, ' ');
+      if (p)
 	{
 	  *p = '\0';
 	  e.first = strtrim(e.first);
@@ -229,21 +187,22 @@ struct entry *get_next_entry(FILE *in)
   FixCase(e.middle);
 
   e.id = id;
+  e.haddr = e.hphone = "";
 
   /* The following is really gross, but it happens to successfully convert
    * new-style Warehouse office descriptions into (more-readable) old-style
    * Personnel Office office descriptions.
    */
-  e.address = p = strtrim(office);
+  e.oaddr = p = strtrim(office);
   while (*p && !isspace(*p))
     p++;
   q = p;
   while (isspace(*q))
     q++;
-  if (*q && q < e.address + LEN_OFFICE / 2)
+  if (*q && q < e.oaddr + LEN_OFFICE / 2)
     {
       *p++ = '-';
-      while (*q && q < e.address + LEN_OFFICE / 2)
+      while (*q && q < e.oaddr + LEN_OFFICE / 2)
 	{
 	  if (*q != ' ' && *q != '-')
 	    *p++ = *q;
@@ -254,7 +213,7 @@ struct entry *get_next_entry(FILE *in)
       memset(p, ' ', q - p);
     }
 
-  p = e.address + LEN_OFFICE / 2;
+  p = e.oaddr + LEN_OFFICE / 2;
   while (*p && !isspace(*p))
     p++;
   q = p;
@@ -273,411 +232,25 @@ struct entry *get_next_entry(FILE *in)
 	}
       memset(p, ' ', q - p);
     }
-  strtrim(e.address);
+  strtrim(e.oaddr);
+  fixaddress(e.oaddr);
+  e.xaddress = e.oaddr;
 
-  e.phone = strtrim(phone);
-  e.phone2 = strtrim(phone2);
+  e.ophone = e.xphone1 = strtrim(phone);
+  fixphone(e.ophone);
+  e.xphone2 = strtrim(phone2);
+  fixphone(e.xphone2);
   e.dept = strtrim(dept);
-  e.title = strtrim(title);
+  e.xtitle = strtrim(title);
 
-  e.class = "MITS";
-  if (strstr(e.title, "PROF") || strstr(e.title, "LECTURE"))
-    e.class = "FACULTY";
+  e.type = "MITS";
+  if (strstr(e.xtitle, "PROF") || strstr(e.xtitle, "LECTURE"))
+    e.type = "FACULTY";
   if (!strcmp(e.dept, "LINCOLN LAB"))
-    e.class = "LINCOLN";
+    e.type = "LINCOLN";
+
+  FixCase(e.dept);
+  FixCase(e.xtitle);
 
   return &e;
-}
-
-void process_entry(struct entry *e)
-{
-  int changed;
-  char buf[MAX_FIELD_WIDTH], *from, *to;
-  EXEC SQL BEGIN DECLARE SECTION;
-  char *first, *last, *middle, *sid, *name, *rdept;
-  char *rtitle, *raddr, *rhphone, *rophone, *prog;
-  char class[USERS_TYPE_SIZE], oaddr[USERS_OFFICE_ADDR_SIZE];
-  char ophone[USERS_OFFICE_PHONE_SIZE], dept[USERS_DEPARTMENT_SIZE];
-  char dfirst[USERS_FIRST_SIZE], dlast[USERS_LAST_SIZE];
-  char dmiddle[USERS_MIDDLE_SIZE];
-  int id, status, who;
-  EXEC SQL END DECLARE SECTION;
-
-  who = WHO;
-  prog = PROG;
-  first = e->first;
-  if (strlen(first) > USERS_FIRST_SIZE - 1)
-    first[USERS_FIRST_SIZE - 1] = '\0';
-  last = e->last;
-  if (strlen(last) > USERS_LAST_SIZE - 1)
-    last[USERS_LAST_SIZE - 1] = '\0';
-  middle = e->middle;
-  if (strlen(middle) > USERS_MIDDLE_SIZE - 1)
-    middle[USERS_MIDDLE_SIZE - 1] = '\0';
-  sid = e->id;
-  id = 0;
-
-  /* Get user info */
-  EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
-    office_phone, department, status
-    INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr,
-    :ophone, :dept, :status
-    FROM users
-    WHERE clearid = :sid AND status != 3;
-  if (sqlfail())
-    {
-      if (sqlca.sqlcode == SQL_DUPLICATE)
-	{
-	  com_err(whoami, 0, "duplicate ID number %s on user %s %s",
-		  sid, first, last);
-	  return;
-	}
-      else
-	sqlexit();
-    }
-  if (id == 0)
-    {
-      newuser(e);
-      return;
-    }
-  strtrim(dfirst);
-  strtrim(dlast);
-  strtrim(dmiddle);
-  strtrim(class);
-
-  /* Update class/state if necessary.  (Exclude several spacial cases.) */
-  if (strcmp(e->class, class) &&
-      strcmp(class, "STAFF") && strcmp(class, "SIPBMEM") &&
-      strcmp(class, "KNIGHT"))
-    {
-      com_err(whoami, 0, "updating class for %s %s from \"%s\" to \"%s\"",
-	      first, last, class, e->class);
-      if (status == US_NOT_ALLOWED)
-	status = US_NO_LOGIN_YET;
-      if (status == US_ENROLL_NOT_ALLOWED)
-	status = US_ENROLLED;
-      strcpy(class, e->class);
-      EXEC SQL UPDATE users
-	SET type = NVL(:class, CHR(0)), status = :status,
-	modtime = SYSDATE, modby = :who, modwith = :prog
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
-	{
-	  dbmserr("updating user", sqlca.sqlcode);
-	  exit(1);
-	}
-    }
-
-  /* Update name if necessary */
-  if (strcmp(first, strtrim(dfirst)) ||
-      strcmp(last, strtrim(dlast)) ||
-      strcmp(middle, strtrim(dmiddle)))
-    {
-      com_err(whoami, 0, "updating real name for %s%s%s %s (was %s%s%s %s)",
-	      first, *middle ? " " : "", middle, last,
-	      dfirst, *dmiddle ? " " : "", dmiddle, dlast);
-      EXEC SQL UPDATE users
-	SET first = NVL(:first, CHR(0)), last = NVL(:last, CHR(0)),
-	middle = NVL(:middle, CHR(0)), modby = :who, modwith = :prog,
-	modtime = SYSDATE
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
-	{
-	  dbmserr("updating name", sqlca.sqlcode);
-	  exit(1);
-	}
-    }
-
-  changed = 0;
-  strcpy(buf, e->address);
-  while ((to = strchr(buf, ',')))
-    *to = ';';
-  while ((to = strchr(buf, ':')))
-    *to = ';';
-  if (strncmp(strtrim(oaddr), buf, USERS_OFFICE_ADDR_SIZE - 1))
-    {
-      changed++;
-      com_err(whoami, 0, "office for %s %s changed from \"%s\" to \"%s\"",
-	      first, last, oaddr, buf);
-    }
-  strncpy(oaddr, buf, USERS_OFFICE_ADDR_SIZE - 1);
-  oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
-
-  from = e->phone;
-  to = buf;
-  while (*from)
-    {
-      if (isdigit(*from))
-	*to++ = *from;
-      from++;
-    }
-  *to = '\0';
-  if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
-    {
-      changed++;
-      com_err(whoami, 0, "Phone for %s %s changed from \"%s\" to \"%s\"",
-	      first, last, ophone, buf);
-    }
-  strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
-  ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
-
-  FixCase(e->dept);
-  FixCase(e->title);
-  if (strncmp(strtrim(dept), e->dept, USERS_DEPARTMENT_SIZE - 1))
-    {
-      changed++;
-      com_err(whoami, 0, "Department for %s %s changed from \"%s\" to \"%s\"",
-	      first, last, dept, e->dept);
-    }
-  strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
-  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
-
-  sid = e->id;
-  name = e->name;
-  rdept = e->dept;
-  rtitle = e->title;
-  raddr = e->address;
-  rhphone = e->phone;
-  rophone = e->phone2;
-
-  if (changed)
-    {
-      com_err(whoami, 0, "updating finger for %s %s", first, last);
-      EXEC SQL UPDATE users
-	SET office_addr = NVL(:oaddr, CHR(0)),
-	office_phone = NVL(:ophone, CHR(0)), department = NVL(:dept, CHR(0)),
-	fmodtime = SYSDATE, fmodby = :who, fmodwith = :prog,
-	xname = NVL(:name, CHR(0)), xdept = NVL(:rdept, CHR(0)),
-	xtitle = NVL(:rtitle, CHR(0)), xaddress = NVL(:raddr, CHR(0)),
-	xphone1 = NVL(:rhphone, CHR(0)), xphone2 = NVL(:rophone, CHR(0)),
-	xmodtime = SYSDATE, clearid = NVL(:sid, CHR(0))
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
-	{
-	  dbmserr(NULL, sqlca.sqlcode);
-	  exit(1);
-	}
-    }
-  else
-    {
-      EXEC SQL UPDATE users
-	SET xname = NVL(:name, CHR(0)), xdept = NVL(:rdept, CHR(0)),
-	xtitle = NVL(:rtitle, CHR(0)), xaddress = NVL(:raddr, CHR(0)),
-	xphone1 = NVL(:rhphone, CHR(0)), xphone2 = NVL(:rophone, CHR(0)),
-	xmodtime = SYSDATE, clearid = NVL(:sid, CHR(0))
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
-	{
-	  dbmserr(NULL, sqlca.sqlcode);
-	  exit(1);
-	}
-    }
-}
-
-
-void newuser(struct entry *e)
-{
-  char *from, *to;
-  EXEC SQL BEGIN DECLARE SECTION;
-  int id, uid, st, who;
-  char *last, *first, *class, *middle, login[USERS_LOGIN_SIZE], *sid;
-  char fullname[USERS_FULLNAME_SIZE], *prog;
-  char oaddr[USERS_OFFICE_ADDR_SIZE], ophone[USERS_OFFICE_PHONE_SIZE];
-  char dept[USERS_DEPARTMENT_SIZE], *name, *title;
-  char *rdept, *rhphone, *rophone;
-  EXEC SQL END DECLARE SECTION;
-
-  who = WHO;
-  prog = PROG;
-  strncpy(oaddr, e->address, USERS_OFFICE_ADDR_SIZE - 1);
-  oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
-  while ((to = strchr(oaddr, ',')))
-    *to = ';';
-  while ((to = strchr(oaddr, ':')))
-    *to = ';';
-  from = e->phone;
-  to = ophone;
-  while (*from)
-    {
-      if (isdigit(*from))
-	*to++ = *from;
-      from++;
-    }
-  *to = '\0';
-  FixCase(e->dept);
-  strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
-  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
-
-  id = set_next_users_id(0);
-  uid = set_next_uid();
-  sprintf(login, "#%d", uid);
-  last = e->last;
-  first = e->first;
-  middle = e->middle;
-  class = e->class;
-  if (*middle)
-    sprintf(fullname, "%s %s %s", first, middle, last);
-  else
-    sprintf(fullname, "%s %s", first, last);
-  st = US_NO_LOGIN_YET;
-
-  sid = e->id;
-  name = e->name;
-  rdept = e->dept;
-  title = e->title;
-  rhphone = e->phone;
-  rophone = e->phone2;
-
-  com_err(whoami, 0, "adding user %s %s", e->first, e->last);
-
-  EXEC SQL INSERT INTO users
-    (login, users_id, unix_uid, shell, winconsoleshell, last, first, 
-     middle, status, clearid, type, modtime, modby, modwith, fullname, 
-     office_addr, office_phone, department, fmodtime, fmodby, fmodwith,
-     potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
-    VALUES (:login, :id, :uid, '/bin/athena/tcsh', 'cmd', 
-	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
-	    :st, NVL(:sid, CHR(0)), NVL(:class, CHR(0)), SYSDATE, :who, :prog,
-	    NVL(:fullname, CHR(0)), NVL(:oaddr, CHR(0)), NVL(:ophone, CHR(0)),
-	    NVL(:dept, CHR(0)), SYSDATE, :who, :prog, 'NONE',
-	    NVL(:name, CHR(0)), NVL(:rdept, CHR(0)), NVL(:title, CHR(0)),
-	    NVL(:oaddr, CHR(0)), NVL(:rhphone, CHR(0)), NVL(:rophone, CHR(0)),
-	    SYSDATE);
-  if (sqlca.sqlcode)
-    {
-      dbmserr("adding user", sqlca.sqlcode);
-      exit(1);
-    }
-}
-
-
-int set_next_users_id(int limit)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int flag, value, retval;
-  EXEC SQL END DECLARE SECTION;
-
-  EXEC SQL SELECT value INTO :value FROM numvalues
-    WHERE name = 'users_id';
-  if (sqlfail())
-    sqlexit();
-  if (sqlca.sqlerrd[2] != 1)
-    {
-      EXEC SQL ROLLBACK;
-      com_err(whoami, MR_INTERNAL, "values table inconsistancy");
-      exit(1);
-    }
-
-  flag = 0;
-  EXEC SQL SELECT users_id INTO :flag FROM users
-    WHERE users_id = :value;
-  if (sqlfail())
-    sqlexit();
-  if (sqlca.sqlerrd[2] == 0)
-    flag = 0;
-  while (flag)
-    {
-      value++;
-      if (limit && value > MAX_ID_VALUE)
-	value = MIN_ID_VALUE;
-      flag = 0;
-      EXEC SQL SELECT users_id INTO :flag FROM users
-	WHERE users_id = :value;
-      if (sqlfail())
-	sqlexit();
-      if (sqlca.sqlerrd[2] == 0)
-	flag = 0;
-    }
-
-  retval = value++;
-  if (limit && value > MAX_ID_VALUE)
-    value = MIN_ID_VALUE;
-  EXEC SQL UPDATE numvalues SET value = :value
-    WHERE name = 'users_id';
-  if (sqlca.sqlcode)
-    {
-      dbmserr("assigning ID", sqlca.sqlcode);
-      exit(1);
-    }
-  return retval;
-}
-
-int set_next_uid(void)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int flag, initial, value, retval;
-  char *name;
-  EXEC SQL END DECLARE SECTION;
-
-  EXEC SQL SELECT value INTO :initial FROM numvalues
-    WHERE name = 'unix_uid';
-  if (sqlfail())
-    sqlexit();
-  if (sqlca.sqlerrd[2] != 1)
-    {
-      EXEC SQL ROLLBACK;
-      com_err(whoami, MR_INTERNAL, "values table inconsistancy");
-      exit(1);
-    }
-
-  value = initial;
-  flag = 0;
-  EXEC SQL SELECT COUNT(unix_uid) INTO :flag
-    FROM users WHERE unix_uid = :value;
-  if (sqlfail())
-    sqlexit();
-  while (flag)
-    {
-      value++;
-#ifdef ULTRIX_ID_HOLE
-      if (value > 31999 && value < 32768)
-	value = 32768;
-#endif
-      if (value > MAX_ID_VALUE)
-	value = MIN_ID_VALUE;
-      if (value == initial)
-	{
-	  com_err(whoami, 0, "Out of uids!");
-	  EXEC SQL ROLLBACK WORK;
-	  exit(1);
-	}
-      flag = 0;
-      EXEC SQL SELECT COUNT(unix_uid) INTO :flag
-	FROM users WHERE unix_uid = :value;
-      if (sqlfail())
-	sqlexit();
-    }
-
-  retval = value++;
-  if (value > MAX_ID_VALUE)
-    value = MIN_ID_VALUE;
-  EXEC SQL UPDATE numvalues SET value = :value WHERE name = 'unix_uid';
-  if (sqlca.sqlcode)
-    {
-      dbmserr("assigning ID", sqlca.sqlcode);
-      exit(1);
-    }
-  return retval;
-}
-
-
-void sqlexit(void)
-{
-  dbmserr(NULL, sqlca.sqlcode);
-  EXEC SQL ROLLBACK WORK;
-  exit(1);
-}
-
-void dbmserr(char *where, int what)
-{
-  char err_msg[256];
-  int bufsize = 256, msglength = 0;
-
-  sqlglm(err_msg, &bufsize, &msglength);
-  err_msg[msglength] = '\0';
-
-  if (where)
-    com_err(whoami, 0, "DBMS error %swhile %s", err_msg, where);
-  else
-    com_err(whoami, 0, "DBMS error %s", err_msg);
 }

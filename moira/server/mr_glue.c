@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.1 1987-07-14 00:41:18 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.2 1987-07-29 16:03:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,10 +9,13 @@
  * 	a program expecting a library level interface.
  * 
  * 	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/07/14  00:41:18  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.1 1987-07-14 00:41:18 wesommer Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.2 1987-07-29 16:03:58 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -59,7 +62,8 @@ sms_noop()
 sms_auth()
 {
     struct passwd *pw;
-    
+    extern char *krb_realm;
+
     CHECK_CONNECTED;
     pw = getpwuid(getuid());
     if (!pw) return (KDC_PR_UNKNOWN + krb_err_base); /* XXX hack (we 
@@ -68,6 +72,8 @@ sms_auth()
 						    */
     strcpy(pseudo_client.kname.name, pw->pw_name);
     get_krbrlm(pseudo_client.kname.realm, 1);
+    krb_realm = pseudo_client.kname.realm;
+    
 }
 
 int sms_query(name, argc, argv, callproc, callarg)

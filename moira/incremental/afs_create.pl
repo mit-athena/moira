@@ -16,7 +16,7 @@ $quota=1;
      "PROJECT", "project",
      "REF", "ref",
      "SW", "sw",
-     "SYSTEM", "sw",
+     "SYSTEM", "system",
      );
 
 %proc =

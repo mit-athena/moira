@@ -398,7 +398,7 @@ create table listsids
 
 create table containers
 (
-	name		VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(64) 	DEFAULT CHR(0)	NOT NULL,
 	cnt_id		INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
 	location	VARCHAR(64) 	DEFAULT CHR(0)	NOT NULL,

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.15 1989-08-16 11:27:02 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.16 1989-09-20 14:17:15 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.15 1989-08-16 11:27:02 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.16 1989-09-20 14:17:15 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -61,7 +61,7 @@ sms()
 test_noop()
 {
 	int status = sms_noop();
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 test_new()
@@ -89,13 +89,13 @@ char *argv[];
 	    }
 	}
 	status = sms_connect(server);
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 test_disconnect()
 {
 	int status = sms_disconnect();
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 test_host()
@@ -106,7 +106,7 @@ test_host()
         bzero(host, sizeof(host));
 
 	if (status = sms_host(host, sizeof(host) - 1))
-	    ss_perror(ss, status, 0);
+	    ss_perror(ss, status, "");
 	else
 	    printf("You are connected to host %s\n", host);
 }
@@ -116,7 +116,7 @@ test_auth()
 	int status;
 
 	status = sms_auth("smstest");
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 test_script(argc, argv)
@@ -250,7 +250,7 @@ test_query(argc, argv)
 	count = 0;
 	status = sms_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
 	printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 test_access(argc, argv)
@@ -263,7 +263,7 @@ test_access(argc, argv)
 		return;
 	}
 	status = sms_access(argv[1], argc-2, argv+2);
-	if (status) ss_perror(ss, status, 0);
+	if (status) ss_perror(ss, status, "");
 }
 
 

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.7 1987-07-14 00:39:47 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.8 1987-07-29 16:02:48 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  87/07/14  00:39:47  wesommer
+ * Changed interface to log_args.
+ * 
  * Revision 1.6  87/07/06  16:09:07  wesommer
  * Only print ... if the string is too long..
  * 
@@ -27,7 +30,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.7 1987-07-14 00:39:47 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.8 1987-07-29 16:02:48 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -43,7 +46,7 @@ requote(buf, cp, len)
 	register char *cp;
 {
 	register int count = 0;
-	register char c;
+	register unsigned char c;
 	if (len <= 2) return buf;
 	*buf++ = '"'; count++; len--;
 	for(; (count < 40) && (len > 1) && (c = *cp);

@@ -1,4 +1,4 @@
-/* $Id: mail.c,v 1.1 2000-08-10 02:05:35 zacheiss Exp $
+/* $Id: mail.c,v 1.2 2000-08-16 05:25:40 zacheiss Exp $
  *
  * Library-internal routines for categorizing machines in terms
  * of email.
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/mail.c,v 1.1 2000-08-10 02:05:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/mail.c,v 1.2 2000-08-16 05:25:40 zacheiss Exp $");
 
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);
@@ -31,7 +31,7 @@ int mailtype(char *machine)
   int status, match = 0;
   static struct save_queue *pop = NULL, *local = NULL;
   static struct save_queue *mailhub = NULL, *mailhub_name = NULL;
-  static struct save_queue *imap = NULL,
+  static struct save_queue *imap = NULL;
 
   mrcl_clear_message();
 

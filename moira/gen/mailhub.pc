@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.1 1997-01-29 23:18:58 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.2 1998-01-05 14:53:53 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -601,7 +601,7 @@ register char *string;
     lwid = 3;
 
     while (1) {
-	while (*string && *string == ' ') string++;
+	while (*string == ' ') string++;
 	c = (char *)strchr(string, ' ');
 	if (c == 0) {
 	    wwid = strlen(string);
@@ -702,7 +702,6 @@ int size;
     h->size = size;
     h->data = (struct bucket **) perm_malloc(size * sizeof(char *));
     if (h->data == (struct bucket **) NULL) {
-	free(h);
 	return((struct hash *) NULL);
     }
     memset(h->data, 0, size * sizeof(char *));
@@ -822,22 +821,6 @@ char *hint;
     for (p = &(h->data[h->size - 1]); p >= h->data; p--) {
 	for (b = *p; b; b = b->next) {
 	    (*callback)(b->key, b->data, hint);
-	}
-    }
-}
-
-
-/* Deallocate all of the memory associated with a table */
-
-hash_destroy(h)
-struct hash *h;
-{
-    register struct bucket *b, **p, *b1;
-
-    for (p = &(h->data[h->size - 1]); p >= h->data; p--) {
-	for (b = *p; b; b = b1) {
-	    b1 = b->next;
-	    free(b);
 	}
     }
 }

@@ -13,6 +13,9 @@
 	Author "Peter Levine"
 )
 @Author(Michael R. Gretzinger)
+@Author(Jean Marie Diaz)
+@Author(Bill Sommerfeld)
+@Author(Ken Raeburn)
 @BlankSpace(.5inch)
 
 @MajorSection(Abstract)
@@ -22,25 +25,24 @@ distributed network services with multiple server instances requires
 development and integration of centralized data management and automated
 information distribution. This paper presents the Athena Service Management
 System, focusing on the system components and interface design.  The system
-provides centralized data administration, a protocol interface to the
+provides centralized data administration, a protocol for interface to the
 database, tools for accessing and modifying the database and an automated
 mechanism of data distribution.
 
 @MajorSection(Purpose)
 
 The primary purpose of SMS is to provide a single point of contact for
-making administrative changes that may affect more than one Athena service
-or server.  The secondary purpose is to provide a single point of contact
-from which one can obtain authoritative information about Athena
-administration.  Inherently, the implementation of the purpose creates
-significant economic value in regard to the support and maintainence of
-system services.
+administrative changes that affect more than one Athena service.  The
+secondary purpose is to provide a single point of contact for
+authoritative information about Athena administration.  Inherently, the
+implementation of the purpose creates significant economic value in
+regard to the support and maintainence of system services.
 
 @include[intro.mss]
 @include[structure.mss]
 @include[protocol.mss]
 @include[server.mss]
-@include[client.mss]
+@include[clientlib.mss]
 @include[dcm.mss]
 @include[tools.mss]
 @include[deploy.mss]

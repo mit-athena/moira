@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.7 1988-02-08 15:08:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.8 1988-07-20 15:39:25 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  88/02/08  15:08:15  mar
+ * Moved header file locations
+ * 
  * Revision 1.6  87/09/21  15:19:11  wesommer
  * Allow numbers, _, and . as legal characters in the username.
  * 
@@ -32,7 +35,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.7 1988-02-08 15:08:15 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.8 1988-07-20 15:39:25 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -41,6 +44,7 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <krb.h>
 #include <des.h>
 #include <errno.h>
 #include <ctype.h>
@@ -51,7 +55,7 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include "admin_err.h"
 #include <strings.h>
 
-extern void abort();
+extern int abort();
 extern char *strdup();
 extern char *malloc();
 extern int krb_err_base;
@@ -296,6 +300,7 @@ reserve_user(message)
     int i;
     char *login;
     char uid_buf[20];
+    char realm[REALM_SZ];
     
     com_err("reg_svr", 0, " reserve_user %s %s\n",
 	    message->first, message->last);
@@ -339,7 +344,11 @@ reserve_user(message)
     
     /* Send request to kerberos admin_server for login name */
     /* get keys */
-    status = get_svc_in_tkt("register", "sms", "ATHENA.MIT.EDU",
+    if ((status = get_krbrlm(realm, 1)) != KSUCCESS) {
+	status += krb_err_base;
+	goto punt;
+    }
+    status = get_svc_in_tkt("register", "sms", realm,
 			    "changepw", "kerberos",
 			    1, "/etc/srvtab");
     if (status) {
@@ -420,6 +429,7 @@ set_password(message)
     char *argv[3];
     int status;
     char uid_buf[10];
+    char realm[REALM_SZ];
     
     com_err("reg_svr", 0, " set_password %s %s\n",
 	    message->first, message->last);
@@ -447,7 +457,10 @@ set_password(message)
     }
 
     /* get keys */
-    status = get_svc_in_tkt("register", "sms", "ATHENA.MIT.EDU",
+    if ((status = get_krbrlm(realm, 1)) != KSUCCESS) {
+	goto punt;
+    }
+    status = get_svc_in_tkt("register", "sms", realm,
 			    "changepw", "kerberos",
 			    1, "/etc/srvtab");
     if (status) {

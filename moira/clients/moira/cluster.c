@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.54 2001-09-13 02:31:23 zacheiss Exp $
+/* $Id: cluster.c,v 1.55 2001-09-14 03:20:34 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -2076,7 +2076,7 @@ struct mqelem *GetMachineByOwner(char *type, char *name)
 
 int MachineByAcctNumber(int argc, char **argv)
 {
-  char *args[0], *account_number;
+  char *args[1], *account_number;
   int status;
   struct mqelem *elem = NULL;
 

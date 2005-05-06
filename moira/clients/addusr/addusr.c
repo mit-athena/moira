@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.20 2005-03-23 21:11:21 zacheiss Exp $
+/* $Id: addusr.c,v 1.21 2005-05-06 18:11:59 zacheiss Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.20 2005-03-23 21:11:21 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.21 2005-05-06 18:11:59 zacheiss Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -31,7 +31,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
 
 /* flags from command line */
 char *class, *comment, *status_str, *shell, *winconsoleshell, *filename;
-int reg_only, reg, verbose, nodupcheck, securereg;
+int reg_only, reg, verbose, nodupcheck, securereg, nocaps;
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
   FILE *input;
 
   /* clear all flags & lists */
-  reg_only = reg = verbose = lineno = nodupcheck = errors = securereg = 0;
+  reg_only = reg = verbose = lineno = nodupcheck = errors = securereg = nocaps = 0;
   server = NULL;
   filename = "-";
   shell = DEFAULT_SHELL;
@@ -138,6 +138,8 @@ int main(int argc, char **argv)
 	    verbose++;
 	  else if (argis("d", "nodupcheck"))
 	    nodupcheck++;
+	  else if (argis("n", "nocaps"))
+	    nocaps++;
 	  else if (argis("S", "server") || argis("db", "database"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -249,9 +251,12 @@ int main(int argc, char **argv)
       qargv[U_MIDDLE] = strtrim(middle);
       qargv[U_LAST] = strtrim(last);
       qargv[U_MITID] = strtrim(id);
-      FixCase(qargv[U_FIRST]);
-      FixCase(qargv[U_MIDDLE]);
-      FixCase(qargv[U_LAST]);
+      if (!nocaps)
+	{
+	  FixCase(qargv[U_FIRST]);
+	  FixCase(qargv[U_MIDDLE]);
+	  FixCase(qargv[U_LAST]);
+	}
       RemoveHyphens(qargv[U_MITID]);
       if (!reg_only)
 	{
@@ -358,6 +363,7 @@ void usage(char **argv)
   fprintf(stderr, "   -R | -register (and add to database)\n");
   fprintf(stderr, "   -v | -verbose\n");
   fprintf(stderr, "   -d | -nodupcheck (don't check for duplicates)\n");
+  fprintf(stderr, "   -n | -nocaps (don't fix capitalization of names)\n");
   fprintf(stderr, "   -db | -database host:port\n");
   exit(1);
 }

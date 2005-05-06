@@ -1,9 +1,9 @@
 .TH ADDUSR 1 "12 Jan 1996" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.5 1998-08-07 14:11:21 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.6 2005-05-06 18:12:19 zacheiss Exp $
 .SH NAME
 addusr \- add and/or register users in Moira
 .SH SYNOPSIS
-.B addusr [-cCdfhrRsSv6]
+.B addusr [-cCdfhnrRsSv6]
 .SH DESCRIPTION
 .I Addusr
 is a tool for adding users in bulk to the moira database and
@@ -23,7 +23,8 @@ will take up everything but the last two tokens on the line.  If only
 empty string.  The middlename cannot have spaces in it.  The idnumber
 also cannot have spaces, although it may have hyphens in it.  The
 capitalization of the names is not important as it will be corrected
-before entering into the database.  If the operation specified for
+before entering into the database, unless the \fB-n\fR flag has been
+specified.  If the operation specified for
 .B addusr
 includes registering users, then there is one additional token on
 the end of the line:
@@ -70,6 +71,11 @@ users.  Normally \fBaddusr\fR will check the database for users with
 the same name.  If it finds any who match in both name and ID number,
 the user will not be added.  If it finds a name match with a different
 ID number, it will print a warning and add the user anyway.
+.IP \fB-nocaps\ \fRor\ \fB-n\fR:
+Do not attempt to normalize the capitalization of first, middle, and
+last names before adding users.  Normally, \fBaddusr\fR will update the
+capitalization of names based on a set of heuristics.  This flag can be
+used to suppress this behavior if it is inappropriate for certain names.
 .IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR:
 Use the specified host and port to contact the Moira server instead of
 the default server.  Both may be symbolic names or numbers.  If the

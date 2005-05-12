@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: confluence.gen,v 1.1 2005-05-03 22:35:42 zacheiss Exp $
+# $Id: confluence.gen,v 1.2 2005-05-12 05:21:55 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -28,7 +28,7 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     $sth = $dbh->prepare("SELECT l.name FROM list l, imembers i " .
 			 "WHERE i.list_id = " . $dbh->quote($root_list_id) .
 			 "AND i.member_type = 'LIST' " .
-			 "AND i.member_id = l.list_id " .
+			 "AND i.member_id = l.list_id AND i.direct = 1 " .
 			 "ORDER BY l.name") || exit $MR_DBMS_ERR;
     $sth->execute;
     

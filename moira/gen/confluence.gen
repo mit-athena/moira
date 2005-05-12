@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: confluence.gen,v 1.2 2005-05-12 05:21:55 zacheiss Exp $
+# $Id: confluence.gen,v 1.3 2005-05-12 23:59:28 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -25,14 +25,14 @@ $sth0->execute;
 while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     open(OUT, ">$outdir/$hostname");
 
-    $sth = $dbh->prepare("SELECT l.name FROM list l, imembers i " .
+    $sth = $dbh->prepare("SELECT l.name, l.gid FROM list l, imembers i " .
 			 "WHERE i.list_id = " . $dbh->quote($root_list_id) .
 			 "AND i.member_type = 'LIST' " .
 			 "AND i.member_id = l.list_id AND i.direct = 1 " .
-			 "ORDER BY l.name") || exit $MR_DBMS_ERR;
+			 "AND l.grouplist = 1 ORDER BY l.name") || exit $MR_DBMS_ERR;
     $sth->execute;
     
-    while (($name) = $sth->fetchrow_array) {
+    while (($name, $gid) = $sth->fetchrow_array) {
 	$sth2 = $dbh->prepare("SELECT UNIQUE i.member_type, i.member_id " .
 			      "FROM imembers i, list l " .
 			      "WHERE l.name = " . $dbh->quote($name) .
@@ -42,7 +42,7 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
 				  exit $MR_DBMS_ERR;
 	$sth2->execute;
 	
-	$row = "$name:";
+	$row = "$name:$gid:";
 	$row =~ s/\0//g;
 	print OUT $row;
 	$maybecomma = "";

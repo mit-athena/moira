@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.65 2002-09-25 20:44:57 zacheiss Exp $
+/* $Id: cluster.c,v 1.66 2005-05-28 04:54:15 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -687,12 +687,12 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  free(info[10]);
 	}
 
-      info[10] = info[M_SUBNET];
-      info[11] = info[M_ADDR];
-      info[12] = info[M_OWNER_TYPE];
-      info[13] = info[M_OWNER_NAME];
-      info[14] = info[M_ACOMMENT];
-      info[15] = info[M_OCOMMENT];
+      info[10] = strdup(info[M_SUBNET]);
+      info[11] = strdup(info[M_ADDR]);
+      info[12] = strdup(info[M_OWNER_TYPE]);
+      info[13] = strdup(info[M_OWNER_NAME]);
+      info[14] = strdup(info[M_ACOMMENT]);
+      info[15] = strdup(info[M_OCOMMENT]);
 
       if (name)
 	{

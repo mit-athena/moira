@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.57 2003-12-05 21:08:14 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.58 2005-05-30 19:15:04 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.57 2003-12-05 21:08:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.58 2005-05-30 19:15:04 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -83,18 +83,21 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
        *
        * [AFS] - Magic token for AFS home directory.
        * [LOCAL] - Magic token for AD default local values, i.e. C:\<mumble>
+       * [DFS] - Magic token for DFS home directory
        * UNC pathname - \\<something>
        * local pathname - <drive letter>:<something>
        */
 
       if ((strcasecmp(argv[row + 12], "[AFS]")) &&
 	  (strcasecmp(argv[row + 12], "[LOCAL]")) &&
+	  (strcasecmp(argv[row + 12], "[DFS]")) &&
 	  (!(argv[row + 12][0] == '\\' && argv[row + 12][1] == '\\')) &&
 	  (!(isalpha(*argv[row + 12]) && (argv[row + 12][1] == ':'))))
 	return MR_BAD_CHAR;
       
       if ((strcasecmp(argv[row + 13], "[AFS]")) &&
 	  (strcasecmp(argv[row + 13], "[LOCAL]")) &&
+	  (strcasecmp(argv[row + 13], "[DFS]")) &&
 	  (!(argv[row + 13][0] == '\\' && argv[row + 13][1] == '\\')) &&
 	  (!(isalpha(*argv[row + 13]) && (argv[row + 13][1] == ':'))))
 	return MR_BAD_CHAR;

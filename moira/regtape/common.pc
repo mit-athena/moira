@@ -1,4 +1,4 @@
-/* $Id: common.pc,v 1.6 2003-05-14 13:07:36 zacheiss Exp $
+/* $Id: common.pc,v 1.7 2005-05-30 19:14:38 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.6 2003-05-14 13:07:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.7 2005-05-30 19:14:38 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -292,7 +292,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who, '[AFS]', '[AFS]');
+	    SYSDATE, :who, '[DFS]', '[DFS]');
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

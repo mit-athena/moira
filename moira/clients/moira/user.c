@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.67 2003-05-14 13:07:34 zacheiss Exp $
+/* $Id: user.c,v 1.68 2005-05-30 19:13:25 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.67 2003-05-14 13:07:34 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.68 2005-05-30 19:13:25 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -47,8 +47,8 @@ struct mqelem *GetUserInfo(int type, char *name1, char *name2);
 #define DEFAULT_CLASS "?"
 
 #define DEFAULT_WINCONSOLESHELL "cmd"
-#define DEFAULT_WINHOMEDIR "[AFS]"
-#define DEFAULT_WINPROFILEDIR "[AFS]"
+#define DEFAULT_WINHOMEDIR "[DFS]"
+#define DEFAULT_WINPROFILEDIR "[DFS]"
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.

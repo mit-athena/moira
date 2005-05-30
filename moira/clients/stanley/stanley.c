@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.10 2003-08-26 16:35:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.11 2005-05-30 19:13:42 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -341,11 +341,11 @@ int main(int argc, char **argv)
       if (winhomedir)
 	argv[U_WINHOMEDIR] = winhomedir;
       else
-	argv[U_WINHOMEDIR] = "[AFS]";
+	argv[U_WINHOMEDIR] = "[DFS]";
       if (winprofiledir)
 	argv[U_WINPROFILEDIR] = winprofiledir;
       else
-	argv[U_WINPROFILEDIR] = "[AFS]";
+	argv[U_WINPROFILEDIR] = "[DFS]";
 
       status = wrap_mr_query("add_user_account", 15, argv, NULL, NULL);
       if (status)

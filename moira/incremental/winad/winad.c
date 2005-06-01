@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.44 2004-09-21 06:08:17 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.45 2005-06-01 19:05:51 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -5339,6 +5339,7 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
   char temp[64];
   char newGroupName[64];
   char tempGroupName[64];
+  char tempgname[64];
   char *argv[1];
   int  i;
   long rc;
@@ -5347,14 +5348,24 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
   
   ptr1 = strrchr(temp, '/');
   if (ptr1 != NULL)
+  {
+    *ptr1 = '\0';
     ptr = ++ptr1;
+    ptr1 = strrchr(temp, '/');
+    if (ptr1 != NULL)
+    {
+        sprintf(tempgname, "%s-%s", ++ptr1, ptr);
+    }
+    else
+        strcpy(tempgname, ptr);
+  }
   else
-    ptr = temp;
+    strcpy(tempgname, temp);
 
-  if (strlen(ptr) > 25)
-    ptr[25] ='\0';
+  if (strlen(tempgname) > 25)
+    tempgname[25] ='\0';
 
-  sprintf(newGroupName, "cnt-%s", ptr);
+  sprintf(newGroupName, "cnt-%s", tempgname);
 
   /* change everything to lower case */
   ptr = newGroupName;
@@ -5667,6 +5678,18 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
             return(n);
     }
 
+    if ((!strcasecmp(WinHomeDir, "[dfs]")) || (!strcasecmp(WinProfileDir, "[dfs]")))
+    {
+        sprintf(path, "\\\\%s\\dfs\\profiles\\%c\\%s", ldap_domain, user_name[0], user_name);
+	if (!strcasecmp(WinProfileDir, "[dfs]"))
+	  {
+	    strcpy(winProfile, path);
+	    strcat(winProfile, "\\.winprofile");
+	  }
+	if (!strcasecmp(WinHomeDir, "[dfs]"))
+	  strcpy(winPath, path);
+    }
+
     if (hp != NULL)
     {
         i = 0;
@@ -5679,7 +5702,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
 
     if (!strcasecmp(WinHomeDir, "[local]"))
         memset(winPath, '\0', sizeof(winPath));
-    else if (!strcasecmp(WinHomeDir, "[afs]"))
+    else if (!strcasecmp(WinHomeDir, "[afs]") || !strcasecmp(WinHomeDir, "[dfs]"))
     {
         strcpy(homeDrive, "H:");
     }
@@ -5695,7 +5718,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
     // nothing needs to be done if WinProfileDir is [afs].
     if (!strcasecmp(WinProfileDir, "[local]"))
         memset(winProfile, '\0', sizeof(winProfile));
-    else if (strcasecmp(WinProfileDir, "[afs]"))
+    else if (strcasecmp(WinProfileDir, "[afs]") && strcasecmp(WinProfileDir, "[dfs]"))
     {
         strcpy(winProfile, WinProfileDir);
     }

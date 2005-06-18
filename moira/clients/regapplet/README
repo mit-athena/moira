@@ -1,35 +1,12 @@
 How to build:
 
-add java (and sipb if you don't already have that added)
-
 [compiling the java code]
   setenv CLASSPATH `pwd`
   javac mit/*/*.java
   javac regapplet/*.java
 
-[obfuscating the java bytecode]
-  setenv CLASSPATH /mit/moiradev/java/klassmaster.zip
-  java klassmaster
-
-    in the "Select Package Directories" window, make sure
-    clients/regapplet is selected, and click ">>", then "OK".
-
-    Choose "Tools" -> "Obfuscate names"
-
-    Click "change package names below:" and type "." in its text box.
-    Click "don't change main class name" and choose "regapplet/Regapplet"
-    Click "add corrupt symbolic entries" and choose "light corruption"
-
-    Click "OK".
-
-    Wait for it to finish, then choose "File" -> "Save all". Save into
-    the current directory.
-
-    choose "File" -> "Exit".
-
 [building the zip file and cleaning up]
-  zip -0 regclasses.zip z1/*/*.class z2/*.class
+  zip -0 regclasses.zip mit/*/*.class regapplet/*.class
 
-  rm -rf z?
-  rm mit/*/*.class regapplet/*.class ChangeLog
+  rm mit/*/*.class regapplet/*.class
 

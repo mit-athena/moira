@@ -72,6 +72,17 @@ public class Parser {
           worker.setState(Worker.SENDLOGIN);
 	  worker.applet.showLoginDiag();
        }
+     } else if (pdat[1].equals("LOGC")) {
+       if (!pdat[4].equals("")) {
+	 worker.applet.chosenlogin = pdat[4];
+       } else worker.applet.chosenlogin = "";
+       if (!pdat[2].equals("")) {
+	  worker.setState(Worker.DIALOG, Worker.CONFIRMLOGIN);
+	  worker.applet.showMessage(pdat[2], true);
+       } else {
+	  worker.setState(Worker.CONFIRMLOGIN);
+	  worker.applet.showLoginDiag();
+       }
      } else if (pdat[1].equals("GETP")) {
        if (!pdat[2].equals("")) {
           worker.setState(Worker.DIALOG, Worker.SENDPASSWD);

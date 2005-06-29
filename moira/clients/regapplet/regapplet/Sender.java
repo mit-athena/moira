@@ -70,6 +70,11 @@ public class Sender {
   }
   public void SendLogin(String Login) {
      String s;
+     s = "v1" + '\0' + "CLGN" + '\0' + Login + '\0';
+     sendstring(s);
+  }
+  public void ConfirmLogin(String Login) {
+     String s;
      s = "v1" + '\0' + "LOGN" + '\0' + Login + '\0';
      sendstring(s);
   }

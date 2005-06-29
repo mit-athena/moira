@@ -68,6 +68,13 @@ public class Regapplet extends Applet {
   Label PinLabel = new Label();
   GridBagLayout gridBagLayout7 = new GridBagLayout();
 
+  // login confirmation panel.
+  Panel LoginConfirmPanel = new Panel();
+  TextBlock LoginConfirmInstructions = new TextBlock(600,40);
+  Button LoginConfirmCancelButton = new Button();
+  Button LoginConfirmContButton = new Button();
+  GridBagLayout gridBagLayout8 = new GridBagLayout();
+
   Panel LoginPanel = new Panel();
   TextBlock LoginNameBanner = new TextBlock(600,30);
   Label LoginNameLabel = new Label();
@@ -96,6 +103,7 @@ public class Regapplet extends Applet {
   public Worker worker = null;
   public Thread workthread = null;
   public String guesslogin = "";
+  public String chosenlogin = "";
  
   //Get a parameter value
   public String getParameter(String key, String def) {
@@ -155,6 +163,12 @@ public class Regapplet extends Applet {
     PinCancelButton.setLabel("Cancel");
     PinCancelButton.setBackground(Color.white);
     Pin.setEchoCharacter('*');
+
+    // login confirmation initialization.
+    LoginConfirmContButton.setLabel("Continue");
+    LoginConfirmContButton.setBackground(Color.white);
+    LoginConfirmCancelButton.setLabel("Cancel");
+    LoginConfirmCancelButton.setBackground(Color.white);
 
     ExitButton.setLabel("Exit");
     ExitButton.setBackground(Color.white);
@@ -251,10 +265,20 @@ public class Regapplet extends Applet {
     WordPanel.add(WordCancelButton);
     gridBagLayout1.setConstraints(WordCancelButton, new GridBagConstraints2(4, 3, 2, 2, 0.0, 1.0
             ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 10, 0), 0, 0));
-
+    this.add("LoginConfirmPanel", LoginConfirmPanel);
+    LoginConfirmPanel.add(LoginConfirmInstructions);
+    gridBagLayout8.setConstraints(LoginConfirmInstructions, new GridBagConstraints2(0, 0, 3, 3, 0.0, 0.0
+            ,GridBagConstraints.NORTH, GridBagConstraints.BOTH, new Insets(10, 10, 10, 10), 0, 0));
+    LoginConfirmPanel.add(LoginConfirmContButton);
+    gridBagLayout8.setConstraints(LoginConfirmContButton, new GridBagConstraints2(1, 4, 1, 1, 0.0, 1.0
+                  ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 20, 0), 0, 0));
+    LoginConfirmPanel.add(LoginConfirmCancelButton);
+    gridBagLayout8.setConstraints(LoginConfirmCancelButton, new GridBagConstraints2(2, 4, 1, 1, 0.0, 1.0
+                  ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 20, 0), 0, 0));
     this.add("PinPanel", PinPanel);
     PinPanel.add(PinInstructions);
-        gridBagLayout7.setConstraints(PinInstructions, new GridBagConstraints2(0, 0, 4, 1, 0.0, 0.0, GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(20, 10, 10, 20), 0, 0));
+    gridBagLayout7.setConstraints(PinInstructions, new GridBagConstraints2(0, 0, 4, 1, 0.0, 0.0
+	    ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(20, 10, 10, 20), 0, 0));
     PinPanel.add(PinLabel);
     gridBagLayout7.setConstraints(PinLabel, new GridBagConstraints2(0, 1, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(20, 10, 0, 0), 0, 0));
@@ -356,6 +380,7 @@ public class Regapplet extends Applet {
     Word6.setText("");
     Pin.setText("");
     guesslogin = "";
+    chosenlogin = "";
   }
 
   //Start the applet
@@ -422,6 +447,14 @@ public class Regapplet extends Applet {
     }
     cardLayout1.show(this, "LoginPanel");
     LoginName.requestFocus();
+  }
+
+  public void showLoginConfirmDiag() {
+    if (!chosenlogin.equals("")) {
+    LoginConfirmInstructions.setText("We have confirmed that the Athena username " + chosenlogin + " is available for your use." + "\n" + "If you choose to continue, your email address will be " + chosenlogin + "@mit.edu, and any personal web content you choose to publish will be available at the URL http://web.mit.edu/" + chosenlogin + "/www/ . After choosing to continue, this username will be registered for you without further confirmation, and CANNOT BE CHANGED." + "\n" + "Are you sure you would like to proceed?");
+    }
+    cardLayout1.show(this, "LoginConfirmPanel");
+    LoginConfirmContButton.requestFocus();
   }
 
   public void showPassDiag() {
@@ -497,17 +530,21 @@ public class Regapplet extends Applet {
       return true;
     } else if ((evt.target == WordContButton) ||
 	       (evt.target == PinContButton) || 
-               (evt.target == LoginContButton) ||
+               (evt.target == LoginConfirmContButton) ||
+	       (evt.target == LoginContButton) ||
                (evt.target == PasswordContButton) ||
                (evt.target == NameContButton) ||
 	       (evt.target == MITID) ||
-	       (evt.target == Word6) ||
 	       (evt.target == LoginName) ||
+	       (evt.target == Word6) ||
 	       (evt.target == Password2) ||
 	       (evt.target == RuleButton)) {
       workthread = new Thread(worker);
       workthread.start();
       return true;
+    } else if (evt.target == LoginConfirmCancelButton) {
+	  chosenlogin = "";
+	  showLoginDiag();
     } else if (evt.target == ExitButton) {
       if (isStandalone) System.exit (0);
     } else if (evt.target == NameCancelButton ||

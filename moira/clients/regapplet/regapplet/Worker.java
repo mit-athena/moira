@@ -15,6 +15,7 @@ public class Worker implements Runnable {
   public static final int DIALOG = 5;
   public static final int INIT1 = 6;
   public static final int SENDPIN = 7;
+  public static final int CONFIRMLOGIN = 8;
   int oldstate = INIT;
   int state = INIT;
   int nextstate = INIT;
@@ -42,6 +43,9 @@ public class Worker implements Runnable {
                 break;
            case SENDLOGIN:
 	        applet.showLoginDiag();
+		break;
+	   case CONFIRMLOGIN:
+	        applet.showLoginConfirmDiag();
 		break;
 	   case SENDPASSWD:
 	        applet.showPassDiag();
@@ -135,6 +139,10 @@ public class Worker implements Runnable {
       case SENDLOGIN:
 	applet.showMessage("Please wait...");
 	send.SendLogin(applet.LoginName.getText());
+	break;
+      case CONFIRMLOGIN:
+	applet.showMessage("Please wait...");
+	send.ConfirmLogin(applet.chosenlogin);
 	break;
       case SENDPASSWD:
 	if (!(applet.Password1.getText().equals(applet.Password2.getText()))) {

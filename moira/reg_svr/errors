@@ -93,8 +93,10 @@ You should be able to log in by tomorrow morning using your Athena
 username (%s) and the password you chose.
 
 Welcome to Athena!
-#21 BAD_PIN
+# 21 BAD_PIN
 The PIN you typed was incorrect. Please make sure you typed it correctly.
 
 If you do not remember your PIN, you will need to contact the Athena
 User Accounts Office in N42-105A, x3-1325.
+# 22 USERNAME_AVAILABLE
+The username "%s" is available for you to use.

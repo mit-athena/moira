@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.16 2003-07-01 20:29:39 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.17 2005-06-29 06:39:35 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,11 +37,12 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.16 2003-07-01 20:29:39 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.17 2005-06-29 06:39:35 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
 char *find_usernames(char *first, char *middle, char *last);
+int check_username_available(char *username);
 void fixname(char *name);
 int register_user(int uid, char *username);
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
@@ -534,6 +535,80 @@ void SPIN(reg_client *rc, int argc, char **argv)
     }
 }
 
+void CLGN(reg_client *rc, int argc, char **argv)
+{
+  int i;
+  char *login;
+  long status;
+
+  if (!rc->uid || rc->id || rc->username || argc != 1)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  login = argv[0];
+  
+  /* make sure someone's not trying to overrun reply */
+  if (strlen(login) > 100)
+    {
+      com_err(whoami, 0, "Buffer overrun attempted? Closing connection");
+      rc->lastmod = 0;
+      return;
+    }
+
+  if ((strlen(login) < 3) || (strlen(login) > USERS_LOGIN_SIZE - 1) ||
+      (login[0] == '_') || isdigit(login[0]))
+    {
+      reply(rc, BAD_USERNAME, "GETL", "c", rc->suggestions, login,
+            3, USERS_LOGIN_SIZE - 1);
+      return;
+    }
+
+  for (i = 0; i < strlen(login); i++)
+    {
+      if (!islower(login[i]) && !isdigit(login[i]) && (login[i] != '_'))
+        {
+          reply(rc, BAD_USERNAME, "GETL", "c", rc->suggestions, login,
+                3, USERS_LOGIN_SIZE - 1);
+          return;
+        }
+    }
+
+  status = check_kerberos(login);
+  if (status == MR_SUCCESS)
+    {
+      status = check_username_available(login);
+      if (status == MR_SUCCESS)
+	{
+	  reply(rc, USERNAME_AVAILABLE, "LOGC", "c", login, login);
+	  return;
+	}
+    }
+
+  if (status == MR_IN_USE)
+    {
+      if (rc->reserved_username)
+        {
+          reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL,
+                rc->username);
+          return;
+        }
+      reply(rc, USERNAME_UNAVAILABLE, "GETL", "c", rc->suggestions);
+      return;
+    }
+  else if (status == MR_DOWN)
+    {
+      reply(rc, DATABASE_CLOSED, "INIT", "c", NULL);
+      return;
+    }
+  else if (status != MR_SUCCESS)
+    {
+      reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, error_message(status));
+      return;
+    }
+}
+
 void LOGN(reg_client *rc, int argc, char **argv)
 {
   int i;
@@ -880,6 +955,37 @@ char *find_usernames(char *first, char *middle, char *last)
      errno so the caller can distinguish this from an error case. */
   errno = 0;
   return unames;
+}
+
+/* This does the database-side checks to make sure a username is
+ * available.
+ */
+int check_username_available(char *username)
+{
+  int count;
+
+  EXEC SQL SELECT COUNT(login) INTO :count FROM users
+    WHERE login = :username;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  if (count != 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(name) INTO :count FROM list
+    WHERE name = :username;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  if (count != 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(label) INTO :count FROM filesys
+    WHERE label = :username;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  if (count != 0)
+    return MR_IN_USE;
+
+  return MR_SUCCESS;
 }
 
 void fixname(char *name)

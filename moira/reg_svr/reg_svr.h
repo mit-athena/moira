@@ -23,6 +23,7 @@ typedef struct reg_client {
 void RIFO(reg_client *rc, int argc, char **argv);
 void SWRD(reg_client *rc, int argc, char **argv);
 void SPIN(reg_client *rc, int argc, char **argv);
+void CLGN(reg_client *rc, int argc, char **argv);
 void LOGN(reg_client *rc, int argc, char **argv);
 void PSWD(reg_client *rc, int argc, char **argv);
 void QUIT(reg_client *rc, int argc, char **argv);
@@ -40,7 +41,7 @@ enum { NO_MESSAGE, INTERNAL_ERROR, PROTOCOL_ERROR, DATABASE_CLOSED,
        BAD_SIX_WORDS, BAD_USERNAME, USERNAME_UNAVAILABLE, 
        RESERVED_USERNAME_UNAVAILABLE, USERNAME_OK, PASSWORD_SHORT,
        PASSWORD_SIMPLE, PASSWORD_SAMPLE, KADM_ERROR, DONE, BAD_PIN,
-       NUM_REG_ERRORS };
+       USERNAME_AVAILABLE, NUM_REG_ERRORS };
 
 #define TIMEOUT 300 /* 5 minutes */
 

@@ -1,4 +1,4 @@
-/* $Id: protocol.c,v 1.3 2002-02-25 16:41:17 zacheiss Exp $
+/* $Id: protocol.c,v 1.4 2005-06-29 06:39:35 zacheiss Exp $
  *
  * Reg_svr protocol and encryption/decryption routines
  *
@@ -28,7 +28,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.3 2002-02-25 16:41:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.4 2005-06-29 06:39:35 zacheiss Exp $");
 
 R_RSA_PRIVATE_KEY *rsa_key;
 char *emsg[NUM_REG_ERRORS], *ename[NUM_REG_ERRORS];
@@ -44,6 +44,7 @@ struct _handler {
   { "PSWD", PSWD },
   { "QUIT", QUIT },
   { "SPIN", SPIN },
+  { "CLGN", CLGN },
   { NULL, NULL }
 };
 

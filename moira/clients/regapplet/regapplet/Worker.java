@@ -75,7 +75,9 @@ public class Worker implements Runnable {
 	applet.showMessage("Connecting to Server...");
         try {
 	  String host;
+	  int port;
 	  if (applet.isStandalone) {
+	    port = 9001;
 	    host = (System.getProperties()).getProperty("host", "");
 	    if (host == null || host.equals("")) {
 	      System.err.println("Cannot learn host name (application) using localhost");
@@ -84,6 +86,7 @@ public class Worker implements Runnable {
 	  } else {
 	    URL cb = applet.getCodeBase();
 	    String protocol = cb.getProtocol();
+	    port = 443; // Use https port for firewall traversal.
 	    if (protocol.equals("file") || protocol.equals("FILE")) {
 	      System.err.println("Applet: FILE protocol in use, connecting to localhost");
 	      host = "localhost";
@@ -91,7 +94,7 @@ public class Worker implements Runnable {
 	      host = cb.getHost();
 	    }
 	  }
-	  sock = new Socket(host, 9001);
+	  sock = new Socket(host, port);
 	} catch (Exception e) {
           e.printStackTrace();
 	  applet.showError1(true);

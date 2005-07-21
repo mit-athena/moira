@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.45 2005-06-01 19:05:51 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.46 2005-07-21 18:24:39 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -372,8 +372,6 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
 int container_update(LDAP *ldap_handle, char *dn_path, int beforec, char **before,
                      int afterc, char **after);
 
-int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name, 
-                    char *fs_type, char *fs_pack, int operation);
 int GetAceInfo(int ac, char **av, void *ptr);
 int GetServerList(char *ldap_domain, char **MasterServe);
 int get_group_membership(char *group_membership, char *group_ou, 
@@ -454,8 +452,6 @@ int mr_connect_cl(char *server, char *client, int version, int auth);
 
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
-void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
-             char **before, int beforec, char **after, int afterc);
 void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
@@ -530,6 +526,9 @@ int main(int argc, char **argv)
   before = &argv[4];
   after = &argv[4 + beforec];
 
+  if (!strcmp(table, "filesys"))
+    exit(0);
+
   if (afterc == 0)
     after = NULL;
   if (beforec == 0)
@@ -602,9 +601,6 @@ int main(int argc, char **argv)
   else if (!strcmp(table, "imembers"))
     do_member(ldap_handle, dn_path, ldap_domain, before, beforec, after,
               afterc);
-  else if (!strcmp(table, "filesys"))
-    do_filesys(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-               afterc);
   else if (!strcmp(table, "containers"))
     do_container(ldap_handle, dn_path, ldap_domain, before, beforec, after,
                  afterc);
@@ -756,169 +752,6 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   container_update(ldap_handle, dn_path, beforec, before, afterc, after);
   Moira_container_group_update(before, after);
   moira_disconnect();
-  return;
-}
-
-void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
-             char **before, int beforec, char **after, int afterc)
-{
-  long  rc;
-  char  *av[3];
-  char  *call_args[7];
-  int   acreate;
-  int   atype;
-  int   bcreate;
-  int   btype;
-  int   abort_flag;
-
-  abort_flag = 0;
-
-  if (afterc < FS_CREATE)
-    atype = acreate = 0;
-  else
-    {
-      atype = !strcmp(after[FS_TYPE], "AFS");
-      acreate = atoi(after[FS_CREATE]);
-    }
-
-  if (beforec < FS_CREATE)
-    {
-      if (acreate == 0 || atype == 0)
-        goto cleanup;
-      com_err(whoami, 0, "Processing filesys %s", after[FS_NAME]);
-      abort_flag = 0;
-      while (1)
-      {
-        if ((rc = filesys_process(ldap_handle, dn_path, after[FS_NAME], 
-                    after[FS_TYPE], after[FS_PACK], LDAP_MOD_ADD)) != LDAP_NO_SUCH_OBJECT)
-          {
-            if (rc != LDAP_SUCCESS)
-              com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-            break;
-          }
-        if (abort_flag == 1)
-          break;
-        sleep(1);
-        abort_flag = 1;
-        if (rc = moira_connect())
-          {
-            critical_alert("AD incremental",
-                           "Error contacting Moira server : %s",
-                           error_message(rc));
-            return;
-          }
-        av[0] = after[FS_NAME];
-        call_args[0] = (char *)ldap_handle;
-        call_args[1] = dn_path;
-        call_args[2] = "";
-        call_args[3] = NULL;
-        sid_base = NULL;
-        sid_ptr = &sid_base;
-        callback_rc = 0;
-        if (rc = mr_query("get_user_account_by_login", 1, av, user_create,
-                          call_args))
-          {
-            moira_disconnect();
-            com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-            break;
-          }
-        if (callback_rc)
-          {
-            moira_disconnect();
-            com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-            break;
-          }
-        if (sid_base != NULL)
-          {
-            sid_update(ldap_handle, dn_path);
-            linklist_free(sid_base);
-            sid_base = NULL;
-          }
-        moira_disconnect();
-      }
-      goto cleanup;
-    }
-
-  btype = !strcmp(before[FS_TYPE], "AFS");
-  bcreate = atoi(before[FS_CREATE]);
-  if (afterc < FS_CREATE)
-    {
-      if (btype && bcreate)
-        {
-          if (rc = filesys_process(ldap_handle, dn_path, before[FS_NAME], 
-                      before[FS_TYPE], before[FS_PACK], LDAP_MOD_DELETE))
-            {
-              com_err(whoami, 0, "Unable to delete filesys %s", before[FS_NAME]);
-            }
-        }
-      return;
-    }
-
-  if (!acreate)
-    return;
-
-  if (!atype && !btype)
-    {
-      if (strcmp(before[FS_TYPE], "ERR") || strcmp(after[FS_TYPE], "ERR"))
-        {
-          com_err(whoami, 0, "Unable to process Filesystem %s or %s is not AFS",
-                  before[FS_NAME], after[FS_NAME]);
-          return;
-        }
-    }
-  com_err(whoami, 0, "Processing filesys %s", after[FS_NAME]);
-  abort_flag = 0;
-  while (1)
-  {
-    if ((rc = filesys_process(ldap_handle, dn_path, after[FS_NAME], 
-                    after[FS_TYPE], after[FS_PACK], LDAP_MOD_ADD)) != LDAP_NO_SUCH_OBJECT)
-      {
-        if (rc != LDAP_SUCCESS)
-          com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-        break;
-      }
-    if (abort_flag == 1)
-      break;
-    sleep(1);
-    abort_flag = 1;
-    if (rc = moira_connect())
-      {
-        critical_alert("AD incremental",
-                       "Error contacting Moira server : %s",
-                       error_message(rc));
-        return;
-      }
-    av[0] = after[FS_NAME];
-    call_args[0] = (char *)ldap_handle;
-    call_args[1] = dn_path;
-    call_args[2] = "";
-    call_args[3] = NULL;
-    sid_base = NULL;
-    sid_ptr = &sid_base;
-    callback_rc = 0;
-    if (rc = mr_query("get_user_account_by_login", 1, av, user_create,
-                      call_args))
-      {
-        moira_disconnect();
-        com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-        break;
-      }
-    if (callback_rc)
-      {
-        moira_disconnect();
-        com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
-        break;
-      }
-    if (sid_base != NULL)
-      {
-        sid_update(ldap_handle, dn_path);
-        linklist_free(sid_base);
-        sid_base = NULL;
-      }
-    moira_disconnect();
-  }
-
-cleanup:
   return;
 }
 
@@ -3110,77 +2943,6 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   for (i = 0; i < n; i++)
     free(mods[i]);
   return(rc);
-}
-
-int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name, 
-                    char *fs_type, char *fs_pack, int operation)
-{
-  char  distinguished_name[256];
-  char  winPath[256];
-  char  winProfile[256];
-  char  filter[128];
-  char  *attr_array[3];
-  int   group_count;
-  int   rc;
-  LK_ENTRY  *group_base;
-
-  if (!check_string(fs_name))
-    {
-      com_err(whoami, 0, "Unable to process invalid filesys name %s", fs_name);
-      return(AD_INVALID_NAME);
-    }
-
-  if (strcmp(fs_type, "AFS"))
-    {
-      com_err(whoami, 0, "Unable to process invalid filesys type %s", fs_type);
-      return(AD_INVALID_FILESYS);
-    }
-
-  group_count = 0;
-  group_base = NULL;
-  sprintf(filter, "(sAMAccountName=%s)", fs_name);
-  attr_array[0] = "cn";
-  attr_array[1] = NULL;
-  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
-    {
-      com_err(whoami, 0, "Unable to process filesys %s : %s",
-              fs_name, ldap_err2string(rc));
-      return(rc);
-    }
-
-  if (group_count != 1)
-    {
-      linklist_free(group_base);
-      com_err(whoami, 0, "Unable to find user %s in AD",
-              fs_name);
-      return(LDAP_NO_SUCH_OBJECT);
-    }
-  strcpy(distinguished_name, group_base->dn);
-  linklist_free(group_base);
-  group_count = 0;
-
-  if (operation == LDAP_MOD_ADD)
-    {
-      memset(winPath, 0, sizeof(winPath));
-      AfsToWinAfs(fs_pack, winPath);
-      memset(winProfile, 0, sizeof(winProfile));
-      strcpy(winProfile, winPath);
-      strcat(winProfile, "\\.winprofile");
-
-      rc = attribute_update(ldap_handle, distinguished_name, winProfile, "profilePath", fs_name);
-      rc = attribute_update(ldap_handle, distinguished_name, "H:", "homeDrive", fs_name);
-      rc = attribute_update(ldap_handle, distinguished_name, winPath, "homeDirectory", fs_name);
-
-    }
-  else
-    {
-      rc = attribute_update(ldap_handle, distinguished_name, "", "profilePath", fs_name);
-      rc = attribute_update(ldap_handle, distinguished_name, "", "homeDrive", fs_name);
-      rc = attribute_update(ldap_handle, distinguished_name, "", "homeDirectory", fs_name);
-    }
-
-  return(0);
 }
 
 int user_create(int ac, char **av, void *ptr)

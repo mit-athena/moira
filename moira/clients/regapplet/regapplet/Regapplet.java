@@ -486,7 +486,11 @@ public class Regapplet extends Applet {
   }
 
   public void showError1(boolean val) {
-    showMessage(res.getString("err1"), val);
+    if (isStandalone) {
+       showMessage(res.getString("err1"), val);
+    } else {
+       showMessage(res.getString("err1a"), val);
+    }
   }
 
   public void showMessage(String mess) {

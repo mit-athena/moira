@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.7 2005-02-04 03:49:26 zacheiss Exp $
+/* $Id: kerberos.c,v 1.8 2005-08-09 19:45:27 zacheiss Exp $
  *
  * Kerberos routines for registration server
  *
@@ -39,7 +39,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.7 2005-02-04 03:49:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.8 2005-08-09 19:45:27 zacheiss Exp $");
 
 extern char *hostname, *shorthostname;
 
@@ -199,7 +199,7 @@ long register_kerberos(char *username, char *password)
   unsigned long *lkey = (unsigned long *)key;
 
   if ((status = krb_get_svc_in_tkt(MOIRA_SNAME, shorthostname, realm,
-				   PWSERV_NAME, KADM_SINST, 1, KEYFILE)))
+				   PWSERV_NAME, KADM_SINST, 3, KEYFILE)))
     return status;
 
   if ((status = kadm_init_link(PWSERV_NAME, KADM_SINST, realm)) !=

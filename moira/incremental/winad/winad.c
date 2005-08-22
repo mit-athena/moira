@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.46 2005-07-21 18:24:39 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.47 2005-08-22 22:25:24 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -314,8 +314,6 @@ char    PrincipalName[128];
 #endif
 
 LK_ENTRY *member_base = NULL;
-LK_ENTRY *sid_base = NULL;
-LK_ENTRY **sid_ptr = NULL;
 static char tbl_buf[1024];
 char  kerberos_ou[] = "OU=kerberos,OU=moira";
 char  contact_ou[] = "OU=strings,OU=moira";
@@ -443,11 +441,11 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
                      char **homedir_v, char **winProfile_v,
                      char **drives_v, LDAPMod **mods, 
                      int OpType, int n);
-int sid_update(LDAP *ldap_handle, char *dn_path);
+
 void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n);
 int check_string(char *s);
 int check_container_name(char* s);
-void convert_b_to_a(char *string, UCHAR *binary, int length);
+
 int mr_connect_cl(char *server, char *client, int version, int auth);
 
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
@@ -1216,8 +1214,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           call_args[1] = dn_path;
           call_args[2] = moira_user_id;
           call_args[3] = NULL;
-          sid_base = NULL;
-          sid_ptr = &sid_base;
+
           callback_rc = 0;
           if (rc = mr_query("get_user_account_by_login", 1, av, user_create,
                             call_args))
@@ -1232,12 +1229,6 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
               moira_disconnect();
               com_err(whoami, 0, "Unable to create user %s", ptr[LM_MEMBER]);
               return;
-            }
-          sleep(1);
-          if (sid_base != NULL)
-            {
-              sid_update(ldap_handle, dn_path);
-              linklist_free(sid_base);
             }
         }
       else
@@ -1326,8 +1317,6 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       call_args[1] = dn_path;
       call_args[2] = after_user_id;
       call_args[3] = NULL;
-      sid_base = NULL;
-      sid_ptr = &sid_base;
       callback_rc = 0;
       if (rc = mr_query("get_user_account_by_login", 1, av, user_create,
                         call_args))
@@ -1342,12 +1331,6 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           moira_disconnect();
           com_err(whoami, 0, "Unable to create user %s", after[U_NAME]);
           return;
-        }
-      sleep(1);
-      if (sid_base != NULL)
-        {
-          sid_update(ldap_handle, dn_path);
-          linklist_free(sid_base);
         }
       return;
     }
@@ -1996,7 +1979,6 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 int group_create(int ac, char **av, void *ptr)
 {
   LDAPMod *mods[20];
-  LK_ENTRY  *group_base;
   char new_dn[256];
   char group_ou[256];
   char new_group_name[256];
@@ -2020,10 +2002,7 @@ int group_create(int ac, char **av, void *ptr)
   u_int groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
   int  n;
   int  rc;
-  int  group_count;
   int  updateGroup;
-  char filter[128];
-  char *attr_array[3];
   char **call_args;
 
   call_args = ptr;
@@ -2131,46 +2110,6 @@ int group_create(int ac, char **av, void *ptr)
   ProcessGroupSecurity((LDAP *)call_args[0], call_args[1], av[L_NAME], 
                        atoi(av[L_HIDDEN]),  av[L_ACE_TYPE], av[L_ACE_NAME]);
 
-  sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
-  if (strlen(call_args[5]) != 0)
-    sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", call_args[5]);
-  attr_array[0] = "objectSid";
-  attr_array[1] = NULL;
-  group_count = 0;
-  group_base = NULL;
-  if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
-                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
-    {
-      if (group_count != 1)
-        {
-          if (strlen(call_args[5]) != 0)
-            {
-              linklist_free(group_base);
-              group_count = 0;
-              group_base = NULL;
-              sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
-              rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
-                                  attr_array, &group_base, &group_count, LDAP_SCOPE_SUBTREE);
-            }
-        }
-      if (group_count == 1)
-        {
-          (*sid_ptr) = group_base;
-          (*sid_ptr)->member = strdup(av[L_NAME]);
-          (*sid_ptr)->type = (char *)GROUPS;
-          sid_ptr = &(*sid_ptr)->next;
-        }
-      else
-        {
-          if (group_base != NULL)
-            linklist_free(group_base);
-        }
-    }
-  else
-    {
-      if (group_base != NULL)
-        linklist_free(group_base);
-    }
   return(LDAP_SUCCESS);
 }
 
@@ -2947,7 +2886,6 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
 int user_create(int ac, char **av, void *ptr)
 {
-  LK_ENTRY  *group_base;
   LDAPMod *mods[20];
   char new_dn[256];
   char user_name[256];
@@ -2976,10 +2914,7 @@ int user_create(int ac, char **av, void *ptr)
   int  n;
   int  rc;
   int  i;
-  int  group_count;
   int  OldUseSFU30;
-  char filter[128];
-  char *attr_array[3];
   char **call_args;
   char WinHomeDir[1024];
   char WinProfileDir[1024];
@@ -3092,46 +3027,6 @@ int user_create(int ac, char **av, void *ptr)
                 }
             }
         }
-    }
-  sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
-  if (strlen(call_args[2]) != 0)
-    sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", call_args[2]);
-  attr_array[0] = "objectSid";
-  attr_array[1] = NULL;
-  group_count = 0;
-  group_base = NULL;
-  if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
-                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
-    {
-      if (group_count != 1)
-        {
-          if (strlen(call_args[2]) != 0)
-            {
-              linklist_free(group_base);
-              group_count = 0;
-              group_base = NULL;
-              sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
-              rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
-                                  attr_array, &group_base, &group_count, LDAP_SCOPE_SUBTREE);
-            }
-        }
-      if (group_count == 1)
-        {
-          (*sid_ptr) = group_base;
-          (*sid_ptr)->member = strdup(av[U_NAME]);
-          (*sid_ptr)->type = (char *)GROUPS;
-          sid_ptr = &(*sid_ptr)->next;
-        }
-      else
-        {
-          if (group_base != NULL)
-            linklist_free(group_base);
-        }
-    }
-  else
-    {
-      if (group_base != NULL)
-        linklist_free(group_base);
     }
   return(0);
 }
@@ -3341,64 +3236,6 @@ void free_values(char **modvalues)
       }
     free(modvalues);
   }
-}
-
-int sid_update(LDAP *ldap_handle, char *dn_path)
-{
-  LK_ENTRY      *ptr;
-  int           rc;
-  unsigned char temp[126];
-  char          *av[3];
-
-  ptr = sid_base;
-
-  while (ptr != NULL)
-    {
-      memset(temp, 0, sizeof(temp));
-      convert_b_to_a(temp, ptr->value, ptr->length);
-      if (!ptr->member)
-        continue;
-      av[0] = ptr->member;
-      av[1] = temp;
-      if (ptr->type == (char *)GROUPS)
-        {
-          ptr->type = NULL;
-          rc = mr_query("add_list_sid_by_name", 2, av, NULL, NULL);
-        }
-      else if (ptr->type == (char *)USERS)
-        {
-          ptr->type = NULL;
-          rc = mr_query("add_user_sid_by_login", 2, av, NULL, NULL);
-        }
-      ptr = ptr->next;
-    }
-  return(0);
-}
-
-void convert_b_to_a(char *string, UCHAR *binary, int length)
-{
-  int   i;
-  int   j;
-  UCHAR tmp;
-
-  j = 0;
-  for (i = 0; i < length; i++)
-    {
-      tmp = binary[i];
-      string[j] = tmp;
-      string[j] >>= 4;
-      string[j] &= 0x0f;
-      string[j] += 0x30;
-      if (string[j] > '9')
-        string[j] += 0x27;
-      ++j;
-      string[j] = tmp & 0x0f;
-      string[j] += 0x30;
-      if (string[j] > '9')
-        string[j] += 0x27;
-      j++;
-    }
-  string[j] = 0;
 }
 
 static int illegalchars[] = {
@@ -3647,8 +3484,6 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int Upd
           call_args[1] = dn_path;
           call_args[2] = "";
           call_args[3] = NULL;
-          sid_base = NULL;
-          sid_ptr = &sid_base;
           callback_rc = 0;
           if (rc = mr_query("get_user_account_by_login", 1, av, user_create, call_args))
             {
@@ -3659,12 +3494,6 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int Upd
             {
               com_err(whoami, 0, "Unable to process user Ace %s for group %s", AceName, Name);
               return(1);
-            }
-          if (sid_base != NULL)
-            {
-              sid_update(ldap_handle, dn_path);
-              linklist_free(sid_base);
-              sid_base = NULL;
             }
           return(0);
         }
@@ -3696,8 +3525,6 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   call_args[4] = (char *)updateGroup;
   call_args[5] = MoiraId;
   call_args[6] = NULL;
-  sid_base = NULL;
-  sid_ptr = &sid_base;
   callback_rc = 0;
   if (rc = mr_query("get_list_info", 1, av, group_create, call_args))
     {
@@ -3712,12 +3539,6 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
       return(callback_rc);
     }
 
-  if (sid_base != NULL)
-    {
-      sid_update(ldap_handle, dn_path);
-      linklist_free(sid_base);
-      sid_base = NULL;
-    }
   return(0);
 }
 

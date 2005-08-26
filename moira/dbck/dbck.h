@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.13 2000-08-15 00:07:20 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.14 2005-08-26 03:02:09 zacheiss Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -19,6 +19,7 @@
 extern int debug, mode, fast, dcmenable, warn;
 extern struct hash *users, *machines, *clusters, *lists, *printservers;
 extern struct hash *filesys, *nfsphys, *strings, *subnets, *string_dups;
+extern struct hash *containers;
 
 #define MAX_ID_VALUE 32765
 #define MIN_ID_VALUE 100
@@ -109,6 +110,17 @@ struct printserver {
   char owner_type;
   int owner_id;
   int lpc_acl;
+  int modby;
+};
+
+struct container {
+  char name[CONTAINERS_NAME_SIZE];
+  int cnt_id;
+  int list_id;
+  char acl_type;
+  int acl_id;
+  char memacl_type;
+  int memacl_id;
   int modby;
 };
 

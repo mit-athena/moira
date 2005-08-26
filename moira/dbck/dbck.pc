@@ -1,4 +1,4 @@
-/* $Id: dbck.pc,v 1.6 2000-01-13 01:39:45 danw Exp $
+/* $Id: dbck.pc,v 1.7 2005-08-26 03:02:09 zacheiss Exp $
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.6 2000-01-13 01:39:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.7 2005-08-26 03:02:09 zacheiss Exp $");
 
 int debug = 0;
 int mode = MODE_ASK;
@@ -27,6 +27,7 @@ int warn = 1;
 int abort_p = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
 struct hash *strings, *members, *subnets, *string_dups, *printservers;
+struct hash *containers;
 EXEC SQL BEGIN DECLARE SECTION;
 int dcmenable;
 EXEC SQL END DECLARE SECTION;

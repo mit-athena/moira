@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.12 2000-08-15 00:07:20 zacheiss Exp $
+/* $Id: phase1.pc,v 1.13 2005-08-26 03:02:09 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.12 2000-08-15 00:07:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.13 2005-08-26 03:02:09 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -39,6 +39,7 @@ void fix_np_id(void *nfsphys);
 int show_str_id(void *string);
 int print_str_id(void *id);
 void print_dup_map(int key, void *data, void *hint);
+int show_cnt_name(void *cnt);
 
 int show_user_id(void *user)
 {
@@ -234,6 +235,13 @@ void print_dup_map(int key, void *data, void *hint)
   printf("String %d is a duplicate of string %d\n", key, (int)data);
 }
 
+int show_cnt_name(void *container)
+{
+  struct container *cnt = container;
+  printf("Container %s (%d) has duplicate name\n", cnt->name, cnt->cnt_id);
+  return 0;
+}
+
 void phase1(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -250,6 +258,7 @@ void phase1(void)
   struct filesys *f;
   struct nfsphys *n;
   struct printserver *ps;
+  struct container *cnt;
 
   printf("Phase 1 - Looking for duplicates\n");
 
@@ -343,7 +352,7 @@ void phase1(void)
 
   dprintf("Loading users...\n");
   sq = sq_create();
-  users = create_hash(30000);
+  users = create_hash(65000);
   if (!sq || !users)
     out_of_mem("loading users");
 
@@ -964,5 +973,72 @@ void phase1(void)
 	  cant_fix(0);
 	}
       EXEC SQL CLOSE csr120;
+    }
+
+  dprintf("Loading containers...\n");
+  containers = create_hash(1000);
+  if (!containers)
+    out_of_mem("loading containers");
+
+  EXEC SQL DECLARE csr_cnts CURSOR FOR
+    SELECT name, cnt_id, list_id, acl_type, acl_id, memacl_type, memacl_id,
+    modby FROM containers;
+  EXEC SQL OPEN csr_cnts;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int cnt_id, list_id, acl_id, memacl_id, modby;
+      char name[CONTAINERS_NAME_SIZE];
+      char acl_type[CONTAINERS_ACL_TYPE_SIZE];
+      char memacl_type[CONTAINERS_MEMACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_cnts INTO :name, :cnt_id, :list_id, :acl_type,
+	:acl_id, :memacl_type, :memacl_id, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      cnt = malloc(sizeof(struct container));
+      if (!cnt)
+	out_of_mem("storing container");
+      strcpy(cnt->name, strtrim(name));
+      cnt->cnt_id = cnt_id;
+      cnt->list_id = list_id;
+      cnt->acl_type = acl_type[0];
+      cnt->acl_id = acl_id;
+      cnt->memacl_type = memacl_type[0];
+      cnt->memacl_id = memacl_id;
+      cnt->modby = modby;
+      retval = hash_store(containers, cnt_id, cnt);
+      if (retval == -1)
+	out_of_mem("storing container in hash table");
+      else if (retval == 1)
+	{
+	  printf("Duplicate container cnt_id %d\n", cnt_id);
+	  cant_fix(0);
+	}
+    }
+  EXEC SQL CLOSE csr_cnts;
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate container names");
+
+      EXEC SQL DECLARE csr121 CURSOR FOR
+	SELECT cnt1.cnt_id FROM containers cnt1, containers cnt2
+	WHERE cnt1.name = cnt2.name AND cnt1.cnt_id != cnt2.cnt_id;
+      EXEC SQL OPEN csr121;
+      while (1)
+	{
+	  EXEC SQL FETCH csr121 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(containers, id));
+	}
+      EXEC SQL CLOSE csr121;
+      generic_fix(sq, show_cnt_name, "Change name", cant_fix, 0);
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.20 2001-12-14 21:04:54 zacheiss Exp $
+/* $Id: phase2.pc,v 1.21 2005-08-26 03:02:09 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,12 +15,14 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.20 2001-12-14 21:04:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.21 2005-08-26 03:02:09 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 int show_mcm_mach(void *id);
 int show_mcm_clu(void *id);
+int show_mcntmap_mach(void *id);
+int show_mcntmap_cnt(void *id);
 int show_hostalias(void *id);
 int show_printer_mach(void *id);
 int show_printer_server(void *id);
@@ -67,6 +69,9 @@ void fsmatch(int id, void *nfsphys, void *filesys);
 void check_fs(int id, void *filesys, void *hint);
 void check_nfsphys(int id, void *nfsphys, void *hint);
 void check_ps(int id, void *printserver, void *hint);
+void check_container(int id, void *container, void *hint);
+void fix_container_acl(int id);
+void fix_container_memacl(int id);
 int show_fsg_missing(void *id);
 int show_fsg_type(void *filesys);
 void fix_fsg_type(void *filesys);
@@ -137,6 +142,59 @@ int show_mcm_clu(void *id)
 	     name, iid);
     }
   EXEC SQL CLOSE csr202;
+  return found;
+}
+
+int show_mcntmap_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[CONTAINERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_show_mcnt_mach CURSOR FOR
+    SELECT cnt.name FROM container cnt, mcntmap mc
+    WHERE cnt.cnt_id = mc.cnt_id AND mc.mach_id = :iid;
+  EXEC SQL OPEN csr_show_mcnt_mach;
+  while (1)
+    {
+      EXEC SQL FETCH csr_show_mcnt_mach INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      found = 0;
+      printf("Container %s, non-existant machine %d in container map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_show_mcnt_mach;
+  return found;
+}
+
+int show_mcntmap_cnt(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_show_mcnt_cnt CURSOR FOR
+    SELECT m.name FROM machine m, mcntmap mc
+    WHERE m.mach_id = mc.mach_id AND mc.cnt_id = :iid;
+  EXEC SQL OPEN csr_show_mcnt_cnt;
+  while (1)
+    {
+      EXEC SQL FETCH csr_show_mcnt_cnt INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Machine %s, non-existant container %d in container map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_show_mcnt_cnt;
   return found;
 }
 
@@ -1512,6 +1570,135 @@ void check_ps(int id, void *printserver, void *hint)
     }
 }
 
+static void clear_container_list(struct container *cnt)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = cnt->cnt_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET list_id = 0
+    WHERE cnt_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void fix_container_acl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET acl_id = 0, acl_type = 'NONE'
+    WHERE cnt_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void fix_container_memacl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET memacl_id = 0, memacl_type = 'NONE'
+    WHERE cnt_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void check_container(int id, void *container, void *hint)
+{
+  struct container *cnt = container;
+
+  if (!hash_lookup(lists, cnt->list_id))
+    {
+      printf("Container %s has non-existent associated list_id %d\n",
+	     cnt->name, cnt->list_id);
+      if (single_fix("Set to no associated list", 1))
+	clear_container_list(cnt);
+    }
+
+  switch (cnt->acl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, cnt->acl_id))
+	{
+	  printf("Container %s has bad LIST acl %d\n", cnt->name, cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, cnt->acl_id))
+	{
+	  printf("Container %s has bad USER acl %d\n", cnt->name, cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    case 'K':
+      cnt->acl_id = maybe_fixup_unref_string(cnt->acl_id, id, cnt->name,
+					     "container", "acl_id", "cnt_id");
+      if (!cnt->acl_id)
+	{
+	  printf("Container %s has bad KERBEROS acl %d\n", cnt->name,
+		 cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    }
+
+ switch (cnt->memacl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, cnt->memacl_id))
+	{
+	  printf("Container %s has bad LIST memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, cnt->memacl_id))
+	{
+	  printf("Container %s has bad USER memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    case 'K':
+      cnt->memacl_id = maybe_fixup_unref_string(cnt->memacl_id, id, cnt->name,
+					     "container", "memacl_id",
+						"cnt_id");
+      if (!cnt->memacl_id)
+	{
+	  printf("Container %s has bad KERBEROS memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    }  
+
+  cnt->modby = maybe_fixup_modby(cnt->modby, id, cnt->name, "containers",
+				 "modby", "cnt_id");
+}
+
 int show_fsg_missing(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -2017,7 +2204,7 @@ void phase2(void)
 	sq_save_unique_data(sq4, (void *)id);
       else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
 	sq_save_unique_data(sq5, (void *)id);
-      else if (type[0] == 'M' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+      else if (type[0] == 'M' && !hash_lookup(machines, id))
 	sq_save_unique_data(sq6, (void *)id);
       else
 	l->members++;
@@ -2393,5 +2580,34 @@ void phase2(void)
 
   dprintf("Checking printservers\n");
   hash_step(printservers, check_ps, NULL);
+
+  dprintf("Checking containers\n");
+  hash_step(containers, check_container, NULL);
+
+  dprintf("Checking mcntmap\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  EXEC SQL DECLARE csr_mcntmap CURSOR FOR
+    SELECT mach_id, cnt_id FROM mcntmap;
+  EXEC SQL OPEN csr_mcntmap;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, cnt_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_mcntmap INTO :mach_id, :cnt_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!(m = hash_lookup(machines, mach_id)))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(containers, cnt_id))
+	sq_save_unique_data(sq2, (void *)cnt_id);
+    }
+  EXEC SQL CLOSE csr_mcntmap;
+  generic_delete(sq1, show_mcntmap_mach, "mcntmap", "mach_id", 1);
+  generic_delete(sq2, show_mcntmap_cnt, "mcntmap", "cnt_id", 1);
+
 }
  

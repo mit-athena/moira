@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.6 2004-06-08 05:19:14 zacheiss Exp $
+# $Id: ldap.gen,v 1.7 2005-08-29 16:25:20 zacheiss Exp $
 
 use DBI;
 
@@ -18,14 +18,18 @@ umask 022;
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT login, first, middle, last, clearid FROM users " .
-		     "WHERE status = 1 OR status = 9");
+$sth = $dbh->prepare("SELECT u.login, u.first, u.middle, u.last, " .
+		     "u.clearid, u.unix_uid, u.shell, f.type, f.name " .
+		     "FROM users u, filesys f " .
+		     "WHERE (u.status = 1 OR u.status = 9) " .
+		     "AND f.label = u.login");
 
 $sth->execute;
 
 open(OUT, ">$outdir/users") || exit $MR_OCONFIG;
 
-while(($login, $first, $middle, $last, $clearid) = $sth->fetchrow_array) {
+while(($login, $first, $middle, $last, $clearid, $unix_uid, $shell, $f_type,
+       $f_name) = $sth->fetchrow_array) {
     $row = "dn: uid=$login,ou=users,dc=mit,dc=edu\n";
     $row .= "objectclass: top\n";
     $row .= "objectclass: person\n";
@@ -36,6 +40,9 @@ while(($login, $first, $middle, $last, $clearid) = $sth->fetchrow_array) {
     $row .= "krb5PrincipalName: $login\@ATHENA.MIT.EDU\n";
     $row .= "userPassword: {KERBEROS}$login\@ATHENA.MIT.EDU\n";
     $row .= "employeeNumber: $clearid\n";
+    $row .= "loginShell: $shell\n";
+    $row .= "uidNumber: $unix_uid\n";
+    $row .= "gidNumber: 101\n";
 
     if($last) {
        $sn = "sn: $last\n";
@@ -60,6 +67,10 @@ while(($login, $first, $middle, $last, $clearid) = $sth->fetchrow_array) {
     else {
        $cn .= "\n";
        $givenName .= "\n";
+    }
+
+    if($f_type eq "AFS") {
+	$row .= "homeDirectory: $f_name\n";
     }
 
     $row .= $sn;

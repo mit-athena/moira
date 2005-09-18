@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.49 2004-08-05 23:56:25 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.50 2005-09-18 02:49:57 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.49 2004-08-05 23:56:25 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.50 2005-09-18 02:49:57 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1523,6 +1523,15 @@ int register_user(struct query *q, char **argv, client *cl)
     return mr_errcode;
   if (rowcount > 0)
     return MR_IN_USE;
+
+  /* Remove this check when we're allowing username reuse again. */
+  EXEC SQL SELECT COUNT(login) INTO :rowcount FROM userhistory
+    WHERE login = :login;
+  if (dbms_errno)
+    return mr_errcode;
+  if (rowcount > 0)
+    return MR_IN_USE;
+
   EXEC SQL SELECT COUNT(name) INTO :rowcount FROM list
     WHERE LOWER(name) = :login;
   if (dbms_errno)

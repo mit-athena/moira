@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: events.sh,v 1.1 2003-08-27 20:04:27 zacheiss Exp $
+# $Id: events.sh,v 1.2 2005-09-19 21:37:47 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then 
     exec >/var/athena/moira_update.log 2>&1
@@ -12,7 +12,7 @@ fi
 MR_MISSINGFILE=47836473
 
 PATH=/bin
-OUTFILE=/export/home/moira-feed/events.out
+OUTFILE=/export/home/events/feeds/moira-events.out
 
 # Alert if the output file doesn't exist
 test -r $OUTFILE || exit $MR_MISSINGFILE

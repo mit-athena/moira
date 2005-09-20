@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.21 2005-08-26 03:02:09 zacheiss Exp $
+/* $Id: phase2.pc,v 1.22 2005-09-20 23:19:41 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.21 2005-08-26 03:02:09 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.22 2005-09-20 23:19:41 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -2507,7 +2507,7 @@ void phase2(void)
     }
   EXEC SQL CLOSE csr231;
 
-  dprintf("Checking hostaliases\n");
+  dprintf("Checking hostaliases...\n");
   sq1 = sq_create();
   EXEC SQL DECLARE csr232 CURSOR FOR
     SELECT mach_id FROM hostalias;
@@ -2528,7 +2528,7 @@ void phase2(void)
   EXEC SQL CLOSE csr232;
   generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
 
-  dprintf("Checking printers\n");
+  dprintf("Checking printers...\n");
   sq1 = sq_create();
   sq2 = sq_create();
   sq3 = sq_create();
@@ -2578,13 +2578,13 @@ void phase2(void)
   generic_fix(sq4, show_printer_ac, "Clear", fix_printer_ac, 1);
   generic_fix(sq5, show_printer_lpc_acl, "Clear", fix_printer_lpc_acl, 1);
 
-  dprintf("Checking printservers\n");
+  dprintf("Checking printservers...\n");
   hash_step(printservers, check_ps, NULL);
 
-  dprintf("Checking containers\n");
+  dprintf("Checking containers...\n");
   hash_step(containers, check_container, NULL);
 
-  dprintf("Checking mcntmap\n");
+  dprintf("Checking mcntmap...\n");
   sq1 = sq_create();
   sq2 = sq_create();
   EXEC SQL DECLARE csr_mcntmap CURSOR FOR

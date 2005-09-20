@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.14 2005-08-26 03:02:09 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.15 2005-09-20 22:03:18 zacheiss Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -99,9 +99,9 @@ struct nfsphys {
   char dir[NFSPHYS_DIR_SIZE];
   int mach_id;
   int nfsphys_id;
-  int allocated;
+  unsigned long long allocated;
   int modby;
-  int count;
+  unsigned long long count;
 };
 
 struct printserver {

@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.13 2005-08-26 03:02:09 zacheiss Exp $
+/* $Id: phase1.pc,v 1.14 2005-09-20 22:03:18 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.13 2005-08-26 03:02:09 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.14 2005-09-20 22:03:18 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -849,13 +849,14 @@ void phase1(void)
     out_of_mem("loading nfsphs");
 
   EXEC SQL DECLARE csr111 CURSOR FOR
-    SELECT nfsphys_id, dir, mach_id, allocated, modby FROM nfsphys;
+    SELECT nfsphys_id, dir, mach_id, TO_CHAR(allocated), modby FROM nfsphys;
   EXEC SQL OPEN csr111;
   while (1)
     {
       EXEC SQL BEGIN DECLARE SECTION;
-      int nfsphys_id, mach_id, allocated, modby;
+      int nfsphys_id, mach_id, modby;
       char dir[NFSPHYS_DIR_SIZE];
+      char allocated[39];
       EXEC SQL END DECLARE SECTION;
 
       EXEC SQL FETCH csr111 INTO :nfsphys_id, :dir, :mach_id,
@@ -869,7 +870,7 @@ void phase1(void)
       strcpy(n->dir, strtrim(dir));
       n->mach_id = mach_id;
       n->nfsphys_id = nfsphys_id;
-      n->allocated = allocated;
+      n->allocated = strtoull(allocated, NULL, 0);
       n->modby = modby;
       n->count = 0;
       retval = hash_store(nfsphys, nfsphys_id, n);

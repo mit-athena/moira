@@ -1,4 +1,4 @@
-/* $Id: dbck.pc,v 1.7 2005-08-26 03:02:09 zacheiss Exp $
+/* $Id: dbck.pc,v 1.8 2005-09-20 22:03:18 zacheiss Exp $
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.7 2005-08-26 03:02:09 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.8 2005-09-20 22:03:18 zacheiss Exp $");
 
 int debug = 0;
 int mode = MODE_ASK;
@@ -130,7 +130,8 @@ int main(int argc, char **argv)
   phase4();
   EXEC SQL COMMIT WORK;
 
-  cleanup();
+  if (mode != MODE_NO)
+    cleanup();
   printf("Done.\n");
   exit(0);
 }

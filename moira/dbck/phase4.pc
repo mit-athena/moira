@@ -1,4 +1,4 @@
-/* $Id: phase4.pc,v 1.5 1998-02-23 19:23:30 danw Exp $
+/* $Id: phase4.pc,v 1.6 2005-09-20 22:03:19 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.5 1998-02-23 19:23:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.6 2005-09-20 22:03:19 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -77,18 +77,21 @@ void check_nfs_counts(int id, void *nfsphys, void *hint)
 {
   struct nfsphys *n = nfsphys;
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, val, rowcount;
+  int iid = id, rowcount;
+  unsigned long long val;
+  char valstr[40] = {0}, *endptr = valstr+39;
   EXEC SQL END DECLARE SECTION;
 
   val = n->count;
   if (n->allocated != val)
     {
-      printf("Count wrong on NFSphys %s:%s; is %d in db, counted %d\n",
+      printf("Count wrong on NFSphys %s:%s; is %lld in db, counted %lld\n",
 	     ((struct machine *) hash_lookup(machines, n->mach_id))->name,
 	     n->dir, n->allocated, val);
       if (single_fix("Update", 1))
 	{
-	  EXEC SQL UPDATE nfsphys SET allocated = :val
+	  strcpy(valstr, ulltostr(val, endptr));
+	  EXEC SQL UPDATE nfsphys SET allocated = TO_NUMBER(:valstr)
 	    WHERE nfsphys_id = :iid;
 	  rowcount = sqlca.sqlerrd[2];
 	  if (rowcount > 0)

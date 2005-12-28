@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.5 2000-06-06 04:44:27 zacheiss Exp $
+# $Id: acl.sh,v 1.6 2005-12-28 21:42:14 zacheiss Exp $
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
 else 
@@ -88,6 +88,11 @@ done
 # Test if a site-specific post dcm script exists, and run it if it does
 if [ -x /etc/athena/postacldcm ]; then
     /etc/athena/postacldcm >/dev/null 2>&1
+    if [ $? != 0 ]; then
+	exit $MR_NOCRED
+    fi
+elif [ -x /usr/local/sbin/postacldcm ]; then
+    /usr/local/sbin/postacldcm >/dev/null 2>&1
     if [ $? != 0 ]; then
 	exit $MR_NOCRED
     fi

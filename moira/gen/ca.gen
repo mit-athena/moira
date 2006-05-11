@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ca.gen,v 1.2 2000-09-15 05:23:22 zacheiss Exp $
+# $Id: ca.gen,v 1.3 2006-05-11 16:55:28 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -54,6 +54,7 @@ $sth = $dbh->prepare("SELECT UNIQUE u.login, u.fullname, f.name ".
 
 $sth->execute || exit $MR_DBMS_ERR;
 
+$last = "";
 while (($login, $name, $dir) = $sth->fetchrow_array) {
     $dir =~ /(\/.*)\//;
     $path = $1;

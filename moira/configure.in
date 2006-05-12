@@ -102,11 +102,10 @@ AC_ARG_WITH(com_err,
      fi
      COMPILE_ET=compile_et],
     [AC_MSG_RESULT(util/et)
-     COM_ERR_SUBDIR=util/et;
      MR_INCLUDE(`pwd`/util/et)
      MR_LIBS(`pwd`/util/et)
      COMPILE_ET=`pwd`/util/et/compile_et
-     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
+     AC_CONFIG_SUBDIRS(util/et)])
 AC_SUBST(COM_ERR_SUBDIR)
 AC_SUBST(COMPILE_ET)
 
@@ -149,7 +148,7 @@ if test "$krb5" != no; then
 	REG_SVR_INCLUDES=-I$krb5/include
 	REG_SVR_LIBS=-L$krb5/lib
     fi
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm
@@ -247,15 +246,21 @@ if test "$oracle" != no; then
 	2.2.4.0.0)
 	    SQL_LIBS="-L$oracle/lib -lclntsh -lxa -lsql -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric   -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 `cat $oracle/rdbms/lib/sysliblist` -lm -lthread"
 	    ;;
-	*)
+	8.1.7.4.0)
 	    SQL_LIBS="-L$oracle/lib -lclntsh `cat $oracle/lib/sysliblist` -R$oracle/lib -laio -lm -lthread"
+	    ;;
+	10.2.0.2.0)
+	    SQL_LIBS="-L$oracle/lib32 -lclntsh `cat $oracle/lib32/ldflags` `cat $oracle/lib32/sysliblist` -R$oracle/lib32 -laio -lposix4 -lm -lthread"
+	    ;;
+	*)
+	    AC_MSG_ERROR(Unsupported Oracle release)
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
     SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/mailman/Makefile reg_svr/Makefile regtape/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
-    PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
+    PRO_C_DEFS="DEFINE=_PROC_ DEFINE=__sparc $PRO_C_DEFS"
 fi
 AC_SUBST(PRO_C)
 AC_SUBST(PRO_C_DEFS)
@@ -327,7 +332,7 @@ if test "$afs" != no -a "$oracle" != no; then
     fi
     AC_CHECK_LIB(sys, pioctl, :,
 		 [AC_MSG_ERROR(AFS libraries not found)],
-		 $AFS_LIBS -lrx -llwp -lsys)
+		 $AFS_LIBS -lrx -llwp -lsys -lafsutil)
     MR_DEFINE(HAVE_AFS)
 
     AFS_SUBDIRS="afs"

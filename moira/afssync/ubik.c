@@ -1,4 +1,4 @@
-/* $Id: ubik.c,v 1.5 2002-04-30 01:59:32 zacheiss Exp $ */
+/* $Id: ubik.c,v 1.6 2006-05-12 20:20:08 zacheiss Exp $ */
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -6,10 +6,28 @@
 #include <lock.h>
 #define UBIK_INTERNALS
 #include <stds.h>
-#include <ubik.h>
 #include <rx/xdr.h>
 #include "print.h"
 #include "prserver.h"
+
+/* Stolen bits of ubik.h. */
+
+struct ubik_version {
+  afs_int32 epoch;
+  afs_int32 counter;
+};
+typedef struct ubik_version ubik_version;
+
+/* ubik header file structure */
+struct ubik_hdr {
+  afs_int32 magic;            /* magic number */
+  short pad1;                 /* some 0-initd padding */
+  short size;                 /* header allocation size */
+  struct ubik_version version;        /* the version for this file */
+};
+
+#define HDRSIZE             64  /* bytes of header per dbfile */
+#define UBIK_MAGIC      0x354545
 
 extern int dbase_fd;
 struct ubik_dbase *dbase;

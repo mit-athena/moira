@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.21 1998-08-07 14:26:17 danw Exp $
+/* $Id: ticket.c,v 1.22 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,16 +14,47 @@
 #include <string.h>
 
 #include <krb.h>
+#include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.21 1998-08-07 14:26:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.22 2006-08-22 17:36:26 zacheiss Exp $");
 
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
 des_cblock session;
+krb5_context context = NULL;
 
 static int get_mr_tgt(void);
+
+int get_mr_krb5_update_ticket(char *host, krb5_data auth)
+{
+  krb5_auth_context auth_con = NULL;
+  krb5_ccache ccache = NULL;
+  krb5_error_code code;
+
+  code = krb5_init_context(&context);
+  if (code)
+    goto out;
+
+  code = krb5_auth_con_init(context, &auth_con);
+  if (code)
+    goto out;
+
+  code = krb5_cc_default(context, &ccache);
+  if (code)
+    goto out;
+
+  code = krb5_mk_req(context, &auth_con, NULL, "host", host, NULL, ccache,
+		     &auth);
+
+ out:
+  if (ccache)
+    krb5_cc_close(context, ccache);
+  if (auth_con)
+    krb5_auth_con_free(context, auth_con);
+  return code;
+}
 
 int get_mr_update_ticket(char *host, KTEXT ticket)
 {

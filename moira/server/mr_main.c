@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.53 2004-02-25 02:25:39 zacheiss Exp $
+/* $Id: mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Moira server process.
  *
@@ -29,8 +29,9 @@
 #include <unistd.h>
 
 #include <krb.h>
+#include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.53 2004-02-25 02:25:39 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $");
 
 client *cur_client;
 
@@ -42,6 +43,7 @@ time_t now;
 
 char *host;
 char krb_realm[REALM_SZ];
+krb5_context context = NULL;
 
 /* Client array and associated data. This needs to be global for _list_users */
 client **clients;
@@ -105,6 +107,13 @@ int main(int argc, char **argv)
     }
 
   krb_get_lrealm(krb_realm, 1);
+
+  status = krb5_init_context(&context);
+  if (status)
+    {
+      com_err(whoami, status, "Initializing krb5 context.");
+      exit(1);
+    }
 
   /*
    * Database initialization.  Only init if database should be open.

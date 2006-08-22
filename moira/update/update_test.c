@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.11 2001-01-08 19:28:12 zacheiss Exp $
+/* $Id: update_test.c,v 1.12 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Test client for update_server protocol.
  *
@@ -39,7 +39,9 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-  code = mr_send_auth(conn, host);
+  code = mr_send_krb5_auth(conn, host);
+  if (code)
+    code = mr_send_auth(conn, host);
   if (code)
     com_err(whoami, code, "attempting authorization");
 

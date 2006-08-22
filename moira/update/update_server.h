@@ -1,6 +1,7 @@
 /* prototypes for the update_server */
 
 void auth_002(int conn, char *str);
+void auth_003(int conn, char *str);
 void exec_002(int conn, char *str);
 void xfer_002(int conn, char *str);
 void xfer_003(int conn, char *str);

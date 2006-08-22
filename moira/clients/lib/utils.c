@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.5 2001-03-02 07:33:53 zacheiss Exp $
+/* $Id: utils.c,v 1.6 2006-08-22 17:36:23 zacheiss Exp $
  *
  * Random client utilities.
  *
@@ -13,6 +13,7 @@
 
 #include <com_err.h>
 #include <krb.h>
+#include <krb5.h>
 
 #include <sys/types.h>
 
@@ -31,9 +32,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.5 2001-03-02 07:33:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.6 2006-08-22 17:36:23 zacheiss Exp $");
 
 extern char *whoami;
+extern krb5_context context;
 
 int mrcl_connect(char *server, char *client, int version, int auth)
 {
@@ -88,7 +90,7 @@ int mrcl_connect(char *server, char *client, int version, int auth)
 
   if (auth)
     {
-      status = mr_auth(client);
+      status = mr_krb5_auth(client);
       if (status)
 	{
 	  com_err(whoami, status, "while authenticating to Moira.");
@@ -102,26 +104,31 @@ int mrcl_connect(char *server, char *client, int version, int auth)
 
 char *mrcl_krb_user(void)
 {
-  int status;
-  static char pname[ANAME_SZ];
+  int flags = 0;
+  krb5_ccache cache = NULL;
+  krb5_principal princ;
+  krb5_error_code status;
+  char *name;
 
-  status = tf_init(TKT_FILE, R_TKT_FIL);
-  if (status == KSUCCESS)
-    {
-      status = tf_get_pname(pname);
-      tf_close();
-    }
+  if (!context)
+    krb5_init_context(&context);
 
-  if (status != KSUCCESS)
+  status = krb5_cc_default(context, &cache);
+  if (status)
     {
-      /* In case mr_init hasn't been called yet. */
-      initialize_krb_error_table();
-      status += ERROR_TABLE_BASE_krb;
-      com_err(whoami, status, "reading Kerberos ticket file.");
+      com_err(whoami, status, "while reading Kerberos ticket file.");
       return NULL;
     }
 
-  return pname;
+  status = krb5_cc_get_principal(context, cache, &princ);
+  if (status)
+    {
+      com_err(whoami, status, "while retrieving principal name.");
+      return NULL;
+    }
+
+  return (char *)krb5_princ_component(context, princ, 0);
+
 }
 
 char *partial_canonicalize_hostname(char *s)

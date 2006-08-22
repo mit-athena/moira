@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.20 2002-08-10 09:36:00 zacheiss Exp $
+/* $Id: mrcheck.c,v 1.21 2006-08-22 17:36:24 zacheiss Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -19,7 +19,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.20 2002-08-10 09:36:00 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.21 2006-08-22 17:36:24 zacheiss Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 
   if (mrcl_connect(server, NULL, 2, 0) != MRCL_SUCCESS)
     exit(2);
-  status = mr_auth("mrcheck");
+  status = mr_krb5_auth("mrcheck");
   if (status && auth_required)
     {
       sprintf(buf, "\nAuthorization failure -- run \"kinit\" and try again");

@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.61 2003-12-05 21:08:14 zacheiss Exp $
+/* $Id: mr_server.h,v 1.62 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -15,6 +15,7 @@
 #include <stdarg.h>
 
 #include <krb.h>
+#include <krb5.h>
 
 enum clstate { CL_ACCEPTING, CL_ACTIVE, CL_CLOSING };
 
@@ -114,6 +115,7 @@ void clist_delete(client *cp);
 /* prototypes from mr_sauth.c */
 void do_auth(client *cl);
 void do_proxy(client *cl);
+void do_krb5_auth(client *cl);
 
 /* prototypes from mr_scall.c */
 void do_client(client *cl);

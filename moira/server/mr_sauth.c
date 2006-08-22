@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.29 2004-07-20 06:47:48 zacheiss Exp $
+/* $Id: mr_sauth.c,v 1.30 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Handle server side of authentication
  *
@@ -19,10 +19,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.29 2004-07-20 06:47:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.30 2006-08-22 17:36:26 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
+extern krb5_context context;
 
 static int set_client(client *cl, char *kname,
 		      char *name, char *inst, char *realm);
@@ -175,10 +176,94 @@ static int set_client(client *cl, char *kname,
   strncpy(cl->clname, kname, sizeof(cl->clname));
   cl->clname[sizeof(cl->clname) - 1] = '\0';
 
-  if (inst[0] == 0 && !strcmp(realm, krb_realm))
+  if ((!inst || inst[0] == 0) && !strcmp(realm, krb_realm))
     ok = 1;
   else
     ok = 0;
   /* this is in a separate function because it accesses the database */
   return set_krb_mapping(cl->clname, name, ok, &cl->client_id, &cl->users_id);
+}
+
+void do_krb5_auth(client *cl)
+{
+  krb5_data auth;
+  krb5_auth_context auth_con = NULL;
+  krb5_principal server = NULL, client = NULL;
+  krb5_ticket *ticket;
+  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+  int status;
+
+  ticket = NULL;
+
+  status = krb5_auth_con_init(context, &auth_con);
+  if (status)
+    {
+      client_reply(cl, status);
+      com_err(whoami, status, "(krb5 auth context init failed)");
+      goto out;
+    }
+
+  status = krb5_sname_to_principal(context, host, MOIRA_SNAME, 
+				    KRB5_NT_SRV_HST, &server);
+  if (status)
+    {
+      client_reply(cl, status);
+      com_err(whoami, status, "(krb5_sname_to_principal failed)");
+      goto out;
+    }
+
+  auth.length = cl->req.mr_argl[0];
+  auth.data = cl->req.mr_argv[0];
+
+  status = krb5_rd_req(context, &auth_con, &auth, server, NULL, NULL,
+			&ticket);
+  if (status)
+    {
+      client_reply(cl, status);
+      com_err(whoami, status, " (krb5 authentication failed)");
+      goto out;
+    }
+
+  status = krb5_copy_principal(context, ticket->enc_part2->client, &client);
+  if (status)
+    {
+      client_reply(cl, status);
+      com_err(whoami, status, " (krb5_copy_principal failed)");
+      goto out;
+    }
+
+  /* Always convert to krb4 style principal name for now. */
+  status = krb5_524_conv_principal(context, client, name, inst, realm);
+  if (status)
+    {
+      client_reply(cl, status);
+      com_err(whoami, status, " (krb5_524_conv_principal failed)");
+      goto out;
+    }
+  status = set_client(cl, mr_kname_unparse(name, inst, realm), name, inst,
+		      realm);
+
+  strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
+  cl->entity[sizeof(cl->entity) - 1] = 0;
+
+  memset(&ticket, 0, sizeof(ticket));	/* Clean up session key, etc. */
+
+  com_err(whoami, 0, "krb5 auth to %s using %s, uid %d cid %d",
+	  cl->clname, cl->entity, cl->users_id, cl->client_id);
+
+  if (status != MR_SUCCESS || cl->users_id != 0)
+    client_reply(cl, status);
+  else
+    client_reply(cl, MR_USER_AUTH);
+
+ out:
+  if (client)
+    krb5_free_principal(context, client);
+  if (server)
+    krb5_free_principal(context, server);
+  if (ticket)
+    krb5_free_ticket(context, ticket);
+  if (auth_con)
+    krb5_auth_con_free(context, auth_con);
+  return;
 }

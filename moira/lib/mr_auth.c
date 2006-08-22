@@ -1,4 +1,4 @@
-/* $Id: mr_auth.c,v 1.24 1999-07-17 21:39:38 danw Exp $
+/* $Id: mr_auth.c,v 1.25 2006-08-22 17:36:25 zacheiss Exp $
  *
  * Handles the client side of the sending of authenticators to the moira server
  *
@@ -16,8 +16,12 @@
 #include <string.h>
 
 #include <krb.h>
+#include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.24 1999-07-17 21:39:38 danw Exp $");
+krb5_context context = NULL;
+krb5_auth_context auth_con = NULL;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.25 2006-08-22 17:36:25 zacheiss Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.
@@ -88,3 +92,73 @@ int mr_proxy(char *principal, char *orig_authtype)
 
   return status;
 }
+
+int mr_krb5_auth(char *prog)
+{
+  mr_params params, reply;
+  char host[BUFSIZ], *p;
+  char *args[2];
+  int argl[2];
+  krb5_ccache ccache = NULL;
+  krb5_data auth;
+  krb5_error_code problem = 0;
+
+  CHECK_CONNECTED;
+
+  memset(&auth, 0, sizeof(auth));
+
+  if ((problem = mr_host(host, sizeof(host) - 1)))
+    return problem;
+
+  for (p = host; *p && *p != '.'; p++)
+    {
+      if (isupper(*p))
+	*p = tolower(*p);
+    }
+  *p = '\0';
+
+  if (!context)
+    {
+      problem = krb5_init_context(&context);
+      if (problem)
+	goto out;
+    }
+
+  problem = krb5_auth_con_init(context, &auth_con);
+  if (problem)
+    goto out;
+
+  problem = krb5_cc_default(context, &ccache);
+  if (problem)
+    goto out;
+
+  problem = krb5_mk_req(context, &auth_con, NULL, MOIRA_SNAME, host, NULL, 
+		       ccache, &auth);
+  if (problem)
+    goto out;
+
+  params.u.mr_procno = MR_KRB5_AUTH;
+  params.mr_argc = 2;
+  params.mr_argv = args;
+  params.mr_argl = argl;
+  params.mr_argv[0] = (char *)auth.data;
+  params.mr_argl[0] = auth.length;
+  params.mr_argv[1] = prog;
+  params.mr_argl[1] = strlen(prog) + 1;
+
+  if ((problem = mr_do_call(&params, &reply)) == MR_SUCCESS)
+    problem = reply.u.mr_status;
+
+  mr_destroy_reply(reply);
+
+ out:
+  if (ccache)
+    krb5_cc_close(context, ccache);
+  krb5_free_data_contents(context, &auth);
+  if (auth_con)
+    krb5_auth_con_free(context, auth_con);
+  auth_con = NULL;
+
+  return problem;
+}
+      

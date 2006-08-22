@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1999-07-12 16:21:13 danw Exp $
+# $Id: Makefile.in,v 1.5 2006-08-22 17:36:26 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -23,7 +23,7 @@ exec_prefix=@exec_prefix@
 bindir=@bindir@
 sbindir=@sbindir@
 
-SOBJS=	auth_002.o checksum.o config.o exec_002.o get_file.o \
+SOBJS=	auth_002.o auth_003.o checksum.o config.o exec_002.o get_file.o \
 	update_server.o xfer_002.o xfer_003.o sendrecv.o
 COBJS=	update_test.o checksum.o client.o send_file.o ticket.o sendrecv.o
 

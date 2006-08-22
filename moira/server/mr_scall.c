@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.38 2000-01-06 21:43:40 danw Exp $
+/* $Id: mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.38 2000-01-06 21:43:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -53,6 +53,7 @@ char *procnames[] = {
   "motd",
   "proxy",
   "version",
+  "auth_krb5",
 };
 
 int newqueries;
@@ -128,6 +129,11 @@ void client_read(client *cl)
     case MR_SETVERSION:
       do_version(cl);
       break;
+
+    case MR_KRB5_AUTH:
+      do_krb5_auth(cl);
+      break;
+
     }
 
 out:

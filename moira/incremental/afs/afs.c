@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.2 2002-04-30 01:58:59 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.3 2006-08-22 17:36:25 zacheiss Exp $
  *
  * Do AFS incremental updates
  *
@@ -723,7 +723,7 @@ int moira_connect(void)
       uname(&uts);
       code = mr_connect(uts.nodename);
       if (!code)
-	code = mr_auth("afs.incr");
+	code = mr_krb5_auth("afs.incr");
       return code;
     }
   return 0;

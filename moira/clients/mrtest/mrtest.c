@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.49 2000-03-15 22:44:09 rbasch Exp $
+/* $Id: mrtest.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $
  *
  * Bare-bones Moira client
  *
@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.49 2000-03-15 22:44:09 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -71,6 +71,7 @@ void test_dcm(void);
 void test_script(int argc, char **argv);
 void test_list_requests(void);
 void test_version(int argc, char **argv);
+void test_krb5_auth(void);
 void set_signal_handler(int, void (*handler)(int));
 void set_signal_blocking(int, int);
 
@@ -179,7 +180,7 @@ void execute_line(char *cmdbuf)
   else if (!strcmp(argv[0], "query") || !strcmp(argv[0], "qy"))
     test_query(argc, argv);
   else if (!strcmp(argv[0], "auth") || !strcmp(argv[0], "a"))
-    test_auth();
+    test_krb5_auth();
   else if (!strcmp(argv[0], "proxy") || !strcmp(argv[0], "p"))
     test_proxy(argc, argv);
   else if (!strcmp(argv[0], "access"))
@@ -195,6 +196,8 @@ void execute_line(char *cmdbuf)
     quit = 1;
   else if (!strcmp(argv[0], "version") || !strcmp(argv[0], "v"))
     test_version(argc, argv);
+  else if (!strcmp(argv[0], "krb4_auth") || !strcmp(argv[0], "4"))
+    test_auth();
   else
     {
       fprintf(stderr, "moira: Unknown request \"%s\".  "
@@ -312,6 +315,15 @@ void test_auth(void)
   status = mr_auth("mrtest");
   if (status)
     com_err("moira (auth)", status, "");
+}
+
+void test_krb5_auth(void)
+{
+  int status;
+
+  status = mr_krb5_auth("mrtest");
+  if (status)
+    com_err("moira (krb5_auth)", status, "");
 }
 
 void test_proxy(int argc, char *argv[])

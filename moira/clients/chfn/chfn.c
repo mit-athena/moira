@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.2 2001-07-28 07:53:57 zacheiss Exp $
+/* $Id: chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -22,12 +22,13 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.2 2001-07-28 07:53:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $");
 
 #define FALSE 0
 #define TRUE 1
 
 char *whoami;
+char *username;
 
 struct finger_info {
   char *fullname;
@@ -40,52 +41,64 @@ struct finger_info {
   char *mit_year;
 };
 
+#define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
+
 void usage(void);
-int chfn(char *uname);
 int get_user_info(int argc, char *argv[], void *message);
 char *ask(char *question, char *def_val, int phone_num);
 void get_new_info(struct finger_info *old_info, struct finger_info *new_info);
 
 int main(int argc, char *argv[])
 {
-  char *uname;
+  int status;			/* general purpose exit status */
+  int q_argc;			/* argc for mr_query */
+  char *q_argv[F_END];		/* argv for mr_query */
+  int i;
+  struct finger_info old_info;
+  struct finger_info new_info;
+  char **arg = argv;
+  char *server = NULL;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
   else
     whoami++;
 
-  if (argc > 2)
-    usage();
-
-  if (argc == 2)
-    uname = argv[1];
-  else
+  /* parse our command line options */
+  while (++arg - argv < argc)
     {
-      uname = mrcl_krb_user();
-      if (!uname)
+      if (**arg == '-')
+	{
+	  if (argis("db", "database"))
+	    {
+	      if (arg - argv < argc - 1)
+                {
+                  ++arg;
+                  server = *arg;
+                }
+              else
+                usage();
+	    }
+	}
+      else if (username == NULL)
+	username = *arg;
+      else
+	usage();
+    }
+
+  if (!username)
+    {
+      username = mrcl_krb_user();
+      if (!username)
 	exit(1);
     }
 
-  exit(chfn(uname));
-}
-
-int chfn(char *uname)
-{
-  int status;			/* general purpose exit status */
-  int q_argc;			/* argc for mr_query */
-  char *q_argv[F_END];		/* argv for mr_query */
-  int i;
-
-  struct finger_info old_info;
-  struct finger_info new_info;
-
-  if (mrcl_connect(NULL, "chsh", 2, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "chsh", 2, 1) != MRCL_SUCCESS)
     exit(1);
-
+  
   /* First, do an access check. */
-
-  q_argv[F_NAME] = uname;
+  
+  q_argv[F_NAME] = username;
   for (i = F_NAME + 1; i < F_MODTIME; i++)
     q_argv[i] = "junk";
   q_argc = F_MODTIME;		/* one more than the last updatable field */
@@ -96,11 +109,11 @@ int chfn(char *uname)
       exit(2);
     }
 
-  printf("Changing finger information for %s.\n", uname);
+  printf("Changing finger information for %s.\n", username);
 
   /* Get information */
 
-  q_argv[NAME] = uname;
+  q_argv[NAME] = username;
   q_argc = NAME + 1;
   if ((status = mr_query("get_finger_by_login", q_argc, q_argv,
 			 get_user_info, &old_info)))
@@ -117,7 +130,7 @@ int chfn(char *uname)
 
   printf("Changing finger information...\n");
 
-  q_argv[F_NAME] = uname;
+  q_argv[F_NAME] = username;
   q_argv[F_FULLNAME] = new_info.fullname;
   q_argv[F_NICKNAME] = new_info.nickname;
   q_argv[F_HOME_ADDR] = new_info.home_address;
@@ -136,6 +149,8 @@ int chfn(char *uname)
     }
 
   printf("Finger information updated succesfully.\n");
+
+  mr_disconnect();
 
   return 0;
 }

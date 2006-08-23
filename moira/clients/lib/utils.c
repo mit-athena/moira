@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.6 2006-08-22 17:36:23 zacheiss Exp $
+/* $Id: utils.c,v 1.7 2006-08-23 19:01:05 zacheiss Exp $
  *
  * Random client utilities.
  *
@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.6 2006-08-22 17:36:23 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.7 2006-08-23 19:01:05 zacheiss Exp $");
 
 extern char *whoami;
 extern krb5_context context;
@@ -91,6 +91,11 @@ int mrcl_connect(char *server, char *client, int version, int auth)
   if (auth)
     {
       status = mr_krb5_auth(client);
+
+      /* New client talking to old server, try krb4. */
+      if (status == MR_UNKNOWN_PROC)
+	status = mr_auth(client);
+
       if (status)
 	{
 	  com_err(whoami, status, "while authenticating to Moira.");
@@ -106,9 +111,9 @@ char *mrcl_krb_user(void)
 {
   int flags = 0;
   krb5_ccache cache = NULL;
-  krb5_principal princ;
+  krb5_principal princ = NULL;
   krb5_error_code status;
-  char *name;
+  char *username = NULL;
 
   if (!context)
     krb5_init_context(&context);
@@ -117,18 +122,31 @@ char *mrcl_krb_user(void)
   if (status)
     {
       com_err(whoami, status, "while reading Kerberos ticket file.");
-      return NULL;
+      goto out;
     }
 
   status = krb5_cc_get_principal(context, cache, &princ);
   if (status)
     {
       com_err(whoami, status, "while retrieving principal name.");
-      return NULL;
+      goto out;
     }
 
-  return (char *)krb5_princ_component(context, princ, 0);
+  username = malloc(krb5_princ_component(context, princ, 0)->length + 1);
+  if (!username)
+    goto out;
 
+  strncpy(username, krb5_princ_component(context, princ, 0)->data,
+	  krb5_princ_component(context, princ, 0)->length);
+  username[krb5_princ_component(context, princ, 0)->length] = '\0';
+
+ out:
+  if (cache)
+    krb5_cc_close(context, cache);
+  if (princ)
+    krb5_free_principal(context, princ);
+
+  return username;
 }
 
 char *partial_canonicalize_hostname(char *s)

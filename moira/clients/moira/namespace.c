@@ -1,4 +1,4 @@
-/* $Id: namespace.c,v 1.15 2006-08-22 17:36:24 zacheiss Exp $
+/* $Id: namespace.c,v 1.16 2006-08-23 19:02:27 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.15 2006-08-22 17:36:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.16 2006-08-23 19:02:27 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -234,14 +234,20 @@ int main(int argc, char **argv)
 
   if ((status = mr_krb5_auth(program_name)))
     {
-      if (status == MR_USER_AUTH)
+      if (status == MR_UNKNOWN_PROC)
+	status = mr_auth(program_name);
+
+      if (status)
 	{
-	  char buf[BUFSIZ];
-	  com_err(program_name, status, "\nPress [RETURN] to continue");
-	  fgets(buf, BUFSIZ, stdin);
+	  if (status == MR_USER_AUTH)
+	    {
+	      char buf[BUFSIZ];
+	      com_err(program_name, status, "\nPress [RETURN] to continue");
+	      fgets(buf, BUFSIZ, stdin);
+	    }
+	  else
+	    ErrorExit("\nAuthorization failed -- please run kinit", status);
 	}
-      else
-	ErrorExit("\nAuthorization failed -- please run kinit", status);
     }
 
   /*

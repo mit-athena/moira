@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $
+/* $Id: utils.c,v 1.51 2006-08-23 19:02:27 zacheiss Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -34,7 +34,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.51 2006-08-23 19:02:27 zacheiss Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -891,6 +891,10 @@ int do_mr_query(char *name, int argc, char **argv,
       return MR_ABORTED;
     }
   status = mr_krb5_auth(whoami);
+  
+  if (status == MR_UNKNOWN_PROC)
+    status = mr_auth(whoami);
+
   if (status)
     {
       com_err(whoami, status, " while re-authenticating to server %s",

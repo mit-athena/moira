@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.42 2006-08-22 17:36:24 zacheiss Exp $
+/* $Id: main.c,v 1.43 2006-08-23 19:02:27 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.42 2006-08-22 17:36:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.43 2006-08-23 19:02:27 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -109,20 +109,25 @@ int main(int argc, char **argv)
 
   if ((status = mr_krb5_auth(program_name)))
     {
-      if (status == MR_USER_AUTH)
-	{
-	  char buf[BUFSIZ];
-	  com_err(program_name, status, "\nPress [RETURN] to continue");
-	  fgets(buf, BUFSIZ, stdin);
-	}
-      else
-	{
-	  if (status >= ERROR_TABLE_BASE_krb &&
-	      status <= ERROR_TABLE_BASE_krb + 256)
-	    ErrorExit("\nAuthorization failed -- please run kinit", status);
-	  else
-	    ErrorExit("\nAuthorization failed.", status);
-	}
+      if (status == MR_UNKNOWN_PROC)
+	status = mr_auth(program_name);
+
+      if (status) {
+	if (status == MR_USER_AUTH)
+	  {
+	    char buf[BUFSIZ];
+	    com_err(program_name, status, "\nPress [RETURN] to continue");
+	    fgets(buf, BUFSIZ, stdin);
+	  }
+	else
+	  {
+	    if (status >= ERROR_TABLE_BASE_krb &&
+		status <= ERROR_TABLE_BASE_krb + 256)
+	      ErrorExit("\nAuthorization failed -- please run kinit", status);
+	    else
+	      ErrorExit("\nAuthorization failed.", status);
+	  }
+      }
     }
 
   /*

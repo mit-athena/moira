@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.46 2000-03-15 22:43:59 rbasch Exp $
+/* $Id: mailmaint.c,v 1.47 2006-08-23 20:07:17 zacheiss Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -54,7 +54,7 @@ static void DELETE_A_CHAR(void)
 #define DELETE_A_CHAR() printf("\b \b");
 #endif /* !_WIN32 */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.46 2000-03-15 22:43:59 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.47 2006-08-23 20:07:17 zacheiss Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 {
   void (*old_hook)(const char *, long, const char *, va_list);
   int use_menu = 1, k_errno;
-  char buf[BUFSIZ], pname[ANAME_SZ];
+  char buf[BUFSIZ];
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -163,17 +163,10 @@ int main(int argc, char *argv[])
       current_li->modwith = NULL;
     }
 
-  if ((k_errno = tf_init(TKT_FILE, R_TKT_FIL)) ||
-      (k_errno = tf_get_pname(pname)))
-    {
-      com_err(whoami, k_errno, "reading Kerberos ticket file");
-      exit(1);
-    }
-  tf_close();
-  username = pname;
-
-  printf("Connecting to database for %s...please hold on.\n", username);
-
+  username = mrcl_krb_user();
+  if (!username)
+    exit(1);
+  
   if (mrcl_connect(NULL, "mailmaint", 2, 1))
     exit(2);
 

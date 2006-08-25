@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $
+/* $Id: mrtest.c,v 1.51 2006-08-25 18:42:39 zacheiss Exp $
  *
  * Bare-bones Moira client
  *
@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.50 2006-08-22 17:36:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.51 2006-08-25 18:42:39 zacheiss Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -525,7 +525,8 @@ void test_list_requests(void)
   printf("host\t\t\tIdentify the server host\n");
   printf("motd, m\t\t\tGet the Message of the Day\n");
   printf("query, qy\t\tMake a query.\n");
-  printf("auth, a\t\t\tAuthenticate to Moira.\n");
+  printf("auth, a\t\t\tAuthenticate to Moira via krb5.\n");
+  printf("krb4_auth, 4\t\tAuthenticate to Moira via krb4.\n");
   printf("proxy, p\t\tProxy authenticate to Moira.\n");
   printf("access\t\t\tCheck access to a Moira query.\n");
   printf("dcm\t\t\tTrigger the DCM\n");

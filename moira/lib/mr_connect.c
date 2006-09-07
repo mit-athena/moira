@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.36 2003-04-24 18:38:55 zacheiss Exp $
+/* $Id: mr_connect.c,v 1.37 2006-09-07 18:21:48 zacheiss Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -45,7 +45,7 @@ struct hostent * WINAPI rgethostbyname(char *name);
 #endif
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.36 2003-04-24 18:38:55 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.37 2006-09-07 18:21:48 zacheiss Exp $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775
@@ -365,11 +365,16 @@ int mr_cont_accept(int conn, char **buf, int *nread)
       getlong(lbuf, len);
       len += 4;
 
-      *buf = malloc(len);
-      if (!*buf || len < 58)
+      if (len < 58 || len > 1000)
 	{
 	  closesocket(conn);
-	  free(*buf);
+	  return 0;
+	}
+
+      *buf = malloc(len);
+      if (!*buf)
+	{
+	  closesocket(conn);
 	  return 0;
 	}
       putlong(*buf, len);
@@ -381,17 +386,28 @@ int mr_cont_accept(int conn, char **buf, int *nread)
 
   more = recv(conn, *buf + *nread, len - *nread, 0);
 
-  if (more == -1 && errno != EINTR)
+  switch (more)
     {
-      closesocket(conn);
-      free(*buf);
-      return 0;
+    case 0:
+      /* If we read 0 bytes, the remote end has gone away. */
+      break;
+    case -1:
+      /* If errno is EINTR, return -1 and try again, otherwise we failed. */
+      if (errno == EINTR)
+	return -1;
+      else
+	{
+	  closesocket(conn);
+	  free(*buf);
+	  return 0;
+	}
+      break;
+    default:
+      *nread += more;
+      if (*nread != len)
+	return -1;
+      break;
     }
-
-  *nread += more;
-
-  if (*nread != len)
-    return -1;
 
   if (memcmp(*buf + 4, challenge + 4, 34))
     {

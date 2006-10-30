@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.48 2006-08-22 17:36:25 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.49 2006-10-30 17:34:51 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -996,11 +996,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
       ptr = after;
       if (!strcasecmp(ptr[LM_TYPE], "LIST"))
-        {
-          com_err(whoami, 0, "Unable to add %s to group %s : %s is not a group", 
-                  after[2], after[0], after[0]);
-          return;
-        }
+	return;
       strcpy(user_name, after[LM_MEMBER]);
       strcpy(group_name, after[LM_LIST]);
       strcpy(user_type, after[LM_TYPE]);
@@ -1037,11 +1033,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
       ptr = before;
       if (!strcasecmp(ptr[LM_TYPE], "LIST"))
-        {
-          com_err(whoami, 0, "Unable to add %s to group %s : %s is not a group", 
-                  before[2], before[0], before[0]);
-          return;
-        }
+	return;
       strcpy(user_name, before[LM_MEMBER]);
       strcpy(group_name, before[LM_LIST]);
       strcpy(user_type, before[LM_TYPE]);

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.41 2006-01-31 21:50:25 zacheiss Exp $
+# $Id: Makefile.in,v 1.42 2007-01-03 20:31:58 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,23 +32,23 @@ LIB_TARGET=libdcm.a
 
 OBJS=	acl.o boot.o dhcp.o directory.o hesiod.o hosts.o mailhub.o \
 	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
-	warehouse.o winad.o www.o zephyr.o
+	winad.o www.o zephyr.o
 
 CFILES= acl.c boot.c dhcp.c directory.c hesiod.c hosts.c mailhub.c \
 	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
-	warehouse.c winad.c www.c zephyr.c
+	winad.c www.c zephyr.c
 
 TARGET=	acl.gen boot.gen dhcp.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
-	postoffice.gen print.gen warehouse.gen winad.gen www.gen zephyr.gen
+	postoffice.gen print.gen winad.gen www.gen zephyr.gen
 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	confluence.gen dhcp.sh events.gen events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhub.sh \
 	mailman.gen mailman.sh nagios-printers.gen nagios-printers.sh ndb.sh \
 	nfs.sh null.sh postoffice.sh print.sh sapprint.gen sapprint.sh \
-	spwatch.gen warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh \
-	install_dirs install_quotas zero_quotas
+	spwatch.gen warehouse.gen warehouse.sh winstats.gen winstats.sh \
+	www.sh zephyr.sh install_dirs install_quotas zero_quotas
 
 .SUFFIXES: .pc .gen
 

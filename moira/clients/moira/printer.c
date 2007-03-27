@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.27 2000-03-15 22:44:05 rbasch Exp $
+/* $Id: printer.c,v 1.28 2007-03-27 15:07:36 zacheiss Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.27 2000-03-15 22:44:05 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.28 2007-03-27 15:07:36 zacheiss Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -68,7 +68,7 @@ static char **SetDefaults(char **info, char *name)
   info[PRN_RM] = strdup("[ANY]");
   info[PRN_RP] = strdup(name);
   info[PRN_RQ] = strdup("[NONE]");
-  info[PRN_KA] = strdup("1");
+  info[PRN_KA] = strdup("0");
   info[PRN_PC] = strdup("10");
   info[PRN_AC] = strdup("[none]");
   info[PRN_LPC_ACL] = strdup("[none]");

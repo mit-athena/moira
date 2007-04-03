@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc,v 1.5 2003-12-30 07:13:05 zacheiss Exp $
+/* $Id: dhcp.pc,v 1.6 2007-04-03 20:52:58 zacheiss Exp $
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.5 2003-12-30 07:13:05 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.6 2007-04-03 20:52:58 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -62,6 +62,12 @@ int main(int argc, char **argv)
 
   EXEC SQL WHENEVER SQLERROR DO sqlerr();
 
+  if (argc != 2)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
   /* Get print spoolers for allow lists. */
   EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m
     WHERE sh.service = 'PRINT' AND sh.mach_id = m.mach_id 
@@ -84,8 +90,7 @@ int main(int argc, char **argv)
   EXEC SQL CLOSE csr_spool;
 
   /* Now build the tar file. */
-  sprintf(filename, "%s/dhcp.out", DCM_DIR);
-  tf = tarfile_open(filename);
+  tf = tarfile_open(argv[1]);
 
   /* Build dhcpd.conf.print */
 

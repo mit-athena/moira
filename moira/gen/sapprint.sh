@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: sapprint.sh,v 1.2 2000-05-08 18:30:31 zacheiss Exp $
+# $Id: sapprint.sh,v 1.3 2007-04-03 15:36:01 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then 
     exec >/var/athena/moira_update.log 2>&1
@@ -12,7 +12,8 @@ fi
 MR_MISSINGFILE=47836473
 
 PATH=/bin
-OUTFILE=/var/tmp/sapprint.out
+OUTFILE=/var/tmp/sapprint.out.moira
+DSTFILE=/var/tmp/sapprint.out
 
 # Alert if the output file doesn't exist
 test -r $OUTFILE || exit $MR_MISSINGFILE
@@ -21,6 +22,9 @@ test -r $OUTFILE || exit $MR_MISSINGFILE
 chown root $OUTFILE
 chgrp 0 $OUTFILE
 chmod 644 $OUTFILE
+
+# mv file into place.
+mv $OUTFILE $DSTFILE
 
 # cleanup
 test -f $0 && rm -f $0

@@ -1,4 +1,4 @@
-#!/afs/athena/contrib/perl/perl
+#!/usr/athena/bin/perl
 # Usage: afs_quota path quota
 
 require "/moira/bin/afs_utils.pl";
@@ -15,10 +15,12 @@ chop(@fs=<PROG>);
 close(PROG);
 die "Unable to get information about $path\n" if ($?);
 
+shift(@fs);
 @tmp = split(/\s+/, shift(@fs));
 $vname = pop(@tmp);
 @tmp = split(/\s+/, shift(@fs));
 $oldq = pop(@tmp);
+print "$vname $oldq $newq\n";
 
 open(PROG,"$fs whichcell $path|");
 chop($_=<PROG>);

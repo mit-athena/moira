@@ -20,7 +20,6 @@ shift(@fs);
 $vname = pop(@tmp);
 @tmp = split(/\s+/, shift(@fs));
 $oldq = pop(@tmp);
-print "$vname $oldq $newq\n";
 
 open(PROG,"$fs whichcell $path|");
 chop($_=<PROG>);

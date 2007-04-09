@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.101 2005-08-22 22:26:26 zacheiss Exp $
+/* $Id: queries2.c,v 2.102 2007-04-09 14:51:00 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2457,7 +2457,7 @@ static struct validate gfsl_validate = {
   0,
   0,
   0,
-  access_filesys,
+  0,
   0,
   followup_fix_modby,
 };
@@ -2764,7 +2764,7 @@ static struct validate gqbf_validate = {
   0,
   0,
   0,
-  access_filesys,
+  0,
   0,
   followup_gqot,
 };
@@ -2829,7 +2829,7 @@ static struct validate gnfq_validate = {
   0,
   0,
   0,
-  access_filesys,
+  0,
   0,
   followup_gqot,
 };

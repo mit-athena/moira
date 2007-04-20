@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.30 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: mr_sauth.c,v 1.31 2007-04-20 13:57:14 zacheiss Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.30 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.31 2007-04-20 13:57:14 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
@@ -127,7 +127,7 @@ void do_auth(client *cl)
 
 void do_proxy(client *cl)
 {
-  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+  char name[ANAME_SZ] = "\0", inst[INST_SZ] = "\0", realm[REALM_SZ] = "\0";
   char kname[MAX_K_NAME_SZ];
 
   if (cl->proxy_id)

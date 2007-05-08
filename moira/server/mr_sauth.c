@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.31 2007-04-20 13:57:14 zacheiss Exp $
+/* $Id: mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.31 2007-04-20 13:57:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
@@ -245,8 +245,6 @@ void do_krb5_auth(client *cl)
 
   strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
   cl->entity[sizeof(cl->entity) - 1] = 0;
-
-  memset(&ticket, 0, sizeof(ticket));	/* Clean up session key, etc. */
 
   com_err(whoami, 0, "krb5 auth to %s using %s, uid %d cid %d",
 	  cl->clname, cl->entity, cl->users_id, cl->client_id);

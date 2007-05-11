@@ -10,11 +10,12 @@ cd /moira/sync
 ####	This is preparation for the resync, to save non-Moira users.    ####
 First, get a recent copy of the prdb, and extract non-Moira entries:
 
-	/moira/bin/udebug aggy -port 7002
-	rcp -px root@aggy:/usr/afs/db/prdb.DB0 prdb.old
-	/moira/bin/udebug aggy -port 7002
+	/moira/bin/udebug prill -port 7002
+	rcp -px root@prill:/usr/afs/db/prdb.DB0 prdb.old
+	/moira/bin/udebug prill -port 7002
 If the two udebugs show that the version changed, lather-rinse-repeat.
-(udebug can be found in afsuser; "aggy" here and below is some DB server)
+(udebug can be found in /usr/athena/bin; "prill" here and below is some 
+DB server)
 (Also check for "0 of them for write" at the end.  It might matter.)
 
 	/moira/bin/pt_util -x -m -u -g -d prdb.extra -p prdb.old
@@ -127,7 +128,7 @@ personal groups was deactivated and the uid was re-used (this was
 becasue we didn't trim the prdb.extra.sort file in the past.))
 Assuming htese errors are due to a username change, the groups should
 be renamed, and you should regenerate prdb.extra.trimmed starting with
-a fresh prdb from aggy.  (You may want to abort and
+a fresh prdb from prill.  (You may want to abort and
 rm /moira/afs/noafs and try again later.)
 
 	pts listmax > prdb.listmax

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.61 2003-03-12 00:43:32 zacheiss Exp $
+/* $Id: blanche.c,v 1.62 2007-05-14 16:05:43 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.61 2003-03-12 00:43:32 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.62 2007-05-14 16:05:43 zacheiss Exp $");
 
 struct member {
   int type;
@@ -48,7 +48,7 @@ int showusers, showstrings, showkerberos, showlists, showtags, showmachines;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
 int nfsgroup, mailman;
 struct member *owner, *memacl;
-char *desc, *newname, *mailman_server;
+char *desc, *newname, *mailman_server, *gid;
 
 /* various member lists */
 struct save_queue *addlist, *dellist, *memberlist, *synclist, *taglist;
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
   noauth = showusers = showstrings = showkerberos = showlists = 0;
   showtags = showmachines = createflag = setinfo = 0;
   active = public = hidden = maillist = grouplist = nfsgroup = mailman = -1;
-  listname = newname = desc = NULL;
+  listname = newname = desc = gid = NULL;
   owner = NULL;
   memacl = NULL;
   addlist = sq_create();
@@ -334,6 +334,17 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("g", "gid"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  setinfo++;
+		  ++arg;
+		  gid = *arg;
+		}
+	      else
+		usage(argv);
+	    }
 	  else
 	    usage(argv);
 	}
@@ -389,7 +400,12 @@ int main(int argc, char **argv)
       argv[L_HIDDEN] = (hidden == 1) ? "1" : "0";
       argv[L_MAILLIST] = (maillist == 0) ? "0" : "1";
       argv[L_GROUP] = (grouplist == 1) ? "1" : "0";
-      argv[L_GID] = UNIQUE_GID;
+
+      if (gid)
+	argv[L_GID] = gid;
+      else
+	argv[L_GID] = UNIQUE_GID;
+
       argv[L_NFSGROUP] = (nfsgroup == 1) ? "1" : "0";
       argv[L_MAILMAN] = (mailman == 1) ? "1" : "0";
       argv[L_DESC] = desc ? desc : "none";
@@ -497,6 +513,8 @@ int main(int argc, char **argv)
 	argv[L_MAILLIST + 1] = maillist ? "1" : "0";
       if (grouplist != -1)
 	argv[L_GROUP + 1] = grouplist ? "1" : "0";
+      if (gid)
+	argv[L_GID + 1] = gid;
       if (nfsgroup != -1)
 	argv[L_NFSGROUP + 1] = nfsgroup ? "1" : "0";
       if (mailman != -1)

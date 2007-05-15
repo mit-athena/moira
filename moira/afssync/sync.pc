@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.5 2001-10-23 21:43:59 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.6 2007-05-15 21:23:05 zacheiss Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -20,9 +20,6 @@
 #include <moira_site.h>
 #include <ctype.h>
 
-/* The following enables the processing of .root instances */
-#define DO_KERBEROS
-
 EXEC SQL INCLUDE sqlca;
 
 EXEC SQL BEGIN DECLARE SECTION;
@@ -43,9 +40,6 @@ int mcount = 0;
 
 struct hash *users;
 struct hash *groups;
-#ifdef DO_KERBEROS
-struct hash *strings;
-#endif
 
 struct member {
     struct entry *user;
@@ -89,9 +83,6 @@ char **argv;
     
     users = create_hash(10000);
     groups = create_hash(15000);
-#ifdef DO_KERBEROS
-    strings = create_hash(1000);
-#endif
 
     EXEC SQL WHENEVER SQLERROR DO sqlerr();
     EXEC SQL CONNECT :db IDENTIFIED BY :db;
@@ -251,76 +242,6 @@ do_groups()
 		mcount++;
 	    }
 	}
-#ifdef DO_KERBEROS
-	else if (!strcmp(name, "KERBEROS")) {
-	    if (!(u = (struct entry *)hash_lookup(strings, id))) {
-		char *p;
-		
-		EXEC SQL SELECT string INTO :string
-		    FROM strings WHERE string_id = :id;
-
-		aid = 0;
-		strtrim(string);
-
-		if (p = (char *)index(string, '@')) {
-		    *p = 0;
-		    if (strcmp(p+1, "ATHENA.MIT.EDU")) aid = -1;
-		} else aid = -1;
-
-		if ((p = (char *)index(string, '.')) && (p-string) < 9 &&
-		    !strcmp(p+1, "root"))
-		{
-		    strncpy(name, string, p-string);
-		    name[p-string] = 0;
-		} else aid = -1;
-
-		if (aid == 0) {
-		    EXEC SQL DECLARE k_cursor2 CURSOR FOR
-			SELECT unix_uid, status
-			FROM users
-			WHERE login = :name
-			ORDER BY unix_uid;
-		    EXEC SQL OPEN k_cursor2;
-		    while (1) {
-			if (sqlca.sqlcode) break;
-			EXEC SQL FETCH k_cursor2 INTO :lid, :ustatus;
-			if (ustatus==1 || ustatus==2) aid = lid+65536;
-		    }
-		    EXEC SQL CLOSE k_cursor2;
-		}
-
-		if (aid > 0) {
-		    if (FindByID(0,aid))
-			status = PRIDEXIST;
-		    else
-			status = CreateEntry(0, string, &aid, 1 /*idflag*/,
-					     0 /*gflag*/, SYSADMINID /*oid*/,
-					     SYSADMINID /*cid */);
-		    if (status) {
-			fprintf(stderr, "Error adding %s (id %d): %s\n",
-				string, aid, error_message(status));
-			if (status != PRIDEXIST) aid = 0;
-		    }
-		} else
-		    aid = 0;
-	    
-		u = (struct entry *)malloc(sizeof(struct entry));
-		u->id = aid;
-		u->members = 0;
-		hash_store(strings, id, u);
-		if (aid) kcount++;
-	    }
-	    if (u->id == 0) continue;
-
-	    m = (struct member *)malloc(sizeof(struct member));
-	    m->user = u;
-	    m->group = g;
-	    m->unext = u->members;
-	    m->gnext = g->members;
-	    u->members = g->members = m;
-	    mcount++;
-	}
-#endif
     }
     EXEC SQL CLOSE m_cursor;
 
@@ -351,27 +272,6 @@ do_groups()
 	    }
 	}
     }
-#ifdef DO_KERBEROS
-    for (p = &(strings->data[strings->size - 1]); p >= strings->data; p--) {
-	for (b = *p; b; b = b->next) {
-	    if ((u = (struct entry *)b->data)->members == 0)
-		continue;
-	    pos = FindByID(0, u->id);
-	    pr_Read(0, 0, pos, &uentry, sizeof(uentry));
-	    for (t=0, m=u->members; m && t<PRSIZE; m=m->unext, t++)
-		uentry.entries[t] = htonl(m->group->id);
-	    uentry.count = htonl(t);
-	    pr_Write(0, 0, pos, &uentry, sizeof(uentry));
-	    if (m) {
-		pr_ReadEntry(0, 0, pos, &uentry);
-		while (m) {
-		    AddToEntry(0, &uentry, pos, m->group->id);
-		    m = m->unext;
-		}
-	    }
-	}
-    }
-#endif
     for (p = &(groups->data[groups->size - 1]); p >= groups->data; p--) {
 	for (b = *p; b; b = b->next) {
 	    if ((g = (struct entry *)b->data)->members == 0)

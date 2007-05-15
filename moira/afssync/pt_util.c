@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/file.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <afs/param.h>
 #include <lock.h>
@@ -30,23 +31,16 @@
 #include "vis.h"
 
 #define IDHash(x) (abs(x) % HASHSIZE)
-#define print_id(x) ( ((flags&DO_SYS)==0 && (x<-65535 || x>97536)) || \
-		      ((flags&DO_OTR)==0 && (x>-65536 && x<97537)))
 
-extern char *optarg;
-extern int optind;
-extern int errno;
-extern char *sys_errlist[];
-#define strerror(a) sys_errlist[a]
-
-int display_entry();
-void add_group();
-void display_groups();
-void display_group();
-void fix_pre();
-char *checkin();
-char *check_core();
-char *id_to_name();
+int display_entry(int offset);
+int print_id(int id);
+void add_group(long id);
+void display_groups(void);
+void display_group(int id);
+void fix_pre(struct prentry *pre);
+char *checkin(struct prentry *pre);
+char *check_core(register int id);
+char *id_to_name(int id);
 
 struct hash_entry {
     char h_name[PR_MAXNAMELEN];
@@ -91,9 +85,7 @@ int nflag = 0;
 int wflag = 0;
 int flags = 0;
 
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
     register int i;
     register long code;
@@ -149,19 +141,19 @@ char **argv;
     }
     if ((dbase_fd = open(pfile, wflag ? O_RDWR : O_RDONLY, 0600)) < 0) {
 	fprintf(stderr, "pt_util: cannot open %s: %s\n",
-		pfile, sys_errlist[errno]);
+		pfile, strerror(errno));
 	exit (1);
     }
     if (read(dbase_fd, buffer, HDRSIZE) < 0) {
 	fprintf(stderr, "pt_util: error reading %s: %s\n",
-		pfile, sys_errlist[errno]);
+		pfile, strerror(errno));
 	exit (1);
     }
 
     if (dfile) {
 	if ((dfp = fopen(dfile, wflag ? "r" : "w")) == 0) {
 	    fprintf(stderr, "pt_util: error opening %s: %s\n",
-		    dfile, sys_errlist[errno]);
+		    dfile, strerror(errno));
 	    exit(1);
 	}
     } else
@@ -178,7 +170,7 @@ char **argv;
 	lseek(dbase_fd, 0, SEEK_SET);
 	if (write(dbase_fd, buffer, HDRSIZE) < 0) {
 	    fprintf(stderr, "pt_util: error writing ubik version to %s: %s\n",
-		    pfile, sys_errlist[errno]);
+		    pfile, strerror(errno));
 	    exit (1);
 	}
     }
@@ -186,7 +178,7 @@ char **argv;
 	    uv.epoch, uv.counter);
     if (read(dbase_fd, &prh, sizeof(struct prheader)) < 0) {
 	fprintf(stderr, "pt_util: error reading %s: %s\n",
-		pfile, sys_errlist[errno]);
+		pfile, strerror(errno));
 	exit (1);
     }
 
@@ -301,7 +293,7 @@ char **argv;
     lseek (dbase_fd, 0, L_SET);		/* rewind to beginning of file */
     if (read(dbase_fd, buffer, HDRSIZE) < 0) {
 	fprintf(stderr, "pt_util: error reading %s: %s\n",
-		pfile, sys_errlist[errno]);
+		pfile, strerror(errno));
 	exit (1);
     }
     uh = (struct ubik_hdr *)buffer;
@@ -316,8 +308,7 @@ char **argv;
     exit (0);
 }
 
-int display_entry (offset)
-int offset;
+int display_entry(int offset)
 {
     register int i;
 
@@ -341,8 +332,7 @@ int offset;
     return(nflag ? pre.nextName: pre.nextID);
 }
 
-void add_group(id)
-    long id;
+void add_group(long id)
 {
     struct grp_list *g;
     register long i;
@@ -357,7 +347,7 @@ void add_group(id)
     g->groups[i] = id;
 }
 
-void display_groups()
+void display_groups(void)
 {
     register int i, id;
     struct grp_list *g;
@@ -375,8 +365,7 @@ void display_groups()
     }
 }
 
-void display_group(id)
-    int id;
+void display_group(int id)
 {
     register int i, offset;
     int print_grp = 0;
@@ -447,8 +436,7 @@ void display_group(id)
     }
 }
 
-void fix_pre(pre)
-    struct prentry *pre;
+void fix_pre(struct prentry *pre)
 {
     register int i;
     char *str = malloc(4 * strlen(pre->name) + 1);
@@ -491,8 +479,7 @@ void fix_pre(pre)
     }
 }
 
-char *id_to_name(id)
-int id;
+char *id_to_name(int id)
 {
     register int offset;
     static struct prentry pre;
@@ -505,7 +492,7 @@ int id;
 	lseek(dbase_fd, offset+HDRSIZE, L_SET);
 	if (read(dbase_fd, &pre, sizeof(struct prentry)) < 0) {
 	    fprintf(stderr, "pt_util: read i/o error: %s\n",
-		    sys_errlist[errno]);
+		    strerror(errno));
 	    exit (1);
 	}
 	pre.id = ntohl(pre.id);
@@ -518,8 +505,7 @@ int id;
     return 0;
 }
 
-char *checkin(pre)
-struct prentry *pre;
+char *checkin(struct prentry *pre)
 {
     struct hash_entry *he, *last;
     register int id;
@@ -545,8 +531,7 @@ struct prentry *pre;
     return(he->h_name);
 }
 
-char *check_core(id)
-register int id;
+char *check_core(register int id)
 {
     struct hash_entry *he;
     he = hat[IDHash(id)];
@@ -554,5 +539,663 @@ register int id;
 	if (id == he->h_id) return(he->h_name);
 	he = he->next;
     }
+    return 0;
+}
+
+/* returns 1 if the id value should be printered, otherwise 0 */
+int print_id(int id)
+{
+  /* process system (Moira) users */
+  if (flags & DO_SYS)
+    {
+      /* hard-coded list of IDs in the system id space that aren't actually
+       * system users.  Skip them here.  Mmm, legacies.
+       */
+      switch (id)
+	{
+	case -65541:
+	case -65542:
+	case -65544:
+	case -65546:
+	case -65548:
+	case -65549:
+	case -65551:
+	case -65557:
+	case -65563:
+	case -65574:
+	case -65576:
+	case -65578:
+	case -65579:
+	case -65582:
+	case -97536:
+	case -97537:
+	case -97538:
+	case -98766:
+	case -98775:
+	case -98781:
+	case -98782:
+	case -98783:
+	case -98784:
+	case -98785:
+	case -98786:
+	case -98787:
+	case -98788:
+	case -98789:
+	case -98792:
+	case -98813:
+	case -98815:
+	case -98816:
+	case -98818:
+	case -98819:
+	case -98820:
+	case -98821:
+	case -98828:
+	case -98829:
+	case -98830:
+	case -98835:
+	case -98836:
+	case -98837:
+	case -98841:
+	case -98842:
+	case -98844:
+	case -98845:
+	case -98846:
+	case -98847:
+	case -98848:
+	case -98849:
+	case -98851:
+	case -98854:
+	case -98855:
+	case -98856:
+	case -98857:
+	case -98859:
+	case -98867:
+	case -98868:
+	case -98869:
+	case -98870:
+	case -98871:
+	case -98873:
+	case -98878:
+	case -98879:
+	case -98883:
+	case -98884:
+	case -98885:
+	case -98888:
+	case -98891:
+	case -98898:
+	case -98903:
+	case -98905:
+	case -98914:
+	case -98918:
+	case -98919:
+	case -98920:
+	case -98923:
+	case -98927:
+	case -98941:
+	case -98942:
+	case -98945:
+	case -98948:
+	case -98949:
+	case -98951:
+	case -98952:
+	case -98953:
+	case -98956:
+	case -98957:
+	case -98960:
+	case -98961:
+	case -98963:
+	case -98966:
+	case -98994:
+	case -98996:
+	case -98998:
+	case -99000:
+	case -99001:
+	case -99002:
+	case -99003:
+	case -99004:
+	case -99005:
+	case -99006:
+	case -99007:
+	case -99008:
+	case -99009:
+	case -99010:
+	case -99011:
+	case -99012:
+	case -99013:
+	case -99014:
+	case -99015:
+	case -99016:
+	case -99017:
+	case -99018:
+	case -99019:
+	case -99023:
+	case -99029:
+	case -99030:
+	case -99042:
+	case -99048:
+	case -99056:
+	case -99057:
+	case -99058:
+	case -99059:
+	case -99063:
+	case -99064:
+	case -99076:
+	case -99079:
+	case -99090:
+	case -99091:
+	case -99105:
+	case -99106:
+	case -99113:
+	case -99114:
+	case -99115:
+	case -99116:
+	case -99118:
+	case -99120:
+	case -99121:
+	case -99129:
+	case -99130:
+	case -99131:
+	case -99133:
+	case -99146:
+	case -99150:
+	case -99153:
+	case -99154:
+	case -99193:
+	case -99194:
+	case -99200:
+	case -99205:
+	case -99211:
+	case -99214:
+	case -99218:
+	case -99220:
+	case -99223:
+	case -99224:
+	case -99225:
+	case -99233:
+	case -99234:
+	case -99236:
+	case -99237:
+	case -99242:
+	case -99245:
+	case -99250:
+	case -99252:
+	case -99253:
+	case -99254:
+	case -99255:
+	case -99259:
+	case -99260:
+	case -99263:
+	case -99264:
+	case -99267:
+	case -99284:
+	case -99287:
+	case -99289:
+	case -99295:
+	case -99297:
+	case -99307:
+	case -99308:
+	case -99309:
+	case -99310:
+	case -99311:
+	case -99315:
+	case -99317:
+	case -99327:
+	case -99334:
+	case -99344:
+	case -99348:
+	case -99349:
+	case -99354:
+	case -99366:
+	case -99367:
+	case -99370:
+	case -99371:
+	case -99372:
+	case -99373:
+	case -99377:
+	case -99378:
+	case -99379:
+	case 65613:
+	case 65678:
+	case 65770:
+	case 65896:
+	case 65971:
+	case 65987:
+	case 66011:
+	case 66114:
+	case 66142:
+	case 67145:
+	case 67299:
+	case 67393:
+	case 67669:
+	case 67712:
+	case 67903:
+	case 68276:
+	case 68421:
+	case 68467:
+	case 69005:
+	case 69143:
+	case 69234:
+	case 69611:
+	case 70141:
+	case 70481:
+	case 71468:
+	case 71559:
+	case 71689:
+	case 72203:
+	case 72775:
+	case 72799:
+	case 73319:
+	case 73348:
+	case 73578:
+	case 73642:
+	case 73656:
+	case 74424:
+	case 74610:
+	case 75067:
+	case 75169:
+	case 75197:
+	case 75332:
+	case 75717:
+	case 76261:
+	case 76322:
+	case 76341:
+	case 76529:
+	case 76546:
+	case 76747:
+	case 76804:
+	case 77353:
+	case 77409:
+	case 77800:
+	case 78720:
+	case 80148:
+	case 80176:
+	case 80422:
+	case 80533:
+	case 80856:
+	case 81342:
+	case 82058:
+	case 82279:
+	case 82304:
+	case 82605:
+	case 82611:
+	case 84255:
+	case 84476:
+	case 85005:
+	case 85309:
+	case 85426:
+	case 85530:
+	case 87306:
+	case 88377:
+	case 89960:
+	case 90000:
+	case 90782:
+	case 92388:
+	case 92990:
+	case 94724:
+	case 95044:
+	case 95057:
+	case 95969:
+	case 96863:
+	case 97354:
+	case 97538:
+	case 97540:
+	case 97542:
+	case 97544:
+	case 97545:
+	case 97546:
+	case 97547:
+	case 97556:
+	case 97559:
+	case 97560:
+	case 97570:
+	case 99070:
+	case 99071:
+	case 99072:
+	case 101061:
+	case 101502:
+	case 102042:
+	case 103500:
+	case 106026:
+	case 119873:
+	case 127811:
+	case 128401:
+	case 128906:
+	case 130756:
+	case 130781:
+	  return 0;
+	  break;
+	}
+      if (id > -131073 && id < 131073)
+	return 1;
+      else
+	return 0;
+    }
+  /* process non-system (not in Moira) users */
+  else if (flags & DO_OTR)
+    {
+      /* hard-coded list of IDs in the system id space that aren't actually
+       * system users.  Print them here.  Mmm, legacies.
+       */
+      switch (id)
+	{
+	case -65541:
+	case -65542:
+	case -65544:
+	case -65546:
+	case -65548:
+	case -65549:
+	case -65551:
+	case -65557:
+	case -65563:
+	case -65574:
+	case -65576:
+	case -65578:
+	case -65579:
+	case -65582:
+	case -97536:
+	case -97537:
+	case -97538:
+	case -98766:
+	case -98775:
+	case -98781:
+	case -98782:
+	case -98783:
+	case -98784:
+	case -98785:
+	case -98786:
+	case -98787:
+	case -98788:
+	case -98789:
+	case -98792:
+	case -98813:
+	case -98815:
+	case -98816:
+	case -98818:
+	case -98819:
+	case -98820:
+	case -98821:
+	case -98828:
+	case -98829:
+	case -98830:
+	case -98835:
+	case -98836:
+	case -98837:
+	case -98841:
+	case -98842:
+	case -98844:
+	case -98845:
+	case -98846:
+	case -98847:
+	case -98848:
+	case -98849:
+	case -98851:
+	case -98854:
+	case -98855:
+	case -98856:
+	case -98857:
+	case -98859:
+	case -98867:
+	case -98868:
+	case -98869:
+	case -98870:
+	case -98871:
+	case -98873:
+	case -98878:
+	case -98879:
+	case -98883:
+	case -98884:
+	case -98885:
+	case -98888:
+	case -98891:
+	case -98898:
+	case -98903:
+	case -98905:
+	case -98914:
+	case -98918:
+	case -98919:
+	case -98920:
+	case -98923:
+	case -98927:
+	case -98941:
+	case -98942:
+	case -98945:
+	case -98948:
+	case -98949:
+	case -98951:
+	case -98952:
+	case -98953:
+	case -98956:
+	case -98957:
+	case -98960:
+	case -98961:
+	case -98963:
+	case -98966:
+	case -98994:
+	case -98996:
+	case -98998:
+	case -99000:
+	case -99001:
+	case -99002:
+	case -99003:
+	case -99004:
+	case -99005:
+	case -99006:
+	case -99007:
+	case -99008:
+	case -99009:
+	case -99010:
+	case -99011:
+	case -99012:
+	case -99013:
+	case -99014:
+	case -99015:
+	case -99016:
+	case -99017:
+	case -99018:
+	case -99019:
+	case -99023:
+	case -99029:
+	case -99030:
+	case -99042:
+	case -99048:
+	case -99056:
+	case -99057:
+	case -99058:
+	case -99059:
+	case -99063:
+	case -99064:
+	case -99076:
+	case -99079:
+	case -99090:
+	case -99091:
+	case -99105:
+	case -99106:
+	case -99113:
+	case -99114:
+	case -99115:
+	case -99116:
+	case -99118:
+	case -99120:
+	case -99121:
+	case -99129:
+	case -99130:
+	case -99131:
+	case -99133:
+	case -99146:
+	case -99150:
+	case -99153:
+	case -99154:
+	case -99193:
+	case -99194:
+	case -99200:
+	case -99205:
+	case -99211:
+	case -99214:
+	case -99218:
+	case -99220:
+	case -99223:
+	case -99224:
+	case -99225:
+	case -99233:
+	case -99234:
+	case -99236:
+	case -99237:
+	case -99242:
+	case -99245:
+	case -99250:
+	case -99252:
+	case -99253:
+	case -99254:
+	case -99255:
+	case -99259:
+	case -99260:
+	case -99263:
+	case -99264:
+	case -99267:
+	case -99284:
+	case -99287:
+	case -99289:
+	case -99295:
+	case -99297:
+	case -99307:
+	case -99308:
+	case -99309:
+	case -99310:
+	case -99311:
+	case -99315:
+	case -99317:
+	case -99327:
+	case -99334:
+	case -99344:
+	case -99348:
+	case -99349:
+	case -99354:
+	case -99366:
+	case -99367:
+	case -99370:
+	case -99371:
+	case -99372:
+	case -99373:
+	case -99377:
+	case -99378:
+	case -99379:
+	case 65613:
+	case 65678:
+	case 65770:
+	case 65896:
+	case 65971:
+	case 65987:
+	case 66011:
+	case 66114:
+	case 66142:
+	case 67145:
+	case 67299:
+	case 67393:
+	case 67669:
+	case 67712:
+	case 67903:
+	case 68276:
+	case 68421:
+	case 68467:
+	case 69005:
+	case 69143:
+	case 69234:
+	case 69611:
+	case 70141:
+	case 70481:
+	case 71468:
+	case 71559:
+	case 71689:
+	case 72203:
+	case 72775:
+	case 72799:
+	case 73319:
+	case 73348:
+	case 73578:
+	case 73642:
+	case 73656:
+	case 74424:
+	case 74610:
+	case 75067:
+	case 75169:
+	case 75197:
+	case 75332:
+	case 75717:
+	case 76261:
+	case 76322:
+	case 76341:
+	case 76529:
+	case 76546:
+	case 76747:
+	case 76804:
+	case 77353:
+	case 77409:
+	case 77800:
+	case 78720:
+	case 80148:
+	case 80176:
+	case 80422:
+	case 80533:
+	case 80856:
+	case 81342:
+	case 82058:
+	case 82279:
+	case 82304:
+	case 82605:
+	case 82611:
+	case 84255:
+	case 84476:
+	case 85005:
+	case 85309:
+	case 85426:
+	case 85530:
+	case 87306:
+	case 88377:
+	case 89960:
+	case 90000:
+	case 90782:
+	case 92388:
+	case 92990:
+	case 94724:
+	case 95044:
+	case 95057:
+	case 95969:
+	case 96863:
+	case 97354:
+	case 97538:
+	case 97540:
+	case 97542:
+	case 97544:
+	case 97545:
+	case 97546:
+	case 97547:
+	case 97556:
+	case 97559:
+	case 97560:
+	case 97570:
+	case 99070:
+	case 99071:
+	case 99072:
+	case 101061:
+	case 101502:
+	case 102042:
+	case 103500:
+	case 106026:
+	case 119873:
+	case 127811:
+	case 128401:
+	case 128906:
+	case 130756:
+	case 130781:
+	  return 1;
+	  break;
+	}
+      if (id < -131072 || id > 131072)
+	return 1;
+      else
+	return 0;
+    }
+  /* neither flag set, don't do anything */
+  else
     return 0;
 }

@@ -1,0 +1,80 @@
+#!/moira/bin/perl -Tw
+
+# $Id: tsm.gen,v 1.1 2007-05-16 15:34:04 zacheiss Exp $
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/tsm';
+umask 022;
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+  || exit $MR_DBMS_ERR;
+
+$sth0 = $dbh->prepare("SELECT l.list_id, m.name " .
+		      "FROM list l, machine m, serverhosts sh " .
+		      "WHERE sh.value3 = l.name AND sh.service = 'TSM' " .
+		      "AND m.mach_id = sh.mach_id") || exit $MR_DBMS_ERR;
+$sth0->execute;
+
+while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
+    open(OUT, ">$outdir/$hostname");
+
+    $sth = $dbh->prepare("SELECT l.name, l.gid FROM list l, imembers i " .
+			 "WHERE i.list_id = " . $dbh->quote($root_list_id) .
+			 "AND i.member_type = 'LIST' " .
+			 "AND i.member_id = l.list_id AND i.direct = 1 " .
+			 "AND l.grouplist = 1 ORDER BY l.name") || exit $MR_DBMS_ERR;
+    $sth->execute;
+    
+    while (($name, $gid) = $sth->fetchrow_array) {
+	$sth2 = $dbh->prepare("SELECT UNIQUE i.member_type, i.member_id " .
+			      "FROM imembers i, list l " .
+			      "WHERE l.name = " . $dbh->quote($name) .
+			      "AND i.list_id = l.list_id " .
+			      "AND (i.member_type = 'USER' " .
+			      "OR i.member_type = 'STRING')") || 
+				  exit $MR_DBMS_ERR;
+	$sth2->execute;
+	
+	$row = "$name:$gid:";
+	$row =~ s/\0//g;
+	print OUT $row;
+	$maybecomma = "";
+	
+	while (($type, $id) = $sth2->fetchrow_array) {
+	    if ($type eq "USER") {
+		($member) = $dbh->selectrow_array("SELECT login FROM users " .
+						  "WHERE users_id = " . 
+						  $dbh->quote($id)) ||
+						      exit $MR_DBMS_ERR;
+		$member = $member . "\@mit.edu";
+	    }
+	    elsif ($type eq "STRING") {
+		($member) = $dbh->selectrow_array("SELECT string " .
+						  "FROM strings " .
+						  "WHERE string_id = " .
+						  $dbh->quote($id)) ||
+						      exit $MR_DBMS_ERR;
+	    }
+	    $row = "$maybecomma$member";
+	    $row =~ s/\0//g;
+	    print OUT $row;
+	    $maybecomma = ",";
+	}
+	
+	$row = "\n";
+	$row =~ s/\0//g;
+	print OUT $row;
+    }
+    close(OUT);
+}
+
+$dbh->disconnect;
+
+exit 0;

@@ -827,7 +827,6 @@ int print_id(int id)
 	case 87306:
 	case 88377:
 	case 89960:
-	case 90000:
 	case 90782:
 	case 92388:
 	case 92990:
@@ -1152,7 +1151,6 @@ int print_id(int id)
 	case 87306:
 	case 88377:
 	case 89960:
-	case 90000:
 	case 90782:
 	case 92388:
 	case 92990:

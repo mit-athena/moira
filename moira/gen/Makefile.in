@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.43 2007-03-26 18:14:41 zacheiss Exp $
+# $Id: Makefile.in,v 1.44 2007-05-16 15:47:30 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -47,7 +47,7 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhub.sh \
 	mailman.gen mailman.sh nagios-printers.gen nagios-printers.sh ndb.sh \
 	nfs.sh null.sh postoffice.sh print.sh sapprint.gen sapprint.sh \
-	spwatch.gen warehouse.gen warehouse.sh winstats.gen winstats.sh \
+	spwatch.gen tsm.gen warehouse.gen warehouse.sh winstats.gen winstats.sh \
 	www.sh zephyr.sh install_dirs install_quotas zero_quotas
 
 .SUFFIXES: .pc .gen

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.6 2007-05-15 21:23:05 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.7 2007-05-16 19:42:00 zacheiss Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -26,6 +26,10 @@ EXEC SQL BEGIN DECLARE SECTION;
 char db[33] = "moira";
 EXEC SQL END DECLARE SECTION;
 
+void do_passwd(void);
+void do_groups(void);
+void sqlerr(void);
+
 #ifndef min
 #define min(x,y)	((x) < (y) ? (x) : (y))
 #endif
@@ -52,9 +56,7 @@ struct entry {
     struct member *members;
 };
 
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
     int status;
     long t;
@@ -100,7 +102,7 @@ char **argv;
 }
 
 
-do_passwd()
+void do_passwd(void)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], name[33];
@@ -148,7 +150,7 @@ do_passwd()
 
 
 
-do_groups()
+void do_groups(void)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], string[129];
@@ -295,7 +297,7 @@ do_groups()
 }
 
     
-sqlerr()
+void sqlerr(void)
 {
     char buf[256];
     int size=256, len=0;

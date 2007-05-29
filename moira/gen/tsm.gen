@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: tsm.gen,v 1.1 2007-05-16 15:34:04 zacheiss Exp $
+# $Id: tsm.gen,v 1.2 2007-05-29 18:49:15 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -24,6 +24,37 @@ $sth0->execute;
 
 while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     open(OUT, ">$outdir/$hostname");
+
+    $sth = $dbh->prepare("SELECT l.name, l.gid FROM list l " .
+			 "WHERE l.list_id = " . 
+			 $dbh->quote($root_list_id)) || 
+			 exit $MR_DBMS_ERR;
+    $sth->execute;
+
+    while (($name, $gid) = $sth->fetchrow_array) {
+	$row = "$name:$gid:";
+	$row =~ s/\0//g;
+	print OUT $row;
+	$maybecomma = "";
+    }
+
+    $sth = $dbh->prepare("SELECT u.login FROM users u, imembers i " .
+			 "WHERE i.list_id = " . $dbh->quote($root_list_id) .
+			 "AND i.direct = 1 " .
+			 "AND i.member_type = 'USER' " .
+			 "AND u.users_id = i.member_id") || exit $MR_DBMS_ERR;
+    $sth->execute;
+
+    while (($login) = $sth->fetchrow_array) { 
+	$row = "$maybecomma$login";
+	$row =~ s/\0//g;
+	print OUT $row;
+	$maybecomma = ",";
+    }
+
+    $row = "\n";
+    $row =~ s/\0//g;
+    print OUT $row;
 
     $sth = $dbh->prepare("SELECT l.name, l.gid FROM list l, imembers i " .
 			 "WHERE i.list_id = " . $dbh->quote($root_list_id) .
@@ -53,7 +84,6 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
 						  "WHERE users_id = " . 
 						  $dbh->quote($id)) ||
 						      exit $MR_DBMS_ERR;
-		$member = $member . "\@mit.edu";
 	    }
 	    elsif ($type eq "STRING") {
 		($member) = $dbh->selectrow_array("SELECT string " .

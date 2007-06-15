@@ -1,4 +1,4 @@
-/* $Id: directory.pc,v 1.4 2000-11-30 23:27:36 zacheiss Exp $
+/* $Id: directory.pc,v 1.5 2007-06-15 14:48:14 zacheiss Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/directory.pc,v 1.4 2000-11-30 23:27:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/directory.pc,v 1.5 2007-06-15 14:48:14 zacheiss Exp $");
 
 char *whoami = "directory.gen";
 char *db = "moira/moira";
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     login, last, first, middle, office_addr, office_phone, 
     home_addr, home_phone, clearid, type 
     FROM users WHERE status = 1 AND type != 'SYSTEM' AND type != 'STAFF'
-    AND type NOT LIKE 'GUES%';
+    AND type != 'TEST' and type != 'REGTEST' AND type NOT LIKE 'GUES%';
   EXEC SQL OPEN x;
   while (1)
     {

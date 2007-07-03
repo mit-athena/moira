@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: tsm.sh,v 1.1 2007-05-29 18:49:16 zacheiss Exp $
+# $Id: tsm.sh,v 1.2 2007-07-03 19:22:09 zacheiss Exp $
 
 outfile=/tsm-mit/data/tsmlists
 loadprog=/tsm-mit/bin/loadAdminTable.pl
@@ -27,8 +27,9 @@ fi
 
 $loadprog
 
-if [ $? != 0 ]; then
-    exit $MR_MKCRED
-fi
+# Ignore exit status from $loadprog for now.
+#if [ $? != 0 ]; then
+#    exit $MR_MKCRED
+#fi
 
 exit 0

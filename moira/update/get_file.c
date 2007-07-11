@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.19 2003-07-27 11:26:03 zacheiss Exp $
+/* $Id: get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -19,7 +19,7 @@
 
 #include <des.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.19 2003-07-27 11:26:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
@@ -69,6 +69,8 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
   int fd, n_written, code;
   int found_checksum;
   char buf[BUFSIZ];
+
+  memset(buf, '\0', sizeof(buf));
 
   if (!have_authorization)
     {

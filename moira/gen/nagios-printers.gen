@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-printers.gen,v 1.1 2006-01-31 21:42:44 zacheiss Exp $
+# $Id: nagios-printers.gen,v 1.2 2007-07-12 17:42:37 jweiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -15,7 +15,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 $sth = $dbh->prepare("SELECT m.name FROM machine m, printers p " .
 		     "WHERE (p.type = 'DORM' OR p.type ='CLUSTER') " .
-		     "AND p.mach_id = m.mach_id")
+		     "AND p.mach_id = m.mach_id AND m.status=1")
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;

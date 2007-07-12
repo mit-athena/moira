@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.49 2006-10-30 17:34:51 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.50 2007-07-12 15:58:28 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -141,7 +141,8 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#define WINADCFG "/moira/winad/winad.cfg"
+#define CFG_PATH "/moira/winad/"
+#define WINADCFG "winad.cfg"
 #define strnicmp(A,B,C) strncasecmp(A,B,C)
 #define UCHAR unsigned char
 
@@ -193,6 +194,10 @@ typedef struct _SID {
 #ifndef WINADCFG
 #define WINADCFG "winad.cfg"
 #endif
+
+#ifndef CFG_PATH
+#define CFG_PATH ""
+#endif 
 
 #define AFS "/afs/"
 #define WINAFS "\\\\afs\\all\\"
@@ -301,6 +306,8 @@ typedef struct lk_entry {
 #define SERVER  "SERVER:"
 #define MSSFU   "SFU:"
 #define SFUTYPE "30"
+#define MAX_DOMAINS 10
+char DomainNames[MAX_DOMAINS][128];
 
 char    PrincipalName[128];
 #ifndef _WIN32
@@ -335,6 +342,7 @@ char default_server[256];
 static char tbl_buf[1024];
 int  UseSFU30 = 0;
 int  NoChangeConfigFile;
+int  UpdateDomainList;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -352,7 +360,7 @@ int attribute_update(LDAP *ldap_handle, char *distinguished_name,
                       char *attribute_value, char *attribute, char *user_name);
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
 int checkADname(LDAP *ldap_handle, char *dn_path, char *Name);
-void check_winad(void);
+int check_winad(void);
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId);
 /* containers */
 int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName, 
@@ -396,7 +404,8 @@ int process_lists(int ac, char **av, void *ptr);
 int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName, 
                          int HiddenGroup, char *AceType, char *AceName);
 int ProcessMachineName(int ac, char **av, void *ptr);
-void ReadConfigFile();
+int ReadConfigFile(char *DomainName);
+int ReadDomainList();
 void StringTrim(char *StringToTrim);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
@@ -441,15 +450,17 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
                      char **homedir_v, char **winProfile_v,
                      char **drives_v, LDAPMod **mods, 
                      int OpType, int n);
-
+int sid_update(LDAP *ldap_handle, char *dn_path);
 void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n);
 int check_string(char *s);
 int check_container_name(char* s);
 
 int mr_connect_cl(char *server, char *client, int version, int auth);
-
+void WriteDomainList();
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
+void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
+		char **before, int beforec, char **after, int afterc);
 void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
@@ -497,12 +508,14 @@ int main(int argc, char **argv)
   int             afterc;
   int             i;
   int             j;
+  int		  k;
   int             OldUseSFU30;
   char            *table;
   char            **before;
   char            **after;
   LDAP            *ldap_handle;
   char            dn_path[256];
+  char            *orig_argv[64];
 
   whoami = ((whoami = (char *)strrchr(argv[0], '/')) ? whoami+1 : argv[0]);
 
@@ -511,26 +524,15 @@ int main(int argc, char **argv)
       com_err(whoami, 0, "Unable to process %s", "argc < 4");
       exit(1);
     }
-  beforec = atoi(argv[2]);
-  afterc = atoi(argv[3]);
 
-  if (argc < (4 + beforec + afterc))
+  if (argc < (4 + atoi(argv[2]) + atoi(argv[3])))
     {
-      com_err(whoami, 0, "Unable to process %s", "argc < (4 + breforec + afterc)");
+      com_err(whoami, 0, "Unable to process %s", "argc < (4 + beforec + afterc)");
       exit(1);
     }
 
-  table = argv[1];
-  before = &argv[4];
-  after = &argv[4 + beforec];
-
-  if (!strcmp(table, "filesys"))
+  if (!strcmp(argv[1], "filesys"))
     exit(0);
-
-  if (afterc == 0)
-    after = NULL;
-  if (beforec == 0)
-    before = NULL;
 
   for (i = 1; i < argc; i++)
     {
@@ -539,87 +541,148 @@ int main(int argc, char **argv)
     }
   com_err(whoami, 0, "%s", tbl_buf);
 
-  memset(PrincipalName, '\0', sizeof(PrincipalName));
-  memset(ldap_domain, '\0', sizeof(ldap_domain));
-  memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
-  UseSFU30 = 0;
-  NoChangeConfigFile = 0;
+  if (check_winad())
+    {
+      com_err(whoami, 0, "%s failed", "check_winad()");
+      exit(1);
+    }
 
-  check_winad();
-
-  ReadConfigFile();
-  OldUseSFU30 = UseSFU30;
-
-  get_tickets();
+  if (get_tickets())
+    {
+      com_err(whoami, 0, "%s failed", "get_tickets()");
+      exit(1);
+    }
 
   initialize_sms_error_table();
   initialize_krb_error_table();
 
-  memset(default_server, '\0', sizeof(default_server));
-  memset(dn_path, '\0', sizeof(dn_path));
-  for (i = 0; i < 5; i++)
+  UpdateDomainList = 0;
+  memset(DomainNames, '\0', sizeof(DomainNames[0]) * MAX_DOMAINS);
+  if (ReadDomainList())
     {
-      ldap_handle = (LDAP *)NULL;
-      if (!(rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", 
-                            default_server, 1, ServerList)))
-         break;
-      if (ldap_handle == NULL)
-        {
-          if (!NoChangeConfigFile)
-            {
-              for (j = 0; j < MAX_SERVER_NAMES; j++)
-                {
-                  if (ServerList[j] != NULL)
-                    {
-                      free(ServerList[j]);
-                      ServerList[j] = NULL;
-                    }
-                }
-              GetServerList(ldap_domain, ServerList);
-            }
-        }
-    }
-
-  if ((rc) || (ldap_handle == NULL))
-    {
-  	  critical_alert("incremental", "winad.incr cannot connect to any server in domain %s", ldap_domain);
-      destroy_cache();
+      com_err(whoami, 0, "%s failed", "ReadDomainList()");
       exit(1);
     }
 
-  for (i = 0; i < (int)strlen(table); i++)
-    table[i] = tolower(table[i]);
+  for (i = 0; i < argc; i++)
+     orig_argv[i] = NULL;
 
-  if (!strcmp(table, "users"))
-    do_user(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-            afterc);
-  else if (!strcmp(table, "list"))
-    do_list(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-            afterc);
-  else if (!strcmp(table, "imembers"))
-    do_member(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-              afterc);
-  else if (!strcmp(table, "containers"))
-    do_container(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-                 afterc);
-  else if (!strcmp(table, "mcntmap"))
-    do_mcntmap(ldap_handle, dn_path, ldap_domain, before, beforec, after,
-               afterc);
-  if (OldUseSFU30 != UseSFU30)
+  for (k = 0; k < MAX_DOMAINS; k++)
     {
+      if (strlen(DomainNames[k]) == 0)
+	continue;
+      for (i = 0; i < argc; i++)
+	{
+	  if (orig_argv[i] != NULL)
+	    free(orig_argv[i]);
+	  orig_argv[i] = strdup(argv[i]);
+	}
+
+      memset(PrincipalName, '\0', sizeof(PrincipalName));
+      memset(ldap_domain, '\0', sizeof(ldap_domain));
+      memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
+      memset(default_server, '\0', sizeof(default_server));
+      memset(dn_path, '\0', sizeof(dn_path));
+      UseSFU30 = 0;
+      NoChangeConfigFile = 0;
+      beforec = atoi(orig_argv[2]);
+      afterc = atoi(orig_argv[3]);
+      table = orig_argv[1];
+      before = &orig_argv[4];
+      after = &orig_argv[4 + beforec];
+
+      if (afterc == 0)
+	after = NULL;
+
+      if (beforec == 0)
+	before = NULL;
+
+      if (ReadConfigFile(DomainNames[k]))
+	{
+	  continue;
+	}
+
+      OldUseSFU30 = UseSFU30;
+
+      for (i = 0; i < 5; i++)
+	{
+	  ldap_handle = (LDAP *)NULL;
+	  if (!(rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", 
+				default_server, 1, ServerList)))
+	    {
+	      com_err(whoami, 0, "connected to domain %s", DomainNames[k]);
+	      break;
+	    }
+
+	  if (ldap_handle == NULL)
+	    {
+	      if (!NoChangeConfigFile)
+		{
+		  for (j = 0; j < MAX_SERVER_NAMES; j++)
+		    {
+		      if (ServerList[j] != NULL)
+			{
+			  free(ServerList[j]);
+			  ServerList[j] = NULL;
+			}
+		    }
+		  if (rc = GetServerList(ldap_domain, ServerList))
+		    {
+		      com_err("incremental", 0,
+			      "winad.incr cannot bind to any server in domain %s",
+			      DomainNames[k]);
+		      continue;
+		    }
+		}
+	    }
+	}
+
+      if ((rc) || (ldap_handle == NULL))
+	{
+  	  critical_alert("incremental",
+			 "winad.incr cannot connect to any server in domain %s",
+			 DomainNames[k]);
+	  continue;
+	}
+
+      for (i = 0; i < (int)strlen(table); i++)
+	table[i] = tolower(table[i]);
+
+      if (!strcmp(table, "users"))
+	do_user(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+		afterc);
+      else if (!strcmp(table, "list"))
+	do_list(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+		afterc);
+      else if (!strcmp(table, "imembers"))
+	do_member(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+		  afterc);
+      else if (!strcmp(table, "containers"))
+	do_container(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+		     afterc);
+      else if (!strcmp(table, "mcntmap"))
+	do_mcntmap(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+		   afterc);
       if (!NoChangeConfigFile)
-          GetServerList(ldap_domain, ServerList);
+	GetServerList(ldap_domain, ServerList);
+
+      ad_kdc_disconnect();
+
+      for (i = 0; i < MAX_SERVER_NAMES; i++)
+	{
+	  if (ServerList[i] != NULL)
+	    {
+	      free(ServerList[i]);
+	      ServerList[i] = NULL;
+	    }
+	}
+
+      rc = ldap_unbind_s(ldap_handle);
     }
-  ad_kdc_disconnect();
-  for (i = 0; i < MAX_SERVER_NAMES; i++)
-    {
-      if (ServerList[i] != NULL)
-        {
-          free(ServerList[i]);
-          ServerList[i] = NULL;
-        }
-    }
-  rc = ldap_unbind_s(ldap_handle);
+
+  if (UpdateDomainList == 1)
+    WriteDomainList();
+
   destroy_cache();
   exit(0);
 }
@@ -752,6 +815,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   moira_disconnect();
   return;
 }
+
 
 #define L_LIST_DESC 9
 #define L_LIST_ID   10
@@ -1142,7 +1206,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	  memset(NewMachineName, '\0', sizeof(NewMachineName));
           if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou, NewMachineName))
             return;
-	  ptr[LM_MEMBER] = NewMachineName;
+	  if (ptr[LM_MEMBER] != NULL)	  
+	    free(ptr[LM_MEMBER]);
+	  ptr[LM_MEMBER] = strdup(NewMachineName);
           pUserOu = machine_ou;
         }
       if (!strcasecmp(ptr[LM_TYPE], "STRING"))
@@ -1173,7 +1239,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       memset(NewMachineName, '\0', sizeof(NewMachineName));
       if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou, NewMachineName))
         return;
-      ptr[LM_MEMBER] = NewMachineName;
+      if (ptr[LM_MEMBER] != NULL)
+	free(ptr[LM_MEMBER]);
+      ptr[LM_MEMBER] = strdup(NewMachineName);
       pUserOu = machine_ou;
     }
   else if (!strcasecmp(ptr[LM_TYPE], "STRING"))
@@ -1725,7 +1793,7 @@ int moira_connect(void)
   return 0;
 }
 
-void check_winad(void)
+int check_winad(void)
 {
   int i;
   
@@ -1736,10 +1804,11 @@ void check_winad(void)
           critical_alert("AD incremental",
                          "WINAD incremental failed (%s exists): %s",
                          STOP_FILE, tbl_buf);
-          exit(1);
+          return(1);
         }
       sleep(60);
     }
+  return(0);
 }
 
 int moira_disconnect(void)
@@ -2875,6 +2944,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
     free(mods[i]);
   return(rc);
 }
+
 
 int user_create(int ac, char **av, void *ptr)
 {
@@ -5386,6 +5456,7 @@ int GetServerList(char *ldap_domain, char **ServerList)
   char            *sPtr;
   char            base[128];
   char            filter[128];
+  char            temp[128];
   LK_ENTRY        *group_base;
   LK_ENTRY        *gPtr;
   LDAP            *ldap_handle;
@@ -5404,6 +5475,12 @@ int GetServerList(char *ldap_domain, char **ServerList)
   if (rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", default_server, 0, 
                       ServerList))
       return(1);
+
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      ServerList[i] = NULL;
+    }
+
   memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
   group_count = 0;
   group_base = NULL;
@@ -5490,7 +5567,8 @@ int GetServerList(char *ldap_domain, char **ServerList)
   group_count = 0;
   group_base = NULL;
 
-  if ((fptr = fopen(WINADCFG, "w+")) != NULL)
+  sprintf(temp, "%s%s.cfg", CFG_PATH, ldap_domain);
+  if ((fptr = fopen(temp, "w+")) != NULL)
     {
       fprintf(fptr, "%s %s\n", DOMAIN, ldap_domain);
       if (strlen(PrincipalName) != 0)
@@ -5596,7 +5674,16 @@ int tickets_get_k5()
     sprintf(temp, "%skinit -k -t %s %s", KinitPath, KEYTABFILE, PrincipalName);
     retval = system(temp);
     if (retval)
-        return(-1);
+      {
+	com_err(whoami, 0, "%s failed", temp);
+	sprintf(temp, "%skinit -5 -k -t %s %s", KinitPath, KEYTABFILE, PrincipalName);
+	retval = system(temp);
+	if (retval)
+	  {
+	    com_err(whoami, 0, "%s failed", temp);
+	    return(-1);
+	  }
+      }
     return(0);
 }
 
@@ -5607,11 +5694,12 @@ int get_tickets()
     {
         sleep(1);
         if (tickets_get_k5())
-        {
+	  {
+	    com_err(whoami, 0, "%s", "Unable to get kerberos tickets");
             critical_alert("AD incremental", "%s",
                            "winad.incr incremental failed (unable to get kerberos tickets)");
-            exit(1);
-        }
+            return(1);
+	  }
     }
     return(0);
 }
@@ -5671,7 +5759,7 @@ void StringTrim(char *StringToTrim)
     return;
 }
 
-void ReadConfigFile()
+int ReadConfigFile(char *DomainName)
 {
     int     Count;
     int     i;
@@ -5682,7 +5770,8 @@ void ReadConfigFile()
 
     Count = 0;
 
-    if ((fptr = fopen(WINADCFG, "r")) != NULL)
+    sprintf(temp, "%s%s.cfg", CFG_PATH, DomainName);
+    if ((fptr = fopen(temp, "r")) != NULL)
     {
         while (fgets(temp, sizeof(temp), fptr) != 0)
         {
@@ -5749,12 +5838,10 @@ void ReadConfigFile()
 
     if (strlen(ldap_domain) == 0)
     {
-        critical_alert("incremental", "%s",
-                       "winad.incr cannot run due to a configuration error in winad.cfg");
-        exit(1);
+      strcpy(ldap_domain, DomainName);
     }
     if (Count == 0)
-        return;
+        return(0);
     for (i = 0; i < Count; i++)
     {
         if (ServerList[i] != 0)
@@ -5765,5 +5852,98 @@ void ReadConfigFile()
                 ServerList[i][k] = toupper(ServerList[i][k]);
         }
     }
+    return(0);
+}
 
+int ReadDomainList()
+{
+  int     Count;
+  int     i;
+  char    temp[128];
+  char    temp1[128];
+  FILE    *fptr;
+  unsigned char c[11];
+  unsigned char stuff[256];
+  int     rc;
+  int     ok;
+
+  Count = 0;
+  sprintf(temp, "%s%s", CFG_PATH, WINADCFG);
+  if ((fptr = fopen(temp, "r")) != NULL)
+    {
+      while (fgets(temp, sizeof(temp), fptr) != 0)
+	{
+	  for (i = 0; i < (int)strlen(temp); i++)
+	    temp[i] = toupper(temp[i]);
+	  if (temp[strlen(temp) - 1] == '\n')
+	    temp[strlen(temp) - 1] = '\0';
+	  StringTrim(temp);
+	  if (strlen(temp) == 0)
+	    continue;
+	  if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
+	    {
+	      if (strlen(temp) > (strlen(DOMAIN)))
+		{
+		  strcpy(temp1, &temp[strlen(DOMAIN)]);
+		  StringTrim(temp1);
+		  strcpy(temp, temp1);
+		}
+	    }
+	  ok = 1;
+	  rc = sscanf(temp, "%c%c%c%c%c.%c%c%c.%c%c%c%s", &c[0],
+		      &c[1], &c[2], &c[3], &c[4], &c[5], &c[6],
+		      &c[7], &c[8], &c[9], &c[10], stuff);
+	  if (rc != 11)
+	    {
+	      rc = sscanf(temp, "%c%c%c%c.%c%c%c.%c%c%c%s", &c[0],
+			  &c[1], &c[2], &c[3], &c[4], &c[5], &c[6],
+			  &c[7], &c[8], &c[9], stuff);
+	      if (rc != 10)
+		{
+		  rc = sscanf(temp, "%c%c%%c.%c%c%c.%c%c%c%s", &c[0],
+			      &c[1], &c[2], &c[3], &c[4], &c[5],
+			      &c[6], &c[7], &c[8], stuff);
+		  if (rc != 9)
+		    {
+		      UpdateDomainList = 1;
+		      ok = 0;
+		    }
+		}
+	    }
+	  if (ok)
+             {
+	       strcpy(DomainNames[Count], temp);
+	       StringTrim(DomainNames[Count]);
+	       ++Count;
+             }
+	}
+      fclose(fptr);
+    }
+  if (Count == 0)
+    {
+      critical_alert("incremental", "%s",
+		     "winad.incr cannot run due to a configuration error in winad.cfg");
+      return(1);
+    }
+  return(0);
+}
+
+void WriteDomainList()
+{
+  char    temp[128];
+  int     i;
+  FILE    *fptr;
+  
+  sprintf(temp, "%s%s", CFG_PATH, WINADCFG);
+  if ((fptr = fopen(temp, "w+")) != NULL)
+    {
+      for (i = 0; i < MAX_DOMAINS; i++)
+	{
+	  if (strlen(DomainNames[i]) != 0)
+	    {
+	      fprintf(fptr, "%s\n", DomainNames[i]);
+	    }
+	}
+      fclose(fptr);
+    }
 }

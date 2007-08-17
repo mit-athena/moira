@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.46 2007-07-18 19:21:18 zacheiss Exp $
+# $Id: Makefile.in,v 1.47 2007-08-17 15:26:40 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -45,10 +45,10 @@ TARGET=	acl.gen boot.gen dhcp.gen directory.gen events.gen hesiod.gen hosts.gen 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	confluence.gen dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhosts.gen mailhub.sh \
-	mailman.gen mailman.sh nagios-printers.gen nagios-printers.sh ndb.sh \
-	nfs.sh null.sh postoffice.sh print.sh sapprint.gen sapprint.sh \
-	spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh winstats.gen winstats.sh \
-	www.sh zephyr.sh install_dirs install_quotas zero_quotas
+	mailman.gen mailman.sh nagios-colo.gen nagios-colo.sh nagios-printers.gen \
+	nagios-printers.sh ndb.sh nfs.sh null.sh postoffice.sh print.sh sapprint.gen \
+	sapprint.sh spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh \
+	winstats.gen winstats.sh www.sh zephyr.sh install_dirs install_quotas zero_quotas
 
 .SUFFIXES: .pc .gen
 

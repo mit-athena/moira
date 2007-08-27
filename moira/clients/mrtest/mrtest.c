@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.51 2006-08-25 18:42:39 zacheiss Exp $
+/* $Id: mrtest.c,v 1.52 2007-08-27 15:22:15 zacheiss Exp $
  *
  * Bare-bones Moira client
  *
@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.51 2006-08-25 18:42:39 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.52 2007-08-27 15:22:15 zacheiss Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -259,8 +259,14 @@ int parse(char *buf, char *argv[MAXARGS])
 	  /* skip whitespace */
 	  for (*p++ = '\0'; *p == ' ' || *p == '\t'; p++)
 	    ;
-	  if (*p && *p != '\n')
-	    argv[++argc] = p--;
+	  if (*p && *p != '\n') {
+	    if (++argc >= MAXARGS) {
+	      fprintf(stderr,
+		      "moira: Too many command line arguments\n");
+	      return 0;
+	    }
+	    argv[argc] = p--;
+	  }
 	}
     }
   if (*p == '\n')

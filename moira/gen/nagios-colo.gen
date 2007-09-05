@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-colo.gen,v 1.4 2007-08-17 16:01:24 zacheiss Exp $
+# $Id: nagios-colo.gen,v 1.5 2007-09-05 21:32:41 jweiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -45,13 +45,13 @@ define host{
 
 define service{
   	host_name		$name
-	contact_groups		ops
+	contact_groups		colo
 	use			ping-service
 	}
 
 define hostescalation{
         host_name               $name
-        contact_groups          ops,dost-mail
+        contact_groups          colo,dost-mail
         first_notification      2
         last_notification       0
         notification_interval   0
@@ -59,7 +59,7 @@ define hostescalation{
 
 define serviceescalation{
         host_name               $name
-        contact_groups          ops,dost-mail
+        contact_groups          colo,dost-mail
         service_description     PING
         first_notification      2
         last_notification       0
@@ -74,7 +74,7 @@ END
 define hostgroup{
         hostgroup_name          colo-hosts
         alias                   colo-hosts
-        contact_groups          ops,dost
+        contact_groups          colo,dost
 END
 
 print OUT "\tmembers\t\t\t";

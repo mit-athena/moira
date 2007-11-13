@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.7 2005-08-29 16:25:20 zacheiss Exp $
+# $Id: ldap.gen,v 1.8 2007-11-13 17:37:31 zacheiss Exp $
 
 use DBI;
 
@@ -18,18 +18,18 @@ umask 022;
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT u.login, u.first, u.middle, u.last, " .
-		     "u.clearid, u.unix_uid, u.shell, f.type, f.name " .
-		     "FROM users u, filesys f " .
-		     "WHERE (u.status = 1 OR u.status = 9) " .
-		     "AND f.label = u.login");
+$sth0 = $dbh->prepare("SELECT u.login, u.first, u.middle, u.last, " .
+		      "u.clearid, u.unix_uid, u.shell FROM users u " .
+		      "WHERE (u.status = 1 OR u.status = 9)") 
+    || exit $MR_DBMS_ERR;
 
-$sth->execute;
+
+$sth0->execute;
 
 open(OUT, ">$outdir/users") || exit $MR_OCONFIG;
 
-while(($login, $first, $middle, $last, $clearid, $unix_uid, $shell, $f_type,
-       $f_name) = $sth->fetchrow_array) {
+while(($login, $first, $middle, $last, $clearid, $unix_uid, 
+       $shell) = $sth0->fetchrow_array) {
     $row = "dn: uid=$login,ou=users,dc=mit,dc=edu\n";
     $row .= "objectclass: top\n";
     $row .= "objectclass: person\n";
@@ -69,8 +69,15 @@ while(($login, $first, $middle, $last, $clearid, $unix_uid, $shell, $f_type,
        $givenName .= "\n";
     }
 
-    if($f_type eq "AFS") {
-	$row .= "homeDirectory: $f_name\n";
+    $sth = $dbh->prepare("SELECT f.type, f.name FROM filesys f " .
+			 "WHERE f.label = '$login'") || exit $MR_DBMS_ERR;
+    
+    $sth->execute;
+    
+    if(($f_type, $f_name) = $sth->fetchrow_array) { 
+	if($f_type eq "AFS") {
+	    $row .= "homeDirectory: $f_name\n";
+	}
     }
 
     $row .= $sn;

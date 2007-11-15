@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: confluence.gen,v 1.4 2007-08-08 00:49:22 zacheiss Exp $
+# $Id: confluence.gen,v 1.5 2007-11-15 20:25:50 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -19,8 +19,8 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 open(OUT, ">$outfile");
 
 $sth = $dbh->prepare("SELECT l.name, l.gid FROM list l " .
-		     "WHERE l.name LIKE 'confluence-%' AND l.active = 1 " .
-		     "AND l.grouplist = 1 ORDER by l.name") || exit $MR_DBMS_ERR;
+		     "WHERE l.active = 1 AND l.grouplist = 1 ORDER by l.name")
+    || exit $MR_DBMS_ERR;
 
 $sth->execute;
     

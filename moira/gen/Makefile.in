@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.48 2007-10-25 14:47:54 zacheiss Exp $
+# $Id: Makefile.in,v 1.49 2007-11-15 22:09:20 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -30,20 +30,20 @@ LIB_OBJS=util.o tar.o genacl.o
 LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
-OBJS=	acl.o boot.o dhcp.o directory.o events.o hesiod.o hosts.o mailhub.o \
-	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
+OBJS=	acl.o boot.o confluence.o dhcp.o directory.o events.o hesiod.o \
+	hosts.o mailhub.o ndb.o network.o nfs.o pobox.o postoffice.o print.o \
 	winad.o www.o zephyr.o
 
-CFILES= acl.c boot.c dhcp.c directory.c events.c hesiod.c hosts.c mailhub.c \
-	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
+CFILES= acl.c boot.c confluence.c dhcp.c directory.c events.c hesiod.c \
+	hosts.c mailhub.c ndb.c network.c nfs.c pobox.c postoffice.c print.c \
 	winad.c www.c zephyr.c
 
-TARGET=	acl.gen boot.gen dhcp.gen directory.gen events.gen hesiod.gen hosts.gen \
-	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
-	postoffice.gen print.gen winad.gen www.gen zephyr.gen
+TARGET=	acl.gen boot.gen confluence.gen dhcp.gen directory.gen events.gen \
+	hesiod.gen hosts.gen mailhub.gen ndb.gen network.gen nfs.gen \
+	pobox.gen postoffice.gen print.gen winad.gen www.gen zephyr.gen
 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
-	confluence.gen dhcp.sh events.sh hesiod.sh ip-billing.gen \
+	dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhosts.gen \
 	mailhub.sh mailman.gen mailman.sh nagios-colo.gen nagios-colo.sh \
 	nagios-printers.gen nagios-printers.sh ndb.sh nfs.sh null.sh \
@@ -94,6 +94,9 @@ directory.gen: directory.o libdcm.a $(MR_LIBDEP)
 
 events.gen: events.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) events.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+confluence.gen: confluence.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) confluence.o libdcm.a $(SQL_LIBS) $(LIBS)
 
 ndb.gen: ndb.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) ndb.o libdcm.a $(SQL_LIBS) $(LIBS)

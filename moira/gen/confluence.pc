@@ -1,0 +1,137 @@
+/* $Id: confluence.pc,v 1.1 2007-11-15 22:09:20 zacheiss Exp $
+ *
+ * (c) Copyright 2007 by the Massachusetts Institute of Technology.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+char *whoami = "confluence.gen";
+char *db = "moira/moira";
+
+struct hash *lists;
+
+void output_list(int id, void *list, void *out);
+
+int main(int argc, char **argv)
+{
+  char filename[MAXPATHLEN], *targetfile, *l;
+  FILE *out = stdout;
+  int cnt = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid;
+  char lname[LIST_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL CONNECT :db;
+
+  if (argc == 2)
+    {
+      targetfile = argv[1];
+      sprintf(filename, "%s~", targetfile);
+      if (!(out = fopen(filename, "w")))
+	{
+	  fprintf(stderr, "unable to open %s for output\n", filename);
+	  exit(MR_OCONFIG);
+	}
+    }
+  else if (argc != 1)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
+  lists = create_hash(15000);
+
+  EXEC SQL DECLARE l_cursor CURSOR FOR
+    SELECT l.list_id, l.name FROM list l
+    WHERE l.active = 1 and l.grouplist = 1;
+  EXEC SQL OPEN l_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH l_cursor INTO :lid, :lname;
+      if (sqlca.sqlcode)
+	break;
+      l = strdup(strtrim(lname));
+      if (hash_store(lists, lid, l) < 0)
+	{
+	  fprintf(stderr, "Out of memory!\n");
+	  exit(MR_NO_MEM);
+	}
+      cnt++;
+    }
+  EXEC SQL CLOSE l_cursor;
+  fprintf(stderr, "Loaded %d lists\n", cnt);
+
+  hash_step(lists, output_list, out);
+
+  if (fclose(out))
+    {
+      perror("close failed");
+      exit(MR_CCONFIG);
+    }
+  
+  if (argc == 2)
+    fix_file(targetfile);
+  exit(MR_SUCCESS);
+}
+
+void output_list(int id, void *list, void *out)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *l = list;
+  int lid = id;
+  int lgid;
+  char login[USERS_LOGIN_SIZE];
+  char stringmember[STRINGS_STRING_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  char *maybecomma = "";
+
+  EXEC SQL SELECT gid INTO :lgid FROM list WHERE list_id = :lid;
+
+  fprintf(out, "%s:%d:", list, lgid);
+
+  EXEC SQL DECLARE u_cursor CURSOR FOR
+    SELECT UNIQUE u.login FROM users u, imembers i, list l
+    WHERE l.list_id = :lid AND l.list_id = i.list_id AND
+    i.member_type = 'USER' AND i.member_id = u.users_id;
+  EXEC SQL OPEN u_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH u_cursor INTO :login;
+      if (sqlca.sqlcode)
+	break;
+      fprintf(out, "%s%s%s", maybecomma, strtrim(login), "@mit.edu");
+      maybecomma = ",";
+    }
+  EXEC SQL CLOSE u_cursor;
+
+  EXEC SQL DECLARE s_cursor CURSOR FOR
+    SELECT UNIQUE s.string FROM strings s, imembers i, list l
+    WHERE l.list_id = :lid AND l.list_id = i.list_id AND
+    i.member_type = 'STRING' AND i.member_id = s.string_id;
+  EXEC SQL OPEN s_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH s_cursor INTO :stringmember;
+      if (sqlca.sqlcode)
+	break;
+      fprintf(out, "%s%s", maybecomma, strtrim(stringmember));
+      maybecomma = ",";
+    }
+  EXEC SQL CLOSE s_cursor;
+
+  fprintf(out, "\n");
+}

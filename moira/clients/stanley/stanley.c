@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.13 2007-11-29 21:09:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.14 2007-11-29 22:06:52 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -849,10 +849,11 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wh  | -winhomedir winhomedir",
 	  "-wp  | -winprofiledir winprofiledir");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
-	  "-u   | -unformatted");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n   | -noauth",
-	  "-v   | -verbose");
-  fprintf(stderr, "  %-39s\n", "-db  | -database host[:port]");
+	  "-e   | -expiration expiration date");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
+          "-n   | -noauth");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
+	  "-db  | -database host[:port]");
 
   exit(1);
 }

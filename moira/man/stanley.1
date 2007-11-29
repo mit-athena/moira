@@ -1,5 +1,5 @@
 .TH STANLEY 1 "25 Sep 2001" "MIT Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stanley.1,v 1.4 2001-10-04 06:50:16 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stanley.1,v 1.5 2007-11-29 22:17:58 zacheiss Exp $
 .SH NAME
 stanley \- examine and modify information about users in Moira
 .SH SYNOPSIS
@@ -57,6 +57,14 @@ Update the comment for the given user to \fIcomment\fR.
 .IP \fB-secure\ \fI0|1\ \fRor\ \fB-6\ \fI0|1\fR
 Change whether a user requires a secure Account Coupon to register for
 an account.
+
+.IP \fB-sponsor\ \fIsponsor\ \fRor\ \fB-sp\ \fIsponsor\fR
+Set the sponsor of the specified user to \fIsponsor\fR.  This field is
+intended to be used for accounts in the GUEST and VOUCH classes.
+.IP \fB-expiration\ \fIdate\ \fRor\ \fB-e\ \fIdate\fR
+Set the expiration date for the specified user to \fIdate\fR.  This
+field is intended to be used for accounts in the GUEST and VOUCH
+classes.
 
 .IP \fB-unformatted\ \fRor\ \fB-u\fR
 Display user information with each field on a seperate line, in the 

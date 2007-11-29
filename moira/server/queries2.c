@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.104 2007-11-29 21:09:03 zacheiss Exp $
+/* $Id: queries2.c,v 2.105 2007-11-29 22:41:52 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -300,8 +300,8 @@ static char *guas_fields[] = {
 };
 
 static struct valobj guas_valobj[] = {
-  {V_TYPE, 0, 0, "ace_type", 0, MR_ACE},
-  {V_TYPEDATA, 1, 0, "list_id", 0, MR_ACE},
+  {V_TYPE, 0, 0, "gaus", 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
 };
 
 static struct validate guas_validate = {

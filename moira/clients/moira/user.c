@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.68 2005-05-30 19:13:25 zacheiss Exp $
+/* $Id: user.c,v 1.69 2007-11-29 18:09:07 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,11 +27,13 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.68 2005-05-30 19:13:25 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.69 2007-11-29 18:09:07 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
 struct mqelem *GetUserInfo(int type, char *name1, char *name2);
+static void PrintLogin(char **info);
+struct mqelem *GetUserBySponsor(char *type, char *name);
 
 #define LOGIN 0
 #define UID   1
@@ -117,6 +119,9 @@ static void PrintUserInfo(char **info)
   sprintf(buf, "Class: %-25s Windows Console Shell: %-10s",
 	  info[U_CLASS], info[U_WINCONSOLESHELL]);
   Put_message(buf);
+  sprintf(buf, "Sponsor: %s %s", info[U_SPONSOR_TYPE],
+	  info[U_SPONSOR_NAME]);
+  Put_message(buf);
   sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	  UserState(atoi(info[U_STATE])), info[U_MITID]);
   Put_message(buf);
@@ -162,6 +167,8 @@ static char **SetUserDefaults(char **info)
   info[U_SECURE] = strdup("0");
   info[U_WINHOMEDIR] = strdup(DEFAULT_WINHOMEDIR);
   info[U_WINPROFILEDIR] = strdup(DEFAULT_WINPROFILEDIR);
+  info[U_SPONSOR_TYPE] = strdup("NONE");
+  info[U_SPONSOR_NAME] = strdup("NONE");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
   return info;
@@ -314,6 +321,13 @@ char **AskUserInfo(char **info, Bool name)
 
   if (GetValueFromUser("Windows Profile Directory", &info[U_WINPROFILEDIR]) ==
       SUB_ERROR)
+    return NULL;
+
+  if (GetTypeFromUser("User's sponsor type", "ace_type", &info[U_SPONSOR_TYPE])
+      == SUB_ERROR)
+    return NULL;
+  if (strcmp(info[U_SPONSOR_TYPE], "NONE") &&
+      GetValueFromUser("Sponsor's Name", &info[U_SPONSOR_NAME]) == SUB_ERROR)
     return NULL;
 
   state = atoi(info[U_STATE]);
@@ -1157,3 +1171,61 @@ void PrintReservationTypes(void)
   FreeQueue(QueueTop(top));  
 }
 
+int UserBySponsor(int argc, char **argv)
+{
+  char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
+  struct mqelem *top;
+
+  type = strdup("USER");
+  if (GetTypeFromUser("Type of owner", "ace_type", &type) == SUB_ERROR)
+    return DM_NORMAL;
+
+  sprintf(buf, "Name of %s", type);
+  name = strdup(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
+
+  switch (YesNoQuestion("Do you want a recursive search (y/n)", FALSE))
+    {
+    case TRUE:
+      sprintf(temp_buf, "R%s", type);     /* "USER to "RUSER", etc. */
+      free(type);
+      type = strdup(temp_buf);
+      break;
+    case FALSE:
+      break;
+    default:
+      return DM_NORMAL;
+    }
+
+  top = GetUserBySponsor(type, name);
+  Loop(top, PrintLogin);
+
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+static void PrintLogin(char **info)
+{
+     char buf[BUFSIZ];
+
+     sprintf(buf, "Login: %s", info[U_NAME]);
+     Put_message(buf);
+}
+
+struct mqelem *GetUserBySponsor(char *type, char *name)
+{
+  char *args[2];
+  struct mqelem *elem = NULL;
+  int status;
+
+  args[0] = type;
+  args[1] = name;
+  if ((status = do_mr_query("get_user_account_by_sponsor", 2, args, StoreInfo,
+			    &elem)))
+    {
+      com_err(program_name, status, " in get_user_account_by_sponsor");
+      return NULL;
+    }
+  return QueueTop(elem);
+}

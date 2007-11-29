@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.50 2005-09-18 02:49:57 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.51 2007-11-29 18:09:10 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.50 2005-09-18 02:49:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.51 2007-11-29 18:09:10 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1063,6 +1063,152 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
 	    found++;
 	}
       if (ghbo_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
+	found++;
+    }
+
+  sq_destroy(sq);
+  if (dbms_errno)
+    return mr_errcode;
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+int guas_internal(char *atype, int aid,
+		  int (*action)(int, char *[], void *), void *actarg)
+{
+  char *rargv[1];
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[USERS_LOGIN_SIZE], *type = atype;
+  int id = aid;
+  EXEC SQL END DECLARE SECTION;
+
+  rargv[0] = login;
+  EXEC SQL DECLARE csr115sp CURSOR FOR
+    SELECT login FROM users u
+    WHERE u.sponsor_type = :type
+    AND u.sponsor_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr115sp;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr115sp INTO :login;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(1, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr115sp;
+  
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+/* get_user_account_by_sponsor - like gaus but limited to user accounts */
+int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
+				int (*action)(int, char *[], void *),
+				void *actarg)
+{
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *atype;
+  int aid, listid, id;
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
+
+  atype = argv[0];
+  aid = *(int *)argv[1];
+  if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
+      !strcmp(atype, "KERBEROS"))
+    return guas_internal(atype, aid, action, actarg);
+
+  sq = sq_create();
+  if (!strcmp(atype, "RLIST"))
+    {
+      sq_save_data(sq, (void *)aid);
+      /* get all the list_id's of containing lists */
+      EXEC SQL DECLARE csr107sp CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'LIST' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr107sp;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr107sp INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_unique_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr107sp;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+    }
+
+  if (!strcmp(atype, "RUSER"))
+    {
+      EXEC SQL DECLARE csr108sp CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'USER' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr108sp;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr108sp INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr108sp;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+      if (guas_internal("USER", aid, action, actarg) == MR_SUCCESS)
+	found++;
+    }
+
+  if (!strcmp(atype, "RKERBEROS"))
+    {
+      EXEC SQL DECLARE csr109sp CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'KERBEROS' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr109sp;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr109sp INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr109sp;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+      if (guas_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
 	found++;
     }
 

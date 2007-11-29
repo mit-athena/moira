@@ -21,12 +21,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.11 2005-05-30 19:13:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.12 2007-11-29 18:09:08 zacheiss Exp $");
+
+struct owner_type {
+  int type;
+  char *name;
+};
 
 struct string_list {
   char *string;
   struct string_list *next;
 };
+
+#define M_ANY		0
+#define M_USER		1
+#define M_LIST		2
+#define M_KERBEROS	3
+#define M_NONE		4
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -35,12 +46,15 @@ struct string_list {
 int info_flag, update_flag, create_flag, deact_flag, reg_flag;
 int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
 
+struct owner_type *sponsor;
 struct string_list *reservation_add_queue, *reservation_remove_queue;
 
 char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir;
+
+struct owner_type *parse_member(char *s);
 
 static char *states[] = {
   "Registerable (0)",
@@ -90,6 +104,7 @@ int main(int argc, char **argv)
   u_status = clearid = class = comment = secure = NULL;
   winhomedir = winprofiledir = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
+  sponsor = NULL;
   whoami = argv[0];
 
   /* parse args */
@@ -227,6 +242,14 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("sp", "sponsor")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      sponsor = parse_member(*arg);
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -281,7 +304,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 11, !noauth);
+  status = mrcl_connect(server, "stanley", 12, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -346,8 +369,48 @@ int main(int argc, char **argv)
 	argv[U_WINPROFILEDIR] = winprofiledir;
       else
 	argv[U_WINPROFILEDIR] = "[DFS]";
+      if (sponsor)
+	{
+	  argv[U_SPONSOR_NAME] = sponsor->name;
+	  switch (sponsor->type)
+	    {
+	    case M_ANY:
+	    case M_USER:
+	      argv[U_SPONSOR_TYPE] = "USER";
+	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      if (sponsor->type != M_ANY || status != MR_USER)
+		break;
 
-      status = wrap_mr_query("add_user_account", 15, argv, NULL, NULL);
+	    case M_LIST:
+	      argv[U_SPONSOR_TYPE] = "LIST";
+	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      break;
+
+	    case M_KERBEROS:
+	      argv[U_SPONSOR_TYPE] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[U_SPONSOR_NAME],
+						     &argv[U_SPONSOR_NAME]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
+	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      break;
+
+	    case M_NONE:
+	      argv[U_SPONSOR_TYPE] = "NONE";
+	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      break;
+	    }
+	}
+      else
+	{
+	  argv[U_SPONSOR_TYPE] = "NONE";
+	  argv[U_SPONSOR_NAME] = "NONE";
+	  
+	  status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	}
+	      
       if (status)
 	{
 	  com_err(whoami, status, "while adding user account.");
@@ -385,6 +448,8 @@ int main(int argc, char **argv)
       argv[13] = old_argv[12];
       argv[14] = old_argv[13];
       argv[15] = old_argv[14];
+      argv[16] = old_argv[15];
+      argv[17] = old_argv[16];
       
       argv[0] = username;
       if (newlogin)
@@ -415,8 +480,45 @@ int main(int argc, char **argv)
 	argv[14] = winhomedir;
       if (winprofiledir)
 	argv[15] = winprofiledir;
+      if (sponsor)
+	{
+	  argv[17] = sponsor->name;
+	  switch (sponsor->type)
+	    {
+	    case M_ANY:
+	    case M_USER:
+	      argv[16] = "USER";
+	      status = wrap_mr_query("update_user_account", 18, argv, NULL, 
+				     NULL);
+	      if (sponsor->type != M_ANY || status != MR_USER)
+		break;
 
-      status = wrap_mr_query("update_user_account", 16, argv, NULL, NULL);
+	    case M_LIST:
+	      argv[16] = "LIST";
+	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+				     NULL);
+	      break;
+
+	    case M_KERBEROS:
+	      argv[16] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[17], &argv[17]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
+	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+				     NULL);
+	      break;
+
+	    case M_NONE:
+	      argv[16] = "NONE";
+	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+				     NULL);
+	      break;
+	    }
+	}
+      else
+	status = wrap_mr_query("update_user_account", 18, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating user.");
@@ -656,6 +758,9 @@ void show_user_info(char **argv)
   printf("User id: %-23s Login shell: %-10s\n", argv[U_UID], argv[U_SHELL]);
   printf("Class: %-25s Windows Console Shell: %-10s\n", argv[U_CLASS],
 	 argv[U_WINCONSOLESHELL]);
+  sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
+	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
+  printf("Sponsor: %-25s\n", tbuf);
   printf("Account is: %-20s MIT ID number: %s\n",
 	 UserState(atoi(argv[U_STATE])), argv[U_MITID]);
   printf("Windows Home Directory: %s\n", argv[U_WINHOMEDIR]);
@@ -674,6 +779,7 @@ void show_user_info(char **argv)
 
 void show_user_info_unformatted(char **argv)
 {
+  char tbuf[BUFSIZ];
   int status;
 
   printf("Login name:                %s\n", argv[U_NAME]);
@@ -681,6 +787,9 @@ void show_user_info_unformatted(char **argv)
 	 argv[U_MIDDLE]);
   printf("User id:                   %s\n", argv[U_UID]);
   printf("Class:                     %s\n", argv[U_CLASS]);
+  sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
+	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
+  printf("Sponsor:                   %s\n", tbuf);
   printf("Login shell:               %s\n", argv[U_SHELL]);
   printf("Windows Console Shell:     %s\n", argv[U_WINCONSOLESHELL]);
   printf("Account is:                %s\n", UserState(atoi(argv[U_STATE])));
@@ -725,10 +834,65 @@ void usage(char **argv)
 	  "-dr  | -deletereservation reservation");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wh  | -winhomedir winhomedir",
 	  "-wp  | -winprofiledir winprofiledir");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
-	  "-n   | -noauth");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
-	  "-db  | -database host[:port]");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
+	  "-u   | -unformatted");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n   | -noauth",
+	  "-v   | -verbose");
+  fprintf(stderr, "  %-39s\n", "-db  | -database host[:port]");
 
   exit(1);
+}
+
+/* Parse a line of input, fetching a member.  NULL is returned if a member
+ * is not found.  ';' is a comment character.
+ */
+struct owner_type *parse_member(char *s)
+{
+  struct owner_type *m;
+  char *p, *lastchar;
+
+  while (*s && isspace(*s))
+    s++;
+  lastchar = p = s;
+  while (*p && *p != '\n' && *p != ';')
+    {
+      if (isprint(*p) && !isspace(*p))
+	lastchar = p++;
+      else
+	p++;
+    }
+  lastchar++;
+  *lastchar = '\0';
+  if (p == s || strlen(s) == 0)
+    return NULL;
+
+  if (!(m = malloc(sizeof(struct owner_type))))
+    return NULL;
+
+  if ((p = strchr(s, ':')))
+    {
+      *p = '\0';
+      m->name = ++p;
+      if (!strcasecmp("user", s))
+	m->type = M_USER;
+      else if (!strcasecmp("list", s))
+	m->type = M_LIST;
+      else if (!strcasecmp("kerberos", s))
+	m->type = M_KERBEROS;
+      else if (!strcasecmp("none", s))
+	m->type = M_NONE;
+      else
+	{
+	  m->type = M_ANY;
+	  *(--p) = ':';
+	  m->name = s;
+	}
+      m->name = strdup(m->name);
+    }
+  else
+    {
+      m->name = strdup(s);
+      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
+    }
+  return m;
 }

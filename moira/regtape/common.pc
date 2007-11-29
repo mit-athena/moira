@@ -1,4 +1,4 @@
-/* $Id: common.pc,v 1.8 2007-05-25 14:36:17 zacheiss Exp $
+/* $Id: common.pc,v 1.9 2007-11-29 18:09:09 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.8 2007-05-25 14:36:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.9 2007-11-29 18:09:09 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -68,7 +68,7 @@ void process_entry(struct entry *e, int secure)
   char ophone[USERS_OFFICE_PHONE_SIZE], dept[USERS_DEPARTMENT_SIZE];
   char haddr[USERS_HOME_ADDR_SIZE], hphone[USERS_HOME_PHONE_SIZE];
   char dfirst[USERS_FIRST_SIZE], dlast[USERS_LAST_SIZE];
-  char dmiddle[USERS_MIDDLE_SIZE];
+  char dmiddle[USERS_MIDDLE_SIZE], fullname[USERS_FULLNAME_SIZE];
   int id, status, fmodby, xnlen = USERS_XNAME_SIZE - 1;
   EXEC SQL END DECLARE SECTION;
 
@@ -86,9 +86,9 @@ void process_entry(struct entry *e, int secure)
 
   /* Get user info */
   EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
-    office_phone, home_addr, home_phone, department, status, fmodby
+    office_phone, home_addr, home_phone, fullname, department, status, fmodby
     INTO :id, :dfirst, :dlast, :dmiddle, :type, :oaddr,
-    :ophone, :haddr, :hphone, :dept, :status, :fmodby
+    :ophone, :haddr, :hphone, :fullname, :dept, :status, :fmodby
     FROM users
     WHERE clearid = :sid AND status != 3;
   if (sqlfail())
@@ -203,6 +203,15 @@ void process_entry(struct entry *e, int secure)
       strlcpy(dept, e->dept, USERS_DEPARTMENT_SIZE);
     }
 
+  if (strncmp(strtrim(fullname), e->name, USERS_FULLNAME_SIZE - 1) &&
+      (*fullname || fmodby != id))
+    {
+      changed++;
+      com_err(whoami, 0, "Fullname for %s %s changed from \"%s\" to \"%s\"",
+	      first, last, fullname, e->name);
+      strlcpy(fullname, e->name, USERS_FULLNAME_SIZE);
+    }
+
   if (changed)
     {
       com_err(whoami, 0, "updating finger for %s %s", first, last);
@@ -210,8 +219,8 @@ void process_entry(struct entry *e, int secure)
 	SET office_addr = NVL(:oaddr, CHR(0)),
 	office_phone = NVL(:ophone, CHR(0)), home_addr = NVL(:haddr, CHR(0)),
 	home_phone = NVL(:hphone, CHR(0)), department = NVL(:dept, CHR(0)),
-	fmodtime = SYSDATE, fmodby = :who, fmodwith = :prog,
-	xname = NVL(SUBSTR(:name, 0, :xnlen), CHR(0)),
+	fullname = NVL(:fullname, CHR(0)), fmodtime = SYSDATE, fmodby = :who,
+	fmodwith = :prog, xname = NVL(SUBSTR(:name, 0, :xnlen), CHR(0)),
 	xdept = NVL(:dept, CHR(0)), xtitle = NVL(:xtitle, CHR(0)),
 	xaddress = NVL(:xaddr, CHR(0)), xphone1 = NVL(:xphone1, CHR(0)),
 	xphone2 = NVL(:xphone2, CHR(0)), xmodtime = SYSDATE
@@ -281,7 +290,7 @@ void newuser(struct entry *e, int secure)
      department, home_addr, home_phone, office_addr, office_phone, fmodtime,
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
-     created, creator, winhomedir, winprofiledir)
+     created, creator, winhomedir, winprofiledir, sponsor_type, sponsor_id)
     VALUES (:login, :users_id, :uid, '/bin/athena/tcsh', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
@@ -292,7 +301,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who, '[DFS]', '[DFS]');
+	    SYSDATE, :who, '[DFS]', '[DFS]', 'NONE', 0);
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

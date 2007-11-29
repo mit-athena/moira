@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.46 2001-09-13 02:31:23 zacheiss Exp $
+/* $Id: menus.c,v 1.47 2007-11-29 18:09:07 zacheiss Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.46 2001-09-13 02:31:23 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.47 2007-11-29 18:09:07 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -667,6 +667,7 @@ Menu user_menu = {
       {"id", "Show user information by ID number"},
       {"ID number", "ID number: "}
     } },
+    SIMPLEFUNC("sponsor", "Lookup users by sponsor", UserBySponsor),
     {UpdateUser, NULLMENU, 2, {
       {"modify", "Change all user fields"},
       {"login", "Login name: "}

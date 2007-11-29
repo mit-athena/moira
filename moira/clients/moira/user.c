@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.69 2007-11-29 18:09:07 zacheiss Exp $
+/* $Id: user.c,v 1.70 2007-11-29 21:09:02 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.69 2007-11-29 18:09:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.70 2007-11-29 21:09:02 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -107,7 +107,7 @@ static void PrintUserName(char **info)
 
 static void PrintUserInfo(char **info)
 {
-  char name[BUFSIZ], buf[BUFSIZ];
+  char name[BUFSIZ], buf[BUFSIZ], sponsor[BUFSIZ];
   int status;
 
   sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
@@ -119,8 +119,8 @@ static void PrintUserInfo(char **info)
   sprintf(buf, "Class: %-25s Windows Console Shell: %-10s",
 	  info[U_CLASS], info[U_WINCONSOLESHELL]);
   Put_message(buf);
-  sprintf(buf, "Sponsor: %s %s", info[U_SPONSOR_TYPE],
-	  info[U_SPONSOR_NAME]);
+  sprintf(sponsor, "%s %s", info[U_SPONSOR_TYPE], info[U_SPONSOR_NAME]);
+  sprintf(buf, "Sponsor: %-23s Expiration date: %s", sponsor,  info[U_EXPIRATION]);
   Put_message(buf);
   sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	  UserState(atoi(info[U_STATE])), info[U_MITID]);
@@ -169,6 +169,7 @@ static char **SetUserDefaults(char **info)
   info[U_WINPROFILEDIR] = strdup(DEFAULT_WINPROFILEDIR);
   info[U_SPONSOR_TYPE] = strdup("NONE");
   info[U_SPONSOR_NAME] = strdup("NONE");
+  info[U_EXPIRATION] = strdup("");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
   return info;
@@ -328,6 +329,9 @@ char **AskUserInfo(char **info, Bool name)
     return NULL;
   if (strcmp(info[U_SPONSOR_TYPE], "NONE") &&
       GetValueFromUser("Sponsor's Name", &info[U_SPONSOR_NAME]) == SUB_ERROR)
+    return NULL;
+
+  if (GetValueFromUser("Expiration date", &info[U_EXPIRATION]) == SUB_ERROR)
     return NULL;
 
   state = atoi(info[U_STATE]);

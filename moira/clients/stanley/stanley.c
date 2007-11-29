@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.12 2007-11-29 18:09:08 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.13 2007-11-29 21:09:02 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -52,7 +52,7 @@ struct string_list *reservation_add_queue, *reservation_remove_queue;
 char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
-char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir;
+char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
 
 struct owner_type *parse_member(char *s);
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
-  winhomedir = winprofiledir = NULL;
+  winhomedir = winprofiledir = expiration = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   sponsor = NULL;
   whoami = argv[0];
@@ -250,6 +250,14 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("e", "expiration")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      expiration = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -369,6 +377,8 @@ int main(int argc, char **argv)
 	argv[U_WINPROFILEDIR] = winprofiledir;
       else
 	argv[U_WINPROFILEDIR] = "[DFS]";
+      if (expiration)
+	argv[U_EXPIRATION] = expiration;
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -377,13 +387,13 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[U_SPONSOR_TYPE] = "USER";
-	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
 	      if (sponsor->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[U_SPONSOR_TYPE] = "LIST";
-	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
@@ -394,12 +404,12 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
 	      argv[U_SPONSOR_TYPE] = "NONE";
-	      status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -408,7 +418,7 @@ int main(int argc, char **argv)
 	  argv[U_SPONSOR_TYPE] = "NONE";
 	  argv[U_SPONSOR_NAME] = "NONE";
 	  
-	  status = wrap_mr_query("add_user_account", 17, argv, NULL, NULL);
+	  status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
 	}
 	      
       if (status)
@@ -450,6 +460,7 @@ int main(int argc, char **argv)
       argv[15] = old_argv[14];
       argv[16] = old_argv[15];
       argv[17] = old_argv[16];
+      argv[18] = old_argv[17];
       
       argv[0] = username;
       if (newlogin)
@@ -480,6 +491,8 @@ int main(int argc, char **argv)
 	argv[14] = winhomedir;
       if (winprofiledir)
 	argv[15] = winprofiledir;
+      if (expiration)
+	argv[18] = expiration;
       if (sponsor)
 	{
 	  argv[17] = sponsor->name;
@@ -488,14 +501,14 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[16] = "USER";
-	      status = wrap_mr_query("update_user_account", 18, argv, NULL, 
+	      status = wrap_mr_query("update_user_account", 19, argv, NULL, 
 				     NULL);
 	      if (sponsor->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[16] = "LIST";
-	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
 				     NULL);
 	      break;
 
@@ -506,19 +519,19 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
 				     NULL);
 	      break;
 
 	    case M_NONE:
 	      argv[16] = "NONE";
-	      status = wrap_mr_query("update_user_account", 18, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
 				     NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_user_account", 18, argv, NULL, NULL);
+	status = wrap_mr_query("update_user_account", 19, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating user.");
@@ -760,7 +773,7 @@ void show_user_info(char **argv)
 	 argv[U_WINCONSOLESHELL]);
   sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
-  printf("Sponsor: %-25s\n", tbuf);
+  printf("Sponsor: %-23s Expiration date: %s\n", tbuf, argv[U_EXPIRATION]);
   printf("Account is: %-20s MIT ID number: %s\n",
 	 UserState(atoi(argv[U_STATE])), argv[U_MITID]);
   printf("Windows Home Directory: %s\n", argv[U_WINHOMEDIR]);
@@ -790,6 +803,7 @@ void show_user_info_unformatted(char **argv)
   sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
   printf("Sponsor:                   %s\n", tbuf);
+  printf("Expiration date:           %s\n", argv[U_EXPIRATION]);
   printf("Login shell:               %s\n", argv[U_SHELL]);
   printf("Windows Console Shell:     %s\n", argv[U_WINCONSOLESHELL]);
   printf("Account is:                %s\n", UserState(atoi(argv[U_STATE])));

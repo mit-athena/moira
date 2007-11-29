@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.50 2007-11-29 18:09:09 zacheiss Exp $
+/* $Id: moira_site.h,v 1.51 2007-11-29 21:09:02 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -376,12 +376,13 @@
 #define U_WINPROFILEDIR 14
 #define U_SPONSOR_TYPE 15
 #define U_SPONSOR_NAME 16
-#define U_MODTIME 17
-#define U_MODBY   18
-#define U_MODWITH 19
-#define U_CREATED 20
-#define U_CREATOR 21
-#define U_END     22
+#define U_EXPIRATION 17
+#define U_MODTIME 18
+#define U_MODBY   19
+#define U_MODWITH 20
+#define U_CREATED 21
+#define U_CREATOR 22
+#define U_END     23
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

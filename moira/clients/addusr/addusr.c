@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.22 2007-11-29 18:09:07 zacheiss Exp $
+/* $Id: addusr.c,v 1.23 2007-11-29 21:09:01 zacheiss Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.22 2007-11-29 18:09:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.23 2007-11-29 21:09:01 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -44,6 +44,7 @@ struct owner_type {
 
 /* flags from command line */
 char *class, *comment, *status_str, *shell, *winconsoleshell, *filename;
+char *expiration;
 int reg_only, reg, verbose, nodupcheck, securereg, nocaps;
 struct owner_type *sponsor;
 
@@ -75,6 +76,7 @@ int main(int argc, char **argv)
   winconsoleshell = DEFAULT_WINCONSOLESHELL;
   class = "TEMP";
   comment = "";
+  expiration = "";
   status_str = "0";
 
   whoami = argv[0];
@@ -144,6 +146,16 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("e", "expiration"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  expiration = *arg;
+		}
+	      else
+		usage(argv);
+	    }
 	  else if (argis("6", "secure"))
 	    securereg++;
 	  else if (argis("r", "reg_only"))
@@ -205,6 +217,7 @@ int main(int argc, char **argv)
   qargv[U_WINCONSOLESHELL] = winconsoleshell;
   qargv[U_WINHOMEDIR] = DEFAULT_WINHOMEDIR;
   qargv[U_WINPROFILEDIR] = DEFAULT_WINPROFILEDIR;
+  qargv[U_EXPIRATION] = expiration;
   qargv[U_STATE] = status_str;
   qargv[U_CLASS] = class;
   qargv[U_COMMENT] = comment;
@@ -332,13 +345,13 @@ int main(int argc, char **argv)
 		case M_ANY:
 		case M_USER:
 		  qargv[U_SPONSOR_TYPE] = "USER";
-		  status = mr_query("add_user_account", 17, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
 		  if (sponsor->type != M_ANY || status != MR_USER)
 		    break;
 		  
 		case M_LIST:
 		  qargv[U_SPONSOR_TYPE] = "LIST";
-		  status = mr_query("add_user_account", 17, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
 		  break;
 		  
 		case M_KERBEROS:
@@ -349,12 +362,12 @@ int main(int argc, char **argv)
 		    mrcl_com_err(whoami);
 		  if (status == MRCL_REJECT)
 		exit(1);
-		  status = mr_query("add_user_account", 17, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
 		  break;
 		  
 		case M_NONE:
 		  qargv[U_SPONSOR_TYPE] = "NONE";
-		  status = mr_query("add_user_account", 17, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
 		  break;
 		}
 	    }
@@ -363,7 +376,7 @@ int main(int argc, char **argv)
 	      qargv[U_SPONSOR_TYPE] = "NONE";
 	      qargv[U_SPONSOR_NAME] = "NONE";
 	  
-	      status = mr_query("add_user_account", 17, qargv, NULL, NULL);
+	      status = mr_query("add_user_account", 18, qargv, NULL, NULL);
 	    }
 	  
 	  if (status)
@@ -430,6 +443,7 @@ void usage(char **argv)
   fprintf(stderr, "   -w | -winshell windows console shell (default %s)\n",
 	  DEFAULT_WINCONSOLESHELL);
   fprintf(stderr, "   -sp | -sponsor sponsor (default NONE)\n");
+  fprintf(stderr, "   -e | -expiration \"expiration date\" (default \"\")\n");
   fprintf(stderr, "   -r | -reg_only\n");
   fprintf(stderr, "   -R | -register (and add to database)\n");
   fprintf(stderr, "   -v | -verbose\n");

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.70 2007-11-29 21:09:02 zacheiss Exp $
+/* $Id: user.c,v 1.71 2007-11-29 22:43:45 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.70 2007-11-29 21:09:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.71 2007-11-29 22:43:45 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -1181,7 +1181,7 @@ int UserBySponsor(int argc, char **argv)
   struct mqelem *top;
 
   type = strdup("USER");
-  if (GetTypeFromUser("Type of owner", "ace_type", &type) == SUB_ERROR)
+  if (GetTypeFromUser("Type of sponsor", "ace_type", &type) == SUB_ERROR)
     return DM_NORMAL;
 
   sprintf(buf, "Name of %s", type);

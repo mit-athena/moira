@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.67 2007-09-12 03:41:07 zacheiss Exp $
+/* $Id: cluster.c,v 1.68 2007-11-29 22:56:02 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -2042,7 +2042,7 @@ int MachineByOwner(int argc, char **argv)
   struct mqelem *top;
 
   type = strdup("USER");
-  if (GetTypeFromUser("Type of owner", "ace_type", &type) == SUB_ERROR)
+  if (GetTypeFromUser("Type of owner", "search_ace_type", &type) == SUB_ERROR)
     return DM_NORMAL;
 
   sprintf(buf, "Name of %s", type);

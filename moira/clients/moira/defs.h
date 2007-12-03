@@ -1,4 +1,4 @@
-/* $Id: defs.h,v 1.26 2007-11-29 18:09:07 zacheiss Exp $
+/* $Id: defs.h,v 1.27 2007-12-03 20:40:56 zacheiss Exp $
  *
  *	This is the file defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,7 +40,7 @@
 #define SUB_NORMAL 0
 #define SUB_ERROR 1
 
-#define MAX_ARGS_SIZE 100
+#define MAX_ARGS_SIZE 200
 
 typedef int Bool;
 

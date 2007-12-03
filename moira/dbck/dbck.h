@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.16 2007-05-25 14:39:04 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.17 2007-12-03 21:22:59 zacheiss Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -38,6 +38,8 @@ struct user {
   int fmodby;
   int pmodby;
   int sigwho;
+  char sponsor_type;
+  int sponsor_id;
 };
 
 struct machine {

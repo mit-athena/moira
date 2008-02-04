@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-wsh.gen,v 1.2 2008-02-01 17:11:44 jweiss Exp $
+# $Id: nagios-wsh.gen,v 1.3 2008-02-04 23:45:41 jweiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -113,9 +113,77 @@ define service{
         }
 
 END
-	    } else {
-		printf STDERR "Machine %s has unknown service %s; ignoring\n", $name, $service;
-	    }
+	    } else { # Hopefully this is a URL of some sort
+		my $protocol;
+		my $server;
+		my $path;
+		if ($service =~ /^([a-z]*):\/\/([^\/]*)(.*)$/ ) {
+		    $protocol = $1;
+		    $server = $2;
+		    $path = $3;
+		    $protocol =~ tr/a-z/A-Z/;
+		    $server =~ tr/A-Z/a-z/;
+		}
+		if ($protocol =~ /^HTTP(|S)$/) {
+		    $path = "/" if ($path eq "");
+		    if ($server eq $name && $path eq "/") { # this is a simple service
+			push @tags,$protocol;
+		    }
+		    # prep a bunch of variables for the text we'll spit out
+		    my $description = "$protocol-$server-$path";
+		    $description =~ s/-\//-/g;
+		    $description =~ s/\/-/-/g;
+		    $description =~ s/\//-/g;
+		    $description =~ s/-$//g;
+		    $description =~ tr/A-Z/a-z/;
+		    my $ucdescription = $description;
+		    $ucdescription =~ tr/a-z/A-Z/;
+		    my $SSL = "";
+		    if ($protocol eq "HTTPS") {
+			$SSL = "--SSL -k /var/nagios/etc/cert.pem";
+		    }
+		    print OUT <<END;
+define command{
+	command_name	check_$name-$description
+	command_line	\$USER1\$/check_http -H $server $SSL -u $path
+	}
+
+define service{
+	host_name		$name
+	name			$description-service
+	service_description	$ucdescription
+	contact_groups		wsh
+	check_command		check_$name-$description
+	use			generic-service
+	}
+
+define serviceescalation{
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	service_description	$ucdescription
+	first_notification	2
+	last_notification	0
+	notification_interval	0
+	}
+
+END
+		    if ($services{$protocol}) {
+		    print OUT <<END;
+define servicedependency{
+	dependent_host_name		$name
+	dependent_service_description	$ucdescription
+	host_name			$name
+	service_description		$protocol
+	execution_failure_criteria	n
+	notification_failure_criteria	w,u,c
+	}
+
+END
+		    }
+		} else {
+		    printf STDERR "Machine %s has unknown service %s; ignoring\n", $name, $service;
+		}
+	    }  # if SERVICE else URL
 
 	    if ($services{'HTTPS'} && $services{'HTTPS-CERT'}) {
 		print OUT <<END;

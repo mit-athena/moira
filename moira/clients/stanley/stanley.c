@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.14 2007-11-29 22:06:52 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.15 2008-02-25 20:49:05 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
       char *argv[20];
       int cnt;
 
-      for (cnt = 0; cnt < 14; cnt++) {
+      for (cnt = 0; cnt < 20; cnt++) {
 	argv[cnt] = "";
       }
 

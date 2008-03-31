@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.8 2004-09-24 19:05:07 zacheiss Exp $
+/* $Id: staff.pc,v 1.9 2008-03-31 21:00:43 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.8 2004-09-24 19:05:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.9 2008-03-31 21:00:43 zacheiss Exp $");
 
 /* File format is:
  *
@@ -174,9 +174,6 @@ struct entry *get_next_entry(FILE *in)
 		  &ends_iv, &ends_v);
   LookForJrAndIII(e.first, &ends_jr, &ends_sr, &ends_ii, &ends_iii,
 		  &ends_iv, &ends_v);
-  FixCase(e.last);
-  FixCase(e.first);
-  FixCase(e.middle);
 
   e.name = buf;
   if (*e.middle)

@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.33 2006-08-22 17:36:25 zacheiss Exp $
+/* $Id: moira.h,v 1.34 2008-04-17 20:51:16 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -18,6 +18,7 @@
 #endif /*_WIN32 */
 
 /* return values from queries (and error codes) */
+#include <stdlib.h>
 #include <sys/types.h>
 #include <com_err.h>
 #include "mr_et.h"

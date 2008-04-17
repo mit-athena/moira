@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-colo.gen,v 1.5 2007-09-05 21:32:41 jweiss Exp $
+# $Id: nagios-colo.gen,v 1.6 2008-04-17 17:24:36 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -40,6 +40,7 @@ define host{
 	host_name		$name
 	alias			$name
 	address			$name
+	contact_groups          colo,dost
 	use			generic-host
 	}
 
@@ -74,7 +75,6 @@ END
 define hostgroup{
         hostgroup_name          colo-hosts
         alias                   colo-hosts
-        contact_groups          colo,dost
 END
 
 print OUT "\tmembers\t\t\t";

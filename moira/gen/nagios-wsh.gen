@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-wsh.gen,v 1.4 2008-02-06 23:40:30 jweiss Exp $
+# $Id: nagios-wsh.gen,v 1.5 2008-04-17 17:24:37 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -40,6 +40,7 @@ define host{
 	host_name		$name
 	alias			$name
 	address			$name
+	contact_groups          wsh
 	use			generic-host
 	}
 
@@ -208,7 +209,6 @@ END
 define hostgroup{
         hostgroup_name          wsh-hosts
         alias                   wsh-hosts
-        contact_groups          wsh
 END
 
 print OUT "\tmembers\t\t\t";

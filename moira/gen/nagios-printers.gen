@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-printers.gen,v 1.2 2007-07-12 17:42:37 jweiss Exp $
+# $Id: nagios-printers.gen,v 1.3 2008-04-17 17:24:36 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -33,6 +33,7 @@ define host{
 	host_name		$name
 	alias			$name
 	address			$name
+	contact_groups          ops-printers
 	use			generic-host
 	}
 
@@ -82,7 +83,6 @@ print OUT <<END;
 define hostgroup{
         hostgroup_name          printers
         alias                   printers
-        contact_groups          ops-printers
 END
 
 print OUT "\tmembers\t\t";

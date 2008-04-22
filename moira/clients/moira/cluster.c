@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.68 2007-11-29 22:56:02 zacheiss Exp $
+/* $Id: cluster.c,v 1.69 2008-04-22 17:44:37 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -215,7 +215,7 @@ static char **SetSubnetDefaults(char **info, char *name)
 
 /* -------------------- General Functions -------------------- */
 
-static char aliasbuf[BUFSIZ];
+static char aliasbuf[BUFSIZ * 2];
 
 void PrintAliases(char **info)
 {

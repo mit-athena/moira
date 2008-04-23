@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.105 2007-11-29 22:41:52 zacheiss Exp $
+/* $Id: queries2.c,v 2.106 2008-04-23 21:07:58 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -648,7 +648,7 @@ static char *uuac_fields[] = {
   "login",
   "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first",
   "middle", "status", "clearid", "class", "comments", "signature", "secure",
-  "winhomedir", "winprofiledir, sponsor_type, sponsor_name", "expiration",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
 };
 
 static struct valobj uuac2_valobj[] = {

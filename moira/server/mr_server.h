@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.64 2007-11-29 18:09:09 zacheiss Exp $
+/* $Id: mr_server.h,v 1.65 2008-05-16 16:51:43 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -156,6 +156,7 @@ int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
 int access_container(struct query *q, char *argv[], client *cl);
 int access_update_user(struct query *q, char *argv[], client *cl);
+int check_mail_string(char *mailstring);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,

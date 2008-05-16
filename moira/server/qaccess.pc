@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.32 2008-01-03 19:48:08 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.33 2008-05-16 16:51:43 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -14,10 +14,11 @@
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <netdb.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.32 2008-01-03 19:48:08 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.33 2008-05-16 16:51:43 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -140,6 +141,7 @@ int access_spob(struct query *q, char *argv[], client *cl)
   EXEC SQL BEGIN DECLARE SECTION;
   int id;
   EXEC SQL END DECLARE SECTION;
+  int status;
 
   if (!strcmp(argv[1], "IMAP"))
       {
@@ -149,6 +151,17 @@ int access_spob(struct query *q, char *argv[], client *cl)
 	if (cl->users_id != id)
 	  return MR_PERM;
       }
+
+  /* Non-query owners can't forward mail to a POSTOFFICE or MAILHUB server,
+   * nor to a nonresolving domain.
+   */
+  if (!strcmp(argv[1], "SMTP") || !strcmp(argv[1], "SPLIT"))
+    {
+      status = check_mail_string(argv[2]);
+      if (status)
+	return status;
+    }
+
   if (cl->users_id != *(int *)argv[0])
     return MR_PERM;
   else
@@ -178,6 +191,7 @@ int access_list(struct query *q, char *argv[], client *cl)
   char member_acl_type[LIST_ACL_TYPE_SIZE], memacl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status, cnt;
+  char *buf;
 
   list_id = *(int *)argv[0];
   member_id = *(int *)argv[2];
@@ -242,6 +256,26 @@ int access_list(struct query *q, char *argv[], client *cl)
 
 	  if (mailman_id != *(int *)argv[10])
 	    return MR_PERM;
+	}
+    }
+
+  /* Don't allow non-query owners to add STRINGs to lists if they end
+   * in a domain that's MIT.EDU or one of the hosts that provide the
+   * MAILHUB or POSTOFFICE services.
+   */
+  if (!strcmp(q->shortname, "amtl") || !strcmp(q->shortname, "atml"))
+    {
+      if (!strcmp("STRING", argv[1]))
+	{
+	  buf = malloc(0);
+	  status = id_to_name(*(int *)argv[2], STRINGS_TABLE, &buf);
+	  if (status)
+	    return status;
+
+	  status = check_mail_string(buf);
+	  free(buf);
+	  if (status)
+	    return status;
 	}
     }
 
@@ -779,4 +813,81 @@ int access_container(struct query *q, char *argv[], client *cl)
     }
   /* Otherwise fail. */
   return MR_PERM;
+}
+
+int check_mail_string(char *mailstring)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char mname[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  char *p, *host, *hostdomain;
+  struct hostent *hp;
+  int index;
+
+  p = strchr(mailstring, '@');
+  if (p)
+    {
+      host = strdup(++p);
+      
+      /* Replace .LOCAL at end of host with .MIT.EDU if needed. */
+      hostdomain = strrchr(host, '.');
+      if (hostdomain && !strcasecmp(hostdomain, ".LOCAL"))
+	{
+	  index = hostdomain - host;
+	  host[index] = '\0';
+	  host = realloc(host, strlen(host) + strlen(".MIT.EDU") + 1);
+	  strcat(host, ".MIT.EDU");
+	}
+      
+      hp = gethostbyname(host);
+      if (hp)
+	{
+	  host = realloc(host, strlen(hp->h_name) + 1);
+	  if (host)
+	    strcpy(host, hp->h_name);
+	}
+      else
+	{
+	  /* couldn't resolve hostname, return MR_PERM. */
+	  free(host);
+	  return MR_BAD_MAIL_STRING;
+	}
+      
+      if (!strcasecmp(host, "MIT.EDU"))
+	{
+	  free(host);
+	  return MR_BAD_MAIL_STRING;
+	}
+      
+      EXEC SQL DECLARE csr_listmem CURSOR FOR
+	SELECT UNIQUE m.name FROM machine m, serverhosts sh
+	WHERE m.mach_id = sh.mach_id
+	AND (sh.service = 'MAILHUB' or sh.service = 'POSTOFFICE');
+      if (dbms_errno)
+	{
+	  free(host);
+	  return mr_errcode;
+	}
+      EXEC SQL OPEN csr_listmem;
+      if (dbms_errno)
+	{
+	  free(host);
+	  return mr_errcode;
+	}
+      while (1)
+	{
+	  EXEC SQL FETCH csr_listmem INTO :mname;
+	  if (sqlca.sqlcode)
+	    break;
+	  
+	  if (!strcasecmp(host, strtrim(mname)))
+	    {
+	      free(host);
+	      return MR_BAD_MAIL_STRING;
+	    }
+	}
+      free(host);
+    }
+
+  return MR_SUCCESS;
 }

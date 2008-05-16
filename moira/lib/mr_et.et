@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.30 2002-12-03 21:14:57 zacheiss Exp $
+# $Id: mr_et.et,v 1.31 2008-05-16 16:50:33 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -233,5 +233,8 @@ ec	MR_ACCOUNT_NUMBER,
 
 ec      MR_CONTAINER_NO_PARENT,
 	"Parent container does not exist"
+
+ec	MR_BAD_MAIL_STRING,
+	"Address refers to nonexistent domain or MIT internal mail server"
 
 	end

@@ -1,4 +1,4 @@
-/* $Id: chpobox.c,v 1.5 2000-08-10 06:52:05 zacheiss Exp $
+/* $Id: chpobox.c,v 1.6 2008-05-16 16:49:38 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -36,7 +36,9 @@
 #include <getopt.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chpobox/chpobox.c,v 1.5 2000-08-10 06:52:05 zacheiss Exp $");
+#define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chpobox/chpobox.c,v 1.6 2008-05-16 16:49:38 zacheiss Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 void usage(void);
@@ -49,6 +51,8 @@ int main(int argc, char *argv[])
 {
   char *mrarg[3];
   char *address, *uname;
+  char **arg = argv;
+  char *server = NULL;
   int c, setflag, splitflag, prevflag, status;
 
   setflag = splitflag = prevflag = 0;
@@ -62,35 +66,50 @@ int main(int argc, char *argv[])
   if (argc > 5)
     usage();
 
-  while ((c = getopt(argc, argv, "s:S:pu:")) != -1)
-    switch (c)
-      {
-      case 's':
-	setflag++;
-	address = optarg;
-	break;
-
-      case 'S':
-	splitflag++;
-	address = optarg;
-	break;
-
-      case 'p':
-	prevflag++;
-	break;
-
-      case 'u':
-	uname = optarg;
-	break;
-
-      default:
+  while (++arg - argv < argc)
+    {
+      if (**arg == '-')
+	{
+	  if (argis("s", "set")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      setflag++;
+	      address = *arg;
+	    } else
+	      usage();
+	  }
+	  else if (argis("S", "split")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      splitflag++;
+	      address = *arg;
+	    } else
+	      usage();
+	  }
+	  else if (argis("p", "previous"))
+	    prevflag++;
+	  else if (argis("u", "username")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      uname = *arg;
+	    } else
+	      usage();
+	  }
+	  else if (argis("db", "database")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      server = *arg;
+	    } else
+	      usage();
+	  }
+	}
+      else if (uname == NULL)
+	uname = *arg;
+      else
 	usage();
-	break;
-      }
-  if (argc == 2 && optind == 1 && !uname)
-    uname = argv[optind++];
+    }
 
-  if (optind != argc || (prevflag + splitflag + setflag > 1))
+  if (prevflag + splitflag + setflag > 1)
     usage();
 
   if (!uname)
@@ -101,7 +120,7 @@ int main(int argc, char *argv[])
     }
   mrarg[0] = uname;
 
-  if (mrcl_connect(NULL, "chpobox", 2, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "chpobox", 2, 1) != MRCL_SUCCESS)
     exit(1);
 
   if (setflag || splitflag)
@@ -180,6 +199,6 @@ int get_pobox(int argc, char **argv, void *callarg)
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [-s|-S address] [-p] [-u user]\n", whoami);
+  fprintf(stderr, "Usage: %s [-s|-S address] [-p] [-u user] [-db database]\n", whoami);
   exit(1);
 }

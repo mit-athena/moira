@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.33 2008-05-16 16:51:43 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.34 2008-05-19 20:21:56 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -15,10 +15,13 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.33 2008-05-16 16:51:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.34 2008-05-19 20:21:56 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -822,6 +825,7 @@ int check_mail_string(char *mailstring)
   EXEC SQL END DECLARE SECTION;
   char *p, *host, *hostdomain;
   struct hostent *hp;
+  struct mxentry *mxrecords = NULL;
   int index;
 
   p = strchr(mailstring, '@');
@@ -848,9 +852,12 @@ int check_mail_string(char *mailstring)
 	}
       else
 	{
-	  /* couldn't resolve hostname, return MR_PERM. */
-	  free(host);
-	  return MR_BAD_MAIL_STRING;
+	  /* Possibly a host with no A record but MX records.  Check. */
+	  mxrecords = getmxrecords(host);
+	  if (!mxrecords)
+	    return MR_BAD_MAIL_STRING;
+	  else
+	    return MR_SUCCESS;
 	}
       
       if (!strcasecmp(host, "MIT.EDU"))
@@ -890,4 +897,92 @@ int check_mail_string(char *mailstring)
     }
 
   return MR_SUCCESS;
+}
+
+/*
+ * This ought to be in the bind library.  It's adapted from sendmail.
+ */
+
+/*
+ * These are defined in RFC833. Some bind interface headers don't declare them.
+ * Ghod help us if they're ever actually incompatible with what's in 
+ * the arpa/nameser.h header.
+ */
+#ifndef PACKETSZ
+#define PACKETSZ	512		/* maximum packet size */
+#endif
+#ifndef HFIXEDSZ
+#define	HFIXEDSZ	12		/* #/bytes of fixed data in header */
+#endif
+#ifndef INT32SZ
+#define	INT32SZ		4		/* for systems without 32-bit ints */
+#endif
+#ifndef INT16SZ
+#define	INT16SZ		2		/* for systems without 16-bit ints */
+#endif
+
+/* minimum possible size of MX record in packet */
+#define MIN_MX_SIZE	8	/* corresp to "a.com 0" w/ terminating space */
+
+struct mxentry *getmxrecords(const char *name)
+{
+  char answer[PACKETSZ], *eom, *cp, *bp;
+  int n, ancount, qdcount, buflen, type, pref, ind;
+  static struct mxentry pmx[(PACKETSZ - HFIXEDSZ) / MIN_MX_SIZE];
+  static char MXHostBuf[PACKETSZ - HFIXEDSZ]; 
+  HEADER *hp;
+  
+  pmx->name = (char *)NULL;
+  pmx->pref = -1;
+  n = res_search(name, C_IN,T_MX, (unsigned char *)&answer, sizeof(answer));
+  if (n == -1)
+    return((struct mxentry *)NULL);
+  if ((size_t)n > sizeof(answer))
+    n = sizeof(answer);    	
+  
+  hp = (HEADER *)&answer;
+  cp = answer + HFIXEDSZ;
+  eom = answer + n;
+  h_errno = 0;
+  for (qdcount = ntohs(hp->qdcount); qdcount--; cp += n + QFIXEDSZ)
+    if ((n = dn_skipname((unsigned char *)cp, (unsigned char *)eom)) < 0)
+      return((struct mxentry *)NULL);
+  buflen = sizeof(MXHostBuf) - 1;
+  bp = MXHostBuf;
+  ind = 0;
+  ancount = ntohs(hp->ancount);
+  while (--ancount >= 0 && cp < eom)
+    {
+      if ((n = dn_expand((unsigned char *)answer, (unsigned char *)eom,
+			 (unsigned char *)cp, bp, buflen)) < 0)
+	break;
+      cp += n;
+      GETSHORT(type, cp);
+      cp += INT16SZ + INT32SZ;
+      GETSHORT(n, cp);
+      if (type != T_MX)
+	{
+	  cp += n;
+	  continue;
+	}
+      GETSHORT(pref, cp);
+      if ((n = dn_expand((unsigned char *)answer, (unsigned char *)eom,
+			 (unsigned char *)cp, bp, buflen)) < 0)
+	break;
+      cp += n;
+      
+      pmx[ind].name = bp;
+      pmx[ind].pref = pref;
+      ++ind;
+      
+      n = strlen((const char *)bp);
+      bp += n;
+      *bp++ = '\0';
+      
+      buflen -= n + 1;
+    }
+  
+  pmx[ind].name = (char *)NULL;
+  pmx[ind].pref = -1;
+  return(pmx);
 }

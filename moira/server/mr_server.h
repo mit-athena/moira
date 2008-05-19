@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.65 2008-05-16 16:51:43 zacheiss Exp $
+/* $Id: mr_server.h,v 1.66 2008-05-19 20:21:56 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -44,6 +44,12 @@ typedef struct _client {
   char *hsbuf;			/* Buffer for initial connection handshaking */
   int hslen;			/* Length of data in hsbuf */
 } client;
+
+struct mxentry
+{
+  char *name;
+  int pref;
+};
 
 extern char krb_realm[REALM_SZ];
 
@@ -157,6 +163,7 @@ int access_zephyr(struct query *q, char *argv[], client *cl);
 int access_container(struct query *q, char *argv[], client *cl);
 int access_update_user(struct query *q, char *argv[], client *cl);
 int check_mail_string(char *mailstring);
+struct mxentry *getmxrecords(const char *);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,

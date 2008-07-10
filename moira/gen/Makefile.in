@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.50 2008-01-16 16:56:09 zacheiss Exp $
+# $Id: Makefile.in,v 1.51 2008-07-10 16:58:40 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -31,16 +31,16 @@ LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
 OBJS=	acl.o boot.o confluence.o dhcp.o directory.o events.o hesiod.o \
-	hosts.o mailhub.o ndb.o network.o nfs.o pobox.o postoffice.o print.o \
-	winad.o www.o zephyr.o
+	hosts.o lpcaccess.o mailhub.o ndb.o network.o nfs.o pobox.o \
+	postoffice.o print.o winad.o www.o zephyr.o
 
 CFILES= acl.c boot.c confluence.c dhcp.c directory.c events.c hesiod.c \
-	hosts.c mailhub.c ndb.c network.c nfs.c pobox.c postoffice.c print.c \
-	winad.c www.c zephyr.c
+	hosts.c lpcaccess.c mailhub.c ndb.c network.c nfs.c pobox.c \
+	 postoffice.c print.c winad.c www.c zephyr.c
 
 TARGET=	acl.gen boot.gen confluence.gen dhcp.gen directory.gen events.gen \
-	hesiod.gen hosts.gen mailhub.gen ndb.gen network.gen nfs.gen \
-	pobox.gen postoffice.gen print.gen winad.gen www.gen zephyr.gen
+	hesiod.gen hosts.gen lpcaccess.gen mailhub.gen ndb.gen network.gen \
+	nfs.gen pobox.gen postoffice.gen print.gen winad.gen www.gen zephyr.gen
 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	dhcp.sh events.sh hesiod.sh ip-billing.gen \
@@ -137,3 +137,6 @@ www.gen: www.o libdcm.a $(MR_LIBDEP)
 
 winad.gen: winad.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) winad.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+lpcaccess.gen: lpcaccess.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) lpcaccess.o libdcm.a $(SQL_LIBS) $(LIBS)

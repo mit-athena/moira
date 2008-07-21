@@ -1,0 +1,236 @@
+/* $Id: rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $
+ *
+ * 	This program restores the Moira database from an mrbackup.
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "dump_db.h"
+
+#include <ctype.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $");
+
+int yes_or_no(char *prompt);
+
+int main(int argc, char **argv)
+{
+  char buf[BUFSIZ];
+  char *prefix;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *db;
+  EXEC SQL END DECLARE SECTION;
+
+  if (argc != 2)
+    {
+      fprintf(stderr, "Usage: %s database\n", argv[0]);
+      exit(1);
+    }
+  db = argv[1];
+
+  if (!yes_or_no("Do you *REALLY* want to wipe the moira database?"))
+    {
+      printf("I didn't think so\n");
+      exit(1);
+    }
+  sprintf(buf, "Have you initialized an empty database named %s?", db);
+  if (!yes_or_no(buf))
+    {
+      printf("You should have\n");
+      exit(1);
+    }
+
+  printf("Opening database: ");
+  fflush(stdout);
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  if (sqlca.sqlcode != 0)
+    {
+      com_err(argv[0], 0, "Database open failed");
+      exit(1);
+    }
+  printf(" done\n");
+
+  printf("Prefix of backup to restore: ");
+  fflush(stdout);
+  if (!gets(buf))
+    return 1;
+  prefix = buf;
+
+  if (!yes_or_no("Are you SURE?"))
+    {
+      printf("I didn't think so\n");
+      exit(1);
+    }
+  do_restores(prefix);
+  printf("Restore complete\n");
+  EXEC SQL COMMIT;
+  exit(0);
+  /*NOTREACHED*/
+}
+
+int yes_or_no(char *prompt)
+{
+  char buf[BUFSIZ];
+  int ret;
+
+  int tt = open("/dev/tty", O_RDWR, 0);
+  FILE *o, *i;
+
+  char *cp;
+
+  if (tt < 0)
+    return 0;
+
+  fflush(stdout);
+  fflush(stderr);
+  o = fdopen(dup(tt), "w");
+  i = fdopen(dup(tt), "r");
+  close(tt);
+
+  for (;;)
+    {
+      fprintf(o, "%s (yes or no): ", prompt);
+      fflush(o);
+      if (!fgets(buf, BUFSIZ, i))
+	goto err;
+      for (cp = buf; *cp; cp++)
+	{
+	  if (isupper(*cp))
+	    *cp = tolower(*cp);
+	}
+      if (!strcmp(buf, "yes\n"))
+	{
+	  ret = 1;
+	  goto out;
+	}
+      if (!strcmp(buf, "no\n"))
+	{
+	  ret = 0;
+	  goto out;
+	}
+    }
+
+err:
+  ret = 0;
+
+out:
+  fclose(o);
+  fclose(i);
+  return ret;
+}
+
+int parse_int(FILE *f)
+{
+  int c;
+  int val = 0;
+  int sign = 1;
+  while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n')
+    {
+      if (c == '-')
+	sign = -1;
+      else if (isdigit(c))
+	{
+	  val *= 10;
+	  val += (c - '0');
+	} else
+	  fprintf(stderr, "non-digit in numeric field\n");
+    }
+  ungetc(c, f);
+  return val * sign;
+}
+
+void parse_str(FILE *f, char *buf, int maxlen)
+{
+  int c, len = 0;
+
+  while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len < maxlen)
+    {
+      if (c == '\\')
+	{
+	  c = getc(f);
+	  if (isdigit(c))
+	    {
+	      /* Expect three-digit octal number.. */
+	      int c1, c2;
+	      c1 = getc(f);
+	      c2 = getc(f);
+	      if (!isdigit(c1) || !isdigit(c2))
+		punt("Broken \\###");
+	      /* Convert to ASCII code: */
+	      *buf++ =  ((c - '0') << 6) + ((c1 - '0') << 3) + c2 - '0';
+	      len++;
+	    }
+	  else if (c == '\\' || c == SEP_CHAR)
+	    {
+	      *buf++ = c;
+	      len++;
+	    }
+	  else
+	    punt ("Broken '\\'");
+	}
+      else
+	{
+	  *buf++ = c;
+	  len++;
+	}
+    }
+  *buf = '\0';
+  if (c == EOF)
+    return;
+
+  if (c != EOF && c != SEP_CHAR && c != '\n')
+    {
+      fprintf(stderr, "Field too wide, truncated\n");
+      while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n')
+	;
+      ungetc(c, f);
+    }
+  else
+    ungetc(c, f);
+}
+
+void parse_sep(FILE *f)
+{
+  if (getc(f) != SEP_CHAR)
+    punt("Expected Separator");
+}
+
+void parse_nl(FILE *f)
+{
+  if (getc(f) != '\n')
+    punt("Expected newline");
+}
+
+FILE *open_file(char *prefix, char *suffix)
+{
+  char name[BUFSIZ];
+  int fd;
+  FILE *f;
+
+  EXEC SQL COMMIT WORK;
+
+  strcpy(name, prefix);
+  strcat(name, suffix);
+
+  fd = open(name, O_RDONLY, 0);
+  if (fd < 0)
+    punt(name);
+  f = fdopen(fd, "r");
+  if (!f)
+    {
+      fprintf(stderr, "fdopen of ");
+      punt(name);
+    }
+  fprintf(stderr, "Working on %s\n", name);
+  return f;
+}

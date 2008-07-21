@@ -1,0 +1,225 @@
+/* $Id: boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $
+ *
+ * This generates the bootptab and associated files.
+ *
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $");
+
+char *whoami = "boot.gen";
+char *db = "moira/moira";
+
+void sqlerr(void);
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE], hwaddr[MACHINE_HWADDR_SIZE];
+  char ohwaddr[MACHINE_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
+  char addr[MACHINE_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE], logaddr[MACHINE_ADDRESS_SIZE];
+  char modtime[PRINTERS_MODTIME_SIZE], type[PRINTERS_TYPE_SIZE];
+  char *unixtime_fmt = UNIXTIME_FMT;
+  char host[MACHINE_ADDRESS_SIZE], types[SERVERHOSTS_VALUE3_SIZE];
+  int mid, alcount;
+  EXEC SQL END DECLARE SECTION;
+  char shortname[MACHINE_NAME_SIZE], net[MACHINE_ADDRESS_SIZE];
+  char filename[MAXPATHLEN];
+  struct {
+    char types[SERVERHOSTS_VALUE3_SIZE];
+    char host[MACHINE_ADDRESS_SIZE];
+  } *allowlist;
+  char *p, *q;
+  int i, allows, typelen;
+  TARFILE *tf;
+  FILE *out;
+  time_t now = time(NULL);
+
+  EXEC SQL CONNECT :db;
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+
+  /* Get print spoolers for allow lists. */
+  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts
+    WHERE service = 'PRINT';
+  allowlist = malloc(alcount * sizeof(*allowlist));
+
+  EXEC SQL DECLARE csr_spool CURSOR FOR
+    SELECT m.address, sh.value3 FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT';
+  EXEC SQL OPEN csr_spool;
+  for (i = 0; i < alcount; i++)
+    {
+      EXEC SQL FETCH csr_spool INTO :host, :types;
+      if (sqlca.sqlcode)
+	sqlerr();
+      strcpy(allowlist[i].host, strtrim(host));
+      strcpy(allowlist[i].types, strtrim(types));
+    }
+  EXEC SQL CLOSE csr_spool;
+
+  /* Now build the tar file. */
+  sprintf(filename, "%s/boot.out", DCM_DIR);
+  tf = tarfile_open(filename);
+
+  /* Build bootptab.print */
+
+  out = tarfile_start(tf, "/var/boot/bootptab.print", 0755, 0, 0,
+		      "root", "root", now);
+  ohwaddr[0] = '\0';
+  EXEC SQL DECLARE csr_boot CURSOR FOR
+    SELECT LOWER(m.name), m.hwaddr, m.address, m2.address,
+    pr.location, pr.contact, pr.hwtype
+    FROM printers pr, machine m, machine m2
+    WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
+    AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
+    ORDER BY m.hwaddr;
+  EXEC SQL OPEN csr_boot;
+  while (1)
+    {
+      EXEC SQL FETCH csr_boot INTO :name, :hwaddr, :addr, :logaddr,
+	:location, :contact, :hwtype;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(hwaddr);
+      if (!*hwaddr || !strcasecmp(hwaddr, "unknown"))
+	continue;
+      if (!strcmp(hwaddr, ohwaddr))
+	{
+	  fprintf(stderr, "Ignoring duplicate hwaddr %s\n", hwaddr);
+	  continue;
+	}
+      strcpy(ohwaddr, hwaddr);
+
+      strtrim(name);
+      strtrim(addr);
+      strtrim(logaddr);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(hwtype);
+      strcpy(shortname, name);
+      if ((p = strchr(shortname, '.')))
+	*p = '\0';
+
+      if ((p = strchr(addr, '.')) && (q = strchr(++p, '.')))
+	{
+	  strncpy(net, p, q - p);
+	  net[q - p] = '\0';
+	}
+      else
+	continue;
+
+      fprintf(out, "# %s: %s\n# contact: %s\n%s:\\\n\t:tc=net%s.global:\\\n"
+	      "\t:ht=ethernet:\\\n\t:ha=%s:\\\n\t:ip=%s:\\\n"
+	      "\t:lg=%s:\\\n\t:vm=rfc1048:",
+	      shortname, location, contact, name, net, hwaddr, addr, logaddr);
+      if (!strncmp(hwtype, "HP", 2))
+	fprintf(out, "\\\n\t:T144=\"/hp/%s\":", shortname);
+      fprintf(out, "\n\n");
+    }
+  EXEC SQL CLOSE csr_boot;
+  tarfile_end(tf);
+
+  /* Now generate /var/boot/hp/ files */
+  EXEC SQL DECLARE csr_boot2 CURSOR FOR
+    SELECT LOWER(m.name), m.hwaddr, m2.address, m3.address, pr.type,
+    pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt)
+    FROM printers pr, machine m, machine m2, machine m3
+    WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
+    AND pr.mach_id = m.mach_id AND pr.rm = m2.mach_id
+    AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS';
+  EXEC SQL OPEN csr_boot2;
+  while (1)
+    {
+      EXEC SQL FETCH csr_boot2 INTO :name, :hwaddr, :addr, :logaddr,
+	:type, :location, :contact, :modtime;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(hwaddr);
+      if (!*hwaddr || !strcasecmp(hwaddr, "unknown"))
+	continue;
+
+      strtrim(name);
+      strtrim(addr);
+      strtrim(logaddr);
+      strtrim(type);
+      strtrim(location);
+      strtrim(contact);
+      strcpy(shortname, name);
+      if ((p = strchr(shortname, '.')))
+	*p = '\0';
+
+      /* We create it as foo.new so boot.sh can append the passwords
+       * and other data and rename it.
+       */
+      sprintf(filename, "/var/boot/hp/%s.new", shortname);
+      out = tarfile_start(tf, filename, 0755, 0, 0, "root", "root",
+			  unixtime(modtime));
+
+      fprintf(out, "name: %s\nlocation: %s\ncontact: %s\n\n", shortname,
+	      *location ? location : "unknown",
+	      *contact ? contact : "unknown");
+      if (*logaddr)
+	fprintf(out, "trap-dest: %s\nallow: %s\n", logaddr, logaddr);
+      fprintf(out, "allow: %s\n", addr);
+      typelen = strlen(type);
+      for (i = allows = 0; i < alcount && allows < 9; i++)
+	{
+	  char *p;
+
+	  /* Don't list the spoolhost twice. */
+	  if (!strcmp(allowlist[i].host, addr))
+	    continue;
+
+	  p = strstr(allowlist[i].types, type);
+	  if (!p)
+	    continue;
+
+	  /* Make sure the match was real, and not just because one type
+	   * is a substring of another type.
+	   */
+	  if (p != allowlist[i].types && *(p - 1) != ',' && *(p - 1) != ' ')
+	    continue;
+	  p += typelen;
+	  if (*p && *p != ',' && *p != ' ')
+	    continue;
+
+	  fprintf(out, "allow: %s\n", allowlist[i].host);
+	  allows++;
+	}
+      /* Rest of data is same for all printers and is appended from a
+       * a file on the boot server.
+       */
+
+      tarfile_end(tf);
+    }
+
+  tarfile_close(tf);
+
+  exit(MR_SUCCESS);
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+}

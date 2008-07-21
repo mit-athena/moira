@@ -1,0 +1,128 @@
+.TH STELLA 1 "10 Feb 2000" "MIT Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/stella.1,v 1.7 2001-09-13 02:32:21 zacheiss Exp $
+.SH NAME
+stella \- examine and modify information about hosts in Moira
+.SH SYNOPSIS
+.B stella hostname [options]
+.SH DESCRIPTION
+.I Stella
+is a tool for updating information about hosts in Moira. It supports
+all host modification commands and a few options to change cluster
+mapping.
+
+If no options are specified, it will assume \fI-info\fR, which will
+result in all information about the specified host being displayed.
+
+.SH OPTIONS
+
+.IP \fB-info\ \fRor\ \fB-i\fR
+Display information about a host. This is the default mode if no other
+options are given. The output is similar to that of moira.
+
+.IP \fB-addalias\ \fIaliasname\ \fRor\ \fB-a\ \fIaliasname\fR
+This will add \fIaliasname\fR as an alias for the given host. This
+option can be specified multiple times with different alias names
+on the same command line.
+.IP \fB-deletealias\ \fIaliasname\ \fRor\ \fB-d\ \fIaliasname\fR
+This will remove the alias \fIaliasname\fR for the given host. This
+option can be specified multiple times with different alias names
+on the same command line.
+
+.IP \fB-listmap\ \fRor\ \fB-lm\fR
+This will list cluster mappings for the specified host; that is,
+the clusters to which the host belongs.
+.IP \fB-addmap\ \fIcluster\ \fRor\ \fB-am\ \fIcluster\fR
+This will add the specified host to \fIcluster\fR.
+.IP \fB-deletemap\ \fIcluster\ \fRor\ \fB-dm\ \fIcluster\fR
+This will delete the specified host from \fIcluster\fR.
+
+.IP \fB-listcontainer\ \fRor\ \fB-lcn\fR
+This will list the Active Directory container membership for the 
+specified host.  Unlike clusters, a machine may only belong to a 
+single container.
+.IP \fB-addcontainer\ \fIcontainer\ \fRor\ \fB-acn\ \fIcontainer\fR
+This will add the specified host to \fIcontainer\fR.
+.IP \fB-deletecontainer\ \fIcontainer\fRor \ \fB-dcn\ \fIcontainer\fR
+This will delete the specified host from \fIcontainer\fR. 
+
+.IP \fB-vendor\ \fIvendor\ \fRor\ \fB-V\ \fIvendor\fR
+Update the vendor field for the specified host to \fIvendor\fR.
+.IP \fB-model\ \fImodel\ \fRor\ \fB-M\ \fImodel\fR
+Update the model field for the specified host to \fImodel\fR.
+.IP \fB-os\ \fIos\ \fRor\ \fB-o\ \fIos\fR
+Update the OS field for the specified host to \fIos\fR.
+.IP \fB-location\ \fIlocation\ \fRor\ \fB-L\ \fIlocation\fR
+Update the location field for the specified host to \fIlocation\fR.
+
+.IP \fB-address\ \fIaddress\ \fRor\ \fB-A\ \fIaddress\fR
+Change the address of the given host to \fIaddress\fR.
+.IP \fB-network\ \fInetwork\ \fRor\ \fB-N\ \fInetwork\fR
+Change the network for the given host to \fInetwork\fR.
+
+.IP \fB-opcmt\ \fIop_cmt\ \fRor\ \fB-oc\ \fIop_cmt\fR
+Set the operational comment for the specified host to \fIop_cmt\fR.
+.IP \fB-admcmt\ \fIadm_cmt\ \fRor\ \fB-ac\ \fIadm_cmt\fR
+Set the administrative comment for the specified host to \fIadm_cmt\fR.
+
+.IP \fB-contact\ \fIcontact\ \fRor\ \fB-c\ \fIcontact\fR
+Update the contact information for the given host to \fIcontact\fR.
+.IP \fB-billingcontact\ \fIcontact\ \fRor\ \fB-bc\ \fIcontact\fR
+Update the billing contact information for the given host to \fIcontact\fR.
+.IP \fB-accountnumber\ \fIaccountnumber\ \fRor\ \fB-an\ \fIaccountnumber\fR
+Update the account number information for the given host to 
+\fIaccountnumber\fR.
+.IP \fB-status\ \fIstatus\ \fRor\ \fB-S\ \fIstatus\fR
+Set the status of the specified host to \fIstatus\fR.
+
+.IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR
+Set the owner of the specified host to \fIowner\fR.
+
+You may specify an owner explicitly, as user:username, list:listname,
+or kerberos:principal_name; or the type may be
+left off if the owner name is non ambiguous.
+.B Stella
+will try first as a user, and if that fails will try the member as a
+list.
+
+.IP \fB-unformatted\ \fRor\ \fB-u\fR
+Display host information with each field on a seperate line, in the 
+form "fieldname: value".
+.IP \fB-verbose\ \fRor\ \fB-v\fR
+Give more information.  With this flag, stella will display the
+queries it is making to the moira server.
+.IP \fB-noauth\ \fRor\ \fB-n\fR
+Do not attempt to perform Kerberos authentication with the Moira server.
+Most lookup operations should be still possible without tickets.
+.IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+database chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
+
+.IP \fB-create\ \fRor\ \fB-C\fR
+This will create the specified host, with information provided by other
+options. By default, the host will be owned by NONE and will be active.
+.IP \fB-delete\ \fRor\ \fB-D\fR
+This will delete the specified host, if the status field is already set
+to Deleted (3).
+.IP \fB-rename\ \fInewname\ \fRor\ \fB-R\ \fInewname\fR
+This will rename the given host to \fInewname\fR.
+
+.SH AUTHORS
+Nickolai Zeldovich.
+.SH SEE ALSO
+moira(1)
+
+.SH DIAGNOSTICS
+An exit status of 2 indicates a problem contacting the server. An exit
+status of 1 indicates that the arguments could not be parsed or some
+query to the moira server returned an error. An exit status of 0
+indicates that all operations requested completed successfully.
+
+.SH NOTES
+The hostname doesn't actually have to be the first argument, but if
+you put it anywhere else, it's easy to get the other arguments in the
+wrong order and do something other than what you intended.
+

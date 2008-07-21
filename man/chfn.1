@@ -1,0 +1,61 @@
+.TH CHFN 1 "1 Feb 1988" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.7 1998-05-26 18:14:10 danw Exp $
+.SH NAME
+chfn \- change finger information
+.SH SYNOPSIS
+.B chfn
+[ username ]
+.SH DESCRIPTION
+This command changes (or installs)
+the GECOS information field
+associated with
+.IR username
+(your own name by default).  It also asks for some information not in
+the standard GECOS field, such as a nickname and home address.
+The GECOS information is the information shown by
+.I finger(1).
+.PP
+When invoked,
+.B chfn
+displays the current information as default values
+while prompting for any changes.
+The fields include a user's
+``real life'' name, nickname, home address and phone number,
+office address and phone number, department and year.
+Included in each prompt is a default value,
+which is enclosed between brackets.
+The default value is accepted simply by typing a carriage
+return.  To enter a blank field, the word ``none'' may
+be typed.  Below is a sample run:
+.PP
+Info last changed on 22-mar-1988 15:13:33 by user studley using chfn
+.br
+Name [Biff Studsworth II]:
+.br
+Nickname [Studley]:
+.br
+Home address (Ex: EC Bemis 514) [New House 4-601]:
+.br
+Home phone number (Ex: 3141592) [225-1234]:
+.br
+Office address (Exs: E40-342 or 2-108) [E40-300M]: \fBE40-358M\fP
+.br
+Office phone (Ex: 3-7619) []: \fB1863\fP
+.br
+MIT department (Exs: 9, Biology, Information Services) [VI-3]: \fBnone\fP
+.br
+MIT year (Exs: 1989, '91, Faculty, Grad) ['90]: \fB\'91\fP
+.PP
+.I chfn
+allows phone numbers to be entered with or without hyphens.
+.PP
+Note that the changes will not show up with
+.I finger
+until the day after the database has been changed.
+.PP
+Users may only change their own information unless they are
+Moira database administrators.
+.SH AUTHOR
+Emanuel 'Jay' Berkenbilt
+.SH "SEE ALSO"
+moira(1), finger(1)

@@ -1,0 +1,87 @@
+/* $Id: phase3.pc,v 1.4 1998-02-05 22:51:05 danw Exp $
+ *
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "dbck.h"
+
+#include <stdio.h>
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.4 1998-02-05 22:51:05 danw Exp $");
+
+void empty_list_check(int id, void *list, void *hint);
+void unref_string_check(int id, void *string, void *hint);
+void noclu_mach_check(int id, void *machine, void *hint);
+
+void empty_list_check(int id, void *list, void *hint)
+{
+  struct list *l = list;
+  if (l->members == 0 && l->list_id != 0)
+    printf("Warning: List %s is empty\n", l->name);
+}
+
+
+/* Used by other parts of the program to check that a string_id is good.
+ * This returns the stringif it is, or NULL if it is not, and as a side effect
+ * increments the string reference count.
+ */
+
+struct string *string_check(int id)
+{
+  struct string *s;
+
+  s = (struct string *) hash_lookup(strings, id);
+  if (!s)
+    return s;
+  s->refc++;
+  return s;
+}
+
+
+void unref_string_check(int id, void *string, void *hint)
+{
+  struct string *s = string;
+
+  if (s->refc == 0)
+    {
+      printf("Unreferenced string %s id %d\n", s->name, id);
+      if (single_fix("Delete", 1))
+	single_delete("strings", "string_id", id);
+    }
+}
+
+/*  This test was disabled because the MIT Moira server, which
+ *  initially only managed host information for workstations and
+ *  servers in the Athena Computing Environment, has been extended to
+ *  manage all hosts in the MIT.EDU domain (but not subdomains).
+ */
+void noclu_mach_check(int id, void *machine, void *hint)
+{
+  struct machine *m = machine;
+
+  if (m->clucount == 0 && m->mach_id != 0)
+    printf("Warning: machine %s is not in any clusters\n", m->name);
+}
+
+void phase3(void)
+{
+  printf("Phase 3 - Finding unused objects\n");
+
+  if (warn)
+    {
+#ifndef ATHENA
+      dprintf("Checking machines...\n");
+      hash_step(machines, noclu_mach_check, NULL);
+#endif
+      dprintf("Checking lists...\n");
+      hash_step(lists, empty_list_check, NULL);
+    }
+
+  dprintf("Checking strings...\n");
+  hash_step(strings, unref_string_check, NULL);
+}
+

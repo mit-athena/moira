@@ -1,0 +1,77 @@
+.TH MRTEST 8 "25 Jan 1988" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.9 1998-05-26 18:14:13 danw Exp $
+.SH NAME
+mrtest \- perform Moira operations manually
+.SH SYNOPSIS
+.B mrtest
+.SH DESCRIPTION
+.I mrtest
+allows one to perform by hand all operations allowed in the Moira
+protocol.  There are no command line options, as commands are given to
+a prompt within the program.  Control operations are:
+.TP
+.B connect [server]
+make a network connection to the Moira server.  The server
+specification is optional.  If present, it is of the form
+hostname:portname.  The portname is optional as well, and if specified
+will be looked up in
+.B /etc/services.
+If no server is specified, then the server will be found from the
+MOIRASERVER environment variable, the "moira" sloc entry in hesiod, or
+the compiled in default, in that order.
+.TP
+.B disconnect
+break the network connection to the Moira server.
+.TP
+.B host
+show the name of the host the client is connected to.
+.TP
+.B script inputfile [outputfile]
+read commands from 
+.I inputfile.
+If
+.I outputfile
+is specified, output will be redirected there while
+commands are read from
+.I inputfile.
+The script file may contain comments consisting of lines starting
+with a percent sign.  Script files may also recursively perform other
+script commands up to 8 scripts deep.
+.TP
+.B list_requests
+lists all of the 
+.I mrtest
+commands.
+.TP
+.B quit
+exits the program.
+.PP
+Moira protocol operations include:
+.TP
+.B noop
+does "no operation" to the server, just making sure the server is
+still there.
+.TP
+.B auth
+sends
+.I Kerberos
+tickets to the server to authenticate the user.
+.TP
+.B motd
+gets the current message of the day from the server.
+.TP
+.B query query_handle [query arguments ...]
+performs a query operation on the server.  All of the real work is
+done in queries.  There are over 100 queries, each of which requires
+different arguments.  the arguments should be placed on the line
+following the name of the query, separated by whitespace.
+.TP
+.B access query_handle [query arguments ...]
+performs an authorization check on a query without actually executing
+the query.  The arguments are the same as those in the
+.B query
+command described above.
+.SH SEE ALSO
+The Project Athena Technical Plan section on Moira for a list of queries
+and their arguments, and a description of the protocol this
+implements.

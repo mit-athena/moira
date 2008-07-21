@@ -1,0 +1,2660 @@
+/* $Id: phase2.pc,v 1.23 2007-12-03 21:22:59 zacheiss Exp $
+ *
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "dbck.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.23 2007-12-03 21:22:59 zacheiss Exp $");
+
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
+
+int show_mcm_mach(void *id);
+int show_mcm_clu(void *id);
+int show_mcntmap_mach(void *id);
+int show_mcntmap_cnt(void *id);
+int show_hostalias(void *id);
+int show_printer_mach(void *id);
+int show_printer_server(void *id);
+int show_printer_loghost(void *id);
+int show_printer_spool(void *id);
+int show_printer_quota(void *id);
+int show_printer_ac(void *id);
+int show_printer_lpc_acl(void *id);
+void fix_printer_ac(void *id);
+void fix_printer_lpc_acl(void *id);
+void user_check(int id, void *user, void *hint);
+void clear_user_sponsor(struct user *u);
+int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
+			     char *field, char *idfield);
+int maybe_fixup_modby(int sid, int oid, char *oname, char *table,
+		      char *field, char *idfield);
+int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid);
+int maybe_fixup_modby2(char *table, char *field, char *rowid, int id);
+void pobox_check(int id, struct user *u);
+void remove_pobox(int id);
+void fix_smtp_pobox(int id, int sid);
+void mach_check(int id, void *machine, void *hint);
+void subnet_check(int id, void *subnet, void *hint);
+void clear_subnet_owner(struct subnet *s);
+void clear_mach_owner(struct machine *m);
+void cluster_check(int id, void *cluster, void *hint);
+int show_svc(void *id);
+void list_check(int id, void *list, void *hint);
+void fix_list_acl(int id);
+void fix_list_memacl(int id);
+int show_member_list(void *id);
+int show_mem_user(void *id);
+int show_mem_list(void *id);
+int show_mem_str(void *id);
+int show_mem_krb(void *id);
+int show_mem_mach(void *id);
+void del_mem_user(void *id);
+void del_mem_list(void *id);
+void del_mem_str(void *id);
+void del_mem_krb(void *id);
+void del_mem_mach(void *id);
+int show_sh(void *id);
+void del_sh_mach(void *id);
+void fsmatch(int id, void *nfsphys, void *filesys);
+void check_fs(int id, void *filesys, void *hint);
+void check_nfsphys(int id, void *nfsphys, void *hint);
+void check_ps(int id, void *printserver, void *hint);
+void check_container(int id, void *container, void *hint);
+void fix_container_acl(int id);
+void fix_container_memacl(int id);
+int show_fsg_missing(void *id);
+int show_fsg_type(void *filesys);
+void fix_fsg_type(void *filesys);
+int show_fsg_nomember(void *id);
+int show_quota_nouser(void *id);
+int show_quota_nolist(void *id);
+void fix_quota_nouser(void *id);
+void fix_quota_nolist(void *id);
+int show_quota_nofs(void *id);
+void fix_quota_nofs(void *id);
+int show_quota_wrongpid(void *id);
+void fix_quota_physid(void *id);
+int show_srv_user(void *id);
+int show_srv_list(void *id);
+void zero_srv_user(void *id);
+void zero_srv_list(void *id);
+int show_krb_usr(void *id);
+int show_krb_str(void *id);
+int show_pdm_mach(void *id);
+
+int show_mcm_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[CLUSTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr201 CURSOR FOR
+    SELECT clusters.name FROM clusters, mcmap
+    WHERE clusters.clu_id = mcmap.clu_id AND mcmap.mach_id = :iid;
+  EXEC SQL OPEN csr201;
+  while (1)
+    {
+      EXEC SQL FETCH csr201 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      found = 0;
+      printf("Cluster %s, non-existant machine %d in cluster map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr201;
+  return found;
+}
+
+int show_mcm_clu(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr202 CURSOR FOR
+    SELECT machine.name FROM machine, mcmap
+    WHERE machine.mach_id = mcmap.mach_id AND mcmap.clu_id = :iid;
+  EXEC SQL OPEN csr202;
+  while (1)
+    {
+      EXEC SQL FETCH csr202 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Machine %s, non-existant cluster %d in cluster map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr202;
+  return found;
+}
+
+int show_mcntmap_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[CONTAINERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_show_mcnt_mach CURSOR FOR
+    SELECT cnt.name FROM container cnt, mcntmap mc
+    WHERE cnt.cnt_id = mc.cnt_id AND mc.mach_id = :iid;
+  EXEC SQL OPEN csr_show_mcnt_mach;
+  while (1)
+    {
+      EXEC SQL FETCH csr_show_mcnt_mach INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      found = 0;
+      printf("Container %s, non-existant machine %d in container map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_show_mcnt_mach;
+  return found;
+}
+
+int show_mcntmap_cnt(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_show_mcnt_cnt CURSOR FOR
+    SELECT m.name FROM machine m, mcntmap mc
+    WHERE m.mach_id = mc.mach_id AND mc.cnt_id = :iid;
+  EXEC SQL OPEN csr_show_mcnt_cnt;
+  while (1)
+    {
+      EXEC SQL FETCH csr_show_mcnt_cnt INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Machine %s, non-existant container %d in container map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_show_mcnt_cnt;
+  return found;
+}
+
+int show_hostalias(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[HOSTALIAS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr234 CURSOR FOR
+    SELECT name FROM hostalias WHERE mach_id = :iid;
+  EXEC SQL OPEN csr234;
+  while (1)
+    {
+      EXEC SQL FETCH csr234 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Alias %s, non-existant machine %d in hostalias map\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr234;
+  return found;
+}
+
+int show_printer_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr235 CURSOR FOR
+    SELECT name FROM printers WHERE mach_id = :iid;
+  EXEC SQL OPEN csr235;
+  while (1)
+    {
+      EXEC SQL FETCH csr235 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant machine %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr235;
+  return found;
+}
+
+int show_printer_server(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_sps CURSOR FOR
+    SELECT name FROM printers WHERE mach_id = :iid;
+  EXEC SQL OPEN csr_sps;
+  while (1)
+    {
+      EXEC SQL FETCH csr_sps INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant printserver %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_sps;
+  return found;
+}
+
+int show_printer_loghost(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr236 CURSOR FOR
+    SELECT name FROM printers WHERE loghost = :iid;
+  EXEC SQL OPEN csr236;
+  while (1)
+    {
+      EXEC SQL FETCH csr236 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant spool machine %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr236;
+  return found;
+}
+
+int show_printer_spool(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr237 CURSOR FOR
+    SELECT name FROM printers WHERE rm = :iid;
+  EXEC SQL OPEN csr237;
+  while (1)
+    {
+      EXEC SQL FETCH csr237 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant spool machine %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr237;
+  return found;
+}
+
+int show_printer_quota(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr238 CURSOR FOR
+    SELECT name FROM printers WHERE rq = :iid;
+  EXEC SQL OPEN csr238;
+  while (1)
+    {
+      EXEC SQL FETCH csr238 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant quota server %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr238;
+  return found;
+}
+
+int show_printer_ac(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr239 CURSOR FOR
+    SELECT name FROM printers WHERE ac = :iid;
+  EXEC SQL OPEN csr239;
+  while (1)
+    {
+      EXEC SQL FETCH csr239 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant restrict list %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr239;
+  return found;
+}
+
+int show_printer_lpc_acl(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr240 CURSOR FOR
+    SELECT name FROM printers WHERE lpc_acl = :iid;
+  EXEC SQL OPEN csr240;
+  while (1)
+    {
+      EXEC SQL FETCH csr240 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant lpc ACL %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr240;
+  return found;
+}
+
+void fix_printer_ac(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printers SET ac = 0 WHERE ac = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printers");
+}
+
+void fix_printer_lpc_acl(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printers SET lpc_acl = 0 WHERE lpc_acl = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printers");
+}
+
+void user_check(int id, void *user, void *hint)
+{
+  struct user *u = user;
+
+  u->comment = maybe_fixup_unref_string(u->comment, id, u->login, "users",
+					"comments", "users_id");
+
+  u->modby = maybe_fixup_modby(u->modby, id, u->login, "users",
+			       "modby", "users_id");
+
+  u->fmodby = maybe_fixup_modby(u->fmodby, id, u->login, "users",
+				"fmodby", "users_id");
+
+  u->pmodby = maybe_fixup_modby(u->pmodby, id, u->login, "users",
+				"pmodby", "users_id");
+
+  u->sigwho = maybe_fixup_unref_string(u->sigwho, id, u->login, "users",
+				       "sigwho", "users_id");
+
+  switch (u->sponsor_type)
+    {
+    case 'U':
+      if (!hash_lookup(users, u->sponsor_id))
+	{
+	  printf("User %s has non-existant USER sponsor %d\n",
+		 u->login, u->sponsor_id);
+	  if (single_fix("Set to no sponsor", 1))
+	    clear_user_sponsor(u);
+	}
+      break;
+    case 'L':
+      if (!hash_lookup(lists, u->sponsor_id))
+	{
+	  printf("User %s has non-existant LIST sponsor %d\n",
+		 u->login, u->sponsor_id);
+	  if (single_fix("Set to no sponsor", 1))
+	    clear_user_sponsor(u);
+	}
+      break;
+    case 'S':
+    case 'K':
+      if (u->sponsor_id)
+	u->sponsor_id = maybe_fixup_unref_string(u->sponsor_id, id, u->login,
+					       "users", "sponsor_id",
+					       "users_id");
+      if (u->sponsor_id == 0)
+	clear_user_sponsor(u);
+    }
+
+  pobox_check(id, u);
+}
+
+int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
+			     char *field, char *idfield)
+{
+  int ret = (sid < 0) ? -sid : sid, doit = 0, newid;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount;
+  char stmt_buf[500];
+  EXEC SQL END DECLARE SECTION;
+
+  if ((newid = (int)hash_lookup(string_dups, ret)))
+    {
+      printf("%s entry %s(%d) has a %s with duplicate string %d\n",
+	     table, oname, oid, field, ret);
+      if (single_fix("Replace duplicate", 0))
+	{
+	  ret = newid;
+	  doit = 1;
+	}
+      string_check(ret);
+    }
+  else if (!string_check(ret))
+    {
+      printf("%s entry %s(%d) has a %s with non-existant string %d\n",
+	     table, oname, oid, field, ret);
+      if (single_fix("Delete", 1))
+	{
+	  ret = 0;
+	  doit = 1;
+	}
+    }
+
+  if (doit)
+    {
+      sprintf(stmt_buf, "UPDATE %s SET %s = %d WHERE %s = %d",
+	      table, field, (sid < 0) ? -ret : ret, idfield, oid);
+      EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+      rowcount = sqlca.sqlerrd[2];
+      if (rowcount == 1)
+	printf("Fixed\n");
+      else
+	printf("Not fixed, rowcount = %d\n", rowcount);
+      modified(table);
+    }
+
+  return (sid < 0) ? -ret : ret;
+}
+
+int maybe_fixup_modby(int sid, int oid, char *oname, char *table,
+		      char *field, char *idfield)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char stmt_buf[500];
+  int rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  if (sid < 0)
+    return maybe_fixup_unref_string(sid, oid, oname, table, field, idfield);
+  else
+    {
+      if (!hash_lookup(users, sid))
+	{
+	  printf("%s entry %s(%d) has a %s with non-existant user %d\n",
+		 table, oname, oid, field, sid);
+	  if (single_fix("Delete", 1))
+	    {
+	      sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE %s = %d",
+		      table, field, idfield, oid);
+	      EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+	      rowcount = sqlca.sqlerrd[2];
+	      if (rowcount == 1)
+		printf("Fixed\n");
+	      else
+		printf("Not fixed, rowcount = %d\n", rowcount);
+	      modified(table);
+	    }
+	  return 0;
+	}
+    }
+  return sid;
+}
+
+int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid)
+{
+  int ret = (sid < 0) ? -sid : sid, doit = 0, newid;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount;
+  char stmt_buf[500];
+  EXEC SQL END DECLARE SECTION;
+
+  if ((newid = (int)hash_lookup(string_dups, ret)))
+    {
+      printf("%s entry has a %s with duplicate string %d\n",
+	     table, field, ret);
+      if (single_fix("Replace duplicate", 0))
+	{
+	  ret = newid;
+	  doit = 1;
+	}
+      string_check(ret);
+    }
+  else if (!string_check(ret))
+    {
+      printf("%s entry has a %s with non-existant string %d\n",
+	     table, field, ret);
+      if (single_fix("Clear", 1))
+	{
+	  ret = 0;
+	  doit = 1;
+	}
+    }
+
+  if (doit)
+    {
+      sprintf(stmt_buf, "UPDATE %s SET %s = %d WHERE rowid = '%s'",
+	      table, field, (sid < 0) ? -ret : ret, rowid);
+      EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+      rowcount = sqlca.sqlerrd[2];
+      if (rowcount == 1)
+	printf("Fixed\n");
+      else
+	printf("Not fixed, rowcount = %d\n", rowcount);
+      modified(table);
+    }
+  return (sid < 0) ? -ret : ret;
+}
+
+int maybe_fixup_modby2(char *table, char *field, char *rowid, int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char stmt_buf[500];
+  int rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  if (id < 0)
+    return maybe_fixup_unref_string2(table, field, rowid, id);
+  else
+    {
+      if (!hash_lookup(users, id))
+	{
+	  printf("%s entry has a %s with non-existant user %d\n",
+		 table, field, id);
+	  if (single_fix("Clear", 1))
+	    {
+	      sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE rowid = '%s'",
+		      table, field, rowid);
+	      EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+	      rowcount = sqlca.sqlerrd[2];
+	      if (rowcount == 1)
+		printf("Fixed\n");
+	      else
+		printf("Not fixed, rowcount = %d\n", rowcount);
+	      modified(table);
+	    }
+	  return 0;
+	}
+    }
+  return 1;
+}
+
+void pobox_check(int id, struct user *u)
+{
+  struct filesys *fs;
+
+  switch (u->potype)
+    {
+    case 'P':
+      if (!hash_lookup(machines, u->pobox_id))
+	{
+	  printf("User %s(%s) has P.O.Box on non-existant machine %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      break;
+
+    case 'S':
+      if (hash_lookup(string_dups, u->pobox_id))
+	{
+	  printf("User %s(%s) has P.O.Box with duplicate string %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Update", 0))
+	    {
+	      printf("Replacing box_id dup string ID %d with %d\n",
+		     u->pobox_id,
+		     (int)hash_lookup(string_dups, u->pobox_id));
+	      u->pobox_id = (int)hash_lookup(string_dups, u->pobox_id);
+	      fix_smtp_pobox(u->users_id, u->pobox_id);
+	      string_check(u->pobox_id);
+	    }
+	}
+      else if (!string_check(u->pobox_id))
+	{
+	  printf("User %s(%s) has P.O.Box with non-existant string %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      break;
+
+    case 'I':
+      fs = hash_lookup(filesys, u->pobox_id);
+      if (!fs)
+	{
+	  printf("User %s(%s) has P.O.Box on non-existant filesystem %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      else if (fs->type != 'I')
+	{
+	  printf("User %s(%s) has IMAP P.O.Box on non-IMAP filesystem %s\n",
+		 u->login, u->fullname, fs->name);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      break;
+
+    default:
+      ;
+    }
+}
+
+
+void remove_pobox(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE users SET potype = 'NONE' WHERE users.users_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s removed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not removed\n");
+  modified("users");
+}
+
+void fix_smtp_pobox(int id, int sid)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = id, isid = sid;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE users SET box_id = :isid WHERE users.users_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s updated\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not updated\n");
+  modified("users");
+}
+
+void mach_check(int id, void *machine, void *hint)
+{
+  struct machine *m = machine;
+
+  if (!hash_lookup(subnets, m->snet_id))
+    {
+      printf("Machine %s is on a non-existant subnet %d\n",
+	     m->name, m->snet_id);
+      if (single_fix("Move to null-subnet", 1))
+	{
+	  EXEC SQL BEGIN DECLARE SECTION;
+	  int rowcount, iid = id;
+	  EXEC SQL END DECLARE SECTION;
+
+	  EXEC SQL UPDATE machine SET snet_id = 0 WHERE mach_id = :iid;
+	  rowcount = sqlca.sqlerrd[2];
+	  if (rowcount > 0)
+	    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+	  else
+	    printf("Not fixed\n");
+	  modified("machine");
+	}
+    }
+
+  switch (m->owner_type)
+    {
+    case 'U':
+      if (!hash_lookup(users, m->owner_id))
+	{
+	  printf("Machine %s has non-existant USER owner %d\n",
+		 m->name, m->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_mach_owner(m);
+	}
+      break;
+    case 'L':
+      if (!hash_lookup(lists, m->owner_id))
+	{
+	  printf("Machine %s has non-existant LIST owner %d\n",
+		 m->name, m->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_mach_owner(m);
+	}
+      break;
+    case 'S':
+    case 'K':
+      if (m->owner_id)
+	m->owner_id = maybe_fixup_unref_string(m->owner_id, id, m->name,
+					       "machine", "owner_id",
+					       "mach_id");
+      if (m->owner_id == 0)
+	clear_mach_owner(m);
+    }
+
+  if (m->acomment)
+    m->acomment = maybe_fixup_unref_string(m->acomment, id, m->name,
+					   "machine", "acomment", "mach_id");
+  if (m->ocomment)
+    m->ocomment = maybe_fixup_unref_string(m->ocomment, id, m->name,
+					   "machine", "ocomment", "mach_id");
+
+  m->creator = maybe_fixup_modby(m->creator, id, m->name, "machine",
+				 "creator", "mach_id");
+  m->modby = maybe_fixup_modby(m->modby, id, m->name, "machine",
+			       "modby", "mach_id");
+}
+
+void subnet_check(int id, void *subnet, void *hint)
+{
+  struct subnet *s = subnet;
+
+  switch (s->owner_type)
+    {
+    case 'U':
+      if (!hash_lookup(users, s->owner_id))
+	{
+	  printf("Subnet %s has non-existant USER owner %d\n",
+		 s->name, s->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_subnet_owner(s);
+	}
+      break;
+    case 'L':
+      if (!hash_lookup(lists, s->owner_id))
+	{
+	  printf("Machine %s has non-existant LIST owner %d\n",
+		 s->name, s->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_subnet_owner(s);
+	}
+      break;
+    case 'S':
+    case 'K':
+      if (s->owner_id)
+	s->owner_id = maybe_fixup_unref_string(s->owner_id, id, s->name,
+					       "machine", "owner_id",
+					       "mach_id");
+      if (s->owner_id == 0)
+	clear_subnet_owner(s);
+    }
+
+  s->modby = maybe_fixup_modby(s->modby, id, s->name, "subnet",
+			       "modby", "snet_id");
+}
+
+void clear_user_sponsor(struct user *u)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = u->users_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE users SET sponsor_type = 'NONE', sponsor_id = 0
+    WHERE users_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("users");
+}
+
+void clear_subnet_owner(struct subnet *s)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = s->snet_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE subnet SET owner_type = 'NONE', owner_id = 0
+    WHERE snet_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("subnet");
+}
+
+void clear_mach_owner(struct machine *m)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = m->mach_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE machine SET owner_type = 'NONE', owner_id = 0
+    WHERE mach_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("machine");
+}
+
+void cluster_check(int id, void *cluster, void *hint)
+{
+  struct cluster *c = cluster;
+
+  c->modby = maybe_fixup_modby(c->modby, id, c->name, "clusters",
+			       "modby", "clu_id");
+}
+
+int show_svc(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char label[SVC_SERV_LABEL_SIZE], data[SVC_SERV_CLUSTER_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr203 CURSOR FOR
+    SELECT serv_label, serv_cluster FROM svc
+    WHERE clu_id = :iid;
+  EXEC SQL OPEN csr203;
+  while (1)
+    {
+      EXEC SQL FETCH csr203 INTO :label, :data;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(label);
+      strtrim(data);
+      found = 0;
+      printf("Cluster data [%s] %s for non-existant cluster %d\n",
+	     label, data, iid);
+    }
+  EXEC SQL CLOSE csr203;
+  return found;
+}
+
+void list_check(int id, void *list, void *hint)
+{
+  struct list *l = list;
+
+  l->modby = maybe_fixup_modby(l->modby, id, l->name, "list",
+			       "modby", "list_id");
+
+  switch (l->acl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, l->acl_id))
+	{
+	  printf("List %s has bad LIST acl %d\n", l->name, l->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_acl(l->list_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, l->acl_id))
+	{
+	  printf("List %s has bad USER acl %d\n", l->name, l->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_acl(l->list_id);
+	}
+      break;
+    case 'K':
+      l->acl_id = maybe_fixup_unref_string(l->acl_id, id, l->name,
+					   "list", "acl_id", "list_id");
+      if (!l->acl_id)
+	{
+	  printf("List %s has bad KERBEROS acl %d\n", l->name, l->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_acl(l->list_id);
+	}
+      break;
+    }
+
+  switch (l->memacl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, l->memacl_id))
+	{
+	  printf("List %s has bad LIST memacl %d\n", l->name, l->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_memacl(l->list_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, l->memacl_id))
+	{
+	  printf("List %s has bad USER acl %d\n", l->name, l->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_memacl(l->list_id);
+	}
+      break;
+    case 'K':
+      l->memacl_id = maybe_fixup_unref_string(l->memacl_id, id, l->name,
+					      "list", "memacl_id", "list_id");
+	  if (!l->memacl_id)
+	    {
+	      printf("List %s has bad KERBEROS acl %d\n", l->name, 
+		     l->memacl_id);
+	      if (single_fix("Patch", 1))
+		fix_list_memacl(l->list_id);
+	    }
+	  break;
+    }
+}
+
+void fix_list_acl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE list SET acl_id = :iid, acl_type = 'LIST'
+    WHERE list_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("list");
+}
+
+void fix_list_memacl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE list SET memacl_id = 0, memacl_type = 'NONE'
+    WHERE list_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("list");
+}
+
+int show_member_list(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, iid = (int)id, found = 1;
+  char mtype[IMEMBERS_MEMBER_TYPE_SIZE], *name = NULL;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr204 CURSOR FOR
+    SELECT member_type, member_id FROM imembers
+    WHERE list_id = :iid;
+  EXEC SQL OPEN csr204;
+  while (1)
+    {
+      EXEC SQL FETCH csr204 INTO :mtype, :mid;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(mtype);
+      found = 0;
+      if (mtype[0] == 'L')
+	{
+	  struct list *l = hash_lookup(lists, mid);
+	  if (l)
+	    name = l->name;
+	}
+      else if (mtype[0] == 'U')
+	{
+	  struct user *u = hash_lookup(users, mid);
+	  if (u)
+	    name = u->login;
+	}
+      else if (mtype[0] == 'S' || mtype[0] == 'K')
+	{
+	  struct string *s = hash_lookup(strings, mid);
+	  if (s)
+	    name = s->name;
+	}
+      if (name)
+	printf("Non-existant list %d has member %s %s\n", iid, mtype, name);
+      else
+	{
+	  printf("Non-existant list %d has non-existent member %s %d\n",
+		 iid, mtype, mid);
+	}
+    }
+  EXEC SQL CLOSE csr204;
+  return found;
+}
+
+int show_mem_user(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l;
+
+  EXEC SQL DECLARE csr205 CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'USER';
+  EXEC SQL OPEN csr205;
+  while (1)
+    {
+      EXEC SQL FETCH csr205 INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has non-existant user member, id %d\n", l->name, iid);
+    }
+  EXEC SQL CLOSE csr205;
+  return found;
+}
+
+int show_mem_list(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l;
+
+  EXEC SQL DECLARE csr206 CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'LIST';
+  EXEC SQL OPEN csr206;
+  while (1)
+    {
+      EXEC SQL FETCH csr206 INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has non-existant list member, id %d\n", l->name, iid);
+    }
+  EXEC SQL CLOSE csr206;
+  return found;
+}
+
+int show_mem_str(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l;
+
+  EXEC SQL DECLARE csr207 CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'STRING';
+  EXEC SQL OPEN csr207;
+  while (1)
+    {
+      EXEC SQL FETCH csr207 INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has non-existant string member, id %d\n", l->name, iid);
+    }
+  EXEC SQL CLOSE csr207;
+  return found;
+}
+
+
+int show_mem_krb(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l;
+
+  EXEC SQL DECLARE csr208 CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'KERBEROS';
+  EXEC SQL OPEN csr208;
+  while (1)
+    {
+      EXEC SQL FETCH csr208 INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has non-existant kerberos member, id %d\n",
+	     l->name, iid);
+    }
+  EXEC SQL CLOSE csr208;
+  return found;
+}
+
+int show_mem_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l; 
+
+  EXEC SQL DECLARE csr208a CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'MACHINE';
+  EXEC SQL OPEN csr208a;
+  while (1)
+    {
+      EXEC SQL FETCH csr208a INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has nonexistant machine member, id %d\n",
+	     l->name, iid);
+    }
+  EXEC SQL CLOSE csr208a;
+  return found;
+}
+
+void del_mem_user(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'USER' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
+
+void del_mem_list(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'LIST' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
+
+void del_mem_str(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'STRING' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
+
+
+void del_mem_krb(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'KERBEROS' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
+
+void del_mem_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'MACHINE' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
+
+int show_sh(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[SERVERHOSTS_SERVICE_SIZE];
+  int iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+  int found = 1;
+
+  EXEC SQL DECLARE csr209 CURSOR FOR
+    SELECT service FROM serverhosts
+    WHERE mach_id = :iid;
+  EXEC SQL OPEN csr209;
+  while (1)
+    {
+      EXEC SQL FETCH csr209 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      printf("ServerHost entry for service %s non-existant host %d\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr209;
+  return found;
+}
+
+void del_sh_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM serverhosts WHERE mach_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("serverhosts");
+}
+
+
+static int fnchecklen;
+
+void fsmatch(int id, void *nfsphys, void *filesys)
+{
+  struct nfsphys *n = nfsphys;
+  struct filesys *f = filesys;
+
+  if (n->mach_id == f->mach_id &&
+      !strncmp(f->dir, n->dir, strlen(n->dir)) &&
+      strlen(n->dir) > fnchecklen)
+    {
+      f->phys_id = id;
+      fnchecklen = strlen(n->dir);
+    }
+}
+
+
+void check_fs(int id, void *filesys, void *hint)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = id, id1, id2, id3, rowcount;
+  char *dir;
+  EXEC SQL END DECLARE SECTION;
+  struct filesys *f = filesys;
+  struct nfsphys *n;
+  struct machine *m;
+
+  if (!hash_lookup(machines, f->mach_id))
+    {
+      printf("Filesys %s with bad machine %d\n", f->name, f->mach_id);
+      if (single_fix("Fix", 0))
+	{
+	  EXEC SQL UPDATE filesys SET mach_id = 0 WHERE filsys_id = :iid;
+	  rowcount = sqlca.sqlerrd[2];
+	  if (rowcount > 0)
+	    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+	  else
+	    printf("Not fixed\n");
+	  modified("filesys");
+	  f->mach_id = 0;
+	}
+    }
+
+  if (!hash_lookup(users, f->owner))
+    {
+      printf("Filesys %s with bad owning user %d\n", f->name, f->owner);
+      if (single_fix("Fix", 1))
+	{
+	  zero_fix("filesys", "owner", "filsys_id", f->filsys_id);
+	  f->owner = 0;
+	}
+    }
+  if (!hash_lookup(lists, f->owners))
+    {
+      printf("Filesys %s with bad owning group %d\n", f->name, f->owners);
+      if (single_fix("Fix", 1))
+	{
+	  zero_fix("filesys", "owners", "filsys_id", f->filsys_id);
+	  f->owners = 0;
+	}
+    }
+
+  if (f->type == 'N' || f->type == 'I')
+    {
+      if (!hash_lookup(nfsphys, f->phys_id))
+	{
+	  m = hash_lookup(machines, f->mach_id);
+	  printf("Filesys %s with bad phys_id %d\n", f->name, f->phys_id);
+	  if (single_fix("Fix", 1))
+	    {
+	      fnchecklen = 0;
+	      hash_step(nfsphys, fsmatch, f);
+	      if (fnchecklen != 0)
+		{
+    		  id1 = f->phys_id;
+		  id2 = f->filsys_id;
+		  id3 = f->mach_id;
+		  EXEC SQL UPDATE filesys SET phys_id = :id1
+		    WHERE filsys_id = :id2;
+		  rowcount = sqlca.sqlerrd[2];
+		  if (rowcount > 0)
+		    printf("%d entr%s fixed\n", rowcount,
+			   rowcount == 1 ? "y" : "ies");
+		  else
+		    printf("Not fixed\n");
+		  modified("filesys");
+		}
+	      else
+		{
+		  printf("No NFSphys exsits for %s:%s\n", m->name, f->dir);
+		  if (single_fix("Create", 0))
+		    {
+		      dir = f->dir;
+		      id1 = f->phys_id;
+		      id2 = f->filsys_id;
+		      id3 = f->mach_id;
+		      if (set_next_object_id("nfsphys_id", "nfsphys") !=
+			  MR_SUCCESS)
+			{
+			  printf("Unable to assign unique ID\n");
+			  return;
+			}
+		      EXEC SQL SELECT COUNT(*) INTO :rowcount FROM numvalues
+			WHERE name = 'nfsphys_id';
+		      if (rowcount != 1)
+			{
+			  printf("Unable to retrieve unique ID\n");
+			  return;
+			}
+		      EXEC SQL INSERT INTO nfsphys
+			(nfsphys_id, mach_id, device, dir, status, allocated,
+			 size, modtime, modby, modwith) VALUES
+			(:id1, :id3, '\?\?\?', :dir, 0, 0, 0, SYSDATE, 0,
+			 'dbck');
+			rowcount = sqlca.sqlerrd[2];
+			if (rowcount > 0)
+			  {
+			    printf("%d entr%s created\n", rowcount,
+				   rowcount == 1 ? "y" : "ies");
+			  }
+			else
+			  printf("Not created\n");
+			modified("nfsphys");
+			n = malloc(sizeof(struct nfsphys));
+			if (!n)
+			  out_of_mem("storing new nfsphys");
+			strcpy(n->dir, dir);
+			n->mach_id = id3;
+			n->nfsphys_id = id1;
+			n->allocated = 0;
+			n->count = 0;
+			if (hash_store(nfsphys, id1, n) == -1)
+			  out_of_mem("storing nfsphys in hash table");
+			EXEC SQL UPDATE filesys SET phys_id = :id1
+			  WHERE filsys_id = :id2;
+			rowcount = sqlca.sqlerrd[2];
+			if (rowcount > 0)
+			  {
+			    printf("%d filesys entr%s fixed\n", rowcount,
+				   rowcount == 1 ? "y" : "ies");
+			  }
+			else
+			  printf("Not fixed\n");
+			modified("filesys");
+		    }
+	        }
+	    }
+	}
+    }
+}
+
+void check_nfsphys(int id, void *nfsphys, void *hint)
+{
+  struct nfsphys *n = nfsphys;
+
+  n->modby = maybe_fixup_modby(n->modby, id, n->dir, "nfsphys",
+			       "modby", "nfsphys_id");
+
+  if (!hash_lookup(machines, n->mach_id))
+    {
+      printf("NFSphys %d(%s) on non-existant machine %d\n",
+	     id, n->dir, n->mach_id);
+      if (single_fix("Delete", 0))
+	single_delete("nfsphys", "nfsphys_id", id);
+    }
+}
+
+static void clear_ps_owner(struct printserver *ps)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = ps->mach_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printserver SET owner_type = 'NONE', owner_id = 0
+    WHERE mach_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printservers");
+}
+
+static void clear_ps_lpc(struct printserver *ps)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = ps->mach_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printserver SET lpc_acl = 0
+    WHERE mach_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printservers");
+}
+
+void check_ps(int id, void *printserver, void *hint)
+{
+  struct printserver *ps = printserver;
+  struct machine *m;
+  char *name;
+
+  m = hash_lookup(machines, id);
+  if (!m)
+    {
+      printf("Printserver on non-existant machine %d\n", id);
+      if (single_fix("Delete", 0))
+	{
+	  single_delete("printservers", "mach_id", id);
+	  return;
+	}
+      else
+	name = "[UNKNOWN]";
+    }
+  else
+    name = m->name;      
+
+  ps->modby = maybe_fixup_modby(ps->modby, id, name, "printservers",
+				"modby", "mach_id");
+  ps->printer_types = maybe_fixup_unref_string(ps->printer_types, id, name,
+					       "printservers", "printer_types",
+					       "mach_id");
+
+  switch (ps->owner_type)
+    {
+    case 'U':
+      if (!hash_lookup(users, ps->owner_id))
+	{
+	  printf("Printserver %s has non-existant USER owner %d\n",
+		 name, ps->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_ps_owner(ps);
+	}
+      break;
+    case 'L':
+      if (!hash_lookup(lists, ps->owner_id))
+	{
+	  printf("Printserver %s has non-existant LIST owner %d\n",
+		 name, ps->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_ps_owner(ps);
+	}
+      break;
+    case 'K':
+      if (ps->owner_id)
+	ps->owner_id = maybe_fixup_unref_string(ps->owner_id, id, name,
+					       "printserver", "owner_id",
+					       "mach_id");
+      if (ps->owner_id == 0)
+	clear_ps_owner(ps);
+    }
+
+  if (!hash_lookup(lists, ps->lpc_acl))
+    {
+      printf("Printserver %s has non-existent lpc_acl %d\n",
+	     name, ps->lpc_acl);
+      if (single_fix("Set to no lpc_acl", 1))
+	clear_ps_lpc(ps);
+    }
+}
+
+static void clear_container_list(struct container *cnt)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = cnt->cnt_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET list_id = 0
+    WHERE cnt_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void fix_container_acl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET acl_id = 0, acl_type = 'NONE'
+    WHERE cnt_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void fix_container_memacl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE containers SET memacl_id = 0, memacl_type = 'NONE'
+    WHERE cnt_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("containers");
+}
+
+void check_container(int id, void *container, void *hint)
+{
+  struct container *cnt = container;
+
+  if (!hash_lookup(lists, cnt->list_id))
+    {
+      printf("Container %s has non-existent associated list_id %d\n",
+	     cnt->name, cnt->list_id);
+      if (single_fix("Set to no associated list", 1))
+	clear_container_list(cnt);
+    }
+
+  switch (cnt->acl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, cnt->acl_id))
+	{
+	  printf("Container %s has bad LIST acl %d\n", cnt->name, cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, cnt->acl_id))
+	{
+	  printf("Container %s has bad USER acl %d\n", cnt->name, cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    case 'K':
+      cnt->acl_id = maybe_fixup_unref_string(cnt->acl_id, id, cnt->name,
+					     "container", "acl_id", "cnt_id");
+      if (!cnt->acl_id)
+	{
+	  printf("Container %s has bad KERBEROS acl %d\n", cnt->name,
+		 cnt->acl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_acl(cnt->cnt_id);
+	}
+      break;
+    }
+
+ switch (cnt->memacl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, cnt->memacl_id))
+	{
+	  printf("Container %s has bad LIST memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, cnt->memacl_id))
+	{
+	  printf("Container %s has bad USER memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    case 'K':
+      cnt->memacl_id = maybe_fixup_unref_string(cnt->memacl_id, id, cnt->name,
+					     "container", "memacl_id",
+						"cnt_id");
+      if (!cnt->memacl_id)
+	{
+	  printf("Container %s has bad KERBEROS memacl %d\n", cnt->name,
+		 cnt->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_container_memacl(cnt->cnt_id);
+	}
+      break;
+    }  
+
+  cnt->modby = maybe_fixup_modby(cnt->modby, id, cnt->name, "containers",
+				 "modby", "cnt_id");
+}
+
+int show_fsg_missing(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct filesys *f;
+
+  EXEC SQL DECLARE csr210 CURSOR FOR
+    SELECT filsys_id FROM fsgroup
+    WHERE group_id = :iid;
+  EXEC SQL OPEN csr210;
+  while (1)
+    {
+      EXEC SQL FETCH csr210 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      if ((f = hash_lookup(filesys, id1)))
+	printf("Missing fsgroup %d has member filesystem %s\n", iid, f->name);
+      else
+	printf("Missing fsgroup %d has member filesystem %d\n", iid, id1);
+    }
+  EXEC SQL CLOSE csr210;
+  return found;
+}
+
+int show_fsg_type(void *filesys)
+{
+  struct filesys *f = filesys;
+  char *t;
+
+  switch (f->type)
+    {
+    case 'N':
+      t = "NFS";
+      break;
+    case 'R':
+      t = "RVD";
+      break;
+    case 'A':
+      t = "AFS";
+      break;
+    case 'E':
+      t = "ERR";
+      break;
+    case 'F':
+      t = "FSGROUP";
+      break;
+    case 'M':
+      t = "MUL";
+      break;
+    default:
+      t = "\?\?\?";
+    }
+  printf("FSGroup %s has type %s instead of FSGROUP\n", f->name, t);
+  return 0;
+}
+
+void fix_fsg_type(void *filesys)
+{
+  struct filesys *f = filesys;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = f->filsys_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE filesys SET type = 'FSGROUP' WHERE filsys_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("filesys");
+}
+
+int show_fsg_nomember(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct filesys *f;
+
+  EXEC SQL DECLARE csr211 CURSOR FOR
+    SELECT group_id FROM fsgroup
+    WHERE filsys_id = :iid;
+  EXEC SQL OPEN csr211;
+  while (1)
+    {
+      EXEC SQL FETCH csr211 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      if ((f = hash_lookup(filesys, id1)))
+	printf("FSGroup %s has missing member %d\n", f->name, iid);
+      else
+	printf("FSGroup %d has missing member %d\n", id1, iid);
+    }
+  EXEC SQL CLOSE csr211;
+  return found;
+}
+
+int show_quota_nouser(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr212 CURSOR FOR
+    SELECT filsys_id FROM quota
+    WHERE entity_id = :iid AND type = 'USER';
+  EXEC SQL OPEN csr212;
+  while (1)
+    {
+      EXEC SQL FETCH csr212 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      printf("Quota on fs %d for non-existant user %d\n", id1, iid);
+    }
+  EXEC SQL CLOSE csr212;
+  return found;
+}
+
+int show_quota_nolist(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr213 CURSOR FOR
+    SELECT filsys_id FROM quota
+    WHERE entity_id = :iid AND type = 'GROUP';
+  EXEC SQL OPEN csr213;
+  while (1)
+    {
+      EXEC SQL FETCH csr213 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      printf("Quota on fs %d for non-existant list %d\n", id1, iid);
+    }
+  EXEC SQL CLOSE csr213;
+  return found;
+}
+
+void fix_quota_nouser(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM quota
+    WHERE entity_id = :iid AND type = 'USER';
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("quota");
+}
+
+void fix_quota_nolist(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM quota WHERE entity_id = :iid AND type = 'GROUP';
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("quota");
+}
+
+int show_quota_nofs(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  char type[QUOTA_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr214 CURSOR FOR
+    SELECT entity_id, type FROM quota
+    WHERE filsys_id = :iid;
+  EXEC SQL OPEN csr214;
+  while (1)
+    {
+      EXEC SQL FETCH csr214 INTO :id1, :type;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      printf("Quota for %s %d on non-existant filesys %d\n", type, id1, iid);
+    }
+  EXEC SQL CLOSE csr214;
+  return found;
+}
+
+void fix_quota_nofs(void *id)
+{
+  single_delete("quota", "filsys_id", (int)id);
+}
+
+int show_quota_wrongpid(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, id1, found = 1;
+  char type[QUOTA_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  struct filesys *f;
+
+  f = hash_lookup(filesys, iid);
+  EXEC SQL DECLARE csr215 CURSOR FOR
+    SELECT entity_id, type FROM quota
+    WHERE filsys_id = :iid;
+  EXEC SQL OPEN csr215;
+  while (1)
+    {
+      EXEC SQL FETCH csr215 INTO :id1, :type;
+      if (sqlca.sqlcode)
+	break;
+
+      found = 0;
+      printf("Quota for %s %d on filesys %s has wrong phys_id %d\n",
+	     type, id1, f->name, iid);
+    }
+  EXEC SQL CLOSE csr215;
+  return found;
+}
+
+void fix_quota_physid(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount, id1;
+  EXEC SQL END DECLARE SECTION;
+
+  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
+  EXEC SQL UPDATE quota SET phys_id = :id1
+    WHERE filsys_id = :iid AND phys_id != :id1;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("quota");
+}
+
+int show_srv_user(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[SERVERS_NAME_SIZE];
+  int iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+  int found = 1;
+
+  EXEC SQL DECLARE csr216 CURSOR FOR
+    SELECT name FROM servers
+    WHERE acl_type = 'USER' and acl_id = :iid;
+  EXEC SQL OPEN csr216;
+  while (1)
+    {
+      EXEC SQL FETCH csr216 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      printf("Service %s has acl non-existant user %d\n", name, iid);
+      found = 0;
+    }
+  EXEC SQL CLOSE csr216;
+  return found;
+}
+
+int show_srv_list(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[SERVERS_NAME_SIZE];
+  int iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+  int found = 1;
+
+  EXEC SQL DECLARE csr217 CURSOR FOR
+    SELECT name FROM servers
+    WHERE acl_type = 'LIST' AND acl_id = :iid;
+  EXEC SQL OPEN csr217;
+  while (1)
+    {
+      EXEC SQL FETCH csr217 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      printf("Service %s has acl non-existant list %d\n", name, iid);
+      found = 0;
+    }
+  EXEC SQL CLOSE csr217;
+  return found;
+}
+
+void zero_srv_user(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
+    acl_type = 'USER';
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("servers");
+}
+
+void zero_srv_list(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
+    acl_type = 'LIST';
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("servers");
+}
+
+int show_krb_usr(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1, id1;
+  EXEC SQL END DECLARE SECTION;
+  struct string *s;
+  char *ss;
+
+  EXEC SQL DECLARE csr218 CURSOR FOR
+    SELECT string_id FROM krbmap
+    WHERE users_id = :iid;
+  EXEC SQL OPEN csr218;
+  while (1)
+    {
+      EXEC SQL FETCH csr218 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      if ((s = hash_lookup(strings, id1)))
+	ss = s->name;
+      else
+	ss = "[unknown]";
+      found = 0;
+      printf("Kerberos map for non-existant user %d to principal %s\n",
+	     iid, ss);
+    }
+  EXEC SQL CLOSE csr218;
+  return found;
+}
+
+int show_krb_str(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1, id1;
+  EXEC SQL END DECLARE SECTION;
+  struct user *u;
+  char *s;
+
+  EXEC SQL DECLARE csr219 CURSOR FOR
+    SELECT users_id FROM krbmap
+    WHERE string_id = :iid;
+  EXEC SQL OPEN csr219;
+  while (1)
+    {
+      EXEC SQL FETCH csr219 INTO :id1;
+      if (sqlca.sqlcode)
+	break;
+
+      if ((u = hash_lookup(users, id1)))
+	s = u->login;
+      else
+	s = "[\?\?\?]";
+      found = 0;
+      printf("Kerberos map for user %s (%d) to non-existant string %d\n",
+	     s, id1, iid);
+    }
+  EXEC SQL CLOSE csr219;
+  return found;
+}
+
+void phase2(void)
+{
+  struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5, *sq6;
+  struct filesys *f;
+  struct list *l;
+  struct nfsphys *n;
+  struct machine *m;
+  char rowid[32];
+
+  printf("Phase 2 - Checking references\n");
+
+  dprintf("Checking users...\n");
+  hash_step(users, user_check, NULL);
+
+  dprintf("Checking machines...\n");
+  hash_step(machines, mach_check, NULL);
+
+  dprintf("Checking subnets...\n");
+  hash_step(subnets, subnet_check, NULL);
+
+  dprintf("Checking clusters...\n");
+  hash_step(clusters, cluster_check, NULL);
+
+  dprintf("Checking mcmap...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  EXEC SQL DECLARE csr221 CURSOR FOR
+    SELECT mach_id, clu_id FROM mcmap;
+  EXEC SQL OPEN csr221;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, clu_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr221 INTO :mach_id, :clu_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!(m = hash_lookup(machines, mach_id)))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(clusters, clu_id))
+	sq_save_unique_data(sq2, (void *)clu_id);
+      if (m)
+	m->clucount++;
+    }
+  EXEC SQL CLOSE csr221;
+  generic_delete(sq1, show_mcm_mach, "mcmap", "mach_id", 1);
+  generic_delete(sq2, show_mcm_clu, "mcmap", "clu_id", 1);
+
+  dprintf("Checking service clusters...\n");
+  sq1 = sq_create();
+  EXEC SQL DECLARE csr222 CURSOR FOR
+    SELECT clu_id FROM svc;
+  EXEC SQL OPEN csr222;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int clu_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr222 INTO :clu_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!hash_lookup(clusters, clu_id))
+	sq_save_unique_data(sq1, (void *)clu_id);
+    }
+  EXEC SQL CLOSE csr222;
+  generic_delete(sq1, show_svc, "svc", "clu_id", 1);
+
+  dprintf("Checking lists...\n");
+  hash_step(lists, list_check, NULL);
+
+  dprintf("Checking members...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  sq3 = sq_create();
+  sq4 = sq_create();
+  sq5 = sq_create();
+  sq6 = sq_create();
+
+  EXEC SQL DECLARE csr223 CURSOR FOR
+    SELECT list_id, member_type, member_id, tag, ref_count, direct, rowid
+    FROM imembers FOR UPDATE OF member_id;
+  EXEC SQL OPEN csr223;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id, id, tag, ref_count, direct;
+      char type[IMEMBERS_MEMBER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr223 INTO :list_id, :type, :id, :tag,
+	:ref_count, :direct, :rowid;
+      if (sqlca.sqlcode)
+	break;
+      strtrim(rowid);
+
+      if (!(l = hash_lookup(lists, list_id)))
+	sq_save_unique_data(sq1, (void *)list_id);
+      else if (type[0] == 'U' && !hash_lookup(users, id))
+	sq_save_unique_data(sq2, (void *)id);
+      else if (type[0] == 'L' && !hash_lookup(lists, id))
+	sq_save_unique_data(sq3, (void *)id);
+      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+	sq_save_unique_data(sq4, (void *)id);
+      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+	sq_save_unique_data(sq5, (void *)id);
+      else if (type[0] == 'M' && !hash_lookup(machines, id))
+	sq_save_unique_data(sq6, (void *)id);
+      else
+	l->members++;
+      maybe_fixup_unref_string2("imembers", "tag", rowid, tag);
+    }
+  EXEC SQL CLOSE csr223;
+  generic_delete(sq1, show_member_list, "imembers", "list_id", 1);
+  generic_fix(sq2, show_mem_user, "Delete", del_mem_user, 1);
+  generic_fix(sq3, show_mem_list, "Delete", del_mem_list, 1);
+  generic_fix(sq4, show_mem_str, "Delete", del_mem_str, 1);
+  generic_fix(sq5, show_mem_krb, "Delete", del_mem_krb, 1);
+  generic_fix(sq6, show_mem_mach, "Delete", del_mem_mach, 1);
+
+  dprintf("Checking servers...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  EXEC SQL DECLARE csr224 CURSOR FOR
+    SELECT name, acl_type, acl_id, modby, rowid FROM servers
+    FOR UPDATE of modby;
+  EXEC SQL OPEN csr224;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int acl_id, modby;
+      char name[SERVERS_NAME_SIZE], acl_type[SERVERS_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr224 INTO :name, :acl_type, :acl_id, :modby, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("servers", "modby", strtrim(rowid), modby);
+      strtrim(acl_type);
+      if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
+	sq_save_data(sq1, (void *)acl_id);
+      else if (!strcmp(acl_type, "LIST") && !hash_lookup(lists, acl_id))
+	sq_save_data(sq2, (void *)acl_id);
+    }
+  EXEC SQL CLOSE csr224;
+  generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
+  generic_fix(sq2, show_srv_list, "Fix", zero_srv_list, 1);
+
+  dprintf("Checking serverhosts...\n");
+  sq = sq_create();
+  EXEC SQL DECLARE csr225 CURSOR FOR
+    SELECT mach_id, modby, rowid FROM serverhosts
+    FOR UPDATE OF modby;
+  EXEC SQL OPEN csr225;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr225 INTO :mach_id, :modby, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("serverhosts", "modby", strtrim(rowid), modby);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_data(sq, (void *)mach_id);
+    }
+  EXEC SQL CLOSE csr225;
+  generic_fix(sq, show_sh, "Delete", del_sh_mach, 0);
+
+  dprintf("Checking nfsphys...\n");
+  hash_step(nfsphys, check_nfsphys, NULL);
+
+  dprintf("Checking filesys...\n");
+  hash_step(filesys, check_fs, NULL);
+
+  dprintf("Checking filesystem groups...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  sq3 = sq_create();
+  EXEC SQL DECLARE csr226 CURSOR FOR
+    SELECT group_id, filsys_id FROM fsgroup;
+  EXEC SQL OPEN csr226;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int group_id, filsys_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr226 INTO :group_id, :filsys_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!(f = hash_lookup(filesys, group_id)))
+	sq_save_data(sq1, (void *)group_id);
+      if (!hash_lookup(filesys, filsys_id))
+	sq_save_data(sq3, (void *)filsys_id);
+    }
+  EXEC SQL CLOSE csr226;
+  generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
+  generic_delete(sq3, show_fsg_nomember, "fsgroup", "filsys_id", 1);
+
+  dprintf("Checking quotas...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  sq3 = sq_create();
+  sq4 = sq_create();
+  EXEC SQL DECLARE csr227 CURSOR FOR
+    SELECT entity_id, type, filsys_id, phys_id, quota, modby, rowid
+    FROM quota FOR UPDATE OF modby;
+  EXEC SQL OPEN csr227;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int entity_id, filsys_id, phys_id, quota, modby;
+      char type[QUOTA_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr227 INTO :entity_id, :type, :filsys_id,
+	:phys_id, :quota, :modby, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("quota", "modby", strtrim(rowid), modby);
+      if (type[0] == 'U' && entity_id != 0 && !hash_lookup(users, entity_id))
+	sq_save_data(sq1, (void *)entity_id);
+      else if (type[0] == 'G' && !hash_lookup(lists, entity_id))
+	sq_save_data(sq4, (void *)entity_id);
+      else if (!(f = hash_lookup(filesys, filsys_id)))
+	sq_save_data(sq2, (void *)filsys_id);
+      else if (phys_id != f->phys_id || !(n = hash_lookup(nfsphys, phys_id)))
+	sq_save_data(sq3, (void *)phys_id);
+      else
+	n->count += quota;
+    }
+  EXEC SQL CLOSE csr227;
+  generic_fix(sq1, show_quota_nouser, "Delete", fix_quota_nouser, 1);
+  generic_fix(sq2, show_quota_nofs, "Delete", fix_quota_nofs, 0);
+  generic_fix(sq3, show_quota_wrongpid, "Fix", fix_quota_physid, 1);
+  generic_fix(sq4, show_quota_nolist, "Delete", fix_quota_nolist, 1);
+
+  dprintf("Checking zephyr...\n");
+  EXEC SQL DECLARE csr_zc CURSOR FOR
+    SELECT class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id,
+    iui_type, iui_id, modby FROM zephyr;
+  EXEC SQL OPEN csr_zc;
+  while(1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int xmt_id, sub_id, iws_id, iui_id, modby;
+      char class[ZEPHYR_CLASS_SIZE];
+      char xmt_type[ZEPHYR_XMT_TYPE_SIZE];
+      char sub_type[ZEPHYR_SUB_TYPE_SIZE];
+      char iws_type[ZEPHYR_IWS_TYPE_SIZE];
+      char iui_type[ZEPHYR_IUI_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_zc INTO :class, :xmt_type, :xmt_id, :sub_type, 
+	:sub_id, :iws_type, :iws_id, :iui_type, :iui_id, :modby;
+
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("zephyr", "modby", strtrim(rowid), modby);
+
+      strtrim(xmt_type);
+      if (!strcmp(xmt_type, "USER") && !hash_lookup(users, xmt_id))
+	{
+	  printf("xmt acl for %s is non-existant user %d\n", class, xmt_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(xmt_type, "LIST") && !hash_lookup(lists, xmt_id))
+	{
+	  printf("xmt acl for %s is non-existant list %d\n", class, xmt_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(xmt_type, "STRING") || !strcmp(xmt_type, "KERBEROS"))
+	maybe_fixup_unref_string2("zephyr", "xmt_id", strtrim(rowid), xmt_id);
+
+      strtrim(sub_type);
+      if (!strcmp(sub_type, "USER") && !hash_lookup(users, sub_id))
+	{
+	  printf("sub acl for %s is non-existant user %d\n", class, sub_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(sub_type, "LIST") && !hash_lookup(lists, sub_id))
+	{
+	  printf("sub acl for %s is non-existant list %d\n", class, sub_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(sub_type, "STRING") || !strcmp(sub_type, "KERBEROS"))
+	maybe_fixup_unref_string2("zephyr", "sub_id", strtrim(rowid), sub_id);
+
+      strtrim(iws_type);
+      if (!strcmp(iws_type, "USER") && !hash_lookup(users, iws_id))
+	{
+	  printf("iws acl for %s is non-existant user %d\n", class, iws_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(iws_type, "LIST") && !hash_lookup(lists, iws_id))
+	{
+	  printf("iws acl for %s is non-existant list %d\n", class, iws_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(iws_type, "STRING") || !strcmp(iws_type, "KERBEROS"))
+	maybe_fixup_unref_string2("zephyr", "iws_id", strtrim(rowid), iws_id);
+
+      strtrim(iui_type);
+      if (!strcmp(iui_type, "USER") && !hash_lookup(users, iui_id))
+	{
+	  printf("iui acl for %s is non-existant user %d\n", class, iui_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(iui_type, "LIST") && !hash_lookup(lists, iui_id))
+	{
+	  printf("iui acl for %s is non-existant list %d\n", class, iui_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(iui_type, "STRING") || !strcmp(iui_type, "KERBEROS"))
+	maybe_fixup_unref_string2("zephyr", "iui_id", strtrim(rowid), iui_id);
+    }
+
+  dprintf("Checking hostaccess...\n");
+  EXEC SQL DECLARE csr228 CURSOR FOR
+    SELECT mach_id, acl_type, acl_id, modby, rowid FROM hostaccess
+    FOR UPDATE OF modby;
+  EXEC SQL OPEN csr228;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, acl_id, modby;
+      char acl_type[HOSTACCESS_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr228 INTO :mach_id, :acl_type, :acl_id, :modby, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("hostaccess", "modby", strtrim(rowid), modby);
+      strtrim(acl_type);
+      if (!hash_lookup(machines, mach_id))
+	{
+	  printf("Hostaccess for non-existant host %d\n", mach_id);
+	  printf("Not fixing this error\n");
+	}
+      if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
+	{
+	  printf("Hostaccess for %d is non-existant user %d\n", mach_id, acl_id);
+	  printf("Not fixing this error\n");
+	}
+      else if (!strcmp(acl_type, "LIST") && !hash_lookup(lists, acl_id))
+	{
+	  printf("Hostaccess for %d is non-existant list %d\n", mach_id, acl_id);
+	  printf("Not fixing this error\n");
+	}
+    }
+  EXEC SQL CLOSE csr228;
+
+  dprintf("Checking krbmap...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  EXEC SQL DECLARE csr230 CURSOR FOR
+    SELECT users_id, string_id, rowid FROM krbmap
+    FOR UPDATE OF string_id;
+  EXEC SQL OPEN csr230;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int users_id, string_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr230 INTO :users_id, :string_id, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!hash_lookup(users, users_id))
+	sq_save_unique_data(sq1, (void *)users_id);
+      else if (!maybe_fixup_unref_string2("krbmap", "string_id", strtrim(rowid), string_id))
+	sq_save_unique_data(sq2, (void *)string_id);
+    }
+  EXEC SQL CLOSE csr230;
+  generic_delete(sq1, show_krb_usr, "krbmap", "users_id", 1);
+  generic_delete(sq2, show_krb_str, "krbmap", "string_id", 1);
+
+  dprintf("Checking capacls...\n");
+  EXEC SQL DECLARE csr231 CURSOR FOR
+    SELECT list_id, tag FROM capacls;
+  EXEC SQL OPEN csr231;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id;
+      char tag[CAPACLS_TAG_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr231 INTO :list_id, :tag;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!hash_lookup(lists, list_id))
+	{
+	  printf("Capacl for %s is non-existant list %d\n", tag, list_id);
+	  printf("Not fixing this error\n");
+	}
+    }
+  EXEC SQL CLOSE csr231;
+
+  dprintf("Checking hostaliases...\n");
+  sq1 = sq_create();
+  EXEC SQL DECLARE csr232 CURSOR FOR
+    SELECT mach_id FROM hostalias;
+  EXEC SQL OPEN csr232;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr232 INTO :mach_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!hash_lookup(machines, mach_id))
+	sq_save_unique_data(sq1, (void *)mach_id);
+    }
+  EXEC SQL CLOSE csr232;
+  generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
+
+  dprintf("Checking printers...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  sq3 = sq_create();
+  sq4 = sq_create();
+  sq5 = sq_create();
+  sq6 = sq_create();
+  EXEC SQL DECLARE csr233 CURSOR FOR
+    SELECT mach_id, loghost, rm, rq, ac, lpc_acl, modby, rowid FROM printers;
+  EXEC SQL OPEN csr233;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, loghost, rm, rq, ac, lpc_acl, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq, :ac,
+	:lpc_acl, :modby, :rowid;
+      if (sqlca.sqlcode)
+	break;
+
+      maybe_fixup_modby2("printers", "modby", strtrim(rowid), modby);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(machines, rm))
+	sq_save_unique_data(sq2, (void *)rm);
+      else if (!hash_lookup(printservers, rm))
+	sq_save_unique_data(sq6, (void *)mach_id);
+      else if (!hash_lookup(machines, rq))
+	sq_save_unique_data(sq3, (void *)rq);
+      else {
+	if (!hash_lookup(lists, ac))
+	  sq_save_unique_data(sq4, (void *)ac);
+	if (!hash_lookup(lists, lpc_acl))
+	  sq_save_unique_data(sq5, (void *)lpc_acl);
+	if (!hash_lookup(machines, loghost))
+	  {
+	    show_printer_loghost((void *)loghost);
+	    cant_fix();
+	  }
+      }
+    }
+  EXEC SQL CLOSE csr233;
+  generic_delete(sq1, show_printer_mach, "printers", "mach_id", 1);
+  generic_delete(sq6, show_printer_server, "printers", "mach_id", 1);
+  generic_delete(sq2, show_printer_spool, "printers", "rm", 1);
+  generic_delete(sq3, show_printer_quota, "printers", "rq", 1);
+  generic_fix(sq4, show_printer_ac, "Clear", fix_printer_ac, 1);
+  generic_fix(sq5, show_printer_lpc_acl, "Clear", fix_printer_lpc_acl, 1);
+
+  dprintf("Checking printservers...\n");
+  hash_step(printservers, check_ps, NULL);
+
+  dprintf("Checking containers...\n");
+  hash_step(containers, check_container, NULL);
+
+  dprintf("Checking mcntmap...\n");
+  sq1 = sq_create();
+  sq2 = sq_create();
+  EXEC SQL DECLARE csr_mcntmap CURSOR FOR
+    SELECT mach_id, cnt_id FROM mcntmap;
+  EXEC SQL OPEN csr_mcntmap;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, cnt_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_mcntmap INTO :mach_id, :cnt_id;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!(m = hash_lookup(machines, mach_id)))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(containers, cnt_id))
+	sq_save_unique_data(sq2, (void *)cnt_id);
+    }
+  EXEC SQL CLOSE csr_mcntmap;
+  generic_delete(sq1, show_mcntmap_mach, "mcntmap", "mach_id", 1);
+  generic_delete(sq2, show_mcntmap_cnt, "mcntmap", "cnt_id", 1);
+
+}
+ 

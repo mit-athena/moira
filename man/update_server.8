@@ -1,0 +1,54 @@
+.TH UPDATE_SERVER 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/update_server.8,v 1.4 1993-10-21 14:39:09 mar Exp $
+.SH NAME
+update_server \- daemon that accepts config files from Moira
+.SH SYNOPSIS
+.B update_server
+.SH DESCRIPTION
+An
+.B update_server
+must be started at boot time on each server that is to be updated by
+Moira.  It should be run as root.  It takes no arguments, and will
+detach from the tty and put itself in background.  It attempts to log
+its actions to stdout, so the output should be directed to a file if
+it is needed.
+.SH OPTIONS
+While there are no command line options, a configuration file
+.I /etc/athena/moira.conf
+may specify a number of options.  This file may contain blank lines,
+comments preceeded by hash marks, boolean options, or string options.
+A boolean option is set by just putting the name of the option on a
+line.  A string option is specified by putting the name of the option,
+some whitespace, and then the value.
+.IP "user username"
+This will set the UID of the running server to the specified user's
+UID.  All file accesses and the execution of the instructions will be
+with this user's privileges.
+.IP "chroot directory"
+This will set the root directory to the specified directory for the
+running of the server.  It uses the chroot system call, so when used
+in conjunction with the
+.I user
+option should make the server quite secure.
+.IP nofork
+This boolean specifies that the server should not fork when a new
+connection is opened.  This is only useful for debugging, as when the
+client connection is closed, the server will exit.
+.IP noclobber
+This boolean specifies that the server is not allowed to overwrite any
+existing files while it is receiving datafiles and instructions.
+.IP noexec
+This boolean specifies that the server is not allowed to execute any
+instructions.  It may receive datafiles and instructions, but not
+execute anything.
+.IP "auth user.instance@REALM"
+This specifies a Kerberos principal that is allowed to connect to the
+server.  This option may be specified multiple times with different
+principals.  If none are specified, the user
+.B sms
+in the local realm is assumed.
+.SH FILES
+/etc/athena/moira.conf \- For configuration variables.
+/etc/athena/srvtab \- It must be able to get rcmd Kerberos tickets.
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on Moira.

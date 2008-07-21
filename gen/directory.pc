@@ -1,0 +1,121 @@
+/* $Id: directory.pc,v 1.5 2007-06-15 14:48:14 zacheiss Exp $
+ *
+ * This generates a master /etc/passwd containing all active (status != 0)
+ * accounts.
+ *
+ * Copyright (C) 1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+
+#include <sys/stat.h>
+
+#include <stdio.h>
+#include <time.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/directory.pc,v 1.5 2007-06-15 14:48:14 zacheiss Exp $");
+
+char *whoami = "directory.gen";
+char *db = "moira/moira";
+
+int main(int argc, char **argv)
+{
+  FILE *out = stdout;
+  char *outf = NULL, outft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[USERS_LOGIN_SIZE], last_name[USERS_LAST_SIZE];
+  char first_name[USERS_FIRST_SIZE], middle_name[USERS_MIDDLE_SIZE];
+  char office_address[USERS_OFFICE_ADDR_SIZE];
+  char office_phone[USERS_OFFICE_PHONE_SIZE];
+  char home_address[USERS_HOME_ADDR_SIZE], home_phone[USERS_HOME_PHONE_SIZE];
+  char id[USERS_CLEARID_SIZE], type[USERS_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL CONNECT :db;
+
+  if (argc == 2)
+    {
+      outf = argv[1];
+      sprintf(outft, "%s~", outf);
+      if (!(out = fopen(outft, "w")))
+	{
+	  fprintf(stderr, "unable to open %s for output\n", outf);
+	  exit(MR_OCONFIG);
+	}
+    }
+  else if (argc != 1)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+  else
+    outf = NULL;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE x CURSOR FOR SELECT 
+    login, last, first, middle, office_addr, office_phone, 
+    home_addr, home_phone, clearid, type 
+    FROM users WHERE status = 1 AND type != 'SYSTEM' AND type != 'STAFF'
+    AND type != 'TEST' and type != 'REGTEST' AND type NOT LIKE 'GUES%';
+  EXEC SQL OPEN x;
+  while (1)
+    {
+      EXEC SQL FETCH x INTO :login, :last_name, :first_name, :middle_name,
+	:office_address, :office_phone, :home_address, :home_phone,
+	:id, :type;
+      if (sqlca.sqlcode)
+	break;
+      strtrim(login);
+      strtrim(last_name);
+      strtrim(first_name);
+      strtrim(middle_name);
+      strtrim(office_address);
+      strtrim(office_phone);
+      strtrim(home_address);
+      strtrim(home_phone);
+      strtrim(id);
+      strtrim(type);
+#ifdef notdef
+      if(isdigit(*id))
+	fprintf(out, "%s^4:p\t24:%s %s\t7:%s, %s %s\t3:%s, %s "
+		"%s\t5:%s\t2:%s@mit.edu\t1:%s\t0:%s\t14:%s\t15:%s\t10:"
+		"Unlisted Account\n", id, last_name, login, last_name,
+		first_name, middle_name, last_name, first_name,
+		middle_name, login, login, office_phone, office_address,
+		home_phone, home_address);
+#else
+      if(isdigit(*id))
+	fprintf(out, "%s^4:p\t24:%s %s\t7:%s, %s %s\t3:%s, %s "
+		"%s\t5:%s\t2:%s@mit.edu\t1:%s\t0:%s\t14:%s\t15:%s\t10:%s\n",
+                id, last_name, login, last_name, first_name, middle_name,
+                last_name, first_name, middle_name, login, login,
+                "", "", "", "", strcmp(type, "G") == 0 ? "G" : 
+		!strncmp(type, "19", 2) ? "Undergraduate" : 
+		!strncmp(type, "20", 2) ? "Undergraduate" : "MIT Affiliate");
+#endif
+    }
+  EXEC SQL CLOSE x;
+
+  EXEC SQL COMMIT;
+
+  if (fclose(out))
+    {
+      perror("close failed");
+      exit(MR_CCONFIG);
+    }
+  if (outf)
+    fix_file(outf);
+  exit(MR_SUCCESS);
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}

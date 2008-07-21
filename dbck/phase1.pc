@@ -1,0 +1,1047 @@
+/* $Id: phase1.pc,v 1.15 2007-12-03 21:22:59 zacheiss Exp $
+ *
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "dbck.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.15 2007-12-03 21:22:59 zacheiss Exp $");
+
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
+int show_user_id(void *user);
+void handle_duplicate_logins(struct save_queue *sq);
+void fix_user_id(void *user);
+void cant_fix(void *id);
+int show_mach_id(void *machine);
+int show_mach_name(void *machine);
+void fix_mach_id(void *machine);
+int show_snet_name(void *subnet);
+int show_clu_id(void *cluster);
+int show_clu_name(void *cluster);
+void fix_clu_id(void *cluster);
+int show_list_id(void *list);
+int show_list_name(void *list);
+void fix_list_id(void *list);
+int show_fs_id(void *filesys);
+void fix_fs_id(void *filesys);
+int show_fs_name(void *fs);
+int show_np_id(void *nfsphys);
+void fix_np_id(void *nfsphys);
+int show_str_id(void *string);
+int print_str_id(void *id);
+void print_dup_map(int key, void *data, void *hint);
+int show_cnt_name(void *cnt);
+
+int show_user_id(void *user)
+{
+  struct user *u = user;
+  printf("User %s (%s, status %d) has duplicate ID\n",
+	 u->login, u->fullname, u->status);
+  return 0;
+}
+
+void handle_duplicate_logins(struct save_queue *sq)
+{
+  struct user *u, *uu, *tmp;
+
+  uu = NULL;
+  if (sq_get_data(sq, &uu))
+    {
+      while (sq_get_data(sq, &u))
+	{
+	  if (!strcmp(u->login, uu->login))
+	    {
+	      if (uu->status == 1 || u->status == 0)
+		{
+		  tmp = u;
+		  u = uu;
+		  uu = tmp;
+		}
+	      printf("User %s (%s, status %d) and\n",
+		     u->login, u->fullname, u->status);
+	      printf("User %s (%s, status %d) have duplicate logins\n",
+		     uu->login, uu->fullname, uu->status);
+	      if (!strcmp(u->fullname, uu->fullname) &&
+		  single_fix("Delete the second one", 0))
+		single_delete("users", "users_id", uu->users_id);
+	      else if (single_fix("Unregister the second one", 0))
+		{
+		  EXEC SQL BEGIN DECLARE SECTION;
+		  int id = uu->users_id, rowcount;
+		  EXEC SQL END DECLARE SECTION;
+
+		  EXEC SQL UPDATE users
+		    SET login = '#' || CHAR(users.unix_uid), status = 0
+		    WHERE users_id = :id;
+		  rowcount = sqlca.sqlerrd[2];
+		  if (rowcount > 0)
+		    {
+		      printf("%d entr%s fixed\n", rowcount,
+			     rowcount == 1 ? "y" : "ies");
+		    }
+		  else
+		    printf("Not fixed\n");
+		  modified("users");
+		}
+	    }
+	  else
+	    uu = u;
+	}
+    }
+}
+
+void fix_user_id(void *user)
+{
+  struct user *u = user;
+  u->users_id = generic_fix_id("users", "users_id", "login",
+			       u->users_id, u->login);
+}
+
+
+void cant_fix(void *id)
+{
+  printf("Sorry, don't know how to fix that\n");
+}
+
+int show_mach_id(void *machine)
+{
+  struct machine *m = machine;
+  printf("Machine %s has duplicate ID %d\n", m->name, m->mach_id);
+  return 0;
+}
+
+int show_mach_name(void *machine)
+{
+  struct machine *m = machine;
+  printf("Machine %s (%d) has duplicate name\n", m->name, m->mach_id);
+  return 0;
+}
+
+void fix_mach_id(void *machine)
+{
+  struct machine *m = machine;
+  m->mach_id = generic_fix_id("machine", "mach_id", "name",
+			      m->mach_id, m->name);
+}
+
+int show_snet_name(void *subnet)
+{
+  struct subnet *s = subnet;
+  printf("Subnet %s (%d) has duplicate name\n", s->name, s->snet_id);
+  return 0;
+}
+
+int show_clu_id(void *cluster)
+{
+  struct cluster *c = cluster;
+  printf("Cluster %s has duplicate ID %d\n", c->name, c->clu_id);
+  return 0;
+}
+
+int show_clu_name(void *cluster)
+{
+  struct cluster *c = cluster;
+  printf("Cluster %s (%d) has duplicate name\n", c->name, c->clu_id);
+  return 0;
+}
+
+void fix_clu_id(void *cluster)
+{
+  struct cluster *c = cluster;
+  c->clu_id = generic_fix_id("cluster", "clu_id", "name", c->clu_id, c->name);
+}
+
+int show_list_id(void *list)
+{
+  struct list *l = list;
+  printf("List %s has duplicate ID %d\n", l->name, l->list_id);
+  return 0;
+}
+
+int show_list_name(void *list)
+{
+  struct list *l = list;
+  printf("List %s (%d) has duplicate name\n", l->name, l->list_id);
+  return 0;
+}
+
+void fix_list_id(void *list)
+{
+  struct list *l = list;
+  l->list_id = generic_fix_id("list", "list_id", "name", l->list_id, l->name);
+}
+
+int show_fs_id(void *filesys)
+{
+  struct filesys *f = filesys;
+  printf("Filesys %s has duplicate ID %d\n", f->name, f->filsys_id);
+  return 0;
+}
+
+void fix_fs_id(void *filesys)
+{
+  struct filesys *f = filesys;
+  f->filsys_id = generic_fix_id("filesys", "filsys_id", "label",
+				f->filsys_id, f->name);
+}
+
+int show_fs_name(void *filesys)
+{
+  struct filesys *fs = filesys;
+  printf("Filesys %s (%d) has duplicate name\n", fs->name, fs->filsys_id);
+  return 0;
+}
+
+int show_np_id(void *nfsphys)
+{
+  struct nfsphys *n = nfsphys;
+  printf("NfsPhys %s:%s has duplicate ID %d\n",
+	 ((struct machine *)hash_lookup(machines, n->mach_id))->name,
+	 n->dir, n->nfsphys_id);
+  return 0;
+}
+
+void fix_np_id(void *nfsphys)
+{
+  struct nfsphys *n = nfsphys;
+  n->nfsphys_id = generic_fix_id("nfsphys", "nfsphys_id", "dir",
+				 n->nfsphys_id, n->dir);
+}
+
+int show_str_id(void *string)
+{
+  struct string *s = string;
+  printf("String %s has duplicate ID %d\n", s->name, s->string_id);
+  return 0;
+}
+
+int print_str_id(void *id)
+{
+  printf("String %d is a duplicate\n", (int)id);
+  return 0;
+}
+
+void print_dup_map(int key, void *data, void *hint)
+{
+  printf("String %d is a duplicate of string %d\n", key, (int)data);
+}
+
+int show_cnt_name(void *container)
+{
+  struct container *cnt = container;
+  printf("Container %s (%d) has duplicate name\n", cnt->name, cnt->cnt_id);
+  return 0;
+}
+
+void phase1(void)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id;
+  EXEC SQL END DECLARE SECTION;
+  int i, q, retval, tmp;
+  struct save_queue *sq;
+  struct user *u;
+  struct machine *m;
+  struct subnet *sn;
+  struct list *l;
+  struct cluster *c;
+  struct string *s;
+  struct filesys *f;
+  struct nfsphys *n;
+  struct printserver *ps;
+  struct container *cnt;
+
+  printf("Phase 1 - Looking for duplicates\n");
+
+  /* self-join strings table on "string" to get duplicate strings, then
+     build a duplicates table to merge them. */
+
+  dprintf("Looking for duplicate strings...\n");
+  string_dups = create_hash(100);
+  if (!string_dups)
+    out_of_mem("storing duplicate strings");
+
+  EXEC SQL DECLARE csr116 CURSOR FOR
+    SELECT s1.string_id, s2.string_id FROM strings s1, strings s2
+    WHERE s1.string = s2.string and s1.string_id < s2.string_id;
+  EXEC SQL OPEN csr116;
+  /*  The SELECT gives us two columns, both with non-negative integers.
+   *  The number in the left column is always the smaller of the two,
+   *  and each row includes string IDs for identical strings.  We use
+   *  them to make a mapping from id-to-delete to id-to-keep for all
+   *  superflous IDs.
+   */
+  q = 0;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int id1, id2;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr116 INTO :id1, :id2;
+      if (sqlca.sqlcode)
+	break;
+      q++;
+      /*  If id2 is already stored, skip this row. */
+      i = (int)hash_lookup(string_dups, id2);
+      if (i > 0)
+	continue;
+      /*  Follow the chain of id1 equivalent IDs back to the lowest one. */
+      id = id1;
+      while ((tmp = (int)hash_lookup(string_dups, id)) > 0)
+	id = tmp;
+      hash_store(string_dups, id2, (void *)id);
+    }
+  EXEC SQL CLOSE csr116;
+  dprintf("found %d duplicates\n", q);
+  hash_step(string_dups, print_dup_map, NULL);
+  /* We don't want to delete the duplicates now because if the dbck
+     is cancelled, a LOT of state will be lost. So, we'll just let
+     them not get marked as used and then phase3 will clean them up */
+
+  dprintf("Loading strings...\n");
+  sq = sq_create();
+  strings = create_hash(75000);
+  if (!sq || !strings)
+    out_of_mem("loading strings");
+
+  EXEC SQL DECLARE csr101 CURSOR FOR
+    SELECT string_id, string FROM strings ORDER BY string_id;
+  EXEC SQL OPEN csr101;
+  q = 0;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int id;
+      char buf[STRINGS_STRING_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr101 INTO :id, :buf;
+      if (sqlca.sqlcode)
+	break;
+      q++;
+      s = malloc(sizeof(struct string));
+      if (!s)
+	out_of_mem("storing strings");
+      s->name = strdup(strtrim(buf));
+      s->string_id = id;
+      s->refc = 0;
+      retval = hash_store(strings, id, s);
+      if (retval == -1)
+	out_of_mem("storing strings in hash table");
+      else if (retval == 1) /* duplicate string_id */
+	{
+	  sq_save_data(sq, hash_lookup(strings, id));
+	  sq_save_data(sq, s);
+	}
+    }
+  EXEC SQL CLOSE csr101;
+  /* keep string id 0 (the empty string) even if unreferenced */
+  string_check(0);
+
+  printf("Loaded %d strings\n", q);
+
+  dprintf("Loading users...\n");
+  sq = sq_create();
+  users = create_hash(65000);
+  if (!sq || !users)
+    out_of_mem("loading users");
+
+  EXEC SQL DECLARE csr102 CURSOR FOR
+    SELECT users_id, login, last, first, status, potype, pop_id, box_id,
+    imap_id, modby, fmodby, pmodby, comments, sigwho, sponsor_type, sponsor_id
+    FROM users ORDER BY users_id;
+  EXEC SQL OPEN csr102;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      char login[USERS_LOGIN_SIZE], nbuf[USERS_FIRST_SIZE + USERS_LAST_SIZE];
+      char last[USERS_LAST_SIZE], first[USERS_FIRST_SIZE];
+      char potype[USERS_POTYPE_SIZE], sponsor_type[USERS_SPONSOR_TYPE_SIZE];
+      int users_id, status, pop_id, box_id, imap_id, modby, fmodby, pmodby;
+      int comments, sigwho, sponsor_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr102 INTO :users_id, :login, :last, :first,
+	:status, :potype, :pop_id, :box_id, :imap_id, :modby, :fmodby,
+	:pmodby, :comments, :sigwho, :sponsor_type, :sponsor_id;
+      if (sqlca.sqlcode)
+	break;
+
+      u = malloc(sizeof(struct user));
+      if (!u)
+	out_of_mem("storing users");
+      strcpy(u->login, strtrim(login));
+      u->potype = potype[0];
+      sprintf(nbuf, "%s, %s", strtrim(last), strtrim(first));
+      u->fullname = strdup(nbuf);
+      u->status = status;
+      u->users_id = users_id;
+      u->modby = modby;
+      u->fmodby = fmodby;
+      u->pmodby = pmodby;
+      u->comment = comments;
+      u->sigwho = sigwho;
+      u->sponsor_type = sponsor_type[0];
+      u->sponsor_id = sponsor_id;
+      switch (u->potype)
+	{
+	case 'P':
+	  u->pobox_id = pop_id;
+	  break;
+	case 'S':
+	  /*  If potype is SMTP, box_id is a string_id for the strings tbl */
+	  u->pobox_id = box_id;
+	  break;
+	case 'I':
+	  u->pobox_id = imap_id;
+	  break;
+	default:
+	  u->pobox_id = 0;
+	}
+      retval = hash_store(users, users_id, u);
+      if (retval == -1)
+	out_of_mem("storing users in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(users, users_id));
+	  sq_save_data(sq, u);
+	}
+    }
+  EXEC SQL CLOSE csr102;
+
+  generic_fix(sq, show_user_id, "Change ID", fix_user_id, 0);
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("finding duplicate logins");
+
+      EXEC SQL DECLARE csr103 CURSOR FOR
+	SELECT u1.users_id FROM users u1, users u2
+	WHERE u1.login = u2.login and u1.rowid != u2.rowid;
+      EXEC SQL OPEN csr103;
+      while (1)
+	{
+	  EXEC SQL FETCH csr103 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_data(sq, hash_lookup(users, id));
+	}
+      EXEC SQL CLOSE csr103;
+      handle_duplicate_logins(sq);
+    }
+
+  if (!fast)
+    {
+      dprintf("Scanning krbmap...\n");
+
+      EXEC SQL DECLARE csr113 CURSOR FOR
+	SELECT k1.users_id FROM krbmap k1, krbmap k2
+	WHERE k1.users_id = k2.users_id AND k1.rowid != k2.rowid;
+      EXEC SQL OPEN csr113;
+      while (1)
+	{
+	  EXEC SQL FETCH csr113 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  printf("User %d is in the krbmap more than once!\n", id);
+	  printf("Not fixing this error\n");
+	}
+      EXEC SQL CLOSE csr113;
+
+      EXEC SQL DECLARE csr114 CURSOR FOR
+	SELECT k1.string_id FROM krbmap k1, krbmap k2
+	WHERE k1.string_id = k2.string_id AND k1.rowid != k2.rowid;
+      EXEC SQL OPEN csr114;
+      while (1)
+	{
+	  EXEC SQL FETCH csr114 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  printf("Principal %d is in the krbmap more than once!\n", id);
+	  printf("Not fixing this error\n");
+	}
+      EXEC SQL CLOSE csr114;
+    }
+
+  dprintf("Loading machines...\n");
+  sq = sq_create();
+  machines = create_hash(20000);
+  if (!sq || !machines)
+    out_of_mem("loading machines");
+
+  EXEC SQL DECLARE csr104 CURSOR FOR
+    SELECT mach_id, name, snet_id, owner_type, owner_id,
+    acomment, ocomment, creator, modby
+    FROM machine ORDER BY mach_id;
+  EXEC SQL OPEN csr104;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, snet_id, owner_id, acomment, ocomment, creator, modby;
+      char name[MACHINE_NAME_SIZE], owner_type[MACHINE_OWNER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr104 INTO :mach_id, :name, :snet_id,
+	:owner_type, :owner_id, :acomment, :ocomment, :creator, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      m = malloc(sizeof(struct machine));
+      if (!m)
+	out_of_mem("storing machines");
+      strcpy(m->name, strtrim(name));
+      m->owner_type = owner_type[0];
+      m->owner_id = owner_id;
+      m->snet_id = snet_id;
+      m->mach_id = mach_id;
+      m->clucount = 0;
+      m->acomment = acomment;
+      m->ocomment = ocomment;
+      m->creator = creator;
+      m->modby = modby;
+      retval = hash_store(machines, mach_id, m);
+      if (retval == -1)
+	out_of_mem("storing machines in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(machines, mach_id));
+	  sq_save_data(sq, m);
+	}
+    }
+  EXEC SQL CLOSE csr104;
+  generic_fix(sq, show_mach_id, "Change ID", fix_mach_id, 0);
+
+  if (!fast)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      char name[HOSTALIAS_NAME_SIZE];
+      int id1, id2;
+      EXEC SQL END DECLARE SECTION;
+
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate machine names");
+
+      EXEC SQL DECLARE csr105 CURSOR FOR
+	SELECT m1.mach_id FROM machine m1, machine m2
+	WHERE m1.name = m2.name AND m1.rowid != m2.rowid;
+      EXEC SQL OPEN csr105;
+      while (1)
+	{
+	  EXEC SQL FETCH csr105 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(machines, id));
+	}
+      EXEC SQL CLOSE csr105;
+      generic_fix(sq, show_mach_name, "Change name", cant_fix, 0);
+
+      EXEC SQL DECLARE csr_hal1 CURSOR FOR
+	SELECT h1.name, m1.mach_id, m2.mach_id
+	FROM hostalias h1, machine m1, hostalias h2, machine m2
+	WHERE h1.name = h2.name AND h1.mach_id != h2.mach_id
+	AND m1.mach_id = h1.mach_id AND m2.mach_id = h2.mach_id;
+      EXEC SQL OPEN csr_hal1;
+      while (1)
+	{
+	  EXEC SQL FETCH csr_hal1 INTO :name, :id1, :id2;
+	  if (sqlca.sqlcode)
+	    break;
+	  printf("Aliases for machines %d and %d have duplicate name %s\n",
+		 id1, id2, strtrim(name));
+	  cant_fix(0);
+	}
+      EXEC SQL CLOSE csr_hal1;
+
+      EXEC SQL DECLARE csr_hal2 CURSOR FOR
+	SELECT h1.name, m1.mach_id, m2.mach_id
+	FROM hostalias h1, machine m1, machine m2
+	WHERE h1.name = m1.name AND h1.mach_id = m2.mach_id;
+      EXEC SQL OPEN csr_hal2;
+	while (1)
+	  {
+	    EXEC SQL FETCH csr_hal2 INTO :name, :id1, :id2;
+	    if (sqlca.sqlcode)
+	      break;
+	    printf("Machine %d has alias %s that conflicts with machine %d\n",
+		   id2, strtrim(name), id1);
+	    cant_fix(0);
+	  }
+	EXEC SQL CLOSE csr_hal2;
+    }
+
+  dprintf("Loading subnets...\n");
+  subnets = create_hash(254);
+  if (!subnets)
+    out_of_mem("loading subnets");
+
+  EXEC SQL DECLARE csr115 CURSOR FOR
+    SELECT snet_id, name, owner_type, owner_id, modby from subnet;
+  EXEC SQL OPEN csr115;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      char name[SUBNET_NAME_SIZE], owner_type[SUBNET_OWNER_TYPE_SIZE];
+      int snet_id, owner_id, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr115 INTO :snet_id, :name, :owner_type,
+	:owner_id, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      sn = malloc(sizeof(struct machine));
+      if (!sn)
+	out_of_mem("storing subnets");
+      strcpy(sn->name, strtrim(name));
+      sn->owner_type = owner_type[0];
+      sn->owner_id = owner_id;
+      sn->snet_id = snet_id;
+      sn->modby = modby;
+      retval = hash_store(subnets, snet_id, sn);
+      if (retval == -1)
+	out_of_mem("storing subnets in hash table");
+      else if (retval == 1)
+	{
+	  printf("Duplicate subnet ID: %d (%s)\n", id, name);
+	  /* should add code to delete */
+	  cant_fix(0);
+	}
+    }
+  EXEC SQL CLOSE csr115;
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate subnet names");
+
+      EXEC SQL DECLARE csr117 CURSOR FOR
+	SELECT s1.snet_id FROM subnet s1, subnet s2
+	WHERE s1.name = s2.name AND s1.rowid != s2.rowid;
+      EXEC SQL OPEN csr117;
+      while (1)
+	{
+	  EXEC SQL FETCH csr117 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(subnets, id));
+	}
+      EXEC SQL CLOSE csr117;
+      generic_fix(sq, show_snet_name, "Change name", cant_fix, 0);
+    }
+
+  dprintf("Loading clusters...\n");
+  sq = sq_create();
+  clusters = create_hash(100);
+  if (!sq || !clusters)
+    out_of_mem("loading clusters");
+
+  EXEC SQL DECLARE csr106 CURSOR FOR
+    SELECT clu_id, name, modby FROM clusters;
+  EXEC SQL OPEN csr106;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int clu_id, modby;
+      char name[CLUSTERS_NAME_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr106 INTO :clu_id, :name, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      c = malloc(sizeof(struct cluster));
+      if (!c)
+	out_of_mem("storing clusters");
+      strcpy(c->name, strtrim(name));
+      c->clu_id = clu_id;
+      c->modby = modby;
+      retval = hash_store(clusters, clu_id, c);
+      if (retval == -1)
+	out_of_mem("storing clusters in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(clusters, clu_id));
+	  sq_save_data(sq, c);
+	}
+    }
+  EXEC SQL CLOSE csr106;
+  generic_fix(sq, show_clu_id, "Change ID", fix_clu_id, 0);
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate cluster names");
+
+      EXEC SQL DECLARE csr107 CURSOR FOR
+	SELECT c1.clu_id FROM clusters c1, clusters c2
+	WHERE c1.name = c2.name AND c1.rowid != c2.rowid;
+      EXEC SQL OPEN csr107;
+      while (1)
+	{
+	  EXEC SQL FETCH csr107 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(clusters, id));
+	}
+      EXEC SQL CLOSE csr107;
+      generic_fix(sq, show_clu_name, "Change name", cant_fix, 0);
+    }
+
+  dprintf("Loading lists...\n");
+  sq = sq_create();
+  lists = create_hash(50000);
+  if (!sq || !lists)
+    out_of_mem("loading lists");
+
+  EXEC SQL DECLARE csr108 CURSOR FOR
+    SELECT list_id, name, acl_id, acl_type, memacl_id, memacl_type, modby
+    FROM list
+    ORDER BY list_id;
+  EXEC SQL OPEN csr108;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id, acl_id, memacl_id, modby;
+      char name[LIST_NAME_SIZE], acl_type[LIST_ACL_TYPE_SIZE];
+      char memacl_type[LIST_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr108 INTO :list_id, :name, :acl_id, :acl_type, 
+	:memacl_id, :memacl_type, :modby;
+      if (sqlca.sqlcode)
+	break;
+      l = malloc(sizeof(struct list));
+      if (!l)
+	out_of_mem("storing lists");
+      strcpy(l->name, strtrim(name));
+      l->acl_type = acl_type[0];
+      l->acl_id = acl_id;
+      l->memacl_type = memacl_type[0];
+      l->memacl_id = memacl_id;
+      l->list_id = list_id;
+      l->modby = modby;
+      l->members = 0;
+      retval = hash_store(lists, list_id, l);
+      if (retval == -1)
+	out_of_mem("storing lists in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(lists, list_id));
+	  sq_save_data(sq, l);
+	}
+    }
+  EXEC SQL CLOSE csr108;
+  generic_fix(sq, show_list_id, "Change ID", fix_list_id, 0);
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate list names");
+
+      EXEC SQL DECLARE csr109 CURSOR FOR
+	SELECT l1.list_id FROM list l1, list l2
+	WHERE l1.name = l2.name AND l1.rowid != l2.rowid;
+      EXEC SQL OPEN csr109;
+      while (1)
+	{
+	  EXEC SQL FETCH csr109 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(lists, id));
+	}
+      EXEC SQL CLOSE csr109;
+      generic_fix(sq, show_list_name, "Change name", cant_fix, 0);
+    }
+
+  dprintf("Loading filesys...\n");
+  sq = sq_create();
+  filesys = create_hash(30000);
+  if (!sq || !filesys)
+    out_of_mem("loading filesys");
+
+  EXEC SQL DECLARE csr110 CURSOR FOR
+    SELECT filsys_id, label, owner, owners, phys_id, mach_id,
+    type, name, modby FROM filesys ORDER BY filsys_id;
+  EXEC SQL OPEN csr110;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int filsys_id, owner, owners, phys_id, mach_id, modby;
+      char label[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
+      char name[FILESYS_NAME_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr110 INTO :filsys_id, :label, :owner, :owners,
+	:phys_id, :mach_id, :type, :name, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      f = malloc(sizeof(struct filesys));
+      if (!f)
+	out_of_mem("storing filesystems");
+      strcpy(f->name, strtrim(label));
+      strcpy(f->dir, strtrim(name));
+      f->filsys_id = filsys_id;
+      f->owner = owner;
+      f->owners = owners;
+      f->phys_id = phys_id;
+      f->mach_id = mach_id;
+      f->type = type[0];
+      retval = hash_store(filesys, filsys_id, f);
+      if (retval == -1)
+	out_of_mem("storing filesys in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(filesys, filsys_id));
+	  sq_save_data(sq, f);
+	}
+    }
+  EXEC SQL CLOSE csr110;
+
+  generic_fix(sq, show_fs_id, "Change ID", fix_fs_id, 0);
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate filesys names");
+
+      EXEC SQL DECLARE csr118 CURSOR FOR
+	SELECT fs1.filsys_id FROM filesys fs1, filesys fs2
+	WHERE fs1.label = fs2.label AND fs1.rowid != fs2.rowid;
+      EXEC SQL OPEN csr118;
+      while (1)
+	{
+	  EXEC SQL FETCH csr118 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(filesys, id));
+	}
+      EXEC SQL CLOSE csr118;
+      generic_fix(sq, show_fs_name, "Change name", cant_fix, 0);
+    }
+
+  dprintf("Loading nfsphys...\n");
+  sq = sq_create();
+  nfsphys = create_hash(500);
+  if (!sq || !nfsphys)
+    out_of_mem("loading nfsphs");
+
+  EXEC SQL DECLARE csr111 CURSOR FOR
+    SELECT nfsphys_id, dir, mach_id, TO_CHAR(allocated), modby FROM nfsphys;
+  EXEC SQL OPEN csr111;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int nfsphys_id, mach_id, modby;
+      char dir[NFSPHYS_DIR_SIZE];
+      char allocated[39];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr111 INTO :nfsphys_id, :dir, :mach_id,
+	:allocated, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      n = malloc(sizeof(struct nfsphys));
+      if (!n)
+	out_of_mem("storing nfsphys");
+      strcpy(n->dir, strtrim(dir));
+      n->mach_id = mach_id;
+      n->nfsphys_id = nfsphys_id;
+      n->allocated = strtoull(allocated, NULL, 0);
+      n->modby = modby;
+      n->count = 0;
+      retval = hash_store(nfsphys, nfsphys_id, n);
+      if (retval == -1)
+	out_of_mem("storing nfsphys in hash table");
+      else if (retval == 1)
+	{
+	  sq_save_data(sq, hash_lookup(nfsphys, nfsphys_id));
+	  sq_save_data(sq, n);
+	}
+    }
+  EXEC SQL CLOSE csr111;
+
+  generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
+
+  if (!fast)
+    {
+      dprintf("Checking printers...\n");
+
+      EXEC SQL DECLARE csr119 CURSOR FOR
+	SELECT p1.name FROM printers p1, printers p2
+	WHERE ( p1.name = p2.name AND p1.rowid < p2.rowid )
+	OR ( p1.name = p2.duplexname );
+      EXEC SQL OPEN csr119;
+      while (1)
+	{
+	  EXEC SQL BEGIN DECLARE SECTION;
+	  char name[PRINTERS_NAME_SIZE];
+	  EXEC SQL END DECLARE SECTION;
+
+	  EXEC SQL FETCH csr119 INTO :name;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  printf("Printer %s has duplicate name\n", name);
+	  cant_fix(0);
+	}
+      EXEC SQL CLOSE csr119;
+    }
+
+  dprintf("Loading printservers...\n");
+  printservers = create_hash(100);
+  if (!printservers)
+    out_of_mem("loading printservers");
+
+  EXEC SQL DECLARE csr_ps CURSOR FOR
+    SELECT mach_id, printer_types, owner_type, owner_id, lpc_acl, modby
+    FROM printservers;
+  EXEC SQL OPEN csr_ps;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, printer_types, owner_id, lpc_acl, modby;
+      char owner_type[PRINTSERVERS_OWNER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_ps INTO :mach_id, :printer_types, :owner_type,
+	:owner_id, :lpc_acl, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      ps = malloc(sizeof(struct printserver));
+      if (!ps)
+	out_of_mem("storing printserver");
+      ps->mach_id = mach_id;
+      ps->printer_types = printer_types;
+      ps->owner_type = owner_type[0];
+      ps->owner_id = owner_id;
+      ps->lpc_acl = lpc_acl;
+      ps->modby = modby;
+      retval = hash_store(printservers, mach_id, ps);
+      if (retval == -1)
+	out_of_mem("storing printserver in hash table");
+      else if (retval == 1)
+	{
+	  printf("Duplicate printserver mach_id %d\n", mach_id);
+	  cant_fix(0);
+	}
+    }
+  EXEC SQL CLOSE csr_ps;
+
+  if (!fast)
+    {
+      dprintf("Checking zephyr...\n");
+      
+      EXEC SQL DECLARE csr120 CURSOR FOR
+	SELECT z1.class FROM zephyr z1, zephyr z2
+	WHERE (z1.class = z2.class AND z1.rowid < z1.rowid);
+      EXEC SQL OPEN csr120;
+      while (1)
+	{
+	  EXEC SQL BEGIN DECLARE SECTION;
+	  char class[ZEPHYR_CLASS_SIZE];
+	  EXEC SQL END DECLARE SECTION;
+
+	  EXEC SQL FETCH csr120 INTO :class;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  printf("Zephyr class %s has duplicate name\n", class);
+	  cant_fix(0);
+	}
+      EXEC SQL CLOSE csr120;
+    }
+
+  dprintf("Loading containers...\n");
+  containers = create_hash(1000);
+  if (!containers)
+    out_of_mem("loading containers");
+
+  EXEC SQL DECLARE csr_cnts CURSOR FOR
+    SELECT name, cnt_id, list_id, acl_type, acl_id, memacl_type, memacl_id,
+    modby FROM containers;
+  EXEC SQL OPEN csr_cnts;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int cnt_id, list_id, acl_id, memacl_id, modby;
+      char name[CONTAINERS_NAME_SIZE];
+      char acl_type[CONTAINERS_ACL_TYPE_SIZE];
+      char memacl_type[CONTAINERS_MEMACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_cnts INTO :name, :cnt_id, :list_id, :acl_type,
+	:acl_id, :memacl_type, :memacl_id, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      cnt = malloc(sizeof(struct container));
+      if (!cnt)
+	out_of_mem("storing container");
+      strcpy(cnt->name, strtrim(name));
+      cnt->cnt_id = cnt_id;
+      cnt->list_id = list_id;
+      cnt->acl_type = acl_type[0];
+      cnt->acl_id = acl_id;
+      cnt->memacl_type = memacl_type[0];
+      cnt->memacl_id = memacl_id;
+      cnt->modby = modby;
+      retval = hash_store(containers, cnt_id, cnt);
+      if (retval == -1)
+	out_of_mem("storing container in hash table");
+      else if (retval == 1)
+	{
+	  printf("Duplicate container cnt_id %d\n", cnt_id);
+	  cant_fix(0);
+	}
+    }
+  EXEC SQL CLOSE csr_cnts;
+
+  if (!fast)
+    {
+      sq = sq_create();
+      if (!sq)
+	out_of_mem("looking for duplicate container names");
+
+      EXEC SQL DECLARE csr121 CURSOR FOR
+	SELECT cnt1.cnt_id FROM containers cnt1, containers cnt2
+	WHERE cnt1.name = cnt2.name AND cnt1.cnt_id != cnt2.cnt_id;
+      EXEC SQL OPEN csr121;
+      while (1)
+	{
+	  EXEC SQL FETCH csr121 INTO :id;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  sq_save_data(sq, hash_lookup(containers, id));
+	}
+      EXEC SQL CLOSE csr121;
+      generic_fix(sq, show_cnt_name, "Change name", cant_fix, 0);
+    }
+}

@@ -1,0 +1,46 @@
+# $Id: Makefile.in,v 1.5 1999-07-12 16:20:49 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=../lib/libmrclient.a @CURSES_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+OBJS=mailmaint.o
+
+TARGET=mailmaint
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) mailmaint $(bindir)
+
+$(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

@@ -1,0 +1,74 @@
+.TH MOIRAD 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.7 1998-05-26 18:14:12 danw Exp $
+.SH NAME
+moirad, startmoira \- Moira query daemon
+.SH SYNOPSIS
+.B moirad
+.br
+.B startmoira
+.SH DESCRIPTION
+The Moira server
+must be running on the machine hosting the Moira database for any of the
+Moira clients to function.  Rather than invoke
+.B moirad
+directly, it is started by
+.B startmoira,
+which starts the daemon running in the proper working directory and
+captures logging messages.
+.PP
+Logging is done to standard output.
+If critical errors are detected, they are logged to
+.B /moira/critical.log
+and in a zephyrgram to class
+.B MOIRA
+instance
+.B MOIRA
+in addition to standard output.
+Also, a journal file is kept in
+.B /moira/journal
+logging every successful change of the database in a format that can
+be replayed by
+.I mrtest(8).
+For the server to be able to function properly, it must be run as root
+and root must have access to the tables in the DBMS.
+.PP
+It is possible to shut down the database side of the server when it is
+necessary to lock out clients.  In this state the server will only
+respond to noop and motd requests.  When the file
+.B /etc/smsdown
+exists, the server will close the database the next time there are no
+clients using it.  To force the server to close down the database as
+soon as any active operation is finished, send it a USR1 signal.  The
+first time a new client connects after the
+.B /etc/smsdown
+file is removed, the database will be re-opened.  To force an
+immediate reopening, send the server a USR2 signal.  The contents of
+the
+.B /etc/smsdown
+file are returned as the Moira motd.
+.PP
+.B startmoira
+sets its working directory to /, disconnects from the terminal
+and puts itself in the background.  It then starts
+.B /moira/bin/moirad,
+and will capture lines the server writes to standard output and log them
+in
+.B /moira/moira.log
+along with a timestamp.
+.B startmoira
+will also log the exit status of the
+.B moirad
+if it is non-zero.
+.SH FILES
+/moira/moira.log
+.br
+/moira/critical.log
+.br
+/moira/journal
+.br
+/etc/smsdown
+.br
+/etc/athena/srvtab \- The server must be able to get Kerberos tickets for
+"moira.[servername]".
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on Moira.

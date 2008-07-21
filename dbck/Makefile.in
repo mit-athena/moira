@@ -1,0 +1,67 @@
+# $Id: Makefile.in,v 1.7 2000-09-10 02:53:27 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+LIBS=@SQL_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+DBCK_OBJS=dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+MEMBERS_OBJS=members.o
+OBJS= $(DBCK_OBJS) $(MEMBERS_OBJS)
+
+CFILES=dbck.c fix.c phase1.c phase2.c phase3.c phase4.c members.c
+
+TARGET=dbck members
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(INSTALL_PROGRAM) dbck $(mrbindir)
+	$(INSTALL_PROGRAM) members $(mrbindir)
+
+dbck: $(DBCK_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(DBCK_OBJS) $(LIBS)
+
+members: members.o $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) members.o $(LIBS)
+
+
+
+
+

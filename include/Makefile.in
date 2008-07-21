@@ -1,0 +1,19 @@
+# $Id: Makefile.in,v 1.2 1999-07-12 16:21:05 danw Exp $
+
+SHELL=/bin/sh
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+
+all:
+
+clean:
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install:

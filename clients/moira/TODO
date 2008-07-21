@@ -1,0 +1,28 @@
+	Things Left To Do in the SMS Client
+
+BUGS
+------------
+
+- Manual Page needs writing.
+
+- User Guide needs writing.
+
+Minor Changes
+-------------
+
+-  Add Kerberos code to register user.
+
+Major Fixes and Additions
+-------------------------
+
+-  Fix the D*** Menu Package.
+   a) It loses when the machine runs out of memory.
+
+-  An online help system needs to be worked out.
+
+-  Add writing to file on "> <filename>".
+
+Wish List
+---------
+
+-  Create X interface.

@@ -1,0 +1,46 @@
+# $Id: Makefile.in,v 1.11 2001-10-09 14:33:10 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sbindir=@sbindir@
+mandir=@mandir@
+mrbindir=@mrbindir@
+
+CLIENTDIRS=include lib clients update man @WEBMOIRA_SUBDIRS@
+SVRDIRS=db server backup dbck dcm gen regtape incremental @AFS_SYNCDIR@ @RSAREF_SUBDIRS@
+DEPDIRS=@COM_ERR_SUBDIR@
+
+SUBDIRS=$(CLIENTDIRS) @SVRSUBDIRS@
+
+all:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+clean:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+cleandir distclean:
+	rm -f config.log config.cache config.status Makefile
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+depend:
+	@if [ "x$(DEPDIRS)" != x ]; then \
+	    for d in $(DEPDIRS); do (echo "### Making all in $$d"; cd $$d; $(MAKE) all) || exit 1; done; \
+	fi
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+install:
+	$(srcdir)/mkinstalldirs $(bindir) $(sbindir) $(mrbindir) $(mandir)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+svrinstall:
+	$(srcdir)/mkinstalldirs $(mrbindir)
+	@for d in $(SVRDIRS); do (echo "### Making install in $$d"; cd $$d; $(MAKE) install) || exit 1; done
+
+world: depend all
+

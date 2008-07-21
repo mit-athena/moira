@@ -1,0 +1,41 @@
+#!/bin/sh -vx
+#
+#  Script to update Moira from Registrar and Personnel "tapes".
+
+if [ "filler $1" != "filler staff" -a "filler $1" != "filler student" ] ; then
+    echo "Bad argument $1"
+    echo "Usage: $0 [ staff | student ]"
+    exit 1
+fi
+who="$1"
+rdir=/moira
+bdir=$rdir/bin
+tdir=$rdir/tapes
+ldir=$rdir/load
+
+date=`date +%y%m%d`
+date=`expr $date - 1` # files are postdated by 1 day
+
+cd "$ldir" || exit 2
+
+if  [ -f "$tdir/$who.input.$date.Z" ] ; then
+
+    if [ -f "$ldir/$who.input.$date" ] ; then
+	echo "Pre-existing $ldir/$who.input.$date, will not overwrite."
+	exit 3
+    fi
+
+    zcat "$tdir/$who.input.$date.Z" | "$bdir/$who.cvt" \
+	> "$ldir/$who.input.$date"
+
+    [ -s "$ldir/$who.input.$date" ] \
+    && [ `diff $ldir/$who.input.last $ldir/$who.input.$date |wc -l` -lt 500 ] \
+    && rm $ldir/$who.input.last \
+    && ln -s $who.input.$date $ldir/$who.input.last \
+    && $bdir/$who -n $ldir/$who.input.$date > $ldir/$who.output.$date 2>&1 \
+
+#    && egrep -v "($who): (adding|updating)" $ldir/$who.output.$date \
+#	> $ldir/$who.err.$date 2>&1 \
+#    && cat /usr/local/lib/mail_header $who.err | mail dkk
+
+fi

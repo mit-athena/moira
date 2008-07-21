@@ -1,0 +1,67 @@
+# $Id: Makefile.in,v 1.12 2002-09-16 22:19:33 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+STUDENT_OBJS=student.o common.o
+STAFF_OBJS=staff.o common.o
+VOTE_OBJS=vote.o
+
+CFILES=student.c staff.c common.c vote.c
+
+TARGET=student staff vote
+SCRIPTS=grouper.pl staff.sql student.sql
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(STUDENT_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
+	rm -f $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+student: $(STUDENT_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(STUDENT_OBJS) $(SQL_LIBS) $(LIBS)
+
+staff: $(STAFF_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(STAFF_OBJS) $(SQL_LIBS) $(LIBS)
+
+vote: $(VOTE_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(VOTE_OBJS) $(SQL_LIBS) $(LIBS)

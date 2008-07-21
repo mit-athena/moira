@@ -1,0 +1,499 @@
+/* $Id: winad.pc,v 1.6 2004-07-26 20:17:10 zacheiss Exp $
+ *
+ * This generates the user, list, list membership, filesys data
+ * for windows active directory update
+ *
+ * (c) Copyright 1988-2001 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+#ifndef WINAD_SUBDIR
+#define WINAD_SUBDIR "winad"
+#endif
+
+char winad_dir[MAXPATHLEN];
+char *whoami = "winad.gen";
+char *db = "moira/moira";
+
+int do_user(void);
+int do_groups(void);
+int do_groupmembership(void);
+int do_containers(void);
+
+int main(int argc, char **argv)
+{
+  char cmd[64];
+  struct stat sb;
+  int changed = 0;
+
+  if (argc > 2)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
+  initialize_sms_error_table();
+  sprintf(winad_dir, "%s/%s", DCM_DIR, WINAD_SUBDIR);
+
+  EXEC SQL CONNECT :db;
+
+  changed = do_user();
+  changed += do_groups();
+  changed += do_groupmembership();
+  changed += do_containers();
+ 
+  if (!changed)
+  {
+    fprintf(stderr, "No files updated.\n");
+    if (argc == 2 && stat(argv[1], &sb) == 0)
+	    exit(MR_NO_CHANGE);
+  }
+
+  if (argc == 2)
+  {
+    fprintf(stderr, "Building tar file.\n");
+    sprintf(cmd, "cd %s; tar cf %s .", winad_dir, argv[1]);
+    if (system(cmd))
+	    exit(MR_TAR_FAIL);
+  }
+
+  exit(MR_SUCCESS);
+}
+
+
+int do_user(void)
+{
+  FILE *fout;
+  char foutf[MAXPATHLEN];
+  char foutft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[USERS_LOGIN_SIZE];
+  char mit_id[USERS_CLEARID_SIZE];
+  int users_id, unix_uid, status;
+  char type[FILESYS_TYPE_SIZE];
+  char name[FILESYS_NAME_SIZE];
+  char homedir[USERS_WINHOMEDIR_SIZE];
+  char profiledir[USERS_WINPROFILEDIR_SIZE];
+  int fid;
+  EXEC SQL END DECLARE SECTION;
+
+  sprintf(foutf, "%s/winuser.db", winad_dir);
+  sprintf(foutft, "%s~", foutf);
+
+  fout = fopen(foutft, "w");
+  if (!fout)
+  {
+    perror("cannot open winuser.db for write");
+    exit(MR_OCONFIG);
+  }
+
+  EXEC SQL DECLARE u_cursor CURSOR FOR
+    SELECT users_id, login, unix_uid, status, clearid, winhomedir,
+    winprofiledir
+    FROM users
+    ORDER BY users_id;
+  EXEC SQL OPEN u_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH u_cursor INTO :users_id, :login, :unix_uid, :status,
+:mit_id, :homedir, :profiledir;
+      if (sqlca.sqlcode)
+	      break;
+      strtrim(login);
+      strtrim(mit_id);
+      strtrim(homedir);
+      strtrim(profiledir);
+
+      if (strcmp(mit_id, "") == 0)
+	strcpy(mit_id, "0");
+
+      if (strcasecmp(homedir, "[AFS]") == 0 || strcasecmp(profiledir,
+							  "[AFS]") == 0)
+	{
+	  EXEC SQL SELECT filsys_id into :fid
+	    FROM filesys
+	    WHERE lockertype = 'HOMEDIR' 
+	    AND label = :login
+	    AND type = 'FSGROUP';
+	  
+	  if (sqlca.sqlcode == 0)
+	    {
+	      EXEC SQL DECLARE f_cursor CURSOR FOR
+		SELECT type, name 
+		FROM filesys a, fsgroup b
+		WHERE a.filsys_id=b.filsys_id 
+		AND b.group_id=:fid
+		ORDER by key;
+	      
+	      EXEC SQL OPEN f_cursor;
+	      
+	      EXEC SQL FETCH f_cursor INTO :type, :name;
+	      
+	      if (sqlca.sqlcode == 0)
+		{
+		  strtrim(type);
+		  strtrim(name);
+		}
+	      else
+		{
+		  strcpy(type, "NONE");
+		  strcpy(name, "NONE");
+		}
+	      
+	      EXEC SQL CLOSE f_cursor;
+	    }
+
+	  else
+	    {
+	      EXEC SQL SELECT type, name into :type, :name
+		FROM filesys
+		WHERE lockertype = 'HOMEDIR' 
+		AND label=:login;
+	      
+	      if (sqlca.sqlcode == 0)
+		{
+		  strtrim(type);
+		  strtrim(name);
+		}
+	      else
+		{
+		  strcpy(type, "NONE");
+		  strcpy(name, "NONE");
+		}
+	    }
+	  if (strcasecmp(type, "AFS") != 0)
+	    strcpy(name, "[LOCAL]");
+
+	}
+
+      if (strcasecmp(homedir, "[AFS]") == 0)
+	strcpy(homedir, name);
+
+      if (strcasecmp(profiledir, "[AFS]") == 0)
+	{
+	  strcpy(profiledir, name);
+	  if (strcasecmp(name, "[LOCAL]"))
+	    strcat(profiledir, "/.winprofile");
+	}
+  
+      fprintf(fout, "%d %s %d %d %s %s %s\n",
+		      users_id, login, unix_uid, status, mit_id, 
+	      homedir, profiledir);
+    }
+  
+  if (sqlca.sqlcode < 0)
+    db_error(sqlca.sqlcode);
+  EXEC SQL CLOSE u_cursor;
+  EXEC SQL COMMIT;
+
+  if (fclose(fout))
+  {
+    fprintf(stderr, "Unsuccessful file close of winuser.db\n");
+    exit(MR_CCONFIG);
+  }
+
+  fix_file(foutf);
+
+  return 1;
+}
+
+int do_groups(void)
+{
+  FILE *fout;
+  char foutf[MAXPATHLEN];
+  char foutft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char listname[LIST_NAME_SIZE];
+  char description[LIST_DESCRIPTION_SIZE];
+  char acltype[LIST_ACL_TYPE_SIZE];
+  int aclid;
+  char aclname[STRINGS_STRING_SIZE];
+  int list_id, active, publicflg, hidden, maillist, grouplist;
+  EXEC SQL END DECLARE SECTION;
+
+  sprintf(foutf, "%s/wingroup.db", winad_dir);
+  sprintf(foutft, "%s~", foutf);
+
+  fout = fopen(foutft, "w");
+  if (!fout)
+  {
+    perror("cannot open wingroup.db for write");
+    exit(MR_OCONFIG);
+  }
+
+  EXEC SQL DECLARE l_cursor CURSOR FOR
+    SELECT list_id, name, active, publicflg, hidden, maillist,
+    grouplist, description, acl_type, acl_id
+    FROM list
+    ORDER BY list_id;
+  EXEC SQL OPEN l_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH l_cursor INTO :list_id, :listname, :active, :publicflg,
+	:hidden, :maillist, :grouplist, :description, :acltype, :aclid;
+      
+      if (sqlca.sqlcode)
+	      break;
+
+      strtrim(listname);
+      strtrim(description);
+      strtrim(acltype);
+
+      
+      strcpy(aclname, "NONE");
+      if (strcmp(acltype, "LIST") == 0)
+      {
+        EXEC SQL SELECT name into :aclname
+        FROM list
+        WHERE list_id = :aclid;
+      }
+      else if (strcmp(acltype, "USER") == 0)
+      {
+        EXEC SQL SELECT login into :aclname
+        FROM users
+        WHERE users_id = :aclid;
+      }
+      else if (strcmp(acltype, "KERBEROS") == 0)
+      {
+        EXEC SQL SELECT string into :aclname
+        FROM strings
+        WHERE string_id = :aclid;
+      }
+      
+      strtrim(aclname);
+       
+      fprintf(fout, "%d %s %d %d %d %d %d %s %s %s\n",
+		    list_id, listname, active, publicflg, hidden, maillist,
+	      grouplist, acltype, aclname, description);
+	}
+
+  if (sqlca.sqlcode < 0)
+    db_error(sqlca.sqlcode);
+  EXEC SQL CLOSE l_cursor;
+  EXEC SQL COMMIT;
+
+  if (fclose(fout))
+  {
+    fprintf(stderr, "Unsuccessful file close of wingroup.db\n");
+    exit(MR_CCONFIG);
+  }
+
+  fix_file(foutf);
+  return 1;
+}
+
+int do_groupmembership(void)
+{
+  FILE *fout;
+  char foutf[MAXPATHLEN];
+  char foutft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char member_type[IMEMBERS_MEMBER_TYPE_SIZE];
+  char member_name[STRINGS_STRING_SIZE];
+  int list_id;
+  EXEC SQL END DECLARE SECTION;
+
+  sprintf(foutf, "%s/wingmember.db", winad_dir);
+  sprintf(foutft, "%s~", foutf);
+
+  fout = fopen(foutft, "w");
+  if (!fout)
+  {
+    perror("cannot open wingmember.db for write");
+    exit(MR_OCONFIG);
+  }
+
+  EXEC SQL DECLARE list_cursor CURSOR FOR
+    SELECT list_id
+    FROM list
+    WHERE active != 0
+    ORDER BY list_id;
+  EXEC SQL OPEN list_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH list_cursor INTO :list_id;
+      
+      if (sqlca.sqlcode)
+	      break;
+      
+      /* get all the users */
+      EXEC SQL DECLARE csr001 CURSOR FOR
+        SELECT i.member_type, u.login
+        FROM users u, imembers i
+        WHERE i.list_id = :list_id AND i.member_type = 'USER'
+        AND i.member_id = u.users_id 
+        ORDER BY u.login;
+
+      EXEC SQL OPEN csr001;
+      while(1)
+      {
+        EXEC SQL FETCH csr001 into :member_type, :member_name;
+        if (sqlca.sqlcode)
+          break;
+        fprintf(fout, "%d %s %s\n",
+		      list_id, member_type, member_name);
+      }
+
+      if (sqlca.sqlcode < 0)
+        db_error(sqlca.sqlcode);
+      EXEC SQL CLOSE csr001;
+
+      /* get all the KERBEROS AND STRINGS */
+      EXEC SQL DECLARE csr002 CURSOR FOR
+        SELECT i.member_type, s.string
+        FROM strings s, imembers i
+        WHERE i.list_id = :list_id AND 
+        (i.member_type = 'KERBEROS' OR i.member_type = 'STRING')
+        AND i.member_id = s.string_id 
+        ORDER BY s.string;
+
+      EXEC SQL OPEN csr002;
+      while(1)
+      {
+        EXEC SQL FETCH csr002 into :member_type, :member_name;
+        if (sqlca.sqlcode)
+          break;
+        fprintf(fout, "%d %s %s\n",
+		      list_id, member_type, member_name);
+      }
+
+      if (sqlca.sqlcode < 0)
+        db_error(sqlca.sqlcode);
+
+      EXEC SQL CLOSE csr002;
+
+      /* get all the machines */
+      EXEC SQL DECLARE csr003 CURSOR FOR
+	SELECT i.member_type, m.name
+	FROM machine m, imembers i
+	WHERE i.list_id = :list_id AND i.member_type = 'MACHINE'
+	AND i.member_id = m.mach_id
+	ORDER BY m.name;
+
+      EXEC SQL OPEN csr003;
+      while (1)
+	{
+	  EXEC SQL FETCH csr003 into :member_type, :member_name;
+	  if (sqlca.sqlcode)
+	    break;
+	  fprintf(fout, "%d %s %s\n", list_id, member_type, member_name);
+	}
+
+      if (sqlca.sqlcode < 0)
+	db_error(sqlca.sqlcode);
+       EXEC SQL CLOSE csr003;
+    }
+
+  if (sqlca.sqlcode < 0)
+    db_error(sqlca.sqlcode);
+
+  EXEC SQL CLOSE list_cursor;
+  EXEC SQL COMMIT;
+
+  if (fclose(fout))
+  {
+    fprintf(stderr, "Unsuccessful file close of wingmember.db\n");
+    exit(MR_CCONFIG);
+  }
+
+  fix_file(foutf);
+  return 1;
+}
+
+int do_containers(void)
+{
+  FILE *fout;
+  char foutf[MAXPATHLEN];
+  char foutft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char container_name[CONTAINERS_NAME_SIZE];
+  char acl_type[CONTAINERS_ACL_TYPE_SIZE];
+  char acl_name[STRINGS_STRING_SIZE];
+  char description[CONTAINERS_DESCRIPTION_SIZE];
+  int cnt_id;
+  int acl_id;
+  EXEC SQL END DECLARE SECTION;
+
+  sprintf(foutf, "%s/wincontainer.db", winad_dir);
+  sprintf(foutft, "%s~", foutf);
+
+  fout = fopen(foutft, "w");
+  if (!fout)
+  {
+    perror("cannot open wincontainer.db for write");
+    exit(MR_OCONFIG);
+  }
+
+  EXEC SQL DECLARE container_cursor CURSOR FOR
+    SELECT name, cnt_id, acl_type, acl_id, description
+    FROM containers
+    ORDER BY cnt_id, name;
+  EXEC SQL OPEN container_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH container_cursor INTO :container_name, :cnt_id, 
+      :acl_type, :acl_id, :description ;
+      
+      if (sqlca.sqlcode)
+	      break;
+      
+      strtrim(container_name);
+      strtrim(acl_type);
+      strtrim(description);
+
+      strcpy(acl_name, "NONE");
+      if (strcmp(acl_type, "LIST") == 0)
+      {
+        EXEC SQL SELECT name into :acl_name
+        FROM list
+        WHERE list_id = :acl_id;
+      }
+      else if (strcmp(acl_type, "USER") == 0)
+      {
+        EXEC SQL SELECT login into :acl_name
+        FROM users
+        WHERE users_id = :acl_id;
+      }
+      else if (strcmp(acl_type, "KERBEROS") == 0)
+      {
+        EXEC SQL SELECT string into :acl_name
+        FROM strings
+        WHERE string_id = :acl_id;
+      }
+      
+      strtrim(acl_name);
+       
+      fprintf(fout, "%d,%s,%s,%s,%s\n",
+		    cnt_id, container_name, acl_type, acl_name,
+        description);
+	}
+  if (sqlca.sqlcode < 0)
+    db_error(sqlca.sqlcode);
+
+  EXEC SQL CLOSE container_cursor;
+  EXEC SQL COMMIT;
+
+  if (fclose(fout))
+  {
+    fprintf(stderr, "Unsuccessful file close of wincontainer.db\n");
+    exit(MR_CCONFIG);
+  }
+
+  fix_file(foutf);
+  return 1;
+}
+

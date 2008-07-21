@@ -1,0 +1,252 @@
+	error_table	krb
+
+	ec		KE_KSUCCESS,
+			"Kerberos successful"
+
+	ec		KE_KDC_NAME_EXP,
+			"Kerberos principal expired"
+
+	ec		KE_KDC_SERVICE_EXP,
+			"Kerberos service expired"
+
+	ec		KE_KDC_AUTH_EXP,
+			"Kerberos auth expired"
+
+	ec		KE_KDC_PKT_VER,
+			"Incorrect kerberos master key version"
+
+	ec		KE_KDC_P_MKEY_VER,
+			"Incorrect kerberos master key version"
+
+	ec		KE_KDC_S_MKEY_VER,
+			"Incorrect kerberos master key version"
+
+	ec		KE_KDC_BYTE_ORDER,
+			"Kerberos error: byte order unknown"
+
+	ec		KE_KDC_PR_UNKNOWN,
+			"Kerberos principal unknown"
+
+	ec		KE_KDC_PR_N_UNIQUE,
+			"Kerberos principal not unique"
+
+	ec		KE_KDC_NULL_KEY,
+			"Kerberos principal has null key"
+
+	ec		KRB_RES11,
+		        "Reserved 11"
+
+	ec		KRB_RES12,
+		        "Reserved 12"
+
+	ec		KRB_RES13,
+		        "Reserved 13"
+
+	ec		KRB_RES14,
+		        "Reserved 14"
+
+	ec		KRB_RES15,
+		        "Reserved 15"
+
+	ec		KRB_RES16,
+		        "Reserved 16"
+
+	ec		KRB_RES17,
+		        "Reserved 17"
+
+	ec		KRB_RES18,
+		        "Reserved 18"
+
+	ec		KRB_RES19,
+		        "Reserved 19"
+
+	ec		KE_KDC_GEN_ERR,
+			"Generic error from Kerberos KDC"
+
+	ec		KE_GC_TKFIL,
+			"Can't read Kerberos ticket file"
+
+	ec		KE_GC_NOTKT,
+			"Can't find Kerberos ticket or TGT"
+
+	ec		KRB_RES23,
+			"Reserved 23"
+
+	ec		KRB_RES24,
+			"Reserved 24"
+
+	ec		KRB_RES25,
+			"Reserved 25"
+
+	ec		KE_MK_AP_TGTEXP,
+			"Kerberos TGT Expired"
+
+	ec		KRB_RES27,
+			"Reserved 27"
+
+	ec		KRB_RES28,
+			"Reserved 28"
+
+	ec		KRB_RES29,
+			"Reserved 29"
+
+	ec		KRB_RES30,
+			"Reserved 30"
+
+	ec		KE_RD_AP_UNDEC,
+			"Kerberos error: Can't decode authenticator"
+
+	ec		KE_RD_AP_EXP,
+			"Kerberos ticket expired"
+
+	ec		KE_RD_AP_NYV,
+			"Kerberos ticket not yet valid"
+
+	ec		KE_RD_AP_REPEAT,
+			"Kerberos error: Repeated request"
+
+	ec		KE_RD_AP_NOT_US,
+			"The kerberos ticket isn't for us"
+
+	ec		KE_RD_AP_INCON,
+			"Kerberos request inconsistent"
+
+	ec		KE_RD_AP_TIME,
+			"Kerberos error: delta_t too big"
+
+	ec		KE_RD_AP_BADD,
+			"Kerberos error: incorrect net address"
+
+	ec		KE_RD_AP_VERSION,
+			"Kerberos protocol version mismatch"
+
+	ec		KE_RD_AP_MSG_TYPE,
+			"Kerberos error: invalid msg type"
+
+	ec		KE_RD_AP_MODIFIED,
+			"Kerberos error: message stream modified"
+
+	ec		KE_RD_AP_ORDER,
+			"Kerberos error: message out of order"
+
+	ec		KE_RD_AP_UNAUTHOR,
+			"Kerberos error: unauthorized request"
+
+	ec		KRB_RES44,
+			"Reserved 44"
+
+	ec		KRB_RES45,
+			"Reserved 45"
+
+	ec		KRB_RES46,
+			"Reserved 46"
+
+	ec		KRB_RES47,
+			"Reserved 47"
+
+	ec		KRB_RES48,
+			"Reserved 48"
+
+	ec		KRB_RES49,
+			"Reserved 49"
+
+	ec		KRB_RES50,
+			"Reserved 50"
+
+	ec		KE_GT_PW_NULL,
+			"Kerberos error: current PW is null"
+
+	ec		KE_GT_PW_BADPW,
+			"Kerberos error: Incorrect current password"
+
+	ec		KE_GT_PW_PROT,
+			"Kerberos protocol error"
+
+	ec		KE_GT_PW_KDCERR,
+			"Error returned by Kerberos KDC"
+
+	ec		KE_GT_PW_NULLTKT,
+			"Null Kerberos ticket returned by KDC"
+
+	ec		KE_SKDC_RETRY,
+			"Kerberos error: Retry count exceeded"
+
+	ec		KE_SKDC_CANT,
+			"Kerberos error: Can't send request"
+
+	ec		KRB_RES58,
+			"Reserved 58"
+
+	ec		KRB_RES59,
+			"Reserved 59"
+
+	ec		KRB_RES60,
+			"Reserved 60"
+
+	ec		KE_INTK_W_NOTALL,
+			"Kerberos error: not all tickets returned"
+
+	ec		KE_INTK_BADPW,
+			"Kerberos error: incorrect password"
+
+	ec		KE_INTK_PROT,
+			"Kerberos error: Protocol Error"
+
+	ec		KRB_RES64,
+			"Reserved 64"
+
+	ec		KRB_RES65,
+			"Reserved 65"
+
+	ec		KRB_RES66,
+			"Reserved 66"
+
+	ec		KRB_RES67,
+			"Reserved 67"
+
+	ec		KRB_RES68,
+			"Reserved 68"
+
+	ec		KRB_RES69,
+			"Reserved 69"
+
+	ec		KE_INTK_ERR,
+			"Other error"
+
+	ec		KE_AD_NOTGT,
+			"Don't have Kerberos ticket-granting ticket"
+
+	ec		KRB_RES72,
+			"Reserved 72"
+
+	ec		KRB_RES73,
+			"Reserved 73"
+
+	ec		KRB_RES74,
+			"Reserved 74"
+
+	ec		KRB_RES75,
+			"Reserved 75"
+
+	ec		KE_NO_TKT_FIL,
+			"No ticket file found"
+
+	ec		KE_TKT_FIL_ACC,
+			"Couldn't access ticket file"
+
+	ec		KE_TKT_FIL_LCK,
+			"Couldn't lock ticket file"
+
+	ec		KE_TKT_FIL_FMT,
+			"Bad ticket file format"
+
+	ec		KE_TKT_FIL_INI,
+			"tf_init not called first"
+
+	ec		KE_KNAME_FMT,
+			"Bad Kerberos name format"
+
+# 82 is next!
+
+	end
+

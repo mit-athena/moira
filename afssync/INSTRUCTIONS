@@ -1,0 +1,196 @@
+The executables are in /moira/bin/ on the moira server, with sources
+in /mit/moiradev/src/afssync/.  Most of the commands are run on the
+Moira server.
+
+####	Set up a workspace						####
+
+mkdir -p /moira/sync
+cd /moira/sync
+
+####	This is preparation for the resync, to save non-Moira users.    ####
+First, get a recent copy of the prdb, and extract non-Moira entries:
+
+	/moira/bin/udebug prill -port 7002
+	rcp -px root@prill:/usr/afs/db/prdb.DB0 prdb.old
+	/moira/bin/udebug prill -port 7002
+If the two udebugs show that the version changed, lather-rinse-repeat.
+(udebug can be found in /usr/athena/bin; "prill" here and below is some 
+DB server)
+(Also check for "0 of them for write" at the end.  It might matter.)
+
+	/moira/bin/pt_util -x -m -u -g -d prdb.extra -p prdb.old
+	perl /moira/bin/pt_util.pl < prdb.extra > prdb.extra.sort
+to extract and prepare the personal groups and special user entries in
+the old prdb for being reincorporated into the new prdb.
+
+	awk -F\| '$9 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
+
+and the following perl script:
+
+#!/usr/athena/bin/perl -w
+
+open(OUT, ">prdb.extra.trimmed");
+
+for ( `cat /tmp/deactivated` ) {
+    chop;
+    $ex{$_} = 1;
+}
+
+$punt = 0;
+
+foreach $L ( `cat prdb.extra.sort` ) {
+    @w = split(/ /,$L);
+    $_ = $w[0];
+    if ( /:/ ) {
+        @x = split(/:/,$w[0]);
+        if ($ex{$x[0]}) {
+            $punt=1;
+        } else {
+            $punt=0;
+        }
+    } else {
+	# If we got here, we're either a user, a prefixless
+	# group, or a group member.
+	$punt = 0 if $w[0];
+    }
+    print OUT $L unless $punt == 1;
+}
+
+close(OUT);
+exit 0;
+
+to remove the personal groups for users who are deactivated
+
+	awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' prdb.extra.trimmed \
+		> foreign
+	blanche afs-foreign-users -f foreign
+Get a list of all the @andrew.cmu.edu type (non- athena.mit.edu cell)
+users, and sync the Moira list afs-foreign-users to this list.
+Moira then adds those entries to the group system:afs-foreign-users,
+thus keeping them from being lost in the prdb resync.
+Sanity checking the diffs before running the blanche command is recommended.
+
+	awk '/^[^ 0-9][^:@]*$/ {printf "KERBEROS:%s@ATHENA.MIT.EDU\n",$1}' \
+		prdb.extra.trimmed > oddities
+	awk '/^[^ ][0-9.]* .*$/ {printf "KERBEROS:%s\n",$1}' prdb.extra.trimmed\
+		 >> oddities
+	echo "LIST:afs-foreign-users" >> oddities
+	blanche afs-odd-entities -f oddities
+Do the equivalent of afs-foreign-users for domestic users.  We make
+the afs-foreign-users list a member of the more general afs-odd-entities.
+Sanity checking the diffs before running the blanche command is recommended.
+
+WAIT for the incremental updates from the `blanche` changes to complete.
+
+####   Now the actual resync begins.  Incremental updates must stop.   ####
+
+	touch /moira/afs/noafs
+to disable AFS incremental updates during the synchronization.  The
+afs.incr (?) will wait 30 minutes on an incremental update before
+timing out, so the resync should complete in that time, or list
+changes in Moira might need to be propagated by hand.
+
+	/moira/bin/afssync prdb.moira
+to dump the prdb data that is in Moira (users, groups, and group
+memberships).  This step takes about ten minutes, but can be done
+concurrently with the next few steps.
+
+REPEAT the above commands, thus regenerating prdb.trimmed from a now
+completely-up-to-date prdb.
+
+*** Make sure the "afssync" command has completed ***
+
+	cp prdb.moira prdb.new
+	/moira/bin/pt_util -w -d prdb.extra.trimmed -p prdb.new \
+		>& prdb.extra.err
+This use of pt_util will presumably log errors about failed user
+creations and list additions.  (To start over, do both the `cp` and
+`pt_util` again.)  You can filter out the "User or group doesn't exist"
+type of lines that were caused by a user deactivation with something
+like:
+	awk -F\| '$9 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
+	perl -e 'for(`cat /tmp/deactivated`){ chop; $ex{$_}=1;} \
+		foreach $L (`cat prdb.extra.err`){ $f=0; \
+		@w=split(/[ :]/,$L); for(@w){ $f=1 if $ex{$_}; } \
+		next if $f; print $L; }'
+Now, back to the resync.
+
+The only remaining errors should be errors creating system:foo groups,
+be cause they already exist.  These generally mean that that group has
+an odd user on it (root instance, IP acl, etc.) and can safely be
+ignored.
+
+Errors of the form:
+Error while creating dcctdw:foo: Badly formed name (group prefix doesn't match owner?)
+are probably an indication that a user with personal groups had a
+username change (in the past they have also meant that a user with
+personal groups was deactivated and the uid was re-used (this was
+becasue we didn't trim the prdb.extra.sort file in the past.))
+Assuming htese errors are due to a username change, the groups should
+be renamed, and you should regenerate prdb.extra.trimmed starting with
+a fresh prdb from prill.  (You may want to abort and
+rm /moira/afs/noafs and try again later.)
+
+	pts listmax > prdb.listmax
+	foreach i ( <db servers> )
+	    rsh $i -l root -x /bin/athena/detach -a 	# detach packs
+	    rsh $i -l root -x rm -f /usr/afs/db/{prdb.new,pre-resync-prdb}
+	    rcp -px prdb.new root@${i}:/usr/afs/db/prdb.new
+	end						# staging
+	foreach i ( <db servers> )
+	    bos shutdown $i ptserver -wait
+	    bos exec $i "mv /usr/afs/db/prdb.DB0 /usr/afs/db/pre-resync-prdb; rm /usr/afs/db/prdb.DB*; mv /usr/afs/db/prdb.new /usr/afs/db/prdb.DB0"
+	end
+	foreach i ( <db servers> )
+	    bos restart $i ptserver
+	end
+
+	/moira/bin/udebug prill -port 7002
+to watch the status of the servers to make sure things are going well,
+where "prill" is preferred db server (the sync site).
+
+Make sure the beacons are working, and that once quorum is established
+(~90 seconds) that the servers are resynchronizing their notions of
+the databases and that the "dbcurrent" and "up" fields all become set
+and the state goes to "1f".  Also, if "sdi" isn't running, watch out
+for large rx packet queues on port 7002 using rxdebug, as the
+fileservers may get excessively backlogged, and restart servers, if
+necessary, if the congestion remains excessive.
+
+	pts listmax
+	cat prdb.listmax
+and if the id maxima are lower than the saved ones, reset them
+appropriately to the saved ones using `pts setmax`.
+
+	pts ex system:administrators
+as a good spot check, especially since it has special people.
+(also spot check one of the personal groups and perhaps, something like
+the membership of rcmd.reynelda)
+
+	rm /moira/afs/noafs
+to remove the lock file and let Moira's afs incrementals continue.
+
+	The afssync program doesn't deal with null instance KERBEROS
+members of lists which are groups (example: if LIST zacheiss contains
+KERBEROS zacheiss@ATHENA.MIT.EDU).  To get around this, run:
+
+/moira/bin/sync.pl
+
+Which will create /var/tmp/sync.out, which contains the pts commands
+needed to add all the null instance KERBEROS members back to the pts
+groups they belong in.  If it looks sane, run:
+
+sh /var/tmp/sync.out
+
+Any failed additions are probably from lists that contain both USER
+username and KERBEROS username@ATHENA.MIT.EDU.
+
+NOTES
+
+1. Don't do this when you're tired...  There may be no cleanup procedure
+available, with certain mistakes.
+
+2. /moira/afs/noafs is only good for 30 minutes.  Keep track of the
+critical log, and you may have to do some operations by hand when the
+operation is complete.  Also, if requests depend on other requests, they
+may be processed out of order, and fail, and may need to be done by hand.

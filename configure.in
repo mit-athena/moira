@@ -1,0 +1,468 @@
+AC_INIT(patchlevel.h)
+
+dnl On Athena at least, many of the packages (krb, zephyr, hesiod, etc)
+dnl will all be in /usr/athena... this hack lets us not end up with 10
+dnl copies of -I/usr/athena/include -L/usr/athena/lib in our command lines
+AC_DEFUN(MR_EXTEND, [
+    case $$1 in
+	*$2*) ;;
+	*) $1=$2\ $$1 ;;
+    esac
+])
+
+AC_CANONICAL_HOST
+# SO_LDFLAGS setting below is a great big ick.
+# But it beats sucking in libtool for one small part of the source tree.
+case $host_os in
+solaris*)
+	short_os=solaris
+	SO_LDFLAGS="-G"
+	;;
+irix*)
+	short_os=irix
+	SO_LDFLAGS="-shared"
+	;;
+linux*)
+	short_os=linux
+	SO_LDFLAGS="-shared"
+	;;
+esac
+AC_SUBST(SO_LDFLAGS)
+
+dnl Define for both C and Pro*C
+AC_DEFUN(MR_DEFINE, [
+    AC_DEFINE($1)
+    MR_EXTEND(PRO_C_DEFS, DEFINE=$1)
+])
+
+dnl Add to include path for both C and Pro*C
+AC_DEFUN(MR_INCLUDE, [
+    MR_EXTEND(CPPFLAGS, -I$1)
+    MR_EXTEND(PRO_C_INCLUDES, INCLUDE=$1)
+]) 
+
+dnl Add to lib path
+AC_DEFUN(MR_LIBS, [MR_EXTEND(LIBPATH, -L$1)])
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_MAKE_SET
+
+if test "$athena" = true; then
+    enable_athena=yes
+    prefix=/afs/.athena.mit.edu/system/moira
+    bindir=$prefix/arch/$ATHENA_SYS/bin
+    sbindir=$bindir
+    MR_INCLUDE(/usr/athena/include)
+    MR_INCLUDE(/usr/athena/include/kerberosIV)
+    MR_LIBS(/usr/athena/lib)
+fi
+
+# We currently just don't support changing this
+mrbindir=/moira/bin
+AC_SUBST(mrbindir)
+
+# Athena-local policy decisions
+AC_MSG_CHECKING(for Athena)
+AC_ARG_ENABLE(athena,
+    [  --enable-athena         Enable Athena-specific policy decisions],
+    , [if test "$athena" = true; then
+           enableval=yes
+       else
+	   enableval=no
+       fi])
+AC_MSG_RESULT($enableval)
+if test "$enableval" = yes; then
+    MR_DEFINE(ATHENA)
+fi
+
+# Networking libraries
+AC_CHECKING(network libraries...)
+AC_CHECK_FUNC(gethostbyname, :,
+	      AC_CHECK_LIB(nsl, gethostbyname, ,
+			   AC_CHECK_LIB(resolv, gethostbyname)))
+AC_CHECK_FUNC(socket, :,
+	      AC_CHECK_LIB(socket, socket, ,
+			   AC_CHECK_LIB(socket, socket,
+					LIBS="-lsocket -lnsl $LIBS", :,
+					-lnsl)))
+
+# com_err (required, but can be built)
+AC_MSG_CHECKING(for com_err)
+AC_ARG_WITH(com_err,
+    [  --with-com_err=PREFIX   Specify location of com_err],
+    [AC_MSG_RESULT($withval)
+     if test $withval = "no"; then
+         AC_MSG_ERROR(com_err is required for Moira)
+     fi
+     if test $withval != "yes"; then
+	 MR_INCLUDE($withval/include)
+	 MR_LIBS($withval/lib)
+     fi
+     COMPILE_ET=compile_et],
+    [AC_MSG_RESULT(util/et)
+     MR_INCLUDE(`pwd`/util/et)
+     MR_LIBS(`pwd`/util/et)
+     COMPILE_ET=`pwd`/util/et/compile_et
+     AC_CONFIG_SUBDIRS(util/et)])
+AC_SUBST(COM_ERR_SUBDIR)
+AC_SUBST(COMPILE_ET)
+
+# Kerberos (Kerberos 4 required, Kerberos 5 optional for reg_svr)
+AC_MSG_CHECKING(for Kerberos 4)
+AC_ARG_WITH(krb4,
+    [  --with-krb4=PREFIX      Specify location of krb4],
+    [krb4="$withval"], [krb4=no])
+AC_MSG_RESULT($krb4)
+if test $krb4 = "no"; then
+    AC_MSG_ERROR(Kerberos is required for Moira)
+fi
+if test "$krb4" != yes; then
+    MR_INCLUDE($krb4/include)
+    if test -d "$krb4/include/kerberosIV"; then
+	MR_INCLUDE($krb4/include/kerberosIV)
+    fi
+    MR_LIBS($krb4/lib)
+elif test -d /usr/include/kerberosIV; then
+    MR_INCLUDE(/usr/include/kerberosIV)
+fi
+AC_CHECK_LIB(k5crypto, main, crypto="k5crypto",
+             [AC_CHECK_LIB(crypto, main, crypto="crypto")])
+AC_CHECK_LIB(krb4, krb_rd_req,
+	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"],
+	     [AC_CHECK_LIB(krb, krb_rd_req,
+			   [KRB4_LIBS="-lkrb -ldes"],
+			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
+			   $LIBPATH -ldes)],
+	     $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
+
+AC_MSG_CHECKING(for Kerberos 5)
+AC_ARG_WITH(krb5,
+    [  --with-krb5=PREFIX      Specify location of krb5 (for reg_svr)],
+    [krb5="$withval"], [krb5=no])
+AC_MSG_RESULT($krb5)
+if test "$krb5" != no; then
+    REG_SVR_DEFS=-DKRB5
+    if test "$krb5" != yes; then
+	REG_SVR_INCLUDES=-I$krb5/include
+	REG_SVR_LIBS=-L$krb5/lib
+    fi
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
+else
+    REG_SVR_DEFS=-DKRB4
+    REG_SVR_LIBS=-lkadm
+fi
+AC_SUBST(REG_SVR_DEFS)
+AC_SUBST(REG_SVR_INCLUDES)
+AC_SUBST(REG_SVR_LIBS)
+
+# Hesiod support
+AC_MSG_CHECKING(for Hesiod)
+AC_ARG_WITH(hesiod,
+    [  --with-hesiod=PREFIX    Specify location of Hesiod],
+    [hesiod="$withval"], [hesiod=no])
+AC_MSG_RESULT($hesiod)
+if test "$hesiod" != no; then
+    if test "$hesiod" != yes; then
+	MR_INCLUDE($hesiod/include)
+	MR_LIBS($hesiod/lib)
+    fi
+    AC_CHECK_FUNC(res_send, :,
+		  AC_CHECK_LIB(resolv, res_send))
+    AC_CHECK_LIB(hesiod, hes_resolve, :,
+		 [AC_MSG_ERROR(Hesiod library not found)],
+		 $LIBPATH $LIBS)
+    MR_DEFINE(HAVE_HESIOD)
+fi
+
+# Zephyr support
+AC_MSG_CHECKING(for Zephyr)
+AC_ARG_WITH(zephyr,
+    [  --with-zephyr=PREFIX    Specify location of Zephyr],
+    [zephyr="$withval"], [zephyr=no])
+AC_MSG_RESULT($zephyr)
+if test "$zephyr" != no; then
+    if test "$zephyr" != yes; then
+	MR_INCLUDE($zephyr/include)
+	MR_LIBS($zephyr/lib)
+    fi
+    AC_CHECK_LIB(zephyr, ZInitialize, :,
+		 [AC_MSG_ERROR(Zephyr library not found)],
+		 $LIBPATH $KRB4_LIBS -lcom_err)
+    MR_DEFINE(HAVE_ZEPHYR)
+fi
+
+# RSAREF support (default: build util/rsaref if present)
+AC_MSG_CHECKING(for RSAREF)
+AC_ARG_WITH(rsaref,
+    [  --with-rsaref=PREFIX      Specify location of RSAREF],
+    [rsaref="$withval"
+     RSAREF_CPPFLAGS="-I$rsaref/include"
+     RSAREF_LIBS="$rsaref/lib/rsaref.a"],
+     RSAREF_SUBDIRS=reg_svr
+    [if test -d $srcdir/util/rsaref; then
+         rsaref=$srcdir/util/rsaref
+	 RSAREF_SUBDIRS="util/rsaref reg_svr"
+	 RSAREF_OUTPUT_FILES="util/rsaref/Makefile"
+	 # autoconf can't deal with creating util/rsaref if util doesn't exist
+	 if test ! -d util; then
+	     mkdir util
+	 fi
+	 RSAREF_CPPFLAGS='-I$(SRCTOP)/util/rsaref'
+	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
+	 RSAREF_LIBDEP='$(BUILDTOP)/util/rsaref/rsaref.a'
+     else
+         rsaref=no
+     fi])
+AC_MSG_RESULT($rsaref)
+if test "$rsaref" != no; then
+    MR_DEFINE(HAVE_RSAREF)
+fi
+AC_SUBST(RSAREF_CPPFLAGS)
+AC_SUBST(RSAREF_LIBS)
+AC_SUBST(RSAREF_SUBDIRS)
+AC_SUBST(RSAREF_LIBDEP)
+
+# Oracle (default: yes, if $ORACLE_HOME is set)
+AC_MSG_CHECKING(for Oracle)
+AC_ARG_WITH(oracle,
+    [  --with-oracle=PREFIX    Specify location of Oracle (for server)],
+    [oracle="$withval"],
+    [if test -n "$ORACLE_HOME" -a -d "$ORACLE_HOME"; then
+         oracle=$ORACLE_HOME
+     else
+	 oracle=no
+     fi])
+AC_MSG_RESULT($oracle)
+if test "$oracle" != no; then
+    AC_MSG_CHECKING(Pro*C version)
+    ORACLE_HOME=$oracle release=`$ORACLE_HOME/bin/proc | awk '/Release/ {print $3;}'`
+    AC_MSG_RESULT($release)
+    case $release in
+	2.0.6.0.0)
+	    SQL_LIBS="-L$oracle/lib -lsql $oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lnlsrtl -lcv6 -lcore -lnlsrtl -lcore -lm"
+	    ;;
+	2.2.4.0.0)
+	    SQL_LIBS="-L$oracle/lib -lclntsh -lxa -lsql -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric   -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 `cat $oracle/rdbms/lib/sysliblist` -lm -lthread"
+	    ;;
+	8.1.7.4.0)
+	    SQL_LIBS="-L$oracle/lib -lclntsh `cat $oracle/lib/sysliblist` -R$oracle/lib -laio -lm -lthread"
+	    ;;
+	10.2.0.2.0)
+	    SQL_LIBS="-L$oracle/lib32 -lclntsh `cat $oracle/lib32/ldflags` `cat $oracle/lib32/sysliblist` -R$oracle/lib32 -laio -lposix4 -lm -lthread"
+	    ;;
+	*)
+	    AC_MSG_ERROR(Unsupported Oracle release)
+	    ;;
+    esac
+    SVRSUBDIRS='$(SVRDIRS)'
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/mailman/Makefile reg_svr/Makefile regtape/Makefile"
+    PRO_C=$oracle/bin/proc
+    PRO_C_OPTS=CODE=ANSI_C
+    PRO_C_DEFS="DEFINE=_PROC_ DEFINE=__sparc $PRO_C_DEFS"
+fi
+AC_SUBST(PRO_C)
+AC_SUBST(PRO_C_DEFS)
+AC_SUBST(PRO_C_INCLUDES)
+AC_SUBST(PRO_C_OPTS)
+AC_SUBST(SQL_LIBS)
+AC_SUBST(SVRSUBDIRS)
+
+# Java support, for webmoira
+AC_MSG_CHECKING(for Java)
+AC_ARG_WITH(java,
+    [ --with-java=PREFIX       Specify location of Java libs and headers],
+    [ java="$withval"],
+    [if test -n "$JAVA_HOME" -a -d "$JAVA_HOME"; then
+	java=$JAVA_HOME
+     else
+	java=no
+     fi])
+AC_MSG_RESULT($java)
+if test "$java" != no; then
+    if test "$java" != yes; then
+	JAVA_CPPFLAGS="-I$java/include -I$java/include/$short_os"
+    fi
+    MR_DEFINE(HAVE_JAVA)
+
+    WEBMOIRA_SUBDIRS="webmoira"
+    WEBMOIRA_OUTPUT_FILES="webmoira/Makefile"
+fi
+AC_SUBST(JAVA_CPPFLAGS)
+AC_SUBST(WEBMOIRA_SUBDIRS)
+
+# LDAP support
+AC_MSG_CHECKING(for LDAP)
+AC_ARG_WITH(ldap,
+    [  --with-ldap=PREFIX      Specify location of LDAP libs (for server)],
+    [ ldap="$withval"], 
+    [if test -n "$LDAP_HOME" -a -d "$LDAP_HOME"; then
+         ldap=$LDAP_HOME
+     else
+	 ldap=no
+     fi])
+AC_MSG_RESULT($ldap)
+if test "$ldap" != no -a "$oracle" != no; then
+    if test "$ldap" != yes; then
+        LDAP_CPPFLAGS="-I$ldap/include"
+	LDAP_LIBS="-L$ldap/lib"
+    fi
+    MR_DEFINE(HAVE_LDAP)
+
+    WINAD_SUBDIRS="winad"
+    WINAD_OUTPUT_FILES="incremental/winad/Makefile"
+fi
+AC_SUBST(LDAP_CPPFLAGS)
+AC_SUBST(LDAP_LIBS)
+AC_SUBST(WINAD_SUBDIRS)
+
+# AFS support
+AC_MSG_CHECKING(for AFS)
+AC_ARG_WITH(afs,
+    [  --with-afs=PREFIX       Specify location of AFS libs (for server)],
+    [afs="$withval"], [afs=no])
+AC_MSG_RESULT($afs)
+if test "$afs" != no -a "$oracle" != no; then
+    if test "$afs" != yes; then
+	AFS_CPPFLAGS="-I$afs/include -I$afs/include/afs -I$afs/include/rx"
+	AFS_PRO_C_INCLUDES="INCLUDE=$afs/include INCLUDE=$afs/include/afs INCLUDE=$afs/include/rx"
+	AFS_LIBS="-L$afs/lib -L$afs/lib/afs"
+	AFS_DIR=$afs
+    fi
+    AC_CHECK_LIB(sys, pioctl, :,
+		 [AC_MSG_ERROR(AFS libraries not found)],
+		 $AFS_LIBS -lrx -llwp -lsys -lafsutil)
+    MR_DEFINE(HAVE_AFS)
+
+    AFS_SUBDIRS="afs"
+    AFS_OUTPUT_FILES="incremental/afs/Makefile"
+    if test -d $srcdir/afssync; then
+	AFS_SYNCDIR="afssync"
+	AFS_OUTPUT_FILES="$AFS_OUTPUT_FILES afssync/Makefile"
+    fi
+fi
+AC_SUBST(AFS_CPPFLAGS)
+AC_SUBST(AFS_PRO_C_INCLUDES)
+AC_SUBST(AFS_LIBS)
+AC_SUBST(AFS_DIR)
+AC_SUBST(AFS_SUBDIRS)
+AC_SUBST(AFS_SYNCDIR)
+
+# GNU readline
+AC_CHECKING(for GNU readline...)
+AC_ARG_WITH(readline,
+    [  --with-readline=PREFIX  Specify location of GNU readline],
+    [readline="$withval"; AC_MSG_RESULT($withval)],
+    [AC_CHECK_LIB(readline, readline, [readline=yes],
+	[if test "$athena" = true; then
+	     unset ac_cv_lib_readline_readline
+	     AC_CHECK_LIB(readline, readline, [readline=/mit/gnu], :,
+	         -L/mit/gnu/lib -ltermcap)
+	 fi],
+	-ltermcap)])
+if test "$readline" != no; then
+    if test "$readline" != yes; then
+	READLINE_CPPFLAGS="-I$readline/include"
+	READLINE_LIBS="-L$readline/lib"
+    fi
+    READLINE_CPPFLAGS="$READLINE_CPPFLAGS -DHAVE_READLINE"
+    READLINE_LIBS="$READLINE_LIBS -lreadline -ltermcap"
+fi
+AC_SUBST(READLINE_CPPFLAGS)
+AC_SUBST(READLINE_LIBS)
+
+# Curses
+curses=curses
+AC_CHECKING(for curses)
+AC_CHECK_LIB(curses, main, :, AC_CHECK_LIB(ncurses, main, curses=ncurses))
+if test -n "$curses"; then
+    OLDLIBS=$LIBS
+    LIBS=-l$curses
+    AC_CHECKING(if curses needs termcap)
+    dnl we need to use AC_TRY_RUN because under NetBSD, the program will
+    dnl link with just -lcurses, but then fail with a runtime linker error
+    dnl because you didn't use -ltermcap
+    AC_TRY_RUN([#include <curses.h>
+		main(int argc, char **argv)
+		{
+		    initscr();
+		    endwin();
+		    return 0;
+		}], [CURSES_LIBS="-l$curses"],
+		LIBS="-l$curses -ltermcap"
+		AC_TRY_RUN([#include <curses.h>
+			    main(int argc, char **argv)
+			    {
+				initscr();
+				endwin();
+				return 0;
+			    }], [CURSES_LIBS="-l$curses -ltermcap"],
+			    :, :),
+		:)
+    LIBS=$OLDLIBS
+fi
+if test -n "$CURSES_LIBS"; then
+    OLDLIBS=$LIBS
+    LIBS=$CURSES_LIBS
+    AC_TRY_LINK([#include <curses.h>],[WINDOW *w; getmaxx(w);],
+		:,
+		AC_TRY_COMPILE([#include <curses.h>],[WINDOW *w; w->_maxx;],
+			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->_maxx'"],
+			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->maxx'"]))
+    AC_TRY_LINK([#include <curses.h>],[newterm(NULL, NULL, NULL);],
+		[CURSES_CPPFLAGS="$CURSES_CPPFLAGS -DCURSES_HAS_NEWTERM"])
+    LIBS=$OLDLIBS
+    CURSES_CPPFLAGS="-DHAVE_CURSES $CURSES_CPPFLAGS"
+    CURSES_SUBDIRS='$(CURSES_SUBDIRS)'
+else
+    AC_MSG_WARN(Couldn't find -lcurses)
+fi
+AC_SUBST(CURSES_CPPFLAGS)
+AC_SUBST(CURSES_LIBS)
+AC_SUBST(CURSES_SUBDIRS)
+
+
+AC_CHECK_FUNCS(getusershell strlcpy strlcat uname strvis)
+
+AC_CHECK_FUNC(sigaction, AC_DEFINE(HAVE_POSIX_SIGNALS))
+
+AC_CHECK_HEADERS(unistd.h getopt.h)
+
+AC_CHECK_HEADER(netinet/in.h, AC_DEFINE(HAVE_NETINET_IN_H), no_netinet_in=yes)
+
+if test "$no_netinet_in" != "yes"; then
+    AC_MSG_CHECKING(for in_addr_t defined in netinet/in.h)
+    AC_EGREP_HEADER(in_addr_t, netinet/in.h,
+	ac_cv_type_in_addr_t=yes, ac_cv_type_in_addr_t=no)
+    AC_MSG_RESULT($ac_cv_type_in_addr_t)
+fi
+
+if test "$ac_cv_type_in_addr_t" != "yes"; then
+  AC_DEFINE(in_addr_t, uint32_t)
+fi
+
+MR_EXTEND(PRO_C_INCLUDES, INCLUDE='$(srcdir)')
+MR_INCLUDE('$(SRCTOP)/include')
+MR_INCLUDE('$(SRCTOP)/lib')
+MR_INCLUDE('$(BUILDTOP)/lib')
+MR_INCLUDE('$(BUILDTOP)/db')
+MR_INCLUDE('$(srcdir)')
+LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
+KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
+LIBS="-lmoira $KLIBS"
+AC_SUBST(KLIBS)
+
+MR_LIBDEP='$(BUILDTOP)/lib/libmoira.a'
+AC_SUBST(MR_LIBDEP)
+
+AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
+	  clients/lib/Makefile clients/addusr/Makefile \
+	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/chpobox/Makefile clients/chsh/Makefile \
+	  clients/mailmaint/Makefile clients/mitch/Makefile \
+	  clients/moira/Makefile clients/mrcheck/Makefile \
+	  clients/mrtest/Makefile clients/stanley/Makefile \
+	  clients/stella/Makefile update/Makefile man/Makefile \
+	  $WEBMOIRA_OUTPUT_FILES $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES \
+	  $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)

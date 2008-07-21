@@ -1,0 +1,12 @@
+How to build:
+
+[compiling the java code]
+  setenv CLASSPATH `pwd`
+  javac mit/*/*.java
+  javac regapplet/*.java
+
+[building the zip file and cleaning up]
+  zip -0 regclasses.zip mit/*/*.class regapplet/*.class
+
+  rm mit/*/*.class regapplet/*.class
+

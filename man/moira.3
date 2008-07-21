@@ -1,0 +1,253 @@
+.TH MOIRA 3 "8 Jan 1989"
+.FM mit
+.SH NAME
+mr_connect, mr_host, mr_auth, mr_disconnect, mr_noop, mr_access,
+mr_query, mr_do_update, mr_motd, mr_set_alternate_input,
+format_filesys_type, parse_filesys_type,
+canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
+sq_get_data, sq_remove_data, sq_empty, sq_save_args, sq_save_data,
+sq_save_unique_data, sq_save_unique_string
+.SH SYNOPSIS
+.nf
+.nj
+.TP
+Protocol functions
+.B
+int mr_connect(char *server);
+
+.B
+int mr_host(char *host, int size);
+
+.B
+int mr_motd(char **motd);
+
+.B
+int mr_auth(char *prog);
+
+.B
+int mr_disconnect(void);
+
+.B
+int mr_noop(void);
+
+.B
+int mr_access(char *name, int argc, char **argv);
+
+.B
+int mr_query(char *name, int argc, char **argv,
+.B
+	int (*callproc)(int, char **, void *), void *callarg);
+
+.TP
+Data manipulation
+.B
+char *format_filesys_type(char *fs_status);
+
+.B
+char *parse_filesys_type(char *fs_type_name);
+
+.B
+char *canonicalize_hostname(char *host);
+
+.B
+char *strtrim(char *s);
+.TP
+Simple Queues
+.B
+struct save_queue *sq_create(void);
+
+.B
+void sq_destroy(struct save_queue *sq);
+
+.B
+int sq_get_data(struct save_queue *sq, void *data);
+
+.B
+int sq_remove_data(struct save_queue *sq, void *data);
+
+.B
+int sq_empty(struct save_queue *sq);
+
+.B
+sq_save_args(int argc, char **argv, struct save_queue *sq);
+
+.B
+sq_save_data(struct save_queue *sq, void *data);
+
+.B
+sq_save_unique_data(struct save_queue *sq, void *data);
+
+.B
+sq_save_unique_string(struct save_queue *sq, char *data);
+.fi
+.SH DESCRIPTION
+This library supports the Athena Service Management System protocol
+and related operations.  The library contains many routines beyond
+those described in this man page, but they are not intended to be used
+directly. Instead, they are called by the routines that are described.
+
+Be sure to link your application against these libraries:
+-lmoira -lkrb -ldes -lcom_err
+.TP
+Protocol functions
+All protocol routines return 0 on success, or a value from 
+.I <mr_et.h>
+on failure.  An application should connect, check the motd in case the
+server is closed, authenticate, perform queries, then disconnect.
+
+.B mr_connect
+establishes a connection with the Moira server.  The
+.I server
+specification is optional.  If present, it is of the form
+hostname:portname, where the portname can be looked up in 
+.B /etc/services.
+If NULL or an empty string is passed as
+.I server,
+then the server will be found from the MOIRASERVER environment
+variable, the "moira" sloc entry in hesiod, or the compiled in
+default, in that order.
+
+.B mr_host
+initializes
+.I host
+with the name of the host that the client is currently connected to.
+
+.B mr_motd
+will check to see if the server is closed and if so, will retrieve an
+explanatory message (the so-called motd).  This routine will always
+return 0 if no error occurs.  *motd will be NULL if the server is
+functioning normally, or a pointer to a static string with the
+explanation if the server is down.
+
+.B mr_auth
+authenticates an established connection using Kerberos.
+.I prog
+is the name of the program making the connection.  The program name
+and the kerberos principal name will be recorded with any changes made
+to the database through this connection.
+
+.B mr_disconnect
+severs the connection with the Moira server.
+
+.B mr_noop
+pings the Moira server through a "no operation" request, verifying that
+the connection is still working.
+
+.B mr_access
+Verifies that the authenticated user has the necessary access to
+perform the query specified by
+.I name, argc,
+and
+.I argv.
+
+.B mr_query
+performs a query.  This query may be a retrieval, append, delete, or
+update of the database.  Query
+.I name
+will be executed with the
+.I argc
+arguments specified in the string array
+.I argv.
+For each return tuple,
+.I callproc
+will be called with an
+.I argc, argv,
+and the value passed to
+.B mr_query
+as
+.I callarg.
+
+.TP
+Data manipulation
+.B format_filesys_type
+returns a user-displayable representation of the status bits on an NFS
+physical partition.
+.I fs_status
+is the ascii representation of the integer value of that field.
+
+.B parse_filesys_type
+returns the numeric value of the filesystem type, given a string
+describing an NFS physical partition allocation type.  The returned
+value is a pointer to a static buffer containing the ascii
+representation of the integer value.
+
+.B canonicalize_hostname
+attempts to update what is possibly the nickname for a host to its
+canonical form which is a fully specified, uppercase domain name.
+If the named host is in the namespace, it calls the nameserver to
+expand it and return the primary name of the host.  Otherwise, it just
+returns the argument.  It assumes that
+.I host
+was allocated using
+.I malloc(),
+and may be freed or realloc'ed before returning.  The returned value
+will be a malloc'ed value, possibly the same buffer as the argument.
+
+.B strtrim
+will trim whitespace off of both ends of the string
+.I s.
+The returned value will be a pointer into the same buffer
+.I s
+pointed to.
+
+.TP
+Simple Queues
+.B sq_create
+will create an empty save_queue.
+
+.B sq_destroy
+will free all of the memory contained in the queue structure
+.I sq.
+It will not attempt to free the elements.
+
+.B sq_get_data
+will fill in
+.I data
+with the next piece of data in the queue.  If will return 0 if there
+is no more data in the queue.
+
+.B sq_remove_data
+functions like sq_get_data except that any returned data is first
+removed from the queue.
+
+.B sq_empty
+tests the length of the queue, returning non-zero if it is empty or
+zero if the queue contains data.
+
+.B sq_save_args
+will make a copy of
+.I argv,
+null terminate it so that
+.I argc
+is not necessary, and save this value on the end of the queue
+.I sq.
+
+.B sq_save_data
+saves
+.I data
+on the end of the queue
+.I sq.
+
+.B sq_save_unique_data
+will save
+.I data
+on the queue if it does not already appear in the queue.  If it is
+already present, nothing is modified and no errors are returned.
+.B sq_save_unique_string
+is like
+.B sq_save_unique_data,
+except that it uses strcmp on the elements rather than comparing the
+addresses directly.
+.SH FILES
+/usr/athena/include/moira.h
+.br
+/usr/athena/include/mr_et.h
+.br
+/tmp/tkt###
+.SH "SEE ALSO"
+mrtest(8), The Moira section of the Athena Technical Plan
+.SH DIAGNOSTICS
+The error codes returned are those defined in <mr_et.h>, or
+<krb_et.h>.  They may be easily decoded using the com_err library.
+.SH RESTRICTIONS
+COPYRIGHT 1987,1988,1989 Massachusetts Institute of Technology

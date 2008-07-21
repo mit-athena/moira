@@ -1,0 +1,23 @@
+	error_table	ureg
+
+	ec	UREG_ALREADY_REGISTERED, "User already registered"
+	ec	UREG_USER_NOT_FOUND, "Unable to locate user in database"
+	ec	UREG_UNKNOWN_HOST, "Unknown host Moira"
+	ec	UREG_UNKNOWN_SERVICE, "Unknown service"
+	ec	UREG_UNKNOWN_REQUEST, "Unknown request to userreg server"
+	ec	UREG_BROKEN_PACKET, "Unable to parse request packet"
+	ec 	UREG_WRONG_VERSION, "Wrong version of protocol"
+	ec	UREG_LOGIN_USED, "That login name is already in use"
+	ec	UREG_INVALID_UNAME, "Not valid as a login name"
+	ec	UREG_NO_PASSWD_YET, "Password not yet set."
+	ec	UREG_NO_LOGIN_YET, "Cannot set password when no login name set."
+	ec	UREG_DELETED, "Account is marked for deletion."
+	ec	UREG_NOT_ALLOWED, "You may not register at this time."
+	ec	UREG_KRB_TAKEN, "Authentication setup failed."
+	ec	UREG_MISC_ERROR, "System error."
+	ec	UREG_ENROLLED, "Enrolled in campus namespace."
+	ec	UREG_ENROLL_NOT_ALLOWED, "Enrolled in campus namespace, not eligable for an Athena account."
+	ec	UREG_HALF_ENROLLED, "Halfway enrolled in campus namespace."
+	end
+
+

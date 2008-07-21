@@ -1,0 +1,74 @@
+# $Id: Makefile.in,v 1.12 2000-01-20 19:18:49 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @RSAREF_CPPFLAGS@ @REG_SVR_INCLUDES@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@ @REG_SVR_DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@RSAREF_LIBS@ @REG_SVR_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+RSAREF_LIBDEP=@RSAREF_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+REG_OBJS=	kerberos.o protocol.o reg_svr.o words.o
+START_OBJS=	startreg.o
+GENKEY_OBJS=	genkey.o
+GENWORDS_OBJS=	genwords.o words.o
+
+CFILES=		reg_svr.c genwords.c
+
+TARGET=		reg_svr startreg genkey genwords
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(REG_OBJS) $(START_OBJS) $(GENKEY_OBJS) $(GENWORDS_OBJS) \
+		$(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
+	$(INSTALL_PROGRAM) startreg $(mrbindir)
+	$(INSTALL_PROGRAM) genkey $(mrbindir)
+	$(INSTALL_PROGRAM) genwords $(mrbindir)
+
+reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(LIBS) $(SQL_LIBS)
+
+startreg: $(START_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)
+
+genkey: $(GENKEY_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(GENKEY_OBJS) $(LIBS)
+
+genwords: $(GENWORDS_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(GENWORDS_OBJS) $(LIBS) $(SQL_LIBS)

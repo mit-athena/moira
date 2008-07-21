@@ -1,0 +1,75 @@
+.TH DCM 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.8 1998-05-26 18:14:11 danw Exp $
+.SH NAME
+dcm, startdcm \- build config files from Moira database and update servers
+.SH SYNOPSIS
+.B dcm
+[servicename ...]
+.br
+.B startdcm
+.SH DESCRIPTION
+The
+.B dcm
+must be run periodically on the Moira server.  Rather than invoke
+.B dcm
+directly, one generally runs
+.B startdcm,
+which starts the dcm running in the proper working directory and
+captures logging messages.
+.PP
+The
+.B dcm
+may be disabled by the presence of the file
+.I /etc/nodcm
+or by setting the value of
+.I dcm_enable
+to zero in the Moira database. Logging is done to standard output.
+If critical errors are detected, they are logged to
+.B /moira/critical.log
+and in a zephyrgram to class
+.B Moira
+instance
+.B DCM
+in addition to standard output.
+.PP
+For the actual generation of config files, the
+.B dcm
+will fork off generator programs of the form
+.B /moira/bin/\fIservice\fB.gen.
+Each generator takes as an argument the name of the output file to
+produce.  Many of them also require working directories in
+.B /moira/dcm/\fIservice\fB.
+A generator exits with a status code defined in
+.I <mr_et.h>.
+In particular,
+.B MR_NO_CHANGE
+is a common exit status if the database hasn't changed since the last
+time this generator was run.
+.PP
+.B startdcm
+sets its working directory to the root, disconnects from the terminal
+and puts itself in the background.  It then starts
+.B /moira/bin/dcm,
+and will capture lines the dcm writes to standard output and log them
+in
+.B /moira/dcm.log
+along with a timestamp.
+.B startdcm
+will also log the exit status of the
+.B dcm
+if it is non-zero.
+.SH FILES
+/moira/dcm.log
+.br
+/moira/critical.log
+.br
+/moira/bin/*.gen \- service file generators will be searched for
+here.
+.br
+/tmp/tkt_dcm \- temporary Kerberos ticket storage.
+.br
+/etc/athena/srvtab \- The dcm must be able to get Kerberos tickets for "sms"
+(null instance).
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on Moira.
+

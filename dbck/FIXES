@@ -1,0 +1,146 @@
+P  if fixed in preen step
+F  if not fixed in fast mode
+ * if not offered to fix
+  *if not actually checked
+================================
+PHASE 1: looking for duplicates
+
+	* don't delete both if one is placeholder *
+
+   Each users_id must be unique
+	Alloc new ID
+F  Each login name must be unique
+	If full names match, delete; else unregister
+F* Each user can appear at most once in the krbmap
+F* Each principal can appear at most once in the krbmap
+   Each mach_id must be unique
+	Alloc new ID
+F* Each machine name must be unique
+F* Each hostalias name must be unique
+F* Each hostalias name must not be the same as any machine name
+   Each snet_id must be unique
+	Alloc new ID
+F* Each subnet name must be unique
+   Each clu_id must be unique
+	Alloc new ID
+F* Each cluster must have a unique name
+   Each list_id must be unique
+	Alloc new ID
+F* Each list must have a unique name
+   Each filsys_id must be unique
+	Alloc new ID
+F* Each filesys name must be unique
+   Each nfsphys_id must be unique
+	Alloc new ID
+   Each string must be unique
+	Delete second copy and remember this for phase 2
+   Each string_id must be unique
+	Delete all copies
+F* Each printer name must be unique
+ * Each printserver entry must be for a unique mach_id
+
+PHASE 2: checking references
+
+   Each reference to a string must not point to a duplicate string
+	Reset it to point to the first copy of that string
+   Each reference to a string must point to a real string
+	Reset it to point to string 0
+   Each user's POP pobox must be on a real machine
+	Delete pobox
+   Each user's SMTP pobox must have a string
+	Delete pobox
+   Each user's IMAP pobox must be an existing IMAP filesystem
+	Delete pobox
+P  Every machine must be on a subnet
+	Set to placeholder subnet
+P  Every machine owner must exist
+	Set dummy owner
+   Every subnet owner must exist
+	Set dummy owner
+P  Every entry in the machine-cluster map must reference machine & cluster
+	Delete entry
+P  Every piece of cluster data must be attached to a real cluster.
+	Delete data
+P  Every list ACE must exist
+	Make list it's own acl
+P  Every member must be a member of a real list
+	Delete the member
+P  Every USER member must be a real user
+	Delete the member
+P  Every LIST member must be a real list
+	Delete the member
+P  Every STRING member must be a real string
+	Delete the member
+P  Every KERBEROS member must be a real string
+	Delete the member
+P  Every service USER owner must be a real user
+	Make user 0 own service
+P  Every service LIST owner must be a real list
+	Make list 0 own service
+   Every server/host tuple must refer to a real machine
+	Delete tuple
+   Every NFS physical's machine must exist
+	Delete entry
+   Every filesys must be on a real machine
+	Put it on machine 0
+P  Every filesys' owning user must exist
+	Make it user 0
+P  Every filesys' owning group must exist
+	Make it list 0
+   Every NFS or IMAP filesys' phys_id must exist
+P	Set to correct one if found
+	    else create one
+   Every fsgroup must exist
+	Delete the fsgroup
+  *Every fsgroup must be of type FSGROUP
+	Change type
+P  Every fsgroup member must exist
+	Delete member
+P  Every USER quota must be for a real user
+	Delete quota
+P  Every GROUP quota must be for a real list
+	Delete quota
+   Every quota must be on a real filesys
+	Delete quota
+P  Every quota's phys_id must match the filesys' phys_id
+	Fix phys_id
+ **Zephyr checks
+ * Every hostaccess must be for a real machine
+ * Every hostaccess USER must exist
+ * Every hostaccess LIST must exist
+   Every printer must have real printer, spool, and quota machines
+	Delete the printer
+   Every print must be on a printserver
+	Delete the printer
+ * Every printer must have a real log machine
+	Reset to WSLOGGER.MIT.EDU
+   Every print ac/lpc_acl must exist
+	Make it list 0
+   Every printserver must correspond to an existing machine
+	Delete printserver
+   Every printserver printer_types must be a real string
+	Set to empty string
+   Every printserver owner must be a real user/list/kerberos
+	Set to NONE
+   Every printserver lpc_acl must be a real list
+	Set to list 0
+P  Every user in the krbmap must exist
+	Delete map entry
+P  Every string in the krbmap must exist
+	Delete map entry
+ * Every list used in capacls must exist
+
+PHASE 3: finding unused objects
+
+   Every list must have at least one member (if -w flag not specified)
+	Print warning
+P  Every string must be used at least once
+	Delete string
+
+PHASE 4: checking counts
+
+ * Every POP pobox must be on a POP server
+P  The count of POP boxes must match value1 of the service/host tuple
+	update count
+P  The total quota on an NFSphys must match the recorded allocation
+	update count

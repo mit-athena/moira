@@ -1,0 +1,60 @@
+# $Id: Makefile.in,v 1.9 2000-02-10 19:14:05 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=../lib/libmrclient.a @CURSES_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+MOBJS=	acl.o attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
+	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
+	misc.o zephyr.o
+NOBJS=	namespace.o globals.o lists.o menu.o pobox.o user.o utils.o misc.o
+OBJS=	${MOBJS} ${NOBJS}
+
+TARGET=moira namespace
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) namespace $(bindir)
+	$(INSTALL_PROGRAM) moira $(bindir)
+	rm -f $(bindir)/listmaint	
+	ln -s moira $(bindir)/listmaint
+	rm -f $(bindir)/dcmmaint
+	ln -s moira $(bindir)/dcmmaint
+	rm -f $(bindir)/usermaint
+	ln -s moira $(bindir)/usermaint
+
+moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
+
+namespace: $(NOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

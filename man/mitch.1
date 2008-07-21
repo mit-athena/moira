@@ -1,0 +1,113 @@
+.TH MITCH 1 "22 Jan 2003" "MIT Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/mitch.1,v 1.2 2003-02-05 18:42:51 zacheiss Exp $
+.SH NAME
+mitch \- examine and modify informtion about containers in Moira
+.SH SYNOPSIS
+.B mitch containername [options]
+.SH DESCRIPTION
+.I Mitch
+is a tool for updating information about containers in Moira.  It
+supports all container modification commands and options to list, add,
+and remove machines to and from containers.
+
+If no options are specified, it will assume \fI-info\fR, which will
+result in all information about the specified container being displayed.
+
+.SH OPTIONS
+
+.IP \fB-info\ \fRor\ \fB-i\fR
+Display information about a container. This is the default mode if no
+other options are given. The output is similar to that of moira.
+
+.IP \fB-desc\ \fIdescription\ \fRor\ \fB-d\ \fIdescription\fR
+Update the description field for the specified container to \fIdescription\fR.
+.IP \fB-location\ \fIlocation\ \fRor\ \fB-l\ \fIlocation\fR
+Update the location field for the specified container to \fIlocation\fR.
+.IP \fB-contact\ \fIcontact\ \fRor\ \fB-c\ \fIcontact\fR
+Update the contact field for the specified container to \fIcontact\fR.
+
+.IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR
+Set the owner of the specified container to \fIowner\fR.
+
+You may specify an owner explicitly, as user:username, list:listname, or
+kerberos:principal_name; or the type may be left off if the owner name
+is non ambiguous.
+.B Mitch
+will try first as a user, and if that fails will try the owner as a
+list.
+
+.IP \fB-memacl\ \fImembership_acl\ \fRor\ \fB-MA\ \fImembership_acl\fR
+Set the mebership acl of the container; members of this acl will be
+allowed to add and remove members of the container, but not update any
+other characteristics. The membership acl is specified like a list
+member, except that it can never be a string.  To return a container to
+having default membership access control conditions, set the membership
+acl to "NONE".
+
+.IP \fB-public\ \fR(\fB-P\fR)\ \fRor\ \fB-private\ \fR(\fB-NP\fR)
+Make the container public or private. (Anyone can add a machine to a
+public container.)
+
+.IP \fB-unformatted\ \fRor\ \fB-u\fR
+Display container information with each field on a seperate line, in the
+form "fieldname: value".
+.IP \fB-verbose\ \fRor\ \fB-v\fR
+Give more information.  With this flag, mitch will display the
+queries it is making to the moira server.
+.IP \fB-noauth\ \fRor\ \fB-n\fR
+Do not attempt to perform Kerberos authentication with the Moira server.
+Most lookup operations should be still possible without tickets.
+.IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+database chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
+
+.IP \fB-create\ \fRor\ \fB-C\fR
+This will create the specified container, with information provided by
+other options.
+.IP \fB-delete\ \fRor\ \fB-D\fR
+This will delete the specified container, if the container contains no
+machines.
+.IP \fB-rename\ \fInewname\ \fRor\ \fB-R\ \fInewname\fR
+This will rename the specified container to \fInewname\fR.
+
+.IP \fB-recursive\ \fRor\ \fB-r\fR
+When specified along with the
+\fB-listmach\fR
+or
+\fB-listsub\fR
+options, will provide a recursive listing.
+
+.IP \fB-listmach\ \fRor\ \fB-lm\fR
+This will list the machines that are members of the container. Use the
+\fB-r\fR
+flag for a recursive listing.
+.IP \fB-addmach\ \fIhostname\ \fRor\ \fB-am\ \fIhostname\fR
+This will add \fIhostname\fR to the specified container.
+.IP \fB-deletemach\ \fIhostname\ \fRor\ \fB-dm\ \fIhostname\fR
+This will remove \fIhostname\fR from the specified container.
+
+.IP \fB-listsub\ \fRor\ \fB-ls\fR
+This will list subcontainers of the specified container.  Use the
+\fB-r\fR
+flag for a recursive listing.
+
+.SH AUTHORS
+Garry Zacheiss, MIT Information Systems.
+.SH SEE ALSO
+moira(1)
+
+.SH DIAGNOSTICS
+An exit status of 2 indicates a problem contacting the server. An exit
+status of 1 indicates that the arguments could not be parsed or some
+query to the moira server returned an error. An exit status of 0
+indicates that all operations requested completed successfully.
+
+.SH NOTES
+The container name doesn't actually have to be the first argument, but
+if you put it anywhere else, it's easy to get the other arguments in the
+wrong order and do something other than what you intended.
+

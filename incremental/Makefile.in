@@ -1,0 +1,55 @@
+# $Id: Makefile.in,v 1.10 2003-01-02 01:05:36 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@
+
+KSRVTGT_OBJS=ksrvtgt.o
+
+TARGET=ksrvtgt
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+clean:
+	rm -f $(KSRVTGT_OBJS) $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+cleandir distclean:
+	rm -f Makefile $(KSRVTGT_OBJS) $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+depend:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+install:
+	$(INSTALL_PROGRAM) ksrvtgt $(mrbindir)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+ksrvtgt: $(KSRVTGT_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(KSRVTGT_OBJS) $(LIBS)

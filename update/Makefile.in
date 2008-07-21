@@ -1,0 +1,53 @@
+# $Id: Makefile.in,v 1.5 2006-08-22 17:36:26 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sbindir=@sbindir@
+
+SOBJS=	auth_002.o auth_003.o checksum.o config.o exec_002.o get_file.o \
+	update_server.o xfer_002.o xfer_003.o sendrecv.o
+COBJS=	update_test.o checksum.o client.o send_file.o ticket.o sendrecv.o
+
+TARGET=update_server update_test
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(SOBJS) $(COBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) update_test $(bindir)
+	$(INSTALL_PROGRAM) update_server $(sbindir)
+
+update_test: $(COBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)
+
+update_server: $(SOBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(SOBJS) $(LIBS)

@@ -1,0 +1,52 @@
+# $Id: Makefile.in,v 1.3 2006-05-13 02:36:08 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+LDAP_CPPFLAGS=@LDAP_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(LDAP_CPPFLAGS) $(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LDAP_LIBS=@LDAP_LIBS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+mrbindir=@mrbindir@
+
+WINAD_OBJS=winad.o ldap_adgssapi_bind.o krb5_utils.o setpw.o
+
+TARGET=winad.incr
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(WINAD_OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install:
+	$(INSTALL_PROGRAM) winad.incr $(mrbindir)
+
+winad.incr: $(WINAD_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber \
+	-lgssapi_krb5 $(LIBS)

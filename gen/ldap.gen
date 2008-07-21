@@ -1,0 +1,137 @@
+#!/moira/bin/perl -Tw
+
+# $Id: ldap.gen,v 1.8 2007-11-13 17:37:31 zacheiss Exp $
+
+use DBI;
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/ldap';
+$outfile = '/moira/dcm/ldap.out';
+umask 022;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+$sth0 = $dbh->prepare("SELECT u.login, u.first, u.middle, u.last, " .
+		      "u.clearid, u.unix_uid, u.shell FROM users u " .
+		      "WHERE (u.status = 1 OR u.status = 9)") 
+    || exit $MR_DBMS_ERR;
+
+
+$sth0->execute;
+
+open(OUT, ">$outdir/users") || exit $MR_OCONFIG;
+
+while(($login, $first, $middle, $last, $clearid, $unix_uid, 
+       $shell) = $sth0->fetchrow_array) {
+    $row = "dn: uid=$login,ou=users,dc=mit,dc=edu\n";
+    $row .= "objectclass: top\n";
+    $row .= "objectclass: person\n";
+    $row .= "objectclass: organizationalperson\n";
+    $row .= "objectclass: inetorgperson\n";
+    $row .= "objectClass: krb5Principal\n";
+    $row .= "uid: $login\n";
+    $row .= "krb5PrincipalName: $login\@ATHENA.MIT.EDU\n";
+    $row .= "userPassword: {KERBEROS}$login\@ATHENA.MIT.EDU\n";
+    $row .= "employeeNumber: $clearid\n";
+    $row .= "loginShell: $shell\n";
+    $row .= "uidNumber: $unix_uid\n";
+    $row .= "gidNumber: 101\n";
+
+    if($last) {
+       $sn = "sn: $last\n";
+    }
+    else {
+       $sn = "sn: NONE\n";
+    }
+
+    if($first) {
+       $cn = "cn: $first";
+       $givenName = "givenName: $first";
+    }
+    else {
+       $cn = "cn:";
+       $givenName = "givenName:";
+    }
+
+    if($middle) {
+       $cn .= " $middle\n";
+       $givenName .= " $middle\n";
+    }
+    else {
+       $cn .= "\n";
+       $givenName .= "\n";
+    }
+
+    $sth = $dbh->prepare("SELECT f.type, f.name FROM filesys f " .
+			 "WHERE f.label = '$login'") || exit $MR_DBMS_ERR;
+    
+    $sth->execute;
+    
+    if(($f_type, $f_name) = $sth->fetchrow_array) { 
+	if($f_type eq "AFS") {
+	    $row .= "homeDirectory: $f_name\n";
+	}
+    }
+
+    $row .= $sn;
+    $row .= $cn;
+    $row .= $givenName;
+    $row .= "ou: user\n";
+    $row .= "description: user\n\n";
+    $row =~ s/\0//g;
+
+    print OUT $row;
+}
+close(OUT);
+
+open(OUT, ">$outdir/groups") || exit $MR_OCONFIG;
+
+$sth0 = $dbh->prepare("SELECT name FROM list WHERE active = 1 " .
+		      "AND grouplist = 1")
+    || exit $MR_DBMS_ERR;
+
+$sth0->execute;
+
+while (($name) = $sth0->fetchrow_array) {
+    $sth = $dbh->prepare("SELECT UNIQUE u.login FROM users u, imembers i, " .
+			 "list l WHERE l.name = " . $dbh->quote($name) .
+			 "AND l.list_id = i.list_id " .
+			 "AND i.member_type = 'USER' " .
+			 "AND (u.status = 1 OR u.status = 9) " .
+			 "AND i.member_id = u.users_id") || exit $MR_DBMS_ERR;
+    $sth->execute;
+
+    $members = 0;
+    while (($member) = $sth->fetchrow_array) {
+	if(!$members) {
+	    $row = "dn: cn=$name,ou=groups,dc=mit,dc=edu\n";
+	    $row .= "objectClass: top\n";
+	    $row .= "objectClass: groupOfUniqueNames\n";
+	    $row .= "cn: $name\n";
+	    $row =~ s/\0//g;
+	    print OUT $row;
+
+	    $members = 1;
+	}
+
+	$row = "uniqueMember: uid=$member,ou=users,dc=mit,dc=edu\n";
+	$row =~ s/\0//g;
+	print OUT $row;
+    }
+
+    print OUT "\n";
+}
+close(OUT);
+
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
+
+$dbh->disconnect;
+
+exit 0;

@@ -1,0 +1,45 @@
+README file for building Moira (R)
+
+This is the root directory of MIT Athena's Moira service management
+system source code.
+
+Here are the steps for building the Moira source.
+
+1.  If you want to build in the directory with the sources, run
+       ./configure
+    in that directory. If you want to build in another directory, run
+       /path/to/moira/sources/configure
+    from that directory. Note that for this to work you will need to
+    be using a "make" program that supports VPATH.
+
+    Some options you might want to use:
+	 --with-com_err=PREFIX (defaults to util/et)
+	 --with-krb4=PREFIX (required)
+	 --with-hesiod=PREFIX
+	 --with-zephyr=PREFIX
+	 --with-oracle=PREFIX (defaults to $ORACLE_HOME, if present)
+	 --with-afs=PREFIX (defaults to /usr/afsws, if present)
+	 --with-readline=PREFIX
+
+    (When building Moira on Athena, you should use the Athena source
+    tree config.site file, either by doing
+	 setenv CONFIG_SITE /mit/source/packs/build/config.site
+    before running configure, or by using the Athena build system
+    script /mit/source/packs/build/do.sh.)
+
+2.  cd to include.  Read through moira_site.h adjusting the paths to
+    what you want on your system.  Also change the #define of
+    MOIRA_SERVER to be the name of the server you are planning on
+    using. (Note that this is only used if hesiod lookup fails.)
+
+3.  After configuring, run "make" to build everything. The server-side
+    programs will be built if Oracle was found by configure.
+
+4.  Run "make install".  You may want to check that programs
+    are installed where you want.  Then add the appropriate
+    directories to your PATH environment variable.
+
+* Moira and Hesiod are registered trademarks of the Massachusetts
+Institute of Technology (MIT).  Kerberos, and Zephyr are trademarks of
+MIT.  No commercial use of these trademarks may be made without prior
+written permission from MIT.

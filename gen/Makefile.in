@@ -1,0 +1,139 @@
+# $Id: Makefile.in,v 1.50 2008-01-16 16:56:09 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+LIBS=@SQL_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+RANLIB=@RANLIB@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+LIB_OBJS=util.o tar.o genacl.o
+LIB_CFILES=genacl.c
+LIB_TARGET=libdcm.a
+
+OBJS=	acl.o boot.o confluence.o dhcp.o directory.o events.o hesiod.o \
+	hosts.o mailhub.o ndb.o network.o nfs.o pobox.o postoffice.o print.o \
+	winad.o www.o zephyr.o
+
+CFILES= acl.c boot.c confluence.c dhcp.c directory.c events.c hesiod.c \
+	hosts.c mailhub.c ndb.c network.c nfs.c pobox.c postoffice.c print.c \
+	winad.c www.c zephyr.c
+
+TARGET=	acl.gen boot.gen confluence.gen dhcp.gen directory.gen events.gen \
+	hesiod.gen hosts.gen mailhub.gen ndb.gen network.gen nfs.gen \
+	pobox.gen postoffice.gen print.gen winad.gen www.gen zephyr.gen
+
+SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
+	dhcp.sh events.sh hesiod.sh ip-billing.gen \
+	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhosts.gen \
+	mailhub.sh mailman.gen mailman.sh nagios-colo.gen nagios-colo.sh \
+	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
+	ndb.sh nfs.sh null.sh postoffice.sh print.sh rt.sh sapprint.gen \
+	sapprint.sh spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh \
+	winstats.gen winstats.sh www.sh zephyr.sh install_dirs \
+	install_quotas zero_quotas
+
+.SUFFIXES: .pc .gen
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(LIB_OBJS) $(OBJS) $(LIB_CFILES) $(CFILES) $(LIB_TARGET) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(LIB_CFILES) $(CFILES)
+
+install:
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
+
+libdcm.a: $(LIB_OBJS)
+	ar cru $@ $(LIB_OBJS)
+	$(RANLIB) $@
+
+hesiod.gen: hesiod.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) hesiod.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+hosts.gen: hosts.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) hosts.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+nfs.gen: nfs.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) nfs.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+dhcp.gen: dhcp.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) dhcp.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+directory.gen: directory.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) directory.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+events.gen: events.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) events.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+confluence.gen: confluence.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) confluence.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+ndb.gen: ndb.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) ndb.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+mailhub.gen: mailhub.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) mailhub.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+pobox.gen: pobox.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) pobox.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+network.gen: network.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) network.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+warehouse.gen: warehouse.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) warehouse.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+print.gen: print.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) print.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+printng.gen: printng.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) printng.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+boot.gen: boot.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) boot.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+acl.gen: acl.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) acl.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+zephyr.gen: zephyr.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) zephyr.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+postoffice.gen: postoffice.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) postoffice.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+www.gen: www.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) www.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+winad.gen: winad.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) winad.o libdcm.a $(SQL_LIBS) $(LIBS)

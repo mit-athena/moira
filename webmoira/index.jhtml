@@ -1,0 +1,109 @@
+<servlet code=mit.moira.MoiraServlet>
+<param name=modifier value=makesession>
+</servlet>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+               "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+<!-- #BeginEditable "doctitle" --> 
+<title>athena list management</title>
+<!-- #EndEditable --> 
+</head>
+<body bgcolor="#fffff7"
+text="#222222" link="#aa3333" vlink="#666666" alink="#000000">
+
+<table width="610" border="0" cellpadding="5">
+  <tr> 
+    <td colspan="2" bgcolor="#000000"><font color="#FFFFFF" face="Arial, Helvetica, sans-serif"><b> 
+      <!-- #BeginEditable "pageheader" --><font color="#FFFFFF" face="Arial, Helvetica, sans-serif" size="+1">athena list 
+      management</font><!-- #EndEditable --></b></font></td>
+  </tr>
+  <tr> 
+    <td rowspan="2" bgcolor="#FFCC99" width="180" valign="top"> 
+      <servlet code="mit.moira.MoiraServlet"><param name=modifier value=showform></servlet>
+        <b><font face="Arial, Helvetica, sans-serif" color="#993333">select an
+        option:</font></b> 
+        <br>
+        <table border=0>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=displaylistinfo>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">display 
+              list characteristics</font></b></td>
+          </tr>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=getmembers>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">show list members</font></b></td>
+          </tr>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=editme>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">add 
+              or remove yourself from a list</font> </b></td>
+          </tr>
+          <tr> 
+            <td colspan="2"><font face="Arial, Helvetica, sans-serif"><b>
+              list owners may</b></font></td>
+          </tr>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=updatelistinfo>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">update 
+              list characteristics</font></b></td>
+          </tr>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=addmember>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">add 
+              list members</font></b></td>
+          </tr>
+          <tr> 
+            <td align="center"> 
+              <input type=radio name=operation value=removemembers>
+            </td>
+            <td><b><font face="Arial, Helvetica, sans-serif">remove 
+              list members</font></b></td>
+          </tr>
+          <tr> 
+            <td colspan="2"><font face="Arial, Helvetica, sans-serif" color="#993333"><b>
+              enter a list name:</b></font><br>
+              <input name=list value="" length=15 size=12 maxlength=40>
+              <input name=submit2 type=submit value="Go">
+            </td>
+          </tr>
+        </table>
+</form>
+      <b><font face="Arial, Helvetica, sans-serif"><a href="http://web.mit.edu/accounts/www/list.html">request 
+      a new list</a></font></b> 
+      <p><b><font face="Arial, Helvetica, sans-serif"><a href="/moira/help.jhtml">help</a></font></b> 
+      </p>
+      <form method="POST" action="http://web.mit.edu/bin/cgicso">
+        <b><font face="Arial, Helvetica, sans-serif" size="-1">Forgot a username?<br>Check the MIT Directory:</font></b><font face="Arial, Helvetica, sans-serif" size="-1"><br>
+        <input name="query" size=10 maxlength=60><font size="-2">
+        <input type="submit" value="Search" name="submit"></font>
+        <a href="http://web.mit.edu/communications/directory/use.html"><br>
+        How to use the MIT Directory</a></font> 
+      </form>
+      <p><b><font face="Arial, Helvetica, sans-serif"><a href="http://web.mit.edu/"><img src="mit.gif" width="50" height="32" border="0"></a> 
+        </font></b></p>
+    </td>
+    <td rowspan="2" valign="top"><!-- #BeginEditable "pagehelp" --> 
+	<servlet code="mit.moira.MoiraServlet">
+	<param name=modifier value=getfile>
+	<param name=operation value=top>
+	</servlet>
+      <hr>
+      <!-- #EndEditable -->
+      <!-- #BeginEditable "query%20results" --> 
+      <!-- #EndEditable --></td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+</body>
+<!-- #EndTemplate --></html>

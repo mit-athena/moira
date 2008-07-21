@@ -1,0 +1,67 @@
+# $Id: Makefile.in,v 1.8 2002-09-25 20:46:51 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+AFS_CPPFLAGS=@AFS_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+AFS_PRO_C_INCLUDES=@AFS_PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES) $(AFS_PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+AFS_LIBS=@AFS_LIBS@
+AFS_DIR=@AFS_DIR@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+SYNC_OBJS=sync.o ptutils.o utils.o ubik.o
+UTIL_OBJS=pt_util.o ptutils.o utils.o ubik.o vis.o
+
+CFILES=sync.c
+
+TARGET=afssync pt_util
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(SYNC_OBJS) $(UTIL_OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(INSTALL_PROGRAM) afssync $(mrbindir)
+	$(INSTALL_PROGRAM) pt_util $(mrbindir)
+	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(mrbindir)
+
+afssync: $(SYNC_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)
+
+pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(LIBS)

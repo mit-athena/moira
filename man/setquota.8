@@ -1,0 +1,58 @@
+.TH SETQUOTA 8 "23 Jan 1989" "Project Athena"
+\" RCSID: $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/man/setquota.8,v 1.2 1990-01-26 20:44:35 jnrees Exp $
+.UC 4
+.SH NAME
+setquota \- set the disk usage quotas for a given user and partition
+.SH SYNOPSIS
+.B setquota
+[-u]
+.I special uid quota
+.br
+.B setquota
+-r [-u]
+.I special low_uid high_uid quota
+.SH DESCRIPTION
+.I Setquota
+will set the hard and soft limits on disk usage and inode
+usage for the user with
+.I uid
+on the partition
+.I special. special
+can be either the block device name (ie.
+.I /dev/rz3g
+) or the directory it's mounted on. (ie.
+.I /u1
+). The user's soft disk usage limit will be set to
+.I quota.
+The soft inode usage limit will be set to half that amount.
+The hard limits will be set to 1.2 times the soft limits.
+.SH OPTIONS
+If the
+.B \-u
+option is given, then the specified
+.I quota
+will be added to the current usage to obtain the new soft limit.  The
+remaining values are then set relative to this as specified above.
+If the
+.B \-r
+option is given, then all the quotas for the inclusive range of uid's
+are set to the given quota (plus usage with the
+.B \-u
+option).
+.SH DIAGNOSTICS
+.B setquota
+will return a non-zero status if the user is not root, if the uid is
+not between 0 and 32767 inclusive, if the low-uid is higher than the
+high-uid, if the quota is less than zero, or if quotas are not enabled
+on the given device or partition.
+
+The previous bug which required the user to manually grow the quotas
+file is fixed.
+.B setquota
+automatically grows the quotas file if necessary.
+.SH AUTHORS
+Bill Sommerfeld, MIT Project Athena
+.br
+Jim Rees, MIT Project Athena
+.SH "SEE ALSO"
+quota(1), quota(2), edquota(8), quotacheck(8), quotaon(8), repquota(8)

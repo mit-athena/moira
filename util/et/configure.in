@@ -1,0 +1,9 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(com_err.c)
+
+AC_PROG_CC
+AC_PROG_YACC
+AC_PROG_LEX
+AC_PROG_RANLIB
+
+AC_OUTPUT(Makefile)

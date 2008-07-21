@@ -1,0 +1,69 @@
+# $Id: Makefile.in,v 1.8 2000-06-05 05:58:37 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=-I$(srcdir) $(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+LIBS=@SQL_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+BOBJS=dump_db.o bkup1.o bkup.o dumprest.o 
+ROBJS=rest_db.o rest1.o rest.o dumprest.o
+
+CFILES=dump_db.c rest_db.c bkup.c bkup1.c rest.c rest1.c dumprest.c
+GENFILES=bkup.pc bkup1.pc bkup.h rest.pc rest1.pc rest.h
+
+TARGET=mrbackup mrrestore
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(BOBJS) $(ROBJS) $(CFILES) $(GENFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(GENFILES) $(CFILES)
+
+install:
+	$(INSTALL_PROGRAM) mrbackup $(mrbindir)
+	$(INSTALL_PROGRAM) mrrestore $(mrbindir)
+	$(INSTALL_PROGRAM) $(srcdir)/report.pl $(mrbindir)
+
+mrbackup: $(BOBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)
+
+mrrestore: $(ROBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(ROBJS) $(LIBS)
+
+bkup.pc bkup1.pc bkup.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2bkup.awk
+	awk -f $(srcdir)/db2bkup.awk < $(SRCTOP)/db/schema.sql > bkup.pc
+
+rest.pc rest1.pc rest.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2rest.awk
+	awk -f $(srcdir)/db2rest.awk < $(SRCTOP)/db/schema.sql > rest.pc

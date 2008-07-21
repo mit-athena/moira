@@ -1,0 +1,45 @@
+debathena-moira (4.0.0+cvs20080701-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot
+  * Move Moira header files from /usr/share/include to /usr/include/moira
+
+ -- Evan Broder <broder@mit.edu>  Tue, 01 Jul 2008 20:38:13 -0400
+
+debathena-moira (4.0.0+cvs20080304-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot to fix chsh.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Tue, 04 Mar 2008 15:50:31 -0500
+
+debathena-moira (4.0.0+cvs20080301-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * Remove mrtest segfault patch from last release (fixed in upstream)
+
+ -- Tim Abbott <tabbott@mit.edu>  Sat,  1 Mar 2008 18:51:40 -0500
+
+debathena-moira (4.0.0+cvs20070817-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * Patch an mrtest segfault with too many command line arguments.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Fri, 24 Aug 2007 19:53:49 -0400
+
+debathena-moira (4.0.0+cvs20070129-0debathena3) unstable; urgency=low
+
+  * Move chsh.debathena to chsh.moira and chfn.debathena to chfn.moira.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Mon, 06 Aug 2007 03:17:10 -0400
+
+debathena-moira (4.0.0+cvs20070129-0debathena2) unstable; urgency=low
+
+  * Add missing build dependencies to libmoira-dev.
+  * Section: debathena/net.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Tue, 17 Jul 2007 06:34:07 -0400
+
+debathena-moira (4.0.0+cvs20070129-0debathena1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Wed, 14 Feb 2007 00:53:24 -0500

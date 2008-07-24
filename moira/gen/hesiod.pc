@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.19 2007-03-06 04:09:33 zacheiss Exp $
+/* $Id: hesiod.pc,v 1.20 2008-07-24 20:46:31 zacheiss Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.19 2007-03-06 04:09:33 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.20 2008-07-24 20:46:31 zacheiss Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -40,7 +40,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/ge
  * query.  This is 512 - overhead (~78) [derived empirically]
  * (it used to be 446 with older versions of bind)
  */
-#define MAXHESSIZE 434
+#define MAXHESSIZE 256
 
 char hesiod_dir[MAXPATHLEN];
 

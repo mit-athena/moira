@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.19 2000-05-08 18:30:30 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.20 2008-07-24 21:51:12 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -90,7 +90,7 @@ done
 # existance as evidence that named as has been successfully restarted.
 
 # First, get statistics
-kill -ILL `cat $NAMED_PID`
+/usr/athena/etc/rndc stats
 sleep 1
 kill -KILL `cat $NAMED_PID`
 rm -f $NAMED_PID

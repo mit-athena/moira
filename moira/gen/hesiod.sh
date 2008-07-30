@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.20 2008-07-24 21:51:12 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.21 2008-07-30 21:30:13 jweiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -44,9 +44,9 @@ fi
 # on the same parition as $DEST_DIR.
 if test ! -d $SRC_DIR
 then
-	chdir $DEST_DIR
+	cd $DEST_DIR
 	mkdir ../_nameserver
-	chdir ../_nameserver
+	cd ../_nameserver
 	if test $SRC_DIR != `pwd`
 	then
 		ln -s `pwd` $SRC_DIR

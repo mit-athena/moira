@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.34 2008-05-19 20:21:56 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.35 2008-08-22 17:49:12 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.34 2008-05-19 20:21:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.35 2008-08-22 17:49:12 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -147,13 +147,13 @@ int access_spob(struct query *q, char *argv[], client *cl)
   int status;
 
   if (!strcmp(argv[1], "IMAP"))
-      {
-	EXEC SQL SELECT owner INTO :id FROM filesys f 
-	  WHERE f.label = :argv[2] AND f.type = 'IMAP' AND
-	  f.lockertype = 'USER';
-	if (cl->users_id != id)
-	  return MR_PERM;
-      }
+    {
+      EXEC SQL SELECT owner INTO :id FROM filesys f 
+	WHERE f.label = :argv[2] AND f.type = 'IMAP' AND
+	f.lockertype = 'USER';
+      if (cl->users_id != id)
+	return MR_PERM;
+    }
 
   /* Non-query owners can't forward mail to a POSTOFFICE or MAILHUB server,
    * nor to a nonresolving domain.
@@ -164,7 +164,7 @@ int access_spob(struct query *q, char *argv[], client *cl)
       if (status)
 	return status;
     }
-
+  
   if (cl->users_id != *(int *)argv[0])
     return MR_PERM;
   else

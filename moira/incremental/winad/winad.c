@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.50 2007-07-12 15:58:28 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.51 2008-08-22 17:49:12 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -1312,6 +1312,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 #define U_USER_ID    10
 #define U_HOMEDIR    11
 #define U_PROFILEDIR 12
+#define U_POTYPE     13
 
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
              char **before, int beforec, char **after, 

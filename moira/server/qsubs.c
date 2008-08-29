@@ -1,4 +1,4 @@
-/* $Id: qsubs.c,v 1.19 2001-11-26 18:20:28 zacheiss Exp $
+/* $Id: qsubs.c,v 1.20 2008-08-29 16:10:24 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.19 2001-11-26 18:20:28 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.20 2008-08-29 16:10:24 zacheiss Exp $");
 
 extern struct query Queries[];
 extern int QueryCount;
@@ -101,7 +101,7 @@ void help_query(struct query *q, int (*action)(int, char *[], void *),
   char *argv[32];
 
   argcount = q->argc;
-  if (q->type == UPDATE || q->type == APPEND)
+  if (q->type == MR_Q_UPDATE || q->type == MR_Q_APPEND)
     argcount += q->vcnt;
 
   switch (argcount)
@@ -136,7 +136,7 @@ void help_query(struct query *q, int (*action)(int, char *[], void *),
       break;
     }
 
-  if (q->type == RETRIEVE)
+  if (q->type == MR_Q_RETRIEVE)
     {
       sprintf(argr, "%s => %s", argv[--argcount], q->fields[q->argc]);
       argv[argcount++] = argr;

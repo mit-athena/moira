@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.28 2003-05-16 15:28:06 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.29 2008-08-29 14:50:07 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.28 2003-05-16 15:28:06 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.29 2008-08-29 14:50:07 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -193,7 +193,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 
   switch (q->type)
     {
-    case RETRIEVE:
+    case MR_Q_RETRIEVE:
       /* for queries that do not permit wildcarding, check if row
 	 uniquely exists */
       if (v && v->field)
@@ -245,7 +245,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 
       break;
 
-    case UPDATE:
+    case MR_Q_UPDATE:
       /* see if row already exists */
       if (v->field)
 	{
@@ -279,7 +279,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 
       break;
 
-    case APPEND:
+    case MR_Q_APPEND:
       /* see if row already exists */
       if (v->field)
 	{
@@ -322,7 +322,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	status = (*v->post_rtn)(q, Argv, cl);
       break;
 
-    case DELETE:
+    case MR_Q_DELETE:
       /* see if row already exists */
       if (v->field)
 	{
@@ -352,7 +352,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	status = (*v->post_rtn)(q, Argv, cl);
       break;
 
-    case SPECIAL:
+    case MR_Q_SPECIAL:
       break;
     }
 
@@ -366,7 +366,7 @@ out:
       status = mr_errcode;
     }
 
-  if (q->type == RETRIEVE)
+  if (q->type == MR_Q_RETRIEVE)
     EXEC SQL COMMIT WORK;
   else
     {
@@ -545,7 +545,7 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
 
   /* check argument count */
   argreq = q->argc;
-  if (q->type == UPDATE || q->type == APPEND)
+  if (q->type == MR_Q_UPDATE || q->type == MR_Q_APPEND)
     argreq += q->vcnt;
   if (argc != argreq)
     return MR_ARGS;
@@ -757,7 +757,7 @@ int do_delete(struct query *q, char *qual,
  **	    table - name of table objects are found in
  **	    limit - should the ID be range limited
  **
- ** - called before an APPEND operation to set the next object id to
+ ** - called before an MR_Q_APPEND operation to set the next object id to
  **   be used for the new record to the next free value
  **
  **/

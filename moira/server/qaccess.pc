@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.35 2008-08-22 17:49:12 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.35 2008-08-22 17:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -295,7 +295,7 @@ int access_list(struct query *q, char *argv[], client *cl)
   if (find_member(memacl_type, memacl_id, cl))
     return MR_SUCCESS;
 
-  if (flags || q->type == DELETE)
+  if (flags || q->type == MR_Q_DELETE)
     {
       if (!strcmp("USER", argv[1]) && *(int *)argv[2] == cl->users_id)
         return MR_SUCCESS;
@@ -523,7 +523,7 @@ int access_host(struct query *q, char *argv[], client *cl)
   else
     idx = 2;
   
-  if (q->type == APPEND)
+  if (q->type == MR_Q_APPEND)
     {
       /* Non-query owner must set use to zero */
       if (atoi(argv[6 + idx]) != 0)
@@ -557,7 +557,7 @@ int access_host(struct query *q, char *argv[], client *cl)
       else
 	return MR_PERM;
     }
-  else /* q-type == UPDATE */
+  else /* q-type == MR_Q_UPDATE */
     {
       EXEC SQL BEGIN DECLARE SECTION;
       int status, acomment, use, ocomment, snid;
@@ -650,22 +650,22 @@ int access_ahal(struct query *q, char *argv[], client *cl)
   EXEC SQL END DECLARE SECTION;
   int status;
 
-  if (q->type == RETRIEVE)
+  if (q->type == MR_Q_RETRIEVE)
     return MR_SUCCESS;
 
   id = *(int *)argv[1];
 
-  if (q->type == APPEND && isdigit(argv[0][0]))
+  if (q->type == MR_Q_APPEND && isdigit(argv[0][0]))
     return MR_BAD_CHAR;
 
   EXEC SQL SELECT count(name) INTO :cnt from hostalias WHERE mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
-  /* if the type is APPEND, this is ahal and we need to make sure there
+  /* if the type is MR_Q_APPEND, this is ahal and we need to make sure there
    * will be no more than 2 aliases.  If it's not, it must be dhal and
    * any owner will do.
    */
-  if (q->type == APPEND && cnt >= 2)
+  if (q->type == MR_Q_APPEND && cnt >= 2)
     return MR_PERM;
   EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id
     INTO :mtype, :mid, :stype, :sid FROM machine m, subnet s
@@ -686,7 +686,7 @@ int access_ahal(struct query *q, char *argv[], client *cl)
 
 int access_snt(struct query *q, char *argv[], client *cl)
 {
-  if (q->type == RETRIEVE)
+  if (q->type == MR_Q_RETRIEVE)
     return MR_SUCCESS;
 
   return MR_PERM;
@@ -803,7 +803,7 @@ int access_container(struct query *q, char *argv[], client *cl)
 
   /* if the container is public or the query is delete, grant access if client
    * is on owner list */
-  if (flag || q->type == DELETE)
+  if (flag || q->type == MR_Q_DELETE)
     {
 	  EXEC SQL SELECT owner_type, owner_id INTO :machine_owner_type,
 	    :machine_owner_id

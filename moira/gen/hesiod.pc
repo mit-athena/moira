@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.21 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: hesiod.pc,v 1.22 2008-08-29 16:54:04 zacheiss Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.21 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.22 2008-08-29 16:54:04 zacheiss Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -270,7 +270,15 @@ int do_passwd(void)
 	}
 
       if (eid != 0)
-	pid = eid;
+	{
+	  /* Check for IMAP.  Can't use iid because it should be zero. */
+	  EXEC SQL SELECT mach_id INTO :mid FROM filesys
+	    WHERE label = :login || '.po' AND type = 'IMAP';
+	  if (sqlca.sqlcode == 0)
+	    pid = mid;
+	  else
+	    pid = eid;
+	}
 
       if (iid != 0)
 	{

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.52 2008-08-25 16:52:54 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.53 2008-08-30 22:22:14 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -2522,7 +2522,9 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  mail_nickname_v[0] = NULL;
 	  proxy_address_v[0] = NULL;
 	  mail_v[0] = NULL;
-	  legacy_exchange_dn_v[0] = mail;
+	  legacy_exchange_dn_v[0] = NULL;
+	  address_book_v[0] = NULL;
+
 	  ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
@@ -2592,9 +2594,13 @@ int group_create(int ac, char **av, void *ptr)
   int  n;
   int  rc;
   int  updateGroup;
-  int  MailDisabled;
+  int  MailDisabled = 0;
   char **call_args;
-
+  LK_ENTRY *group_base;
+  int  group_count;
+  char filter[1024];
+  char *attr_array[3];
+  
   call_args = ptr;
 
   if(UseGroupUniversal)
@@ -2610,7 +2616,6 @@ int group_create(int ac, char **av, void *ptr)
     }
 
   updateGroup = (int)call_args[4];
-  MailDisabled = atoi(call_args[6]);
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -2645,9 +2650,40 @@ int group_create(int ac, char **av, void *ptr)
       ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_ADD);
       ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
       ADD_ATTR("name", name_v, LDAP_MOD_ADD);
-
+      
       if (Exchange)
 	{
+	  if(atoi(av[L_MAILLIST])) 
+	    {
+	      group_count = 0;
+	      group_base = NULL;
+	      
+	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+				       filter, attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count)
+		{
+		  com_err(whoami, 0, "Object already exists with name %s",
+			  av[L_NAME]);
+		  MailDisabled++;
+		}
+	
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	    }
+	  
 	  if(atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
@@ -2662,15 +2698,15 @@ int group_create(int ac, char **av, void *ptr)
 	      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
 	    }
 	}
-    
+      
       if (strlen(av[L_DESC]) != 0)
-        {
-          desc_v[0] = av[L_DESC];
-          ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
-        }
-
+	{
+	  desc_v[0] = av[L_DESC];
+	  ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
+	}
+      
       ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_ADD);
-
+      
       if (strlen(av[L_ACE_NAME]) != 0)
         {
           sprintf(info, "The Administrator of this list is: %s", 
@@ -2724,6 +2760,37 @@ int group_create(int ac, char **av, void *ptr)
    
       if (Exchange)
 	{
+	  if(atoi(av[L_MAILLIST])) 
+	    {
+	      group_count = 0;
+	      group_base = NULL;
+	      
+	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+				       filter, attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count)
+		{
+		  com_err(whoami, 0, "Object already exists with name %s",
+			  av[L_NAME]);
+		  MailDisabled++;
+		}
+	      
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	    }
+
 	  if (atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
@@ -3045,6 +3112,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
       if(HiddenGroup) 
 	{
 	  hide_address_lists_v[0] = "TRUE";
+	  address_book_v[0] = NULL;
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v, 
 		   LDAP_MOD_REPLACE);
 	  ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.72 2007-11-29 22:56:02 zacheiss Exp $
+/* $Id: user.c,v 1.73 2008-09-10 13:48:41 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.72 2007-11-29 22:56:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.73 2008-09-10 13:48:41 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -643,7 +643,7 @@ int RegisterUser(int argc, char **argv)
       FreeInfo(args);
       return DM_NORMAL;
     }
-  if (strcmp(potype, "POP") && strcmp(potype, "IMAP"))
+  if (strcmp(potype, "POP") && strcmp(potype, "IMAP") && strcmp(potype, "EXCHANGE"))
     {
       sprintf(temp_buf, "Unknown P.O. Box type.");
       Put_message(temp_buf);

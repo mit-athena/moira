@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.55 2008-09-08 15:09:37 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.56 2008-09-13 20:46:09 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -2340,7 +2340,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      *mail_v[] = {NULL, NULL};
   char      *proxy_address_v[] = {NULL, NULL};
   char      *mail_nickname_v[] = {NULL, NULL};
-  char      *reportToOriginator_v[] = {NULL, NULL};
+  char      *report_to_originator_v[] = {NULL, NULL};
   char      *address_book_v[] = {NULL, NULL};
   char      *legacy_exchange_dn_v[] = {NULL, NULL};
   u_int     groupTypeControl;
@@ -2513,9 +2513,13 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  mail_nickname_v[0] = mail_nickname;
 	  proxy_address_v[0] = proxy_address;
 	  mail_v[0] = mail;
+	  report_to_originator_v[0] = "TRUE";
+
 	  ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
+	  ADD_ATTR("reportToOriginator", report_to_originator_v, 
+		   LDAP_MOD_REPLACE);
 	} 
       else 
 	{
@@ -2524,12 +2528,15 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  mail_v[0] = NULL;
 	  legacy_exchange_dn_v[0] = NULL;
 	  address_book_v[0] = NULL;
+	  report_to_originator_v[0] = NULL;
 
 	  ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("legacyExchangeDN", legacy_exchange_dn_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
+	  ADD_ATTR("reportToOriginator", report_to_originator_v, 
+		   LDAP_MOD_REPLACE);
 	}
     }
   else
@@ -2583,7 +2590,7 @@ int group_create(int ac, char **av, void *ptr)
   char *mail_v[] = {NULL, NULL};
   char *proxy_address_v[] = {NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
-  char *reportToOriginator_v[] = {NULL, NULL};
+  char *report_to_originator_v[] = {NULL, NULL};
   char *address_book_v[] = {NULL, NULL};
   char *legacy_exchange_dn_v[] = {NULL, NULL};
   char groupTypeControlStr[80];
@@ -2687,7 +2694,11 @@ int group_create(int ac, char **av, void *ptr)
 	  if(atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
+	      report_to_originator_v[0] = "TRUE";
+
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
+		       LDAP_MOD_ADD);
 	    }
 	}
       else
@@ -2794,7 +2805,11 @@ int group_create(int ac, char **av, void *ptr)
 	  if (atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
+	      report_to_originator_v[0] = "TRUE";
+
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
+		       LDAP_MOD_REPLACE);
 	    } 
 	  else 
 	    {
@@ -2803,6 +2818,7 @@ int group_create(int ac, char **av, void *ptr)
 	      proxy_address_v[0] = NULL;
 	      legacy_exchange_dn_v[0] = NULL;
 	      address_book_v[0] = NULL;
+	      report_to_originator_v[0] = NULL;
 
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
@@ -2810,6 +2826,8 @@ int group_create(int ac, char **av, void *ptr)
 	      ADD_ATTR("legacyExchangeDN", legacy_exchange_dn_v, 
 		       LDAP_MOD_REPLACE);
 	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
+		       LDAP_MOD_REPLACE);
 	    }
 	}
       else

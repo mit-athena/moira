@@ -1,6 +1,6 @@
 #!/usr/athena/bin/perl -Tw
 #
-# $Id: warehouse.gen,v 1.1 2007-01-03 20:31:58 zacheiss Exp $
+# $Id$
 # Generate a database extract from the users table for the MIT Data Warehouse.
 $MR_DBMS_ERR = 47836421;
 $MR_OCONFIG = 47836460;

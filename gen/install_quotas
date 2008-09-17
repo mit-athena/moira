@@ -24,6 +24,6 @@ endif
 exit 0
 
 #
-# 	$Source: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v $
-#	$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.4 1998-01-07 17:13:18 danw Exp $
+# 	$Source$
+#	$Header$
 #

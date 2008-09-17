@@ -99,7 +99,7 @@ extern krb5_error_code decode_krb5_error
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.7 2006-05-13 02:37:18 zacheiss Exp $";
+static const char rcsid[] = "$Id$";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 
@@ -698,7 +698,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
   static char temp[128];
   ULONG       version = LDAP_VERSION3;
   ULONG       rc;
-  int         Max_wait_time = 500;
+  int         Max_wait_time = 1000;
   int         Max_size_limit = LDAP_NO_LIMIT;
 
   if (strlen(ldap_domain) == 0)
@@ -764,7 +764,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT, 
                                (void *)&Max_size_limit);
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
-          rc = ldap_adgssapi_bind((*ldap_handle), dn_path, GSSSASL_PRIVACY_PROTECTION);
+          rc = ldap_adgssapi_bind((*ldap_handle), dn_path, 0);
           if (rc == LDAP_SUCCESS)
             {
               if (connect_to_kdc)

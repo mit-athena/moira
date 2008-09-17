@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $
+/* $Id$
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $");
+RCSID("$Header$");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";

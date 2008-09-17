@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id$
  *
  * Moira server process.
  *
@@ -31,7 +31,7 @@
 #include <krb.h>
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header$");
 
 client *cur_client;
 

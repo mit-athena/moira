@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2005-06-22 06:03:38 zacheiss Exp $
+# $Id$
 
 SHELL=/bin/sh
 TARGET=regclasses.zip

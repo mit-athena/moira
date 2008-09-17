@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 2002-09-25 20:46:53 zacheiss Exp $
+# $Id$
 
 SHELL=/bin/sh
 @SET_MAKE@

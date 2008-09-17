@@ -1,4 +1,4 @@
-/* $Id: mrclient-internal.h,v 1.1 2000-08-10 02:05:35 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1999 by the Massachusetts Institute of Technology
  *
@@ -10,7 +10,7 @@
 void mrcl_set_message(char *, ...);
 void mrcl_clear_message(void);
 
-enum { MAILTYPE_ERROR, MAILTYPE_IMAP, MAILTYPE_POP, 
+enum { MAILTYPE_ERROR, MAILTYPE_IMAP, MAILTYPE_EXCHANGE, MAILTYPE_POP, 
        MAILTYPE_LOCAL, MAILTYPE_MAILHUB, MAILTYPE_SMTP };
 int mailtype(char *machine);
 

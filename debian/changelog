@@ -1,3 +1,11 @@
+debathena-moira (4.0.0+cvs20080830-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot
+  * Add a debathena-moira-update-server package that installs
+    update_server
+
+ -- Evan Broder <broder@mit.edu>  Fri, 01 Aug 2008 10:54:26 -0400
+
 debathena-moira (4.0.0+cvs20080701-0debathena1) unstable; urgency=low
 
   * New CVS snapshot

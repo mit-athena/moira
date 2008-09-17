@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $
+/* $Id$
  *
  * Shared routines for playing with list membership.
  *
@@ -19,7 +19,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $");
+RCSID("$Header$");
 
 static char default_realm[REALM_SZ];
 

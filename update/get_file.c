@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -19,7 +19,7 @@
 
 #include <des.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $");
+RCSID("$Header$");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))

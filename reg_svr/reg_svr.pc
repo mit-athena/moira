@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.19 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id$
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.19 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header$");
 
 char *whoami, *hostname, *shorthostname;
 

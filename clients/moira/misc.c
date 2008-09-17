@@ -1,4 +1,4 @@
-/* $Id: misc.c,v 1.12 2000-03-15 22:44:04 rbasch Exp $
+/* $Id$
  *
  *	This is the file misc.c for the Moira Client, which allows a naieve
  *      to quickly and easily maintain most parts of the Moira database.
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.12 2000-03-15 22:44:04 rbasch Exp $");
+RCSID("$Header$");
 
 void PrintStats(char **info);
 void PrintClients(char **info);

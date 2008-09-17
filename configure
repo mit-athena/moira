@@ -3181,11 +3181,6 @@ else
 fi;
 echo "$as_me:$LINENO: result: $krb4" >&5
 echo "${ECHO_T}$krb4" >&6
-if test $krb4 = "no"; then
-    { { echo "$as_me:$LINENO: error: Kerberos is required for Moira" >&5
-echo "$as_me: error: Kerberos is required for Moira" >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test "$krb4" != yes; then
 
 
@@ -5879,7 +5874,15 @@ fi
 
 
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
-KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
+KLIBS="$KRB4_LIBS -lcom_err $LIBS"
+KLIBS="$LIBS"
+if test "$hesiod" != no; then
+  KLIBS="-lhesiod $KLIBS"
+fi
+KLIBS="$KRB4_LIBS -lcom_err $KLIBS"
+if test "$zephyr" != no; then
+  KLIBS="-lzephyr $KLIBS"
+fi
 LIBS="-lmoira $KLIBS"
 
 

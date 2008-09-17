@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.23 2007-12-03 21:22:59 zacheiss Exp $
+/* $Id$
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.23 2007-12-03 21:22:59 zacheiss Exp $");
+RCSID("$Header$");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -655,6 +655,19 @@ void pobox_check(int id, struct user *u)
   switch (u->potype)
     {
     case 'P':
+      if (!hash_lookup(machines, u->pobox_id))
+	{
+	  printf("User %s(%s) has P.O.Box on non-existant machine %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      break;
+
+    case 'E':
       if (!hash_lookup(machines, u->pobox_id))
 	{
 	  printf("User %s(%s) has P.O.Box on non-existant machine %d\n",

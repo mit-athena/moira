@@ -1,4 +1,4 @@
-/* $Id: dump_db.pc,v 1.9 2000-03-10 20:55:04 zacheiss Exp $
+/* $Id$
  *
  * 	This program dumps the Moira database to a series of output files
  * which can be later read back into Moira in the event of a crash.
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.9 2000-03-10 20:55:04 zacheiss Exp $");
+RCSID("$Header$");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *db = "moira";

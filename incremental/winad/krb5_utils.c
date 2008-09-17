@@ -42,7 +42,7 @@ typedef enum { UNIVERSAL = 0x00, APPLICATION = 0x40,
                CONTEXT_SPECIFIC = 0x80, PRIVATE = 0xC0 } asn1_class;
 #endif
 
-static const char rcsid[] = "$Id: krb5_utils.c,v 1.3 2001-04-23 02:11:22 zacheiss Exp $";
+static const char rcsid[] = "$Id$";
 
 asn1_error_code asn1_encode_realm(asn1buf *buf, const krb5_principal val, 
                                   int *retlen);

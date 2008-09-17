@@ -1,4 +1,4 @@
-/* $Id: nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $
+/* $Id$
  *
  *	This is the file nfs.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $");
+RCSID("$Header$");
 
 char **AskNFSInfo(char **info);
 

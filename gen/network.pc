@@ -1,4 +1,4 @@
-/* $Id: network.pc,v 1.6 2001-05-23 21:31:03 zacheiss Exp $
+/* $Id$
  *
  * This generates the network table.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/network.pc,v 1.6 2001-05-23 21:31:03 zacheiss Exp $");
+RCSID("$Header$");
 
 char *whoami = "network.gen";
 char *db = "moira/moira";

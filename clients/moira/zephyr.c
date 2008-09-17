@@ -1,4 +1,4 @@
-/* $Id: zephyr.c,v 1.13 2000-09-27 08:54:17 zacheiss Exp $
+/* $Id$
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.13 2000-09-27 08:54:17 zacheiss Exp $");
+RCSID("$Header$");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 

@@ -4,6 +4,8 @@ create index i_usr_name on  users (first, last);
 create index i_usr_last on  users (last, first);
 create index i_usr_uid on  users (unix_uid);
 create index i_usr_pop on  users (pop_id);
+create index i_usr_imap on users (imap_id);
+create index i_usr_exchange on users (exchange_id);
 create index i_usr_clearid on users (clearid);
 create index i_usr_resv on users (reservations);
 create index i_usr_sponsor on users (sponsor_id);

@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.14 2001-04-01 05:31:25 zacheiss Exp $
+/* $Id$
  *
  * Structures and constants used in the query dispatch table
  *
@@ -8,7 +8,7 @@
  */
 
 /* Query Types */
-enum query_type {RETRIEVE, UPDATE, APPEND, DELETE, SPECIAL};
+enum query_type {MR_Q_RETRIEVE, MR_Q_UPDATE, MR_Q_APPEND, MR_Q_DELETE, MR_Q_SPECIAL};
 
 /* Query Definition Structure */
 struct query

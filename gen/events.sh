@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: events.sh,v 1.2 2005-09-19 21:37:47 zacheiss Exp $
+# $Id$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then 
     exec >/var/athena/moira_update.log 2>&1

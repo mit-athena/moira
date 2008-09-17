@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: mailman.gen,v 1.1 2003-01-02 01:05:05 zacheiss Exp $
+# $Id$
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

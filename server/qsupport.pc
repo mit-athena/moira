@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.52 2008-04-25 17:01:32 zacheiss Exp $
+/* $Id$
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.52 2008-04-25 17:01:32 zacheiss Exp $");
+RCSID("$Header$");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -41,7 +41,9 @@ int qualified_get(struct query *q, char *argv[],
  * if type is POP, then box should be a machine, and its ID should be put in
  * pop_id.  If type is IMAP, then box should be a filesys, and its ID should
  * be put in pop_id.  If type is SMTP, then box should be a string and its
- * ID should be put in box_id.  If type is NONE, then box doesn't matter.
+ * ID should be put in box_id.  If type is EXCHANGE, then box should be a
+ * machine, and its ID should be put in exchange_id.  If type is NONE, then 
+ * box doesn't matter.
  */
 
 int set_pobox(struct query *q, char **argv, client *cl)
@@ -51,6 +53,7 @@ int set_pobox(struct query *q, char **argv, client *cl)
   char *box, potype[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
+  char buffer[256];
 
   box = argv[2];
   user = *(int *)argv[0];
@@ -63,6 +66,9 @@ int set_pobox(struct query *q, char **argv, client *cl)
       (!strcmp(strtrim(potype), "SPLIT") && id))
     set_pop_usage(id, -1);
 
+  sprintf(buffer, "u.users_id = %d", user);
+  incremental_before(USERS_TABLE, buffer, 0);
+
   if (!strcmp(argv[1], "POP"))
     {
       status = name_to_id(box, MACHINE_TABLE, &id);
@@ -70,9 +76,19 @@ int set_pobox(struct query *q, char **argv, client *cl)
 	return MR_MACHINE;
       else if (status)
 	return status;
-      EXEC SQL UPDATE users SET potype = 'POP', pop_id = :id, imap_id = 0
-	WHERE users_id = :user;
+      EXEC SQL UPDATE users SET potype = 'POP', pop_id = :id, imap_id = 0,
+	exchange_id = 0 WHERE users_id = :user;
       set_pop_usage(id, 1);
+    }
+  else if (!strcmp(argv[1], "EXCHANGE"))
+    {
+      status = name_to_id(box, MACHINE_TABLE, &id);
+      if (status == MR_NO_MATCH)
+	return MR_MACHINE;
+      else if (status)
+	return status;
+      EXEC SQL UPDATE users SET POTYPE = 'EXCHANGE', exchange_id = :id,
+	pop_id = 0, imap_id = 0 WHERE users_id = :user;
     }
   else if (!strcmp(argv[1], "SMTP") || !strcmp(argv[1], "SPLIT"))
     {
@@ -104,14 +120,16 @@ int set_pobox(struct query *q, char **argv, client *cl)
 	WHERE label = :box AND type = 'IMAP';
       if (sqlca.sqlcode)
 	return MR_FILESYS;
-      EXEC SQL UPDATE users SET potype = 'IMAP', imap_id = :id, pop_id = 0
-	WHERE users_id = :user;
+      EXEC SQL UPDATE users SET potype = 'IMAP', imap_id = :id, pop_id = 0,
+	exchange_id = 0 WHERE users_id = :user;
     }
   else /* argv[1] == "NONE" */
     {
       EXEC SQL UPDATE users SET potype = 'NONE'
 	WHERE users_id = :user;
     }
+
+  incremental_after(USERS_TABLE, buffer, 0);
 
   set_pobox_modtime(q, argv, cl);
   EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = SYSDATE
@@ -121,21 +139,26 @@ int set_pobox(struct query *q, char **argv, client *cl)
   return MR_SUCCESS;
 }
 
-/* set_pobox_pop: Revert to existing POP or IMAP pobox.
+/* set_pobox_pop: Revert to existing POP, IMAP, or EXCHANGE pobox.
  * Also take care of keeping track of the post office usage.
  */
 int set_pobox_pop(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, pid, iid, mid;
+  int id, pid, iid, mid, eid;
   char type[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
+  char buffer[256];
 
   id = *(int *)argv[0];
-  EXEC SQL SELECT potype, pop_id, imap_id INTO :type, :pid, :iid
+  EXEC SQL SELECT potype, pop_id, imap_id, exchange_id
+    INTO :type, :pid, :iid, :eid
     FROM users WHERE users_id = :id;
-  if (sqlca.sqlerrd[2] == 0 || (pid == 0 && iid == 0))
+  if (sqlca.sqlerrd[2] == 0 || (pid == 0 && iid == 0 && eid == 0))
     return MR_MACHINE;
+
+  sprintf(buffer, "u.users_id = %d", id);
+  incremental_before(USERS_TABLE, buffer, 0);
 
   if (pid)
     {
@@ -147,7 +170,7 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
       if (!strcmp(strtrim(type), "POP"))
 	set_pop_usage(mid, 1);
     }
-  else
+  else if (iid)
     {
       EXEC SQL SELECT filsys_id INTO :mid FROM filesys
 	WHERE filsys_id = :iid;
@@ -155,6 +178,16 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
 	return MR_MACHINE;
       EXEC SQL UPDATE users SET potype = 'IMAP' WHERE users_id = :id;
     }
+  else if (eid)
+    {
+      EXEC SQL SELECT mach_id INTO :mid FROM machine
+	WHERE mach_id = :eid;
+      if (sqlca.sqlerrd[2] == 0)
+	return MR_MACHINE;
+      EXEC SQL UPDATE users SET potype = 'EXCHANGE' WHERE users_id = :id;
+    }
+
+  incremental_after(USERS_TABLE, buffer, 0);
 
   set_pobox_modtime(q, argv, cl);
   EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = SYSDATE
@@ -1608,7 +1641,7 @@ int qualified_get_serverhost(struct query *q, char *argv[], client *cl,
 /* register_user - change user's login name and allocate a pobox, group,
  * filesystem, and quota for them.  The user's status must start out as 0,
  * and is left as 2.  Arguments are: user's UID, new login name, and
- * pobox type ("POP" = POP, "IMAP" or numeric = IMAP)
+ * pobox type ("POP" = POP, "IMAP" or numeric = IMAP, "EXCHANGE" = EXCHANGE)
  */
 
 int register_user(struct query *q, char **argv, client *cl)
@@ -1621,7 +1654,7 @@ int register_user(struct query *q, char **argv, client *cl)
   int ostatus, nstatus, fsidval, popid;
   int npid, tmp;
   int po_exists = 0;
-  static int m_id, def_quota, def_imap_quota, list_id;
+  static int m_id, def_quota, def_imap_quota, list_id, exchange_id;
   EXEC SQL END DECLARE SECTION;
   char buffer[256], *aargv[3];
 
@@ -1632,6 +1665,9 @@ int register_user(struct query *q, char **argv, client *cl)
 
       EXEC SQL SELECT mach_id INTO :m_id FROM machine
 	WHERE name = 'ATHENA.MIT.EDU';
+
+      EXEC SQL SELECT mach_id INTO :exchange_id FROM machine
+	WHERE name = 'EXCHANGE.MIT.EDU';
     }
 
   EXEC SQL SELECT value INTO :def_quota FROM numvalues
@@ -1756,6 +1792,13 @@ int register_user(struct query *q, char **argv, client *cl)
 	    WHERE users_id = :users_id;
 	  com_err(whoami, 0, "pobox set to POP:%s", strtrim(machname));
 	}	  
+      else if (!strcmp(potype, "EXCHANGE"))
+	{
+	  EXEC SQL UPDATE users SET potype = 'EXCHANGE',
+	    exchange_id = :exchange_id
+	    WHERE users_id = :users_id;
+	  com_err(whoami, 0, "pobox set to EXCHANGE:EXCHANGE.MIT.EDU");
+	}
       else
 	{
       /* Select all IMAP nfsphys entries in order of increasing

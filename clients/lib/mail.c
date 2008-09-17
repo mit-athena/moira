@@ -1,4 +1,4 @@
-/* $Id: mail.c,v 1.2 2000-08-16 05:25:40 zacheiss Exp $
+/* $Id$
  *
  * Library-internal routines for categorizing machines in terms
  * of email.
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/mail.c,v 1.2 2000-08-16 05:25:40 zacheiss Exp $");
+RCSID("$Header$");
 
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);
@@ -31,7 +31,7 @@ int mailtype(char *machine)
   int status, match = 0;
   static struct save_queue *pop = NULL, *local = NULL;
   static struct save_queue *mailhub = NULL, *mailhub_name = NULL;
-  static struct save_queue *imap = NULL;
+  static struct save_queue *imap = NULL, *exchange = NULL;
 
   mrcl_clear_message();
 
@@ -172,6 +172,29 @@ int mailtype(char *machine)
     }
   if (match)
     return MAILTYPE_MAILHUB;
+
+  /* 6. Check for EXCHANGE service. */
+  if (!exchange)
+    {
+      char *service = "EXCHANGE";
+      exchange = sq_create();
+      status = mr_query("get_server_locations", 1, &service,
+			save_sloc_machine, exchange);
+      if (status && (status != MR_NO_MATCH))
+	{
+	  mrcl_set_message("Could not read list of EXCHANGE servers: %s",
+			   error_message(status));
+	  return MAILTYPE_ERROR;
+	}
+    }
+
+  while (sq_get_data(exchange, &name))
+    {
+      if (!match && !strcasecmp(name, machine))
+	match = 1;
+    }
+  if (match)
+    return MAILTYPE_EXCHANGE;
 
   return MAILTYPE_SMTP;
 }

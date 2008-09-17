@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.3 2006-08-22 17:36:25 zacheiss Exp $
+/* $Header$
  *
  * Do AFS incremental updates
  *

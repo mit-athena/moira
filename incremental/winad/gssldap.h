@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id: gssldap.h,v 1.1 2000-06-06 04:38:34 zacheiss Exp $
+ * $Id$
  *
  * Public client API for GSS-API LDAP SASL mechanism.
  */

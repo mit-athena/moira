@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.31 2008-05-16 16:50:33 zacheiss Exp $
+# $Id$
 	error_table sms
 
 ec	MR_NOT_CONNECTED,

@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc,v 1.6 2007-04-03 20:52:58 zacheiss Exp $
+/* $Id$
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.6 2007-04-03 20:52:58 zacheiss Exp $");
+RCSID("$Header$");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";

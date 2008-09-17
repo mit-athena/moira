@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-wsh.gen,v 1.5 2008-04-17 17:24:37 zacheiss Exp $
+# $Id$
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;

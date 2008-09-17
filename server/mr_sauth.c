@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $
+/* $Id$
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $");
+RCSID("$Header$");
 
 extern char *whoami, *host;
 extern int proxy_acl;

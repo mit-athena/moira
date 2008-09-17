@@ -1,4 +1,4 @@
-/* $Id: events.pc,v 1.1 2007-03-26 18:14:41 zacheiss Exp $
+/* $Id$
  *
  * (c) Copyright 2007 by the Massachusetts Institute of Technology.
  */

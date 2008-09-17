@@ -1,4 +1,4 @@
-/* $Id: genacl.pc,v 1.4 2002-02-27 09:53:12 zacheiss Exp $
+/* $Id$
  *
  * Utility functions for outputting ACLs
  *
@@ -17,10 +17,11 @@
 #include <string.h>
 
 #include <krb.h>
+#include <krb5.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.4 2002-02-27 09:53:12 zacheiss Exp $");
+RCSID("$Header$");
 
 static char defaultrealm[REALM_SZ];
 
@@ -65,6 +66,7 @@ void dump_krb_acl(FILE *out, char *type, int id, int vers)
 void canon_krb(struct imember *m, int vers, char *buf, int len)
 {
   char *at;
+  char kbuf[MAX_K_NAME_SZ];
 
   switch (m->type)
     {
@@ -73,29 +75,58 @@ void canon_krb(struct imember *m, int vers, char *buf, int len)
       break;
 
     case 'K':
+      /* We assume we have a krb4-style namespace.  If we want a krb5 acl, we need to
+       * krb5_425_conv_principal() on it. For krb4, do nothing special.
+       */ 
       at = strchr(m->name, '@');
       if (!at)
 	at = strchr(m->name, '\0');
+      snprintf(kbuf, len, "%s", m->name);
+
+      if (!*at)
+	{
+	  int plen = strlen(kbuf);
+	  snprintf(kbuf + plen, len - plen, "@%s", defaultrealm);
+	}
+
       if (vers == 5)
 	{
-	  char *dot = strchr(m->name, '.');
-	  if (dot && dot < at)
-	    snprintf(buf, len, "%.*s/%s", dot - m->name, m->name, dot + 1);
-	  else
-	    snprintf(buf, len, "%s", m->name);
+	  char name[ANAME_SZ] = "\0", inst[INST_SZ] = "\0", realm[REALM_SZ] = "\0";
+	  char *kuser = NULL;
+	  krb5_context context = NULL;
+	  krb5_principal client = NULL;
+	  int status = 0;
+
+	  if (kname_parse(name, inst, realm, kbuf) != KSUCCESS)
+	    goto out;
+
+	  status = krb5_init_context(&context);
+	  if (status)
+	    goto out;
+
+	  status = krb5_425_conv_principal(context, name, inst, realm, &client);
+	  if (status)
+	    goto out;
+
+	  status = krb5_unparse_name(context, client, &kuser);
+	  if (status)
+	    goto out;
+
+	  strncpy(buf, kuser, MAX_K_NAME_SZ);
+	  buf[MAX_K_NAME_SZ - 1] = '\0';
+
+	out:
+	  if (kuser)
+	    krb5_free_unparsed_name(context, kuser);
+	  if (client)
+	    krb5_free_principal(context, client);
+	  if (context)
+	    krb5_free_context(context);
 	}
       else
 	{
-	  char *slash = strchr(m->name, '/');
-	  if (slash && slash < at)
-	    snprintf(buf, len, "%.*s.%s", slash - m->name, m->name, slash + 1);
-	  else
-	    snprintf(buf, len, "%s", m->name);
-	}
-      if (!*at)
-	{
-	  int plen = strlen(buf);
-	  snprintf(buf + plen, len - plen, "@%s", defaultrealm);
+	  /* v4 output, and we should already have added a realm. */
+	  snprintf(buf, len, "%s", kbuf);
 	}
       break;
     }

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.15 2008-02-25 20:49:05 zacheiss Exp $");
+RCSID("$Header$");
 
 struct owner_type {
   int type;

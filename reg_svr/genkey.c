@@ -1,4 +1,4 @@
-/* $Id: genkey.c,v 1.1 1998-07-22 14:55:24 danw Exp $
+/* $Id$
  *
  * Utility program to generate a public/private key pair
  *
@@ -25,7 +25,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genkey.c,v 1.1 1998-07-22 14:55:24 danw Exp $");
+RCSID("$Header$");
 
 void printhex(FILE *out, unsigned char *buf, int len);
 

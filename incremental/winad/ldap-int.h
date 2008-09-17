@@ -471,10 +471,10 @@ extern int				nsldapi_initialized;
  * following macros. This is so we can plug-in alternative memory
  * allocators, etc. as the need arises.
  */
-#define NSLDAPI_MALLOC( size )		nsldapi_malloc( size )
+#define NSLDAPI_MALLOC( size )		ldap_x_malloc( size )
 #define NSLDAPI_CALLOC( nelem, elsize )	nsldapi_calloc( nelem, elsize )
 #define NSLDAPI_REALLOC( ptr, size )	nsldapi_realloc( ptr, size )
-#define NSLDAPI_FREE( ptr )		nsldapi_free( ptr )
+#define NSLDAPI_FREE( ptr )		ldap_x_free( ptr )
 
 
 /*

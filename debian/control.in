@@ -15,6 +15,17 @@ Description: Clients for the Moira database
  .
  This package contains clients such as moira, stella, blanche, etc.
 
+Package: debathena-moira-update-server
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Athena update_server
+ Moira is the Athena Service Management system.  It serves as the 
+ central repository for information about users, groups hosts, print 
+ queues, and several other aspects of the Athena environment.
+ .
+ This package contains the update_server daemon, which is used for
+ servers that automatically receive information dumps from moira.
+
 Package: debathena-libmoira-dev
 Section: debathena/libdevel
 Architecture: any

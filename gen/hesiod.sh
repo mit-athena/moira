@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.19 2000-05-08 18:30:30 zacheiss Exp $
+# $Header$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -44,9 +44,13 @@ fi
 # on the same parition as $DEST_DIR.
 if test ! -d $SRC_DIR
 then
-	chdir $DEST_DIR
+	# Tell linux cd/pwd not to be so "helpful".
+	# This will generate an ignorable error on older platforms.
+	set -P
+
+	cd $DEST_DIR
 	mkdir ../_nameserver
-	chdir ../_nameserver
+	cd ../_nameserver
 	if test $SRC_DIR != `pwd`
 	then
 		ln -s `pwd` $SRC_DIR
@@ -90,7 +94,7 @@ done
 # existance as evidence that named as has been successfully restarted.
 
 # First, get statistics
-kill -ILL `cat $NAMED_PID`
+/usr/athena/etc/rndc stats
 sleep 1
 kill -KILL `cat $NAMED_PID`
 rm -f $NAMED_PID

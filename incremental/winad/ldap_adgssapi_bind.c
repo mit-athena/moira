@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id: ldap_adgssapi_bind.c,v 1.5 2003-07-29 20:22:33 zacheiss Exp $
+ * $Id$
  *
  * Implementation of GSS-API client side binding for SASL
  */

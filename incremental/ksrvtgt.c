@@ -1,6 +1,6 @@
 /*
- * $Source: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v $
- * $Author: danw $
+ * $Source$
+ * $Author$
  *
  * Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,7 +21,7 @@
 /*#include <conf.h>*/
 
 char rcsid[] =
-    "$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.7 1998-02-05 22:51:20 danw Exp $";
+    "$Header$";
 
 void usage(char **argv);
 

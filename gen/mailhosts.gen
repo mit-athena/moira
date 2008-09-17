@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: mailhosts.gen,v 1.5 2007-07-18 19:38:27 zacheiss Exp $
+# $Id$
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

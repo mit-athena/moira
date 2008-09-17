@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.4 2002-08-14 14:01:21 zacheiss Exp $
+/* $Header$
  */
 
 #include <stdio.h>

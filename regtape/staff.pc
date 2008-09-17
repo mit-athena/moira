@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.9 2008-03-31 21:00:43 zacheiss Exp $
+/* $Id$
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.9 2008-03-31 21:00:43 zacheiss Exp $");
+RCSID("$Header$");
 
 /* File format is:
  *

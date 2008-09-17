@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Id: mitch.c,v 1.1 2003-02-04 04:44:41 zacheiss Exp $");
+RCSID("$Id$");
 
 struct owner_type {
   int type;

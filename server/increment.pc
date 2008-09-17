@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.20 2003-05-14 13:07:36 zacheiss Exp $
+/* $Id$
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.20 2003-05-14 13:07:36 zacheiss Exp $");
+RCSID("$Header$");
 
 extern char *whoami;
 extern char *table_name[];
@@ -30,7 +30,7 @@ int inc_pid = 0;
 int inc_running = 0;
 time_t inc_started;
 
-#define MAXARGC 15
+#define MAXARGC 16
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -96,10 +96,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case USERS_TABLE:
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
-	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir "
-	      "FROM users u WHERE %s", qual);
+	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
+	      "u.potype FROM users u WHERE %s", qual);
       dosql(before);
-      beforec = 13;
+      beforec = 14;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.vendor, m.mach_id FROM machine m "
@@ -280,10 +280,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case USERS_TABLE:
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
-	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir "
-	      "FROM users u WHERE %s", qual);
+	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
+	      "u.potype FROM users u WHERE %s", qual);
       dosql(after);
-      afterc = 13;
+      afterc = 14;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.vendor, m.mach_id FROM machine m "

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.58 2005-05-30 19:15:04 zacheiss Exp $
+/* $Id$
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.58 2005-05-30 19:15:04 zacheiss Exp $");
+RCSID("$Header$");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -119,7 +119,7 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
     return mr_errcode;
 
-  /* If this is an UPDATE query, we're done. */
+  /* If this is an MR_Q_UPDATE query, we're done. */
   if (row == 2)
     return MR_SUCCESS;
 
@@ -221,6 +221,10 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     WHERE potype = 'POP' AND pop_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
+  EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
+    WHERE potype = 'EXCHANGE' and exchange_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
   EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM serverhosts
     WHERE mach_id = :id;
   if (cnt > 0)
@@ -279,7 +283,7 @@ int setup_asnt(struct query *q, char *argv[], client *cl)
   char *account_number;
 
   /* Check for asnt or usnt. */
-  if (q->type == APPEND)
+  if (q->type == MR_Q_APPEND)
     row = 0;
   else
     row = 1;
@@ -997,7 +1001,7 @@ int setup_dqot(struct query *q, char **argv, client *cl)
  * from within a setup_...() routine with the appropriate arguments.
  *
  * Correct functioning of this routine may depend on the assumption
- * that this query is an APPEND.
+ * that this query is an MR_Q_APPEND.
  */
 
 int prefetch_value(struct query *q, char **argv, client *cl)
@@ -1023,7 +1027,7 @@ int prefetch_value(struct query *q, char **argv, client *cl)
   if (sqlca.sqlerrd[2] != 1)
     return MR_INTERNAL;
 
-  argc = q->argc + q->vcnt;   /* end of Argv for APPENDs */
+  argc = q->argc + q->vcnt;   /* end of Argv for MR_Q_APPENDs */
   sprintf(argv[argc], "%d", value);
 
   return MR_SUCCESS;
@@ -1336,7 +1340,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   EXEC SQL END DECLARE SECTION;
 
   /* Check for aprn or uprn. */
-  if (q->type == APPEND)
+  if (q->type == MR_Q_APPEND)
     row = 0;
   else
     row = 1;
@@ -1349,7 +1353,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
     return MR_BAD_CHAR;
   else
     {
-      if (q->type == APPEND)
+      if (q->type == MR_Q_APPEND)
 	{
 	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
 	    WHERE name = :name OR duplexname = :name;
@@ -1368,7 +1372,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
 
   if (*duplexname)
     {
-      if (q->type == APPEND)
+      if (q->type == MR_Q_APPEND)
 	{
 	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
 	    WHERE name = :duplexname OR duplexname = :duplexname;

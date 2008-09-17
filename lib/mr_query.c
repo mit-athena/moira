@@ -1,4 +1,4 @@
-/* $Id: mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $
+/* $Id$
  *
  * Perform a Moira query
  *
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $");
+RCSID("$Header$");
 
 /*
  * This routine is the primary external interface to the mr library.

@@ -1,4 +1,4 @@
-/* $Id: config.c,v 1.7 1998-02-15 17:49:27 danw Exp $
+/* $Id$
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.7 1998-02-15 17:49:27 danw Exp $");
+RCSID("$Header$");
 
 #define CONFIG_FILE	"/etc/athena/moira.conf"
 

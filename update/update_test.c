@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.12 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id$
  *
  * Test client for update_server protocol.
  *

@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.26 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id$
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -28,7 +28,7 @@
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.26 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header$");
 
 char *whoami, *hostname;
 

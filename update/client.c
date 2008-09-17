@@ -1,4 +1,4 @@
-/* $Id: client.c,v 1.27 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id$
  *
  * This code handles the actual distribution of data files
  * to servers in the Moira server-update program.
@@ -21,7 +21,7 @@
 #include <krb.h>
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.27 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header$");
 
 extern des_cblock session;
 extern char *whoami;

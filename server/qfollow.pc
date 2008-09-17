@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.28 2007-11-29 18:09:10 zacheiss Exp $
+/* $Id$
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.28 2007-11-29 18:09:10 zacheiss Exp $");
+RCSID("$Header$");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -394,7 +394,7 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
   char *ptype, *p;
   int mid, sid, status, i;
   EXEC SQL BEGIN DECLARE SECTION;
-  int users_id, pid, iid, bid;
+  int users_id, pid, iid, bid, eid;
   char mach[MACHINE_NAME_SIZE], fs[FILESYS_LABEL_SIZE];
   char str[STRINGS_STRING_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -406,7 +406,7 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
       ptype = argv[1];
       users_id = atoi(argv[2]);
 
-      EXEC SQL SELECT pop_id, imap_id, box_id INTO :pid, :iid, :bid
+      EXEC SQL SELECT pop_id, imap_id, box_id, exchange_id INTO :pid, :iid, :bid, :eid
 	FROM users WHERE users_id = :users_id;
       if (sqlca.sqlcode)
 	return MR_USER;
@@ -421,7 +421,7 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
 
 	  /* If SMTP, don't bother fetching IMAP and POP boxes. */
 	  if (ptype[1] == 'M')
-	    pid = iid = 0;
+	    pid = iid = eid = 0;
 	}
       if (iid)
 	{
@@ -440,12 +440,20 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
 	  if (sqlca.sqlcode)
 	    return MR_MACHINE;
 	}
+      if (eid)
+	{
+	  /* EXCHANGE, or SPLIT with EXCHANGE */
+	  EXEC SQL SELECT m.name INTO :mach FROM machine m, users u
+	    WHERE u.users_id = :users_id AND u.exchange_id = m.mach_id;
+	  if (sqlca.sqlcode)
+	    return MR_MACHINE;
+	}
 
       free(argv[2]);
       free(argv[3]);
 
       /* Now assemble the right answer. */
-      if (!strcmp(ptype, "POP"))
+      if (!strcmp(ptype, "POP") || !strcmp(ptype, "EXCHANGE"))
 	{
 	  argv[2] = xstrdup(strtrim(mach));
 	  argv[3] = xmalloc(strlen(argv[0]) + strlen(argv[2]) + 2);
@@ -808,7 +816,7 @@ int followup_aqot(struct query *q, char *argv[], client *cl)
    * conflicts between what is possible in the query table and what
    * is possible in SQL.
    */
-  if (q->type == APPEND)
+  if (q->type == MR_Q_APPEND)
     {
       incremental_clear_before();
       EXEC SQL INSERT INTO quota
@@ -827,7 +835,7 @@ int followup_aqot(struct query *q, char *argv[], client *cl)
 
   if (dbms_errno)
     return mr_errcode;
-  if (q->type == APPEND)
+  if (q->type == MR_Q_APPEND)
     {
       EXEC SQL UPDATE tblstats SET appends = appends + 1, modtime = SYSDATE
 	WHERE table_name = :tname;

@@ -115,9 +115,6 @@ AC_ARG_WITH(krb4,
     [  --with-krb4=PREFIX      Specify location of krb4],
     [krb4="$withval"], [krb4=no])
 AC_MSG_RESULT($krb4)
-if test $krb4 = "no"; then
-    AC_MSG_ERROR(Kerberos is required for Moira)
-fi
 if test "$krb4" != yes; then
     MR_INCLUDE($krb4/include)
     if test -d "$krb4/include/kerberosIV"; then
@@ -449,7 +446,15 @@ MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 MR_INCLUDE('$(srcdir)')
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
-KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
+KLIBS="$KRB4_LIBS -lcom_err $LIBS"
+KLIBS="$LIBS"
+if test "$hesiod" != no; then
+  KLIBS="-lhesiod $KLIBS"
+fi
+KLIBS="$KRB4_LIBS -lcom_err $KLIBS"
+if test "$zephyr" != no; then
+  KLIBS="-lzephyr $KLIBS"
+fi
 LIBS="-lmoira $KLIBS"
 AC_SUBST(KLIBS)
 

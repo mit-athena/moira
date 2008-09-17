@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: tsm.gen,v 1.2 2007-05-29 18:49:15 zacheiss Exp $
+# $Id$
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

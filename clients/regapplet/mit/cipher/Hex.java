@@ -21,7 +21,7 @@ import java.io.PrintWriter;
  * <a href="http://www.systemics.com/docs/cryptix/">Cryptix Development Team</a>.
  * <br>All rights reserved.
  *
- * <p><b>$Revision: 1.1 $</b>
+ * <p><b>$Revision$</b>
  * @author  David Hopwood
  * @author  Raif Naffah
  * @author  Systemics Ltd

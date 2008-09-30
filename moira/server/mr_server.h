@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.66 2008-05-19 20:21:56 zacheiss Exp $
+/* $Id: mr_server.h,v 1.67 2008-09-30 18:42:42 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -254,6 +254,7 @@ int setup_dpsv(struct query *q, char *argv[], client *cl);
 int setup_dcon(struct query *q, char *argv[], client *cl);
 int setup_acon(struct query *q, char *argv[], client *cl);
 int setup_scli(struct query *q, char *argv[], client *cl);
+int setup_aali(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.56 2008-09-13 20:46:09 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.57 2008-10-30 17:58:15 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -3775,7 +3775,9 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 
   if (Exchange)
     {
-      if ((rc != LDAP_SUCCESS) && (rc == LDAP_ALREADY_EXISTS)) 
+
+      if ((rc != LDAP_SUCCESS) && (rc == LDAP_ALREADY_EXISTS) &&
+	  !strcmp(group_ou, contact_ou) && email_isvalid(mail))
 	{
 	  n = 0;
 	  

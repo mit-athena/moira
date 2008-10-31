@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.1 2008-10-31 19:32:59 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.2 2008-10-31 20:39:56 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.1 2008-10-31 19:32:59 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.2 2008-10-31 20:39:56 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
   EXEC SQL DECLARE csr_hosts CURSOR FOR
     SELECT m.name FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS' AND sh.enable = 1;
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1;
   EXEC SQL OPEN csr_hosts;
   while (1)
     {
@@ -128,7 +128,7 @@ void do_host(char *host)
   EXEC SQL SELECT mach_id INTO :rm FROM machine
     WHERE name = :spoolhost;
 
-  sprintf(filename, "%s/print/%s", DCM_DIR, host);
+  sprintf(filename, "%s/cups-print/%s", DCM_DIR, host);
   tf = tarfile_open(filename);
 
   /* printers.conf */

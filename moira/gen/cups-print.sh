@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.1 2008-10-31 19:33:00 zacheiss Exp $
+# $Id: cups-print.sh,v 1.2 2008-10-31 20:46:11 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -29,7 +29,7 @@ tar xf $TARFILE || exit $MR_TARERR
 # Now, make a stab at the PPD file.
 /etc/cups/bin/gen-ppd.pl
 
-/etc/init.d/cupsys restart
+/etc/init.d/cups restart
 if [ $? != 0 ]; then
     exit $MR_MKCRED
 fi

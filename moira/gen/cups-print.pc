@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.4 2008-11-03 16:35:03 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.5 2008-11-03 21:25:34 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.4 2008-11-03 16:35:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.5 2008-11-03 21:25:34 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -407,8 +407,8 @@ void do_host(char *host)
       fprintf (out, "Allow from all\n");
       fprintf (out, "AuthType None\n");
       fprintf (out, "</Limit>\n");
-      fprintf (out, "AuthType None\n");
       fprintf (out, "%s\n", catchall);
+      fprintf (out, "AuthType None\n");
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");

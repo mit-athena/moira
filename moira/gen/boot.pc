@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $
+/* $Id: boot.pc,v 1.8 2008-11-20 16:30:06 zacheiss Exp $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.8 2008-11-20 16:30:06 zacheiss Exp $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -58,13 +58,14 @@ int main(int argc, char **argv)
   EXEC SQL WHENEVER SQLERROR DO sqlerr();
 
   /* Get print spoolers for allow lists. */
-  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts
-    WHERE service = 'PRINT';
+  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh
+    WHERE sh.service = 'PRINT' or sh.service = 'CUPS-PRINT';
   allowlist = malloc(alcount * sizeof(*allowlist));
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
     SELECT m.address, sh.value3 FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT';
+    WHERE m.mach_id = sh.mach_id AND 
+    (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT');
   EXEC SQL OPEN csr_spool;
   for (i = 0; i < alcount; i++)
     {

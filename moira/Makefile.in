@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 2001-10-09 14:33:10 zacheiss Exp $
+# $Id: Makefile.in,v 1.12 2009-01-05 22:25:07 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -35,11 +35,11 @@ depend:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 install:
-	$(srcdir)/mkinstalldirs $(bindir) $(sbindir) $(mrbindir) $(mandir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(DESTDIR)$(mandir)
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 svrinstall:
-	$(srcdir)/mkinstalldirs $(mrbindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mrbindir)
 	@for d in $(SVRDIRS); do (echo "### Making install in $$d"; cd $$d; $(MAKE) install) || exit 1; done
 
 world: depend all

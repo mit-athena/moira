@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.8 2001-04-01 05:31:11 zacheiss Exp $
+# $Id: Makefile.in,v 2.9 2009-01-05 22:25:48 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -56,8 +56,8 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) moirad $(mrbindir)
-	$(INSTALL_PROGRAM) startmoira $(mrbindir)
+	$(INSTALL_PROGRAM) moirad $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) startmoira $(DESTDIR)$(mrbindir)
 
 moirad: $(SERVER_OBJS) $(SCHEMA_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(SERVER_OBJS) $(SCHEMA_OBJS) $(SQL_LIBS) $(LIBS)

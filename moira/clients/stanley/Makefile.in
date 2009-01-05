@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2001-09-25 23:00:01 zacheiss Exp $
+# $Id: Makefile.in,v 1.2 2009-01-05 22:25:29 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -40,7 +40,7 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) stanley $(bindir)
+	$(INSTALL_PROGRAM) stanley $(DESTDIR)$(bindir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

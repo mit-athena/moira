@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 2006-08-22 17:36:26 zacheiss Exp $
+# $Id: Makefile.in,v 1.6 2009-01-05 22:25:50 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -22,6 +22,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 sbindir=@sbindir@
+sysconfdir=@sysconfdir@
 
 SOBJS=	auth_002.o auth_003.o checksum.o config.o exec_002.o get_file.o \
 	update_server.o xfer_002.o xfer_003.o sendrecv.o
@@ -43,8 +44,10 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) update_test $(bindir)
-	$(INSTALL_PROGRAM) update_server $(sbindir)
+	$(INSTALL_PROGRAM) update_test $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) update_server $(DESTDIR)$(sbindir)
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(sysconfdir)/athena
+	$(INSTALL) -m 644 moira.conf $(DESTDIR)$(sysconfdir)/athena/moira.conf
 
 update_test: $(COBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)

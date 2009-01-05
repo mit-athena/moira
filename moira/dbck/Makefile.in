@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2000-09-10 02:53:27 zacheiss Exp $
+# $Id: Makefile.in,v 1.8 2009-01-05 22:25:33 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -52,8 +52,8 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) dbck $(mrbindir)
-	$(INSTALL_PROGRAM) members $(mrbindir)
+	$(INSTALL_PROGRAM) dbck $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) members $(DESTDIR)$(mrbindir)
 
 dbck: $(DBCK_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(DBCK_OBJS) $(LIBS)

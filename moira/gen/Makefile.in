@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.52 2008-10-31 19:33:00 zacheiss Exp $
+# $Id: Makefile.in,v 1.53 2009-01-05 22:25:35 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -72,8 +72,8 @@ cleandir distclean: clean
 depend: $(LIB_CFILES) $(CFILES)
 
 install:
-	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
-	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(DESTDIR)$(mrbindir); done
 
 libdcm.a: $(LIB_OBJS)
 	ar cru $@ $(LIB_OBJS)

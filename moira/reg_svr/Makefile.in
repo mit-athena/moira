@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2000-01-20 19:18:49 danw Exp $
+# $Id: Makefile.in,v 1.13 2009-01-05 22:25:46 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -56,10 +56,10 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
-	$(INSTALL_PROGRAM) startreg $(mrbindir)
-	$(INSTALL_PROGRAM) genkey $(mrbindir)
-	$(INSTALL_PROGRAM) genwords $(mrbindir)
+	$(INSTALL_PROGRAM) reg_svr $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) startreg $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) genkey $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) genwords $(DESTDIR)$(mrbindir)
 
 reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(LIBS) $(SQL_LIBS)

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.61 2008-09-30 18:42:42 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.62 2009-01-12 21:39:29 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.61 2008-09-30 18:42:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.62 2009-01-12 21:39:29 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -1593,7 +1593,7 @@ int setup_aali(struct query *q, char *argv[], client *cl)
     return MR_SUCCESS;
 
   EXEC SQL SELECT count(label) INTO :cnt FROM filesys WHERE
-    label = :trans;
+    label = :name;
   if (cnt > 0)
     return MR_EXISTS;
 

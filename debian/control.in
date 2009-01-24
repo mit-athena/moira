@@ -1,7 +1,7 @@
 Source: debathena-moira
 Section: debathena/net
 Priority: extra
-Maintainer: Debian-Athena Project <debathena@mit.edu>
+Maintainer: Debathena Project <debathena@mit.edu>
 Build-Depends: @cdbs@, comerr-dev, libkrb5-dev, libhesiod-dev, libzephyr-dev, libzephyr3-krb, libreadline-dev, libncurses-dev
 Standards-Version: 3.7.2
 

@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.19 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.20 2009-02-06 21:25:19 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.19 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.20 2009-02-06 21:25:19 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -788,6 +788,9 @@ void QUIT(reg_client *rc, int argc, char **argv)
 /* Register a user in Moira */
 int register_user(int uid, char *username)
 {
+  EXEC SQL BEGIN DECLARE SECTION;
+  char pin[USERS_PIN_SIZE];
+  EXEC SQL END DECLARE SECTION;
   char uidbuf[10], *qargv[3], *motd = NULL;
   long status;
 
@@ -816,10 +819,20 @@ int register_user(int uid, char *username)
       return MR_INTERNAL;
     }
 
+  EXEC SQL SELECT pin INTO :pin FROM users WHERE unix_uid = :uid;
+
   sprintf(uidbuf, "%d", uid);
   qargv[0] = uidbuf;
   qargv[1] = username;
-  qargv[2] = "IMAP";
+
+  /* HACK: If user has a PIN set, they're from Sloan.
+   * Give them Exchange poboxes.
+   */ 
+  if (*pin != '\0')
+      qargv[2] = "EXCHANGE";
+  else 
+    qargv[2] = "IMAP";
+
   status = mr_query("register_user", 3, qargv, NULL, NULL);
   mr_disconnect();
   return status;

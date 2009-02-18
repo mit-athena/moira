@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.53 2009-01-05 22:25:35 zacheiss Exp $
+# $Id: Makefile.in,v 1.54 2009-02-18 00:55:00 jweiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -46,7 +46,8 @@ TARGET=	acl.gen boot.gen confluence.gen cups-print.gen dhcp.gen directory.gen \
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	cups-print.sh dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhosts.gen \
-	mailhub.sh mailman.gen mailman.sh nagios-colo.gen nagios-colo.sh \
+	mailhub.sh mailman.gen mailman.sh nagios-cluster.gen \
+	nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
 	ndb.sh nfs.sh null.sh postoffice.sh print.sh rt.sh sapprint.gen \
 	sapprint.sh spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh \

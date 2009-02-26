@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.1 2009-02-25 22:29:51 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.2 2009-02-26 02:09:53 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -6601,8 +6601,10 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
 
   if (strcmp(SamAccountName, UserName))
     {
-      rc = user_rename(ldap_handle, dn_path, SamAccountName, 
-                       UserName);
+      com_err(whoami, 0, 
+	      "User object %s with MoiraId %s has mismatched usernames " 
+	      "(LDAP username %s, Moira username %s)", SamAccountName,
+	      MoiraId, SamAccountName, UserName);
     }
 
   return(0);

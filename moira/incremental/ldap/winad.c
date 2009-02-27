@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.3 2009-02-27 01:00:55 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.4 2009-02-27 15:00:52 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -416,6 +416,7 @@ int  Exchange = 0;
 int  ProcessMachineContainer = 1;
 int  ActiveDirectory = 1;
 int  UpdateDomainList;
+int  fsgCount;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -486,6 +487,7 @@ int ReadDomainList();
 void StringTrim(char *StringToTrim);
 char *escape_string(char *s);
 int save_query_info(int argc, char **argv, void *hint);
+int save_fsgroup_info(int argc, char **argv, void *hint);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
                        char *user_name, char *MoiraId, int operation);
@@ -8016,7 +8018,6 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
                      char **drives_v, LDAPMod **mods, 
                      int OpType, int n)
 {
-  char **hp;
   char cWeight[3];
   char cPath[1024];
   char path[1024];
@@ -8030,129 +8031,140 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
   int  i;
   int  rc;
   LDAPMod *DelMods[20];
-  
+  char *argv[3];
+  char *save_argv[FS_END];
+  char *fsgroup_save_argv[2];
+
   memset(homeDrive, '\0', sizeof(homeDrive));
   memset(path, '\0', sizeof(path));
   memset(winPath, '\0', sizeof(winPath));
   memset(winProfile, '\0', sizeof(winProfile));
-  hp = NULL;
 
   if(!ActiveDirectory) 
     {
-      if ((hp = hes_resolve(user_name, "filsys")) != NULL)
-        {
-	  memset(cWeight, 0, sizeof(cWeight));
-	  memset(cPath, 0, sizeof(cPath));
-	  last_weight = 1000;
-	  i = 0;
-	  
-	  while (hp[i] != NULL)
-            {
-	      if (sscanf(hp[i], "%*s %s", cPath))
-                {
-		  if (strnicmp(cPath, AFS, strlen(AFS)) == 0)
-                    {
-		      if (sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight))
-                        {
-			  if (atoi(cWeight) < last_weight)
-                            {
-			      strcpy(path, cPath);
-			      last_weight = (int)atoi(cWeight);
-                            }
-                        }
-		      else 
-			strcpy(path, cPath);
-                    }
-                }
-              ++i;
-            }
-	  
-	  if (strlen(path))
-            {
-	      if (!strnicmp(path, AFS, strlen(AFS)))
-                {
-		  sprintf(homedir, "%s", path);
-		  sprintf(apple_homedir, "%s/MacData", path);
-		  homedir_v[0] = homedir;
-		  apple_homedir_v[0] = apple_homedir;
-		  ADD_ATTR("homeDirectory", homedir_v, OpType);
-		  ADD_ATTR("apple-user-homeDirectory", apple_homedir_v, 
-			   OpType);
-                }
+      if (rc = moira_connect())
+	{
+          critical_alert("AD incremental",
+			 "Error contacting Moira server : %s",
+			 error_message(rc));
+	  return;
+	}
+      
+      argv[0] = user_name;
+
+      if (!(rc = mr_query("get_filesys_by_label", 1, argv, save_query_info, 
+			  save_argv)))
+	{
+	  if(!strcmp(save_argv[FS_TYPE], "FSGROUP") ||
+	     !strcmp(save_argv[FS_TYPE], "MUL"))
+	    {
+	
+	      argv[0] = save_argv[FS_NAME];
+	      fsgCount = 0;
+	      
+	      if (!(rc = mr_query("get_fsgroup_members", 1, argv, 
+				  save_fsgroup_info, fsgroup_save_argv)))
+		{
+		  if(fsgCount)
+		    {
+		      argv[0] = fsgroup_save_argv[0];
+		      
+		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
+					  save_query_info, save_argv)))
+			{
+			  strcpy(path, save_argv[FS_PACK]);
+			}
+		    }
+		}
 	    }
 	  else
 	    {
-	      if(user_name[0] && user_name[1]) 
-		{
-		  sprintf(homedir, "/afs/athena.mit.edu/user/%c/%c/%s", 
-			  user_name[0], user_name[1], user_name);
-		  sprintf(apple_homedir, "%s/MacData", homedir);
-		  homedir_v[0] = "NONE";
-		  apple_homedir_v[0] = "NONE";
-		  ADD_ATTR("homeDirectory", homedir_v, OpType);
-		  ADD_ATTR("apple-user-homeDirectory", apple_homedir_v, 
-			   OpType);
-		}
+	      strcpy(path, save_argv[FS_PACK]);
 	    }
 	}
-      else
+      
+      moira_disconnect();
+
+      if (strlen(path))
 	{
-	  if(user_name[0] && user_name[1]) 
+	  if (!strnicmp(path, AFS, strlen(AFS)))
 	    {
-	      sprintf(homedir, "/afs/athena.mit.edu/user/%c/%c/%s", 
-		      user_name[0], user_name[1], user_name);
-	      sprintf(apple_homedir, "%s/MacData", homedir);
-	      homedir_v[0] = "NONE";
-	      apple_homedir_v[0] = "NONE";
+	      sprintf(homedir, "%s", path);
+	      sprintf(apple_homedir, "%s/MacData", path);
+	      homedir_v[0] = homedir;
+	      apple_homedir_v[0] = apple_homedir;
 	      ADD_ATTR("homeDirectory", homedir_v, OpType);
 	      ADD_ATTR("apple-user-homeDirectory", apple_homedir_v, 
 		       OpType);
 	    }
 	}
+      else
+	{
+	  homedir_v[0] = "NONE";
+	  apple_homedir_v[0] = "NONE";
+	  ADD_ATTR("homeDirectory", homedir_v, OpType);
+	  ADD_ATTR("apple-user-homeDirectory", apple_homedir_v, 
+		   OpType);
+	}
+
       return(n);
     }
-      
+ 
   if ((!strcasecmp(WinHomeDir, "[afs]")) || 
       (!strcasecmp(WinProfileDir, "[afs]")))
     {
-      if ((hp = hes_resolve(user_name, "filsys")) != NULL)
-        {
-	  memset(cWeight, 0, sizeof(cWeight));
-	  memset(cPath, 0, sizeof(cPath));
-	  last_weight = 1000;
-	  i = 0;
+      if (rc = moira_connect())
+	{
+          critical_alert("AD incremental",
+			 "Error contacting Moira server : %s",
+			 error_message(rc));
+	  return;
+	}
+      
+      argv[0] = user_name;
 
-	  while (hp[i] != NULL)
-            {
-	      if (sscanf(hp[i], "%*s %s", cPath))
-                {
-		  if (strnicmp(cPath, AFS, strlen(AFS)) == 0)
-                    {
-		      if (sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight))
-                        {
-			  if (atoi(cWeight) < last_weight)
-                            {
-			      strcpy(path, cPath);
-			      last_weight = (int)atoi(cWeight);
-                            }
-                        }
-		      else 
-			strcpy(path, cPath);
-                    }
-                }
-              ++i;
-            }
+      if (!(rc = mr_query("get_filesys_by_label", 1, argv, save_query_info, 
+			  save_argv)))
+	{
+	  if(!strcmp(save_argv[FS_TYPE], "FSGROUP") ||
+	     !strcmp(save_argv[FS_TYPE], "MUL"))
+	    {
+	
+	      argv[0] = save_argv[FS_NAME];
+	      fsgCount = 0;
+	      
+	      if (!(rc = mr_query("get_fsgroup_members", 1, argv, 
+				  save_fsgroup_info, fsgroup_save_argv)))
+		{
+		  if(fsgCount)
+		    {
+		      argv[0] = fsgroup_save_argv[0];
+		      
+		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
+					  save_query_info, save_argv)))
+			{
+			  strcpy(path, save_argv[FS_PACK]);
+			}
+		    }
+		}
+	    }
+	  else
+	    {
+	      strcpy(path, save_argv[FS_PACK]);
+	    }
+	}
+     
+      moira_disconnect();
 
-	  if (strlen(path))
-            {
-	      if (!strnicmp(path, AFS, strlen(AFS)))
-                {
-		  AfsToWinAfs(path, winPath);
-		  strcpy(winProfile, winPath);
-		  strcat(winProfile, "\\.winprofile");
-                }
-            }
-        }
+      if (strlen(path))
+	{
+	  if (!strnicmp(path, AFS, strlen(AFS)))
+	    {
+	      AfsToWinAfs(path, winPath);
+	      strcpy(winProfile, winPath);
+	      strcat(winProfile, "\\.winprofile");
+	    }
+	}
       else
 	return(n);
     }
@@ -8172,16 +8184,6 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
       if (!strcasecmp(WinHomeDir, "[dfs]"))
 	strcpy(winPath, path);
     }
-    
-    if (hp != NULL)
-      {
-        i = 0;
-        while (hp[i])
-	  {
-            free(hp[i]);
-            i++;
-	  }
-      }
     
     if (!strcasecmp(WinHomeDir, "[local]"))
       memset(winPath, '\0', sizeof(winPath));
@@ -8926,6 +8928,22 @@ int save_query_info(int argc, char **argv, void *hint)
 
   for(i = 0; i < argc; i++)
     nargv[i] = strdup(argv[i]);
+
+  return MR_CONT;
+}
+
+int save_fsgroup_info(int argc, char **argv, void *hint)
+{
+  int i;
+  char **nargv = hint;
+
+  if(!fsgCount) 
+    {
+      for(i = 0; i < argc; i++)
+	nargv[i] = strdup(argv[i]);
+
+      fsgCount++;
+    }
 
   return MR_CONT;
 }

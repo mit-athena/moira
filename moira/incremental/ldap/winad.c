@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.2 2009-02-26 02:09:53 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.3 2009-02-27 01:00:55 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -6040,8 +6040,15 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
               continue;
             }
 	  
-	  if(!strcasecmp(ptr->type, "USER")) 
+	  if(!strcasecmp(ptr->type, "USER"))
 	    {
+	      if(!strcasecmp(ptr->member, PRODUCTION_PRINCIPAL) ||
+		 !strcasecmp(ptr->member, TEST_PRINCIPAL))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
 	      if ((rc = check_user(ldap_handle, dn_path, ptr->member,
 				   "")) == AD_NO_USER_FOUND)
 		{

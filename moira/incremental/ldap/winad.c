@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.4 2009-02-27 15:00:52 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.5 2009-03-02 15:56:30 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -291,6 +291,7 @@ typedef struct _SID {
 #define MOIRA_KERBEROS  0x2
 #define MOIRA_STRINGS   0x4
 #define MOIRA_LISTS     0x8
+#define MOIRA_MACHINE   0x16
 
 #define CHECK_GROUPS    1
 #define CLEANUP_GROUPS  2
@@ -378,6 +379,7 @@ CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 #define ACTIVE_DIRECTORY "ACTIVE_DIRECTORY:"
 #define PORT "PORT:"
 #define PROCESS_MACHINE_CONTAINER "PROCESS_MACHINE_CONTAINER:"
+#define GROUP_POPULATE_MEMBERS "GROUP_POPULATE_MEMBERS:"
 #define MAX_DOMAINS 10
 char DomainNames[MAX_DOMAINS][128];
 
@@ -417,6 +419,7 @@ int  ProcessMachineContainer = 1;
 int  ActiveDirectory = 1;
 int  UpdateDomainList;
 int  fsgCount;
+int  GroupPopulateDelete = 0;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -1397,9 +1400,16 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       com_err(whoami, 0, "removing user %s from list %s", user_name, 
 	      group_name);
       pUserOu = user_ou;
-
+ 
       if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
         {
+	  if (!ProcessMachineContainer)
+	    {
+	      com_err(whoami, 0, "Process machines and containers disabled, "
+		      "skipping");
+	      return;
+	    }
+
           memset(machine_ou, '\0', sizeof(machine_ou));
 	  memset(NewMachineName, '\0', sizeof(NewMachineName));
           if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], 
@@ -3462,6 +3472,11 @@ int member_list_build(int ac, char **av, void *ptr)
 			 kerberos_ou))
         return(0);
 
+    }
+  else if (!strcmp(av[ACE_TYPE], "MACHINE"))
+    {
+      if (!((int)call_args[3] & MOIRA_MACHINE))
+	return(0);
     }
   else
     return(0);
@@ -6009,14 +6024,18 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   int       n = 0;
   char      group_dn[512];
   LDAPMod   *mods[20];
+  char      *member_v[] = {NULL, NULL};
   char      *save_argv[U_END];
+  char      machine_ou[256];
+  char      NewMachineName[1024];
 
   com_err(whoami, 0, "Populating group %s", group_name);
   av[0] = group_name;
   call_args[0] = (char *)ldap_handle;
   call_args[1] = dn_path;
   call_args[2] = group_name;
-  call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
+  call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS | 
+			  MOIRA_MACHINE);
   call_args[4] = NULL;
   member_base = NULL;
 
@@ -6029,7 +6048,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
     }
 
   members = (char **)malloc(sizeof(char *) * 2);
-  
+
   if (member_base != NULL)
     {
       ptr = member_base;
@@ -6042,6 +6061,12 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
               continue;
             }
 	  
+	  if (!strcasecmp(ptr->type, "MACHINE") && !ProcessMachineContainer)
+	    {
+	      ptr = ptr->next;
+	      continue;
+	    }
+	    
 	  if(!strcasecmp(ptr->type, "USER"))
 	    {
 	      if(!strcasecmp(ptr->member, PRODUCTION_PRINCIPAL) ||
@@ -6126,6 +6151,24 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
 		      pUserOu, dn_path);
             }
+	  else if (!strcasecmp(ptr->type, "MACHINE"))
+	    {
+	      memset(machine_ou, '\0', sizeof(machine_ou));
+	      memset(NewMachineName, '\0', sizeof(NewMachineName));
+
+	      if (!get_machine_ou(ldap_handle, dn_path, ptr->member,
+				 machine_ou, NewMachineName))
+		{
+		  pUserOu = machine_ou;
+		  sprintf(member, "cn=%s,%s,%s", NewMachineName, pUserOu,
+			  dn_path);
+		}
+	      else
+		{
+		  ptr = ptr->next;                  
+		  continue;
+		}
+	    }
 
 	  if(i > 1) 
 	    members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
@@ -6139,13 +6182,31 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
     }
 
   members[i] = NULL;
+
+  sprintf(group_dn, "cn=%s,%s,%s", group_name, group_ou, dn_path);
+
+  if(GroupPopulateDelete)
+    {
+      n = 0;
+      ADD_ATTR("member", member_v, LDAP_MOD_REPLACE);
+      mods[n] = NULL;
+      
+      if ((rc = ldap_modify_s(ldap_handle, group_dn, 
+			      mods)) != LDAP_SUCCESS)
+	{
+	  com_err(whoami, 0,
+		  "Unable to populate group membership for %s: %s",
+		  group_dn, ldap_err2string(rc));
+	}
   
+      for (i = 0; i < n; i++)
+	free(mods[i]);
+    }
+
   n = 0;
   ADD_ATTR("member", members, LDAP_MOD_REPLACE);
   mods[n] = NULL;
-  
-  sprintf(group_dn, "cn=%s,%s,%s", group_name, group_ou, dn_path);
-  
+
   if ((rc = ldap_modify_s(ldap_handle, group_dn, 
 			  mods)) != LDAP_SUCCESS)
     {
@@ -6156,7 +6217,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   
   for (i = 0; i < n; i++)
     free(mods[i]);
-  
+    
   free(members);
 
   return(0);
@@ -7402,9 +7463,6 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, 
-	      "Unable to process machine %s : machine not found in AD",
-              NewMachineName);
       return(1);
     }
 
@@ -8528,6 +8586,19 @@ int ReadConfigFile(char *DomainName)
 		    StringTrim(temp1);
 		    if (!strcasecmp(temp1, "NO"))
 		      ActiveDirectory = 0;
+		  }
+	      }
+	    else if (!strncmp(temp, GROUP_POPULATE_MEMBERS, 
+			      strlen(GROUP_POPULATE_MEMBERS)))
+	      {
+		if (strlen(temp) > (strlen(GROUP_POPULATE_MEMBERS)))
+		  {
+		    strcpy(temp1, &temp[strlen(GROUP_POPULATE_MEMBERS)]);
+		    StringTrim(temp1);
+		    if (!strcasecmp(temp1, "DELETE")) 
+		      {
+			GroupPopulateDelete = 1;
+		      }
 		  }
 	      }
             else

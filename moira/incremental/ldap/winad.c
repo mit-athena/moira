@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.5 2009-03-02 15:56:30 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.6 2009-03-03 04:59:22 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5278,6 +5278,19 @@ int user_create(int ac, char **av, void *ptr)
       
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
 	{
+          n = 0;
+	  ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_REPLACE);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+	   
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+	  if(rc)
+            com_err(whoami, 0,
+                    "Unable to set the mailRoutingAddress for %s : %s",
+                    user_name, ldap_err2string(rc));
+
 	  p = strdup(save_argv[3]);
 	  
 	  if((c = strchr(p, ',')) != NULL) {

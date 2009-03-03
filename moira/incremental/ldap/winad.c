@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.6 2009-03-03 04:59:22 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.7 2009-03-03 19:22:03 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -3423,7 +3423,7 @@ int member_list_build(int ac, char **av, void *ptr)
   char      **call_args;
   char      *s;
   call_args = ptr;
-  
+
   strcpy(temp, av[ACE_NAME]);
 
   if (!check_string(temp))
@@ -3450,13 +3450,12 @@ int member_list_build(int ac, char **av, void *ptr)
 	      strcat(s, ".mit.edu");
 	    }
 	}
-      
+
       if (!((int)call_args[3] & MOIRA_STRINGS))
         return(0);
-
+	
       if (contact_create((LDAP *)call_args[0], call_args[1], temp, contact_ou))
         return(0);
-
     }
   else if (!strcmp(av[ACE_TYPE], "LIST"))
     {
@@ -3485,7 +3484,8 @@ int member_list_build(int ac, char **av, void *ptr)
 
   while (linklist)
     {
-    if (!strcasecmp(temp, linklist->member))
+    if (!strcasecmp(temp, linklist->member) &&
+	!strcasecmp(av[ACE_TYPE], linklist->type))
       return(0);
 
     linklist = linklist->next;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.7 2009-03-03 19:22:03 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.8 2009-03-04 15:47:15 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -1263,7 +1263,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (!atoi(before[LM_EXTRA_ACTIVE]))
         {
           com_err(whoami, 0, 
-		  "Unable to add %s to group %s : group not active", 
+		  "Unable to remove %s from group %s : group not active", 
 		  before[2], before[0]);
           return;
         }

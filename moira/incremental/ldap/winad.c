@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.8 2009-03-04 15:47:15 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.9 2009-03-07 17:12:32 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -4005,10 +4005,6 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       if(!strcmp(group_ou, contact_ou))
 	{
 	  ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_ADD);
-	}
-
-      if(!strcmp(group_ou, contact_ou))
-	{
 	  ADD_ATTR("eduPersonPrincipalName", mail_routing_v, LDAP_MOD_ADD);
 	}
     }
@@ -4048,30 +4044,6 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  for (i = 0; i < n; i++)
 	    free(mods[i]);
 	}
-    }
-
-  if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
-    {
-      n = 0;
-      ADD_ATTR("cn", contact_v, LDAP_MOD_ADD);
-      
-      if(ActiveDirectory)
-	{
-	  ADD_ATTR("objectClass", objectClass_v, LDAP_MOD_ADD);
-	}
-      else
-	{
-	  ADD_ATTR("objectClass", objectClass_ldap_v, LDAP_MOD_ADD);
-	}
-
-      ADD_ATTR("name", name_v, LDAP_MOD_ADD);
-      ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
-      ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
-      mods[n] = NULL;
-      rc = ldap_add_ext_s(ld, new_dn, mods, NULL, NULL);
-
-      for (i = 0; i < n; i++)
-        free(mods[i]);
     }
 
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))

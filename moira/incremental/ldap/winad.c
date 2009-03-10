@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.9 2009-03-07 17:12:32 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.10 2009-03-10 02:41:22 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -804,7 +804,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   
   if (rc = moira_connect())
     {
-      critical_alert("AD incremental",
+      critical_alert("Ldap incremental",
 		     "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
@@ -848,7 +848,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (machine_check(ldap_handle, dn_path, MachineName))
     {
-      com_err(whoami, 0, "Unable to find machine %s (alias %s) in AD.", 
+      com_err(whoami, 0, "Unable to find machine %s (alias %s) in directory.", 
 	      OriginalMachineName, MachineName);
       moira_disconnect();
       return;
@@ -896,7 +896,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (rc = moira_connect())
     {
-      critical_alert("AD incremental", "Error contacting Moira server : %s",
+      critical_alert("Ldap incremental", "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
     }
@@ -1130,7 +1130,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental",
+          critical_alert("Ldap incremental",
                          "Error contacting Moira server : %s",
                          error_message(rc));
           return;
@@ -1356,7 +1356,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental",
+          critical_alert("Ldap incremental",
                          "Error contacting Moira server : %s",
                          error_message(rc));
           return;
@@ -1464,7 +1464,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	}
 
       if (rc = moira_connect()) {
-	critical_alert("AD incremental",
+	critical_alert("Ldap incremental",
 		       "Error contacting Moira server : %s",
 		       error_message(rc));              
 	return;
@@ -1482,7 +1482,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	{
 	  if (rc = moira_connect())
 	    {
-	      critical_alert("AD incremental",
+	      critical_alert("Ldap incremental",
 			     "Error contacting Moira server : %s",
 			     error_message(rc));
 	      return;
@@ -1565,7 +1565,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         {
           if (rc = moira_connect())
             {
-              critical_alert("AD incremental", 
+              critical_alert("Ldap incremental", 
                              "Error connection to Moira : %s",
                              error_message(rc));
               return;
@@ -1641,7 +1641,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     }
 
   if (rc = moira_connect()) {
-    critical_alert("AD incremental",
+    critical_alert("Ldap incremental",
 		   "Error contacting Moira server : %s",
 		   error_message(rc));              
     return;
@@ -1659,7 +1659,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental",
+	  critical_alert("Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -1728,7 +1728,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {                                 
       if (atoi(before[U_STATE]) == 0)
         {
-          com_err(whoami, 0, "expunging user %s from AD", before[U_NAME]);
+          com_err(whoami, 0, "expunging user %s from directory", 
+		  before[U_NAME]);
           user_delete(ldap_handle, dn_path, before[U_NAME], before_user_id);
         }
       else
@@ -1749,7 +1750,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental", 
+          critical_alert("Ldap incremental", 
                          "Error connection to Moira : %s",
                          error_message(rc));
           return;
@@ -2256,8 +2257,8 @@ int check_winad(void)
     {
       if (i > 30)
         {
-          critical_alert("AD incremental",
-                         "WINAD incremental failed (%s exists): %s",
+          critical_alert("Ldap incremental",
+                         "Ldap incremental failed (%s exists): %s",
                          STOP_FILE, tbl_buf);
           return(1);
         }
@@ -2488,7 +2489,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   if (group_count != 1)
     {
       com_err(whoami, 0, "Unable to process multiple groups with "
-	      "MoiraId = %s exist in the AD", MoiraId);
+	      "MoiraId = %s exist in the directory", MoiraId);
       return(AD_MULTIPLE_GROUPS_FOUND);
     }
 
@@ -2832,7 +2833,7 @@ int group_create(int ac, char **av, void *ptr)
 
       if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
         {
-          com_err(whoami, 0, "Unable to create list %s in AD : %s",
+          com_err(whoami, 0, "Unable to create list %s in directory : %s",
                   av[L_NAME], ldap_err2string(rc));
           callback_rc = rc;
           return(rc);
@@ -2967,7 +2968,7 @@ int group_create(int ac, char **av, void *ptr)
 
           if (rc != LDAP_SUCCESS)
             {
-              com_err(whoami, 0, "Unable to update list %s in AD : %s",
+              com_err(whoami, 0, "Unable to update list %s in directory : %s",
                       av[L_NAME], ldap_err2string(rc));
               callback_rc = rc;
               return(rc);
@@ -3150,7 +3151,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
   if (AceSidCount == 0)
     {
       com_err(whoami, 0, "Group %s: Administrator: %s, Type: %s - does not "
-	      "have an AD SID.", TargetGroupName, AceName, AceType);
+	      "have a directory SID.", TargetGroupName, AceName, AceType);
       com_err(whoami, 0, "   Non-admin security group template will be used.");
     }
   else
@@ -3370,7 +3371,7 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
       if ((rc = ldap_delete_s(ldap_handle, group_base->dn)) != LDAP_SUCCESS)
         {
           linklist_free(group_base);
-          com_err(whoami, 0, "Unable to delete list %s from AD : %s",
+          com_err(whoami, 0, "Unable to delete list %s from directory : %s",
                   group_name, ldap_err2string(rc));
           return(rc);
         }
@@ -3379,7 +3380,7 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
   else
     {
       linklist_free(group_base);
-      com_err(whoami, 0, "Unable to find list %s in AD.", group_name);
+      com_err(whoami, 0, "Unable to find list %s in directory.", group_name);
       return(AD_NO_GROUPS_FOUND);
     }
   
@@ -3425,7 +3426,8 @@ int member_list_build(int ac, char **av, void *ptr)
   call_args = ptr;
 
   strcpy(temp, av[ACE_NAME]);
-
+  StringTrim(temp);
+  
   if (!check_string(temp))
     return(0);
 
@@ -3538,7 +3540,7 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "Unable to find list %s in AD",
+      com_err(whoami, 0, "Unable to find list %s in directory",
               group_name);
       linklist_free(group_base);
       group_base = NULL;
@@ -3669,7 +3671,7 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
       linklist_free(group_base);
       group_base = NULL;
       group_count = 0;
-      com_err(whoami, 0, "Unable to find list %s %d in AD",
+      com_err(whoami, 0, "Unable to find list %s %d in directory",
               group_name, group_count);
       return(AD_MULTIPLE_GROUPS_FOUND);
     }
@@ -3746,7 +3748,7 @@ int contact_remove_email(LDAP *ld, char *bind_path,
     
     if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
       {
-	com_err(whoami, 0, "Unable to modify contact %s in AD : %s",
+	com_err(whoami, 0, "Unable to modify contact %s in directory : %s",
 		gPtr->dn, ldap_err2string(rc));
 	return(rc);
       }
@@ -4195,7 +4197,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "Unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in directory",
               user_name);
       linklist_free(group_base);
       return(AD_NO_USER_FOUND);
@@ -4210,7 +4212,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental", 
+	  critical_alert("Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -4467,7 +4469,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental", 
+	  critical_alert("Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -5240,7 +5242,7 @@ int user_create(int ac, char **av, void *ptr)
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental", 
+	  critical_alert("Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -5418,7 +5420,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
   if (group_count != 1)
     {
       linklist_free(group_base);
-      com_err(whoami, 0, "Unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in directory",
               user_name);
       return(LDAP_NO_SUCH_OBJECT);
     }
@@ -5521,7 +5523,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "Unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in directory",
               user_name);
       goto cleanup;
     }
@@ -6864,7 +6866,7 @@ int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av)
       if (rc == LDAP_NOT_ALLOWED_ON_NONLEAF)
         container_move_objects(ldap_handle, dn_path, distinguishedName);
       else
-        com_err(whoami, 0, "Unable to delete container %s from AD : %s",
+        com_err(whoami, 0, "Unable to delete container %s from directory : %s",
                 av[CONTAINER_NAME], ldap_err2string(rc));
     }
 
@@ -7542,7 +7544,7 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "Unable to find machine %s in AD: %s", 
+      com_err(whoami, 0, "Unable to find machine %s in directory: %s", 
 	      MoiraMachineName);
       return(1);
     }
@@ -8087,7 +8089,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     {
       if (rc = moira_connect())
 	{
-          critical_alert("AD incremental",
+          critical_alert("Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -8158,7 +8160,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     {
       if (rc = moira_connect())
 	{
-          critical_alert("AD incremental",
+          critical_alert("Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -8366,7 +8368,7 @@ int attribute_update(LDAP *ldap_handle, char *distinguished_name,
 				  mods)) != LDAP_SUCCESS)
             {
               com_err(whoami, 0, "Unable to change the %s attribute for %s "
-		      "in the AD : %s",
+		      "in the directory : %s",
                       attribute, user_name, ldap_err2string(rc));
             }
         }
@@ -8939,15 +8941,6 @@ char *escape_string(char *s)
   memset(string, '\0', sizeof(string));
 
   q = s;
-
-  /* Replace leading spaces */
-
-  while(isspace(*q)) {
-    string[i++] = '\\';
-    string[i++] = '2';
-    string[i++] = '0';
-    q++;
-  }
 
   /* Escape any special characters */
 

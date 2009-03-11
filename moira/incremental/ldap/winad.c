@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.10 2009-03-10 02:41:22 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.11 2009-03-11 01:22:58 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5901,6 +5901,9 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
           if (make_new_group(ldap_handle, dn_path, "", AceName, AceOu, 
 			     AceMembership, 0, UpdateGroup, maillist))
             return(1);
+
+	  populate_group(ldap_handle, dn_path, AceName, AceOu, AceMembership,
+			 0, "");
         }
       else if (!strcasecmp(AceInfo[0], "USER"))
         {

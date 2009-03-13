@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.12 2009-03-12 13:46:41 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.13 2009-03-13 02:09:03 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5869,8 +5869,10 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
     
       if (rc = mr_query("get_list_info", 1, av, GetAceInfo, AceInfo))
         { 
-          com_err(whoami, 0, "Unable to get ACE info for list %s : %s", 
-		  GroupName, error_message(rc));
+	  if(rc != MR_LIST)
+	    com_err(whoami, 0, "Unable to get ACE info for list %s : %s", 
+		    GroupName, error_message(rc));
+
           return(1);
         }
 

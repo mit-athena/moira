@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.14 2009-03-14 16:12:09 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.15 2009-03-14 16:16:47 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -6084,9 +6084,6 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 
       while (ptr != NULL)
         {
-	  com_err(whoami, 0, "Processing member %s:%s", ptr->type,
-		  ptr->member);
-
           if (!strcasecmp(ptr->type, "LIST"))
             {
               ptr = ptr->next;

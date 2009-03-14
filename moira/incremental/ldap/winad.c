@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.13 2009-03-13 02:09:03 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.14 2009-03-14 16:12:09 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -2409,6 +2409,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      *report_to_originator_v[] = {NULL, NULL};
   char      *address_book_v[] = {NULL, NULL};
   char      *legacy_exchange_dn_v[] = {NULL, NULL};
+  char      *null_v[] = {NULL, NULL};
   u_int     groupTypeControl;
   char      groupTypeControlStr[80];
   char      contact_mail[256];
@@ -2613,6 +2614,12 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	{
 	  mail_v[0] = contact_mail;
 	  ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+
+	  if(!ActiveDirectory)
+	    {
+	      null_v[0] = "/dev/null";
+	      ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_REPLACE);
+	    }
 	}
     }
 
@@ -2666,6 +2673,7 @@ int group_create(int ac, char **av, void *ptr)
   char *address_book_v[] = {NULL, NULL};
   char *legacy_exchange_dn_v[] = {NULL, NULL};
   char *gidNumber_v[] = {NULL, NULL};
+  char *null_v[] = {NULL, NULL};
   char groupTypeControlStr[80];
   char group_membership[1];
   int  i;
@@ -2799,6 +2807,12 @@ int group_create(int ac, char **av, void *ptr)
 	    {
 	      mail_v[0] = contact_mail;
 	      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+
+	      if(!ActiveDirectory)
+		{
+		  null_v[0] = "/dev/null";
+		  ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_ADD);
+		}
 	    }
 	}
       
@@ -2948,11 +2962,23 @@ int group_create(int ac, char **av, void *ptr)
 	    {
 	      mail_v[0] = contact_mail;
 	      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+
+	      if(!ActiveDirectory)
+		{
+		  null_v[0] = "/dev/null";
+		  ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_REPLACE);
+		}
 	    }
 	  else
 	    {
 	      mail_v[0] = NULL;
 	      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+
+	      if(!ActiveDirectory)
+		{
+		  null_v[0] = NULL;
+		  ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_REPLACE);
+		}
 	    }
 	}
    
@@ -5625,7 +5651,7 @@ static int illegalchars[] = {
 static int illegalchars_ldap[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, /* SPACE - / */
+  0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, /* 0 - ? */
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, /* P - _ */
@@ -5655,12 +5681,20 @@ int check_string(char *s)
       if(ActiveDirectory)
 	{
 	  if (illegalchars[(unsigned) character])
-	    return 0;
+	    {
+	      com_err(whoami, 0, "Found illegal char '%c' (%d) in string %s",
+		      character, (unsigned) character, s);
+	      return 0;
+	    }
 	}
       else
 	{
 	  if (illegalchars_ldap[(unsigned) character])
-	    return 0;
+	    {
+	      com_err(whoami, 0, "Found illegal char '%c' (%d) in string %s",
+		      character, (unsigned) character, s);
+	      return 0;
+	    }
 	}
     }
 
@@ -5869,7 +5903,7 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
     
       if (rc = mr_query("get_list_info", 1, av, GetAceInfo, AceInfo))
         { 
-	  if(rc != MR_LIST)
+	  if(rc != MR_NO_MATCH)
 	    com_err(whoami, 0, "Unable to get ACE info for list %s : %s", 
 		    GroupName, error_message(rc));
 
@@ -6050,6 +6084,9 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 
       while (ptr != NULL)
         {
+	  com_err(whoami, 0, "Processing member %s:%s", ptr->type,
+		  ptr->member);
+
           if (!strcasecmp(ptr->type, "LIST"))
             {
               ptr = ptr->next;
@@ -6124,7 +6161,6 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		  sprintf(member, "uid=%s,%s,%s", ptr->member, pUserOu, 
 			  dn_path);
 		}
-
 	    }
           else if (!strcasecmp(ptr->type, "STRING"))
             {

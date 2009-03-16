@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.15 2009-03-14 16:16:47 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.16 2009-03-16 15:11:11 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -4567,6 +4567,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       mail_v[0] = contact_mail;
       ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+
+      if(!ActiveDirectory)
+	{
+	  ADD_ATTR("mitMoiraMail", mail_v, LDAP_MOD_REPLACE);
+	}
     }
 
   n = SetHomeDirectory(ldap_handle, user_name, distinguished_name, WinHomeDir, 
@@ -4768,6 +4773,11 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
     {
       mail_v[0] = contact_mail;
       ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE); 
+
+      if(!ActiveDirectory)
+	{
+	  ADD_ATTR("mitMoiraMail", mail_v, LDAP_MOD_REPLACE);
+	}
     }
 
   mods[n] = NULL;
@@ -5076,6 +5086,11 @@ int user_create(int ac, char **av, void *ptr)
     {
       mail_v[0] = contact_mail;
       ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+
+      if(!ActiveDirectory)
+	{
+	  ADD_ATTR("mitMoiraMail", mail_v, LDAP_MOD_ADD);
+	}
     }
 
   if(strlen(av[U_FIRST])) {

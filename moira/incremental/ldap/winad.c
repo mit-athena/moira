@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.16 2009-03-16 15:11:11 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.17 2009-03-17 13:25:29 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5964,6 +5964,12 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
           call_args[2] = "";
           call_args[3] = NULL;
           callback_rc = 0;
+
+	  if(!strcasecmp(AceName, PRODUCTION_PRINCIPAL) ||
+	     !strcasecmp(AceName, TEST_PRINCIPAL))
+	    {
+	      return(1);
+	    }
 
           if (rc = mr_query("get_user_account_by_login", 1, av, 
 			    save_query_info, save_argv))

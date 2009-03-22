@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.17 2009-03-17 13:25:29 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.18 2009-03-22 01:42:12 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5564,8 +5564,6 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "Unable to find user %s in directory",
-              user_name);
       goto cleanup;
     }
   
@@ -5685,6 +5683,9 @@ static int illegalchars_ldap[] = {
 int check_string(char *s)
 {
   char  character;
+  char  *string;
+
+  string = s;
 
   for (; *s; s++)
     {
@@ -5698,7 +5699,7 @@ int check_string(char *s)
 	  if (illegalchars[(unsigned) character])
 	    {
 	      com_err(whoami, 0, "Found illegal char '%c' (%d) in string %s",
-		      character, (unsigned) character, s);
+		      character, (unsigned) character, string);
 	      return 0;
 	    }
 	}
@@ -5707,7 +5708,7 @@ int check_string(char *s)
 	  if (illegalchars_ldap[(unsigned) character])
 	    {
 	      com_err(whoami, 0, "Found illegal char '%c' (%d) in string %s",
-		      character, (unsigned) character, s);
+		      character, (unsigned) character, string);
 	      return 0;
 	    }
 	}

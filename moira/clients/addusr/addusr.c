@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.23 2007-11-29 21:09:01 zacheiss Exp $
+/* $Id: addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.23 2007-11-29 21:09:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -33,9 +33,9 @@ struct owner_type {
 #define M_NONE		4
 
 #ifdef ATHENA
-#define DEFAULT_SHELL "/bin/athena/tcsh"
+#define DEFAULT_SHELL "/bin/athena/bash"
 #else
-#define DEFAULT_SHELL "/bin/csh"
+#define DEFAULT_SHELL "/bin/bash"
 #endif
 
 #define DEFAULT_WINCONSOLESHELL "cmd"

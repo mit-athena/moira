@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.15 2008-02-25 20:49:05 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.16 2009-03-31 19:13:10 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
       if (shell)
 	argv[U_SHELL] = shell;
       else
-	argv[U_SHELL] = "/bin/athena/tcsh";
+	argv[U_SHELL] = "/bin/athena/bash";
       if (winshell)
 	argv[U_WINCONSOLESHELL] = winshell;
       else

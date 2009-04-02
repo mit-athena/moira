@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.20 2009-02-06 21:25:19 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.21 2009-04-02 16:24:34 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.20 2009-02-06 21:25:19 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.21 2009-04-02 16:24:34 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -789,7 +789,7 @@ void QUIT(reg_client *rc, int argc, char **argv)
 int register_user(int uid, char *username)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char pin[USERS_PIN_SIZE];
+  char class[USERS_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   char uidbuf[10], *qargv[3], *motd = NULL;
   long status;
@@ -819,19 +819,27 @@ int register_user(int uid, char *username)
       return MR_INTERNAL;
     }
 
-  EXEC SQL SELECT pin INTO :pin FROM users WHERE unix_uid = :uid;
+  EXEC SQL SELECT type INTO :class FROM users WHERE unix_uid = :uid;
 
   sprintf(uidbuf, "%d", uid);
   qargv[0] = uidbuf;
   qargv[1] = username;
 
-  /* HACK: If user has a PIN set, they're from Sloan.
-   * Give them Exchange poboxes.
+  /* Incoming students should be given Exchange poboxes.
+   * Doesn't work for undergrads in the class of 2100 or higher.
    */ 
-  if (*pin != '\0')
+  if (!strcmp(strtrim(class), "G") || !strncmp(class, "FALL", 4) ||
+      !strncmp(class, "SPRING", 5) || !strncmp(class, "SUMMER", 6) ||
+      !strncmp(class, "20", 2))
+    {
+      com_err(whoami, 0, "assigning EXCHANGE pobox to user %s, class %s", username, class);
       qargv[2] = "EXCHANGE";
+    }
   else 
-    qargv[2] = "IMAP";
+    {
+      com_err(whoami, 0, "assigning IMAP pobox to user %s, class %s", username, class);
+      qargv[2] = "IMAP";
+    }
 
   status = mr_query("register_user", 3, qargv, NULL, NULL);
   mr_disconnect();

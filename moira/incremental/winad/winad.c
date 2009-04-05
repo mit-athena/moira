@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.57 2008-10-30 17:58:15 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.58 2009-04-05 18:09:08 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -2352,6 +2352,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   LK_ENTRY  *group_base;
   int       group_count;
   int       MailDisabled = 0;
+  char      search_filter[1024];
 
   if(UseGroupUniversal)
     groupTypeControl = ADS_GROUP_TYPE_UNIVERSAL_GROUP;
@@ -2380,12 +2381,13 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(filter, "(&(objectClass=user)(cn=%s))", after_group_name);
+	  sprintf(search_filter, "(&(objectClass=user)(cn=%s))", 
+		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
-	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-				   &group_base, &group_count,
+	  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+				   attr_array, &group_base, &group_count,
 				   LDAP_SCOPE_SUBTREE)) != 0)
 	  {
 	    com_err(whoami, 0, "Unable to process group %s : %s",
@@ -5734,6 +5736,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   (*linklist_base) = NULL;
   (*linklist_count) = 0;
   sprintf(filter, "(sAMAccountName=%s%s)", group_name, group_suffix);
+  com_err(whoami, 0, "AD_GET_GROUP: samname is %s%s", group_name, group_suffix);
   attr_array[0] = attribute;
   attr_array[1] = NULL;
 

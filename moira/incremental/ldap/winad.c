@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.18 2009-03-22 01:42:12 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.19 2009-04-05 18:09:05 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -2419,6 +2419,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   LK_ENTRY  *group_base;
   int       group_count;
   int       MailDisabled = 0;
+  char      search_filter[1024];
 
   if(UseGroupUniversal)
     groupTypeControl = ADS_GROUP_TYPE_UNIVERSAL_GROUP;
@@ -2447,12 +2448,13 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(filter, "(&(objectClass=user)(cn=%s))", after_group_name);
+	  sprintf(search_filter, "(&(objectClass=user)(cn=%s))", 
+		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
-	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-				   &group_base, &group_count,
+	  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+				   attr_array, &group_base, &group_count,
 				   LDAP_SCOPE_SUBTREE)) != 0)
 	  {
 	    com_err(whoami, 0, "Unable to process group %s : %s",

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.58 2009-04-05 18:09:08 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.59 2009-04-05 18:55:09 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -5736,7 +5736,6 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   (*linklist_base) = NULL;
   (*linklist_count) = 0;
   sprintf(filter, "(sAMAccountName=%s%s)", group_name, group_suffix);
-  com_err(whoami, 0, "AD_GET_GROUP: samname is %s%s", group_name, group_suffix);
   attr_array[0] = attribute;
   attr_array[1] = NULL;
 

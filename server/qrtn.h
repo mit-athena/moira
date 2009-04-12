@@ -1,4 +1,4 @@
-/* $Header$
+/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.h,v 1.6 2000-01-28 00:03:36 danw Exp $
  *
  *  Used by the SQL query routines of the Moira server.
  */

@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: mit-copyright.h,v 1.3 1998-02-05 22:51:16 danw Exp $
 
 Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
 

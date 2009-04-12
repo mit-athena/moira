@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header$";
+static char rcsid[] = "$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.7 1992-07-05 13:03:50 probe Exp $";
 #endif
 
 /*	

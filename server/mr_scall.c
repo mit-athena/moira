@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $");
 
 extern int nclients;
 extern client **clients;

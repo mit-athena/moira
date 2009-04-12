@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.3 2009-01-05 22:25:39 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -46,8 +46,8 @@ cleandir distclean: clean
 depend:
 
 install:
-	$(INSTALL_PROGRAM) afs.incr $(mrbindir)
-	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	$(INSTALL_PROGRAM) afs.incr $(DESTDIR)$(mrbindir)
+	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
 
 afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \

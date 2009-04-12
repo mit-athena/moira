@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.8 2009-01-05 22:25:44 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,6 +32,7 @@ cleandir distclean: clean
 depend:
 
 install:
-	for m in $(MAN1); do $(INSTALL_DATA) $(srcdir)/$$m $(mandir)/man1; done
-	for m in $(MAN3); do $(INSTALL_DATA) $(srcdir)/$$m $(mandir)/man3; done
-	for m in $(MAN8); do $(INSTALL_DATA) $(srcdir)/$$m $(mandir)/man8; done
+	$(srcdir)/../mkinstalldirs $(DESTDIR)$(mandir)/man1 $(DESTDIR)$(mandir)/man3 $(DESTDIR)$(mandir)/man8
+	for m in $(MAN1); do $(INSTALL_DATA) $(srcdir)/$$m $(DESTDIR)$(mandir)/man1; done
+	for m in $(MAN3); do $(INSTALL_DATA) $(srcdir)/$$m $(DESTDIR)$(mandir)/man3; done
+	for m in $(MAN8); do $(INSTALL_DATA) $(srcdir)/$$m $(DESTDIR)$(mandir)/man8; done

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.2 2009-01-05 22:25:41 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -19,4 +19,4 @@ all:
 clean:
 
 install:
-	${INSTALL_PROGRAM} ${TARGET} ${mrbindir}
+	${INSTALL_PROGRAM} ${TARGET} $(DESTDIR)${mrbindir}

@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id$
+# $Id: ip-billing.gen,v 1.7 2002-03-27 14:51:56 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;

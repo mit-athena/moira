@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -16,7 +16,7 @@
 
 #include "util.h"
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $");
 
 /* Julian day of the UNIX epoch (January 1, 1970) */
 #define UNIX_EPOCH 2440588

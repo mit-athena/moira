@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;

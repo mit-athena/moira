@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.54 2009-02-18 00:55:00 jweiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -30,22 +30,24 @@ LIB_OBJS=util.o tar.o genacl.o
 LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
-OBJS=	acl.o boot.o confluence.o dhcp.o directory.o events.o hesiod.o \
-	hosts.o lpcaccess.o mailhub.o ndb.o network.o nfs.o pobox.o \
-	postoffice.o print.o winad.o www.o zephyr.o
+OBJS=	acl.o boot.o confluence.o cups-print.o dhcp.o directory.o events.o \
+	hesiod.o hosts.o lpcaccess.o mailhub.o ndb.o network.o nfs.o pobox.o \
+	postoffice.o print.o warehouse-lists.o winad.o www.o zephyr.o
 
-CFILES= acl.c boot.c confluence.c dhcp.c directory.c events.c hesiod.c \
-	hosts.c lpcaccess.c mailhub.c ndb.c network.c nfs.c pobox.c \
-	 postoffice.c print.c winad.c www.c zephyr.c
+CFILES= acl.c boot.c confluence.c cups-print.c dhcp.c directory.c events.c \
+	hesiod.c hosts.c lpcaccess.c mailhub.c ndb.c network.c nfs.c pobox.c \
+	postoffice.c print.c warehouse-lists.c winad.c www.c zephyr.c
 
-TARGET=	acl.gen boot.gen confluence.gen dhcp.gen directory.gen events.gen \
-	hesiod.gen hosts.gen lpcaccess.gen mailhub.gen ndb.gen network.gen \
-	nfs.gen pobox.gen postoffice.gen print.gen winad.gen www.gen zephyr.gen
+TARGET=	acl.gen boot.gen confluence.gen cups-print.gen dhcp.gen directory.gen \
+	events.gen hesiod.gen hosts.gen lpcaccess.gen mailhub.gen ndb.gen \
+	network.gen nfs.gen pobox.gen postoffice.gen print.gen \
+	warehouse-lists.gen winad.gen www.gen zephyr.gen
 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
-	dhcp.sh events.sh hesiod.sh ip-billing.gen \
+	cups-print.sh dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen longjobs.gen longjobs.sh mailhosts.gen \
-	mailhub.sh mailman.gen mailman.sh nagios-colo.gen nagios-colo.sh \
+	mailhub.sh mailman.gen mailman.sh nagios-cluster.gen \
+	nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
 	ndb.sh nfs.sh null.sh postoffice.sh print.sh rt.sh sapprint.gen \
 	sapprint.sh spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh \
@@ -71,8 +73,8 @@ cleandir distclean: clean
 depend: $(LIB_CFILES) $(CFILES)
 
 install:
-	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
-	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(DESTDIR)$(mrbindir); done
 
 libdcm.a: $(LIB_OBJS)
 	ar cru $@ $(LIB_OBJS)
@@ -140,3 +142,9 @@ winad.gen: winad.o libdcm.a $(MR_LIBDEP)
 
 lpcaccess.gen: lpcaccess.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) lpcaccess.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+warehouse-lists.gen: warehouse-lists.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) warehouse-lists.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+cups-print.gen: cups-print.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) cups-print.o libdcm.a $(SQL_LIBS) $(LIBS)

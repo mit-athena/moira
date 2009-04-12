@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id$
+# $Id: longjobs.sh,v 1.1 2001-08-25 12:06:37 zacheiss Exp $
 
 # Wrapper script to install the groups file output by moira, and update
 # the quota database for current group membership.

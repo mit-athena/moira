@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: qsubs.c,v 1.20 2008-08-29 16:10:24 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.20 2008-08-29 16:10:24 zacheiss Exp $");
 
 extern struct query Queries[];
 extern int QueryCount;

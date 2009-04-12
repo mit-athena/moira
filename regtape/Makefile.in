@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.13 2009-01-05 22:25:47 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -55,8 +55,8 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
-	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
 student: $(STUDENT_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(STUDENT_OBJS) $(SQL_LIBS) $(LIBS)
 

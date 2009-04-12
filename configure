@@ -4119,8 +4119,8 @@ _ACEOF
 
 
 
-    WINAD_SUBDIRS="winad"
-    WINAD_OUTPUT_FILES="incremental/winad/Makefile"
+    WINAD_SUBDIRS="winad ldap"
+    WINAD_OUTPUT_FILES="incremental/winad/Makefile incremental/ldap/Makefile"
 fi
 
 

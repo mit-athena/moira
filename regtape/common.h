@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: common.h,v 1.1 2000-07-12 22:11:41 zacheiss Exp $
  *
  * Copyright (C) 1987-1999 by the Massachusetts Institute of Technology
  *

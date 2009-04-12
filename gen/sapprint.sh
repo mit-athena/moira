@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id$
+# $Id: sapprint.sh,v 1.3 2007-04-03 15:36:01 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then 
     exec >/var/athena/moira_update.log 2>&1

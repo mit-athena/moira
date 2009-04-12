@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: mr_access.c,v 1.14 1998-02-15 17:49:00 danw Exp $
  *
  * Check access to a Moira query
  *
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.14 1998-02-15 17:49:00 danw Exp $");
 
 /*
  * Check access to a named query.

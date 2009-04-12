@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: dcm.pc,v 1.17 2006-08-22 17:36:24 zacheiss Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.17 2006-08-22 17:36:24 zacheiss Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);

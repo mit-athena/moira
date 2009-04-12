@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: startreg.c,v 1.12 1998-02-05 22:51:35 danw Exp $
  *
  * This program starts the user registration server
  * in a "clean" environment, and then waits for it to exit.
@@ -22,7 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.12 1998-02-05 22:51:35 danw Exp $");
 
 #define PROG	"reg_svr"
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id$
+# $Id: zephyr.sh,v 1.4 2000-05-08 18:30:31 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

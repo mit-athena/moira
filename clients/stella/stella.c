@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.20 2003-12-20 02:55:49 zacheiss Exp $");
 
 struct owner_type {
   int type;

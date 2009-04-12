@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: common.pc,v 1.12 2009-03-31 19:13:20 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.12 2009-03-31 19:13:20 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -282,7 +282,7 @@ void newuser(struct entry *e, int secure)
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
      created, creator, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration)
-    VALUES (:login, :users_id, :uid, '/bin/athena/tcsh', 'cmd',
+    VALUES (:login, :users_id, :uid, '/bin/athena/bash', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
 	    NVL(:name, CHR(0)), NVL(:dept, CHR(0)), NVL(:haddr, CHR(0)),

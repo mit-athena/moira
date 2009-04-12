@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: dumprest.pc,v 1.4 1998-02-05 22:50:23 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v 1.4 1998-02-05 22:50:23 danw Exp $");
 
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 

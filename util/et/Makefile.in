@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.2 1998-05-26 18:14:24 danw Exp $
 
 SHELL=/bin/sh
 VPATH=@srcdir@

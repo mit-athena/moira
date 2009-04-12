@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id$
+# $Id: ca.gen,v 1.3 2006-05-11 16:55:28 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

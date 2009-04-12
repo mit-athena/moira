@@ -1,4 +1,4 @@
-// $Id$
+// $Id: BI.java,v 1.1 1998-08-01 18:25:15 danw Exp $
 
 /*
  * Copyright (c) 1997 Systemics Ltd
@@ -20,7 +20,7 @@ import java.math.BigInteger;
  * <a href="http://www.systemics.com/docs/cryptix/">Cryptix Development Team</a>.
  * <br>All rights reserved.
  * <p>
- * <b>$Revision$</b>
+ * <b>$Revision: 1.1 $</b>
  * @since   Cryptix 2.2.2
  * @author  Raif S. Naffah
  */

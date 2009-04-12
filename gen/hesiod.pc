@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: hesiod.pc,v 1.23 2008-10-22 16:12:33 zacheiss Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.23 2008-10-22 16:12:33 zacheiss Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -176,6 +176,8 @@ int valid(char *name)
 
   for (sawdot = 1; *name; name++)
     {
+      if (*name == '$')
+	return 0;
       if (*name == '.')
 	{
 	  if (sawdot)

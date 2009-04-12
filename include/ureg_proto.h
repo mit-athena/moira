@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: ureg_proto.h,v 1.5 1998-02-05 22:51:18 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *

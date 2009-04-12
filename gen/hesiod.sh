@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header$
+# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.23 2009-03-09 22:58:23 jweiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -29,7 +29,7 @@ SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product
 DEST_DIR=/etc/athena/nameserver
 
-NAMED=/etc/athena/named
+INIT=/etc/init.d/athena-bind
 NAMED_PID=/var/athena/named.pid
 
 # Create the destination directory if it doesn't exist
@@ -78,6 +78,7 @@ do
    # Make sure the file is not zero-length
    if test ! -z $file
    then
+      chmod o+r $file
       mv -f $file $DEST_DIR
       if test $? -ne 0
       then
@@ -96,13 +97,11 @@ done
 # First, get statistics
 /usr/athena/etc/rndc stats
 sleep 1
-kill -KILL `cat $NAMED_PID`
+$INIT stop
 rm -f $NAMED_PID
 
 # Restart named.
-$NAMED
-echo named started
-
+$INIT start
 sleep 1
 # This timeout is implemented by having the shell check TIMEOUT times
 # for the existance of $NAMED_PID and to sleep INTERVAL seconds

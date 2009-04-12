@@ -1,3 +1,11 @@
+debathena-moira (4.0.0+cvs20090409-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot (Trac: #195)
+  * Drop patches that have been incorporated upstream.
+  * Update to build without krb4 on systems that no longer have it.
+
+ -- Evan Broder <broder@mit.edu>  Sun, 12 Apr 2009 14:03:22 -0400
+
 debathena-moira (4.0.0+cvs20080830-0debathena2) unstable; urgency=low
 
   * Remove DEB_AUTO_UPDATE_DEBIAN_CONTROL.

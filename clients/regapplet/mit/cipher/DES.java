@@ -61,7 +61,7 @@ import mit.random.SecureRandom;
  * <a href="http://www.systemics.com/docs/cryptix/">Cryptix Development Team</a>.
  * <br>All rights reserved.
  * <p>
- * <b>$Revision$</b>
+ * <b>$Revision: 1.1 $</b>
  * @author  Systemics Ltd
  * @author  Geoffrey Keating (this Java implementation)
  * @author  Eric Young

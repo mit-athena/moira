@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.4 2009-01-05 22:25:43 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -45,7 +45,7 @@ cleandir distclean: clean
 depend:
 
 install:
-	$(INSTALL_PROGRAM) winad.incr $(mrbindir)
+	$(INSTALL_PROGRAM) winad.incr $(DESTDIR)$(mrbindir)
 
 winad.incr: $(WINAD_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber \

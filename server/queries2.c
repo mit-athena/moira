@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: queries2.c,v 2.108 2008-09-30 18:42:42 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -3565,7 +3565,7 @@ static struct validate aali_validate = {
   3,
   0,
   0,
-  0,
+  setup_aali,
   0,
 };
 

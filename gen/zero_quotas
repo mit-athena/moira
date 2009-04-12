@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# $Header$
+# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zero_quotas,v 1.4 1998-01-05 19:52:53 danw Exp $
 #
 # This script zeros quotas for uid's which are not in standard input
 # Note that the input must be sorted in increasing order by uid.

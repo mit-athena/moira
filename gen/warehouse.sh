@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id$
+# $Id: warehouse.sh,v 1.5 2007-01-03 20:31:59 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

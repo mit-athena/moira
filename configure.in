@@ -307,8 +307,8 @@ if test "$ldap" != no -a "$oracle" != no; then
     fi
     MR_DEFINE(HAVE_LDAP)
 
-    WINAD_SUBDIRS="winad"
-    WINAD_OUTPUT_FILES="incremental/winad/Makefile"
+    WINAD_SUBDIRS="winad ldap"
+    WINAD_OUTPUT_FILES="incremental/winad/Makefile incremental/ldap/Makefile"
 fi
 AC_SUBST(LDAP_CPPFLAGS)
 AC_SUBST(LDAP_LIBS)

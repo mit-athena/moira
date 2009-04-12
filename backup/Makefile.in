@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.9 2009-01-05 22:25:12 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -52,9 +52,9 @@ cleandir distclean: clean
 depend: $(GENFILES) $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) mrbackup $(mrbindir)
-	$(INSTALL_PROGRAM) mrrestore $(mrbindir)
-	$(INSTALL_PROGRAM) $(srcdir)/report.pl $(mrbindir)
+	$(INSTALL_PROGRAM) mrbackup $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) mrrestore $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) $(srcdir)/report.pl $(DESTDIR)$(mrbindir)
 
 mrbackup: $(BOBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)

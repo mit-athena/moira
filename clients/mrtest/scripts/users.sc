@@ -60,7 +60,7 @@ qy gubl tested
 
 qy _help uush
 qy gubl tested
-qy uush tested /bin/tcsh
+qy uush tested /bin/bash
 qy gubl tested
 
 qy _help uust

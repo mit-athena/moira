@@ -1,6 +1,6 @@
 #!/bin/sh
 # 
-# $Header$
+# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ip-billing.sh,v 1.2 2002-03-19 22:07:06 zacheiss Exp $
 
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
 

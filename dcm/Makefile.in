@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.8 2009-01-05 22:25:34 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -54,8 +54,8 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) dcm $(mrbindir)
-	$(INSTALL_PROGRAM) startdcm $(mrbindir)
+	$(INSTALL_PROGRAM) dcm $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) startdcm $(DESTDIR)$(mrbindir)
 
 dcm: $(DCM_OBJS) $(UPDATE_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(DCM_OBJS) $(UPDATE_OBJS) $(SQL_LIBS) $(LIBS)

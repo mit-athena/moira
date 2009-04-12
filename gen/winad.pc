@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: winad.pc,v 1.6 2004-07-26 20:17:10 zacheiss Exp $
  *
  * This generates the user, list, list membership, filesys data
  * for windows active directory update

@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: defs.h,v 1.27 2007-12-03 20:40:56 zacheiss Exp $
  *
  *	This is the file defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.

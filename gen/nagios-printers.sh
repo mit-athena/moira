@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id$
+# $Id: nagios-printers.sh,v 1.1 2006-01-31 21:50:25 zacheiss Exp $
 
 file=/var/nagios/etc/moira-printers.cfg
 

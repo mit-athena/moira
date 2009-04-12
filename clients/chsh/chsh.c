@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -26,7 +26,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);

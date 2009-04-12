@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: qsupport.pc,v 2.53 2008-08-22 17:49:13 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.53 2008-08-22 17:49:13 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;

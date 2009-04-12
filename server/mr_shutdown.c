@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: mr_shutdown.c,v 1.11 1998-02-15 17:49:15 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 #include <errno.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.11 1998-02-15 17:49:15 danw Exp $");
 
 extern char *takedown;
 extern char *whoami;

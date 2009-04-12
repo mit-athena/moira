@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id$
+# $Id: calendar.gen,v 1.3 2002-08-22 20:45:30 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT withh the
 # error codes the library uses:

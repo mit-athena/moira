@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.9 2009-01-05 22:25:10 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -56,9 +56,9 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) afssync $(mrbindir)
-	$(INSTALL_PROGRAM) pt_util $(mrbindir)
-	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(mrbindir)
+	$(INSTALL_PROGRAM) afssync $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) pt_util $(DESTDIR)$(mrbindir)
+	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
 
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)

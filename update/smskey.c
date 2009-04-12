@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: smskey.c,v 1.6 1998-02-15 17:49:29 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 #include <des.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.6 1998-02-15 17:49:29 danw Exp $");
 
 int debug = 0;			/* goddamn des library breakage */
 char string[] = "sms\0\0Athena\0\1";

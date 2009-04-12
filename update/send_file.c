@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: send_file.c,v 1.16 2001-09-04 19:46:21 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -20,7 +20,7 @@
 #include <des.h>
 #include <update.h>
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.16 2001-09-04 19:46:21 zacheiss Exp $");
 
 extern des_cblock session;
 

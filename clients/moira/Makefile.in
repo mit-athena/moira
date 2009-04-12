@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.in,v 1.10 2009-01-05 22:25:24 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -44,14 +44,14 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) namespace $(bindir)
-	$(INSTALL_PROGRAM) moira $(bindir)
-	rm -f $(bindir)/listmaint	
-	ln -s moira $(bindir)/listmaint
-	rm -f $(bindir)/dcmmaint
-	ln -s moira $(bindir)/dcmmaint
-	rm -f $(bindir)/usermaint
-	ln -s moira $(bindir)/usermaint
+	$(INSTALL_PROGRAM) namespace $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) moira $(DESTDIR)$(bindir)
+	rm -f $(DESTDIR)$(bindir)/listmaint
+	ln -s moira $(DESTDIR)$(bindir)/listmaint
+	rm -f $(DESTDIR)$(bindir)/dcmmaint
+	ln -s moira $(DESTDIR)$(bindir)/dcmmaint
+	rm -f $(DESTDIR)$(bindir)/usermaint
+	ln -s moira $(DESTDIR)$(bindir)/usermaint
 
 moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)

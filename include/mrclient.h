@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: mrclient.h,v 1.4 2000-08-25 23:06:36 zacheiss Exp $
  *
  * Copyright (C) 1999 by the Massachusetts Institute of Technology
  *

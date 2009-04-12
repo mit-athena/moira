@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: dhcp.pc,v 1.7 2008-11-20 16:30:06 zacheiss Exp $
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.7 2008-11-20 16:30:06 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -70,13 +70,15 @@ int main(int argc, char **argv)
 
   /* Get print spoolers for allow lists. */
   EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m
-    WHERE sh.service = 'PRINT' AND sh.mach_id = m.mach_id 
+    WHERE (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT') 
+    AND sh.mach_id = m.mach_id 
     AND m.status = 1 AND m.address != 'unassigned';
   allowlist = malloc(alcount * sizeof(*allowlist));
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
     SELECT m.address, sh.value3 FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT'
+    WHERE m.mach_id = sh.mach_id AND 
+    (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT')
     AND m.status = 1 AND m.address != 'unassigned';
   EXEC SQL OPEN csr_spool;
   for (i = 0; i < alcount; i++)

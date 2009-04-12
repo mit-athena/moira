@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: genacl.pc,v 1.5 2008-07-10 16:59:11 zacheiss Exp $
  *
  * Utility functions for outputting ACLs
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header$");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.5 2008-07-10 16:59:11 zacheiss Exp $");
 
 static char defaultrealm[REALM_SZ];
 

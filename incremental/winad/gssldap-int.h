@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id$
+ * $Id: gssldap-int.h,v 1.1 2000-06-06 04:38:34 zacheiss Exp $
  *
  * Structures for handling GSS-API binds within LDAP client
  * and server libraries. This isn't entirely SASL specific,

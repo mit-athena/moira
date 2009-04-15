@@ -2,7 +2,7 @@ debathena-moira (4.0.0+cvs20090409-0debathena1) unstable; urgency=low
 
   * New CVS snapshot (Trac: #195)
   * Drop patches that have been incorporated upstream.
-  * Update to build without krb4 on systems that no longer have it.
+  * Add patch to allow building on systems without krb4. (Trac: #198)
 
  -- Evan Broder <broder@mit.edu>  Sun, 12 Apr 2009 14:03:22 -0400
 

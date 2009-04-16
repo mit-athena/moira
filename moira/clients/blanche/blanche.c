@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.62 2007-05-14 16:05:43 zacheiss Exp $
+/* $Id: blanche.c,v 1.63 2009-04-16 19:52:11 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.62 2007-05-14 16:05:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.63 2009-04-16 19:52:11 zacheiss Exp $");
 
 struct member {
   int type;
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
 
   /* If none of {users,strings,lists,kerberos,machines} specified, 
      turn them all on */
-  if (!(showusers || showstrings || showlists || showkerberos))
+  if (!(showusers || showstrings || showlists || showkerberos || showmachines))
     showusers = showstrings = showlists = showkerberos = showmachines = 1;
 
   /* fire up Moira */
@@ -1028,6 +1028,16 @@ int main(int argc, char **argv)
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while changing tag on member %s of %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	case M_MACHINE:
+	  membervec[1] = "MACHINE";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	    }

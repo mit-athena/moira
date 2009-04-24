@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.63 2009-04-16 19:52:11 zacheiss Exp $
+/* $Id: blanche.c,v 1.64 2009-04-24 18:24:32 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.63 2009-04-16 19:52:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.64 2009-04-24 18:24:32 zacheiss Exp $");
 
 struct member {
   int type;
@@ -662,6 +662,130 @@ int main(int argc, char **argv)
       memberlist = sq_create();
     }
 
+  /* Process the delete list */
+  while (sq_get_data(dellist, &memberstruct))
+    {
+      membervec[0] = listname;
+      membervec[2] = memberstruct->name;
+      if (verbose)
+        {
+          printf("Deleting member ");
+          show_list_member(memberstruct);
+        }
+      switch (memberstruct->type)
+        {
+        case M_ANY:
+        case M_USER:
+          membervec[1] = "USER";
+          status = mr_query("delete_member_from_list", 3, membervec,
+                            NULL, NULL);
+          if (status == MR_SUCCESS)
+            break;
+          else if ((status != MR_USER && status != MR_NO_MATCH) ||
+                   memberstruct->type != M_ANY)
+            {
+              com_err(whoami, status, "while deleting member %s from %s",
+                      memberstruct->name, listname);
+              success = 0;
+              break;
+            }
+        case M_LIST:
+          membervec[1] = "LIST";
+          status = mr_query("delete_member_from_list", 3, membervec,
+                            NULL, NULL);
+          if (status == MR_SUCCESS)
+            break;
+          else if ((status != MR_LIST && status != MR_NO_MATCH) ||
+                   memberstruct->type != M_ANY)
+            {
+              if (status == MR_PERM && memberstruct->type == M_ANY &&
+                  !strcmp(membervec[2], get_username()))
+                {
+		  /* M_ANY means we've fallen through from the user
+                   * case. The user is trying to remove himself from a
+                   * list, but we got MR_USER or MR_NO_MATCH above,
+                   * meaning he's not really on it, and we got MR_PERM
+                   * when trying to remove LIST:$USER because he's not
+                   * on the acl. That error is useless, so return
+                   * MR_NO_MATCH instead. However, this will generate
+                   * the wrong error if the user was trying to remove
+                   * the list with his username from a list he doesn't
+                   * administrate without explicitly specifying
+                   * "list:".
+                   */
+                  status = MR_NO_MATCH;
+                }
+              com_err(whoami, status, "while deleting member %s from %s",
+                      memberstruct->name, listname);
+              success = 0;
+              break;
+            }
+        case M_STRING:
+          membervec[1] = "STRING";
+          status = mr_query("delete_member_from_list", 3, membervec,
+                            NULL, NULL);
+          if (status == MR_STRING && memberstruct->type == M_ANY)
+            {
+              com_err(whoami, 0, " Unable to find member %s to delete from %s",
+                      memberstruct->name, listname);
+              success = 0;
+              if (!strcmp(membervec[0], get_username()))
+                {
+                  fprintf(stderr, "(If you were trying to remove yourself "
+                          "from the list \"%s\",\n", membervec[2]);
+                  fprintf(stderr, "the correct command is \"blanche %s -d "
+                          "%s\".)\n", membervec[2], membervec[0]);
+                }
+            }
+          else if (status != MR_SUCCESS)
+            {
+              com_err(whoami, status, "while deleting member %s from %s",
+                      memberstruct->name, listname);
+              success = 0;
+            }
+          break;
+        case M_KERBEROS:
+          membervec[1] = "KERBEROS";
+          status = mr_query("delete_member_from_list", 3, membervec,
+                            NULL, NULL);
+          if (status == MR_STRING || status == MR_NO_MATCH)
+            {
+              /* Try canonicalizing the Kerberos principal and trying
+               * again.  If we succeed, print the message from mrcl.
+               * Otherwise, just pretend we never did this and print
+               * the original error message.
+               */
+              mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
+              if (mrcl_get_message())
+                {
+                  if (mr_query("delete_member_from_list", 3, membervec,
+                               NULL, NULL) == MR_SUCCESS)
+                    mrcl_com_err(whoami);
+                  status = MR_SUCCESS;
+                }
+            }
+          if (status != MR_SUCCESS)
+            {
+              com_err(whoami, status, "while deleting member %s from %s",
+                      memberstruct->name, listname);
+              success = 0;
+            }
+          break;
+        case M_MACHINE:
+          membervec[1] = "MACHINE";
+          membervec[2] = canonicalize_hostname(memberstruct->name);
+          status = mr_query("delete_member_from_list", 3, membervec,
+                            NULL, NULL);
+          if (status != MR_SUCCESS)
+            {
+              com_err(whoami, status, "while deleting member %s from %s",
+                      memberstruct->name, listname);
+              success = 0;
+            }
+          free(membervec[2]);
+        }
+    }
+
   /* Process the add list */
   while (sq_get_data(addlist, &memberstruct))
     {
@@ -816,129 +940,6 @@ int main(int argc, char **argv)
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while adding member %s to %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	    }
-	  free(membervec[2]);
-	}
-    }
-
-  /* Process the delete list */
-  while (sq_get_data(dellist, &memberstruct))
-    {
-      membervec[0] = listname;
-      membervec[2] = memberstruct->name;
-      if (verbose)
-	{
-	  printf("Deleting member ");
-	  show_list_member(memberstruct);
-	}
-      switch (memberstruct->type)
-	{
-	case M_ANY:
-	case M_USER:
-	  membervec[1] = "USER";
-	  status = mr_query("delete_member_from_list", 3, membervec,
-			    NULL, NULL);
-	  if (status == MR_SUCCESS)
-	    break;
-	  else if ((status != MR_USER && status != MR_NO_MATCH) ||
-		   memberstruct->type != M_ANY)
-	    {
-	      com_err(whoami, status, "while deleting member %s from %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	      break;
-	    }
-	case M_LIST:
-	  membervec[1] = "LIST";
-	  status = mr_query("delete_member_from_list", 3, membervec,
-			    NULL, NULL);
-	  if (status == MR_SUCCESS)
-	    break;
-	  else if ((status != MR_LIST && status != MR_NO_MATCH) ||
-		   memberstruct->type != M_ANY)
-	    {
-	      if (status == MR_PERM && memberstruct->type == M_ANY &&
-		  !strcmp(membervec[2], get_username()))
-		{
-		  /* M_ANY means we've fallen through from the user
-		   * case. The user is trying to remove himself from
-		   * a list, but we got MR_USER or MR_NO_MATCH above,
-		   * meaning he's not really on it, and we got MR_PERM
-		   * when trying to remove LIST:$USER because he's not
-		   * on the acl. That error is useless, so return
-		   * MR_NO_MATCH instead. However, this will generate the
-		   * wrong error if the user was trying to remove the list
-		   * with his username from a list he doesn't administrate
-		   * without explicitly specifying "list:".
-		   */
-		  status = MR_NO_MATCH;
-		}
-	      com_err(whoami, status, "while deleting member %s from %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	      break;
-	    }
-	case M_STRING:
-	  membervec[1] = "STRING";
-	  status = mr_query("delete_member_from_list", 3, membervec,
-			    NULL, NULL);
-	  if (status == MR_STRING && memberstruct->type == M_ANY)
-	    {
-	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	      if (!strcmp(membervec[0], get_username()))
-		{
-		  fprintf(stderr, "(If you were trying to remove yourself "
-			  "from the list \"%s\",\n", membervec[2]);
-		  fprintf(stderr, "the correct command is \"blanche %s -d "
-			  "%s\".)\n", membervec[2], membervec[0]);
-		}
-	    }
-	  else if (status != MR_SUCCESS)
-	    {
-	      com_err(whoami, status, "while deleting member %s from %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	    }
-	  break;
-	case M_KERBEROS:
-	  membervec[1] = "KERBEROS";
-	  status = mr_query("delete_member_from_list", 3, membervec,
-			    NULL, NULL);
-	  if (status == MR_STRING || status == MR_NO_MATCH)
-	    {
-	      /* Try canonicalizing the Kerberos principal and trying
-	       * again.  If we succeed, print the message from mrcl.
-	       * Otherwise, just pretend we never did this and print 
-	       * the original error message.
-	       */
-	      mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
-	      if (mrcl_get_message())
-		{
-		  if (mr_query("delete_member_from_list", 3, membervec,
-			       NULL, NULL) == MR_SUCCESS)
-		    mrcl_com_err(whoami);
-		  status = MR_SUCCESS;
-		}
-	    }
-	  if (status != MR_SUCCESS)
-	    {
-	      com_err(whoami, status, "while deleting member %s from %s",
-		      memberstruct->name, listname);
-	      success = 0;
-	    }
-	  break;
-	case M_MACHINE:
-	  membervec[1] = "MACHINE";
-	  membervec[2] = canonicalize_hostname(memberstruct->name);
-	  status = mr_query("delete_member_from_list", 3, membervec,
-			    NULL, NULL);
-	  if (status != MR_SUCCESS)
-	    {
-	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	    }

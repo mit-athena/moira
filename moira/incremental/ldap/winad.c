@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.19 2009-04-05 18:09:05 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.20 2009-04-28 05:29:12 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -2577,6 +2577,11 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
 
+  if(!ActiveDirectory) 
+    {
+      ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
+    }
+
   if (Exchange)
     {
       if(atoi(maillist) && !MailDisabled && email_isvalid(mail)) 
@@ -4762,6 +4767,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
       ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_REPLACE);
       ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
       ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_REPLACE);
+      ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
     }
 
   if (Exchange)

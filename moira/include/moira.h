@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.34 2008-04-17 20:51:16 zacheiss Exp $
+/* $Id: moira.h,v 1.35 2009-05-04 20:49:10 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -114,6 +114,9 @@ void hash_destroy(struct hash *h);
 
 /* prototypes from kname_unparse.c */
 char *mr_kname_unparse(char *p, char *i, char *r);
+
+/* prototypes from kname_parse.c */
+int mr_kname_parse(char *np, char *ip, char *rp, char *fullname);
 
 /* prototypes from nfsparttype.c */
 char *parse_filesys_type(char *fs_type_name);

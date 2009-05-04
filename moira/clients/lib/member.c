@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $
+/* $Id: member.c,v 1.6 2009-05-04 20:49:09 zacheiss Exp $
  *
  * Shared routines for playing with list membership.
  *
@@ -17,11 +17,9 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <krb.h>
+#include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $");
-
-static char default_realm[REALM_SZ];
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.6 2009-05-04 20:49:09 zacheiss Exp $");
 
 int mrcl_validate_string_member(char *str)
 {
@@ -69,6 +67,9 @@ int mrcl_validate_string_member(char *str)
 int mrcl_validate_kerberos_member(char *str, char **ret)
 {
   char *p;
+  int code = 0;
+  krb5_context context = NULL;
+  char *default_realm = NULL;
 
   mrcl_clear_message();
 
@@ -97,14 +98,27 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
 	  return MRCL_SUCCESS;
 	}
 
-      if (!*default_realm)
-	krb_get_lrealm(default_realm, 1);
+      code = krb5_init_context(&context);
+      if (!code)
+        goto out;
+
+      code = krb5_get_default_realm(context, &default_realm);
+      if (!code)
+        goto out;
 
       *ret = malloc(strlen(str) + strlen(default_realm) + 2);
       sprintf(*ret, "%s@%s", str, default_realm);
 
       mrcl_set_message("Warning: default realm \"%s\" added to principal "
 		       "\"%s\"", default_realm, str);
+
+    out:
+      if (default_realm)
+        free(default_realm);
+      if (context)
+        krb5_free_context(context);
+      if (!code)
+        return code;
       return MRCL_SUCCESS;
     }
 

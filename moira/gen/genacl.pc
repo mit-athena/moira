@@ -1,4 +1,4 @@
-/* $Id: genacl.pc,v 1.5 2008-07-10 16:59:11 zacheiss Exp $
+/* $Id: genacl.pc,v 1.6 2009-05-04 20:49:10 zacheiss Exp $
  *
  * Utility functions for outputting ACLs
  *
@@ -16,14 +16,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#include <mr_krb.h>
+#endif
 #include <krb5.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.5 2008-07-10 16:59:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.6 2009-05-04 20:49:10 zacheiss Exp $");
 
-static char defaultrealm[REALM_SZ];
+static char *defaultrealm = NULL;
 
 static struct hash *users, *strings;
 
@@ -34,9 +38,23 @@ static struct save_queue *merge_imembers(struct save_queue *sq,
 
 void init_acls(void)
 {
+  krb5_context context = NULL;
+  int code;
+
   users = create_hash(2000);
   strings = create_hash(2000);
-  krb_get_lrealm(defaultrealm, 1);
+
+  code = krb5_init_context(&context);
+  if (code)
+    goto out;
+
+  code = krb5_get_default_realm(context, &defaultrealm);
+  if (code)
+    goto out;
+
+ out:
+  if (context)
+    krb5_free_context(context);
 }
 
 void dump_krb_acl(FILE *out, char *type, int id, int vers)
@@ -97,7 +115,7 @@ void canon_krb(struct imember *m, int vers, char *buf, int len)
 	  krb5_principal client = NULL;
 	  int status = 0;
 
-	  if (kname_parse(name, inst, realm, kbuf) != KSUCCESS)
+	  if (mr_kname_parse(name, inst, realm, kbuf) != 0)
 	    goto out;
 
 	  status = krb5_init_context(&context);

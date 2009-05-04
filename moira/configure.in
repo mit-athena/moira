@@ -55,7 +55,6 @@ if test "$athena" = true; then
     bindir=$prefix/arch/$ATHENA_SYS/bin
     sbindir=$bindir
     MR_INCLUDE(/usr/athena/include)
-    MR_INCLUDE(/usr/athena/include/kerberosIV)
     MR_LIBS(/usr/athena/lib)
 fi
 
@@ -109,34 +108,38 @@ AC_ARG_WITH(com_err,
 AC_SUBST(COM_ERR_SUBDIR)
 AC_SUBST(COMPILE_ET)
 
-# Kerberos (Kerberos 4 required, Kerberos 5 optional for reg_svr)
+AC_CHECK_LIB(k5crypto, main, crypto="k5crypto",
+             [AC_CHECK_LIB(crypto, main, crypto="crypto")])
+
+# Kerberos (Kerberos 4 optional, Kerberos 5 required)
 AC_MSG_CHECKING(for Kerberos 4)
 AC_ARG_WITH(krb4,
     [  --with-krb4=PREFIX      Specify location of krb4],
     [krb4="$withval"], [krb4=no])
 AC_MSG_RESULT($krb4)
-if test "$krb4" != yes; then
-    MR_INCLUDE($krb4/include)
-    if test -d "$krb4/include/kerberosIV"; then
-	MR_INCLUDE($krb4/include/kerberosIV)
+if test "$krb4" != no; then
+    if test "$krb4" != yes; then
+	MR_INCLUDE($krb4/include)
+	if test -d "$krb4/include/kerberosIV"; then
+	    MR_INCLUDE($krb4/include/kerberosIV)
+	fi
+	MR_LIBS($krb4/lib)
+    elif test -d /usr/include/kerberosIV; then
+	MR_INCLUDE(/usr/include/kerberosIV)
     fi
-    MR_LIBS($krb4/lib)
-elif test -d /usr/include/kerberosIV; then
-    MR_INCLUDE(/usr/include/kerberosIV)
+    MR_DEFINE(HAVE_KRB4)
+    AC_CHECK_LIB(krb4, krb_rd_req,
+		 [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"],
+		 [AC_CHECK_LIB(krb, krb_rd_req,
+			       [KRB4_LIBS="-lkrb -ldes"],
+			       [AC_MSG_ERROR(Kerberos 4 libraries not found)],
+			       $LIBPATH -ldes)],
+		 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
 fi
-AC_CHECK_LIB(k5crypto, main, crypto="k5crypto",
-             [AC_CHECK_LIB(crypto, main, crypto="crypto")])
-AC_CHECK_LIB(krb4, krb_rd_req,
-	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"],
-	     [AC_CHECK_LIB(krb, krb_rd_req,
-			   [KRB4_LIBS="-lkrb -ldes"],
-			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
-			   $LIBPATH -ldes)],
-	     $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
 
 AC_MSG_CHECKING(for Kerberos 5)
 AC_ARG_WITH(krb5,
-    [  --with-krb5=PREFIX      Specify location of krb5 (for reg_svr)],
+    [  --with-krb5=PREFIX      Specify location of krb5],
     [krb5="$withval"], [krb5=no])
 AC_MSG_RESULT($krb5)
 if test "$krb5" != no; then
@@ -144,8 +147,12 @@ if test "$krb5" != no; then
     if test "$krb5" != yes; then
 	REG_SVR_INCLUDES=-I$krb5/include
 	REG_SVR_LIBS=-L$krb5/lib
+	MR_INCLUDE($krb5/include)
+	MR_LIBS($krb5/lib)
     fi
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
+    MR_DEFINE(HAVE_KRB5)
+    KRB5_LIBS="-lkrb5 -l${crypto} -lcom_err -lresolv"
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb5 -l${crypto} -lresolv"
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm
@@ -186,7 +193,7 @@ if test "$zephyr" != no; then
     fi
     AC_CHECK_LIB(zephyr, ZInitialize, :,
 		 [AC_MSG_ERROR(Zephyr library not found)],
-		 $LIBPATH $KRB4_LIBS -lcom_err)
+		 $LIBPATH $KRB4_LIBS $KRB5_LIBS -lcom_err)
     MR_DEFINE(HAVE_ZEPHYR)
 fi
 
@@ -446,12 +453,12 @@ MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 MR_INCLUDE('$(srcdir)')
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
-KLIBS="$KRB4_LIBS -lcom_err $LIBS"
+KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then
   KLIBS="-lhesiod $KLIBS"
 fi
-KLIBS="$KRB4_LIBS -lcom_err $KLIBS"
+KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $KLIBS"
 if test "$zephyr" != no; then
   KLIBS="-lzephyr $KLIBS"
 fi

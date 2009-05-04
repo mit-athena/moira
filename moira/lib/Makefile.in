@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 2000-01-28 00:03:28 danw Exp $
+# $Id: Makefile.in,v 1.6 2009-05-04 20:49:11 zacheiss Exp $
 
 SHELL=/bin/sh
 
@@ -16,7 +16,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 
 OBJS=	critical.o fixhost.o fixname.o \
-	hash.o kname_unparse.o krb_et.o mr_access.o mr_auth.o \
+	hash.o kname_unparse.o kname_parse.o krb_et.o mr_access.o mr_auth.o \
 	mr_call.o mr_connect.o mr_et.o mr_init.o mr_ops.o mr_query.o \
 	nfsparttype.o sq.o strs.o ureg_err.o
 

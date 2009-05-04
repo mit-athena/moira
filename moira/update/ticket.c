@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.23 2007-07-25 15:39:01 zacheiss Exp $
+/* $Id: ticket.c,v 1.24 2009-05-04 20:49:13 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -13,19 +13,27 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#define KTEXT void*
+#endif
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.23 2007-07-25 15:39:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.24 2009-05-04 20:49:13 zacheiss Exp $");
 
+#ifdef HAVE_KRB4
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
 des_cblock session;
+#endif
 krb5_context context = NULL;
 
+#ifdef HAVE_KRB4
 static int get_mr_tgt(void);
+#endif
 
 int get_mr_krb5_update_ticket(char *host, krb5_data auth)
 {
@@ -58,6 +66,7 @@ int get_mr_krb5_update_ticket(char *host, krb5_data auth)
 
 int get_mr_update_ticket(char *host, KTEXT ticket)
 {
+#ifdef HAVE_KRB4
   int code, pass;
   char phost[BUFSIZ];
   CREDENTIALS cr;
@@ -93,8 +102,12 @@ try_it:
       memcpy(session, cr.session, sizeof(session));
     }
   return code;
+#else
+  return MR_NO_KRB4;
+#endif
 }
 
+#ifdef HAVE_KRB4
 static int get_mr_tgt(void)
 {
   int code;
@@ -109,3 +122,4 @@ static int get_mr_tgt(void)
   else
     return code + ERROR_TABLE_BASE_krb;
 }
+#endif

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: mr_main.c,v 1.55 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Moira server process.
  *
@@ -28,10 +28,12 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.54 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.55 2009-05-04 20:49:12 zacheiss Exp $");
 
 client *cur_client;
 
@@ -42,8 +44,8 @@ FILE *journal;
 time_t now;
 
 char *host;
-char krb_realm[REALM_SZ];
 krb5_context context = NULL;
+char *krb_realm = NULL;
 
 /* Client array and associated data. This needs to be global for _list_users */
 client **clients;
@@ -106,12 +108,17 @@ int main(int argc, char **argv)
 	}
     }
 
-  krb_get_lrealm(krb_realm, 1);
-
   status = krb5_init_context(&context);
   if (status)
     {
       com_err(whoami, status, "Initializing krb5 context.");
+      exit(1);
+    }
+
+  status = krb5_get_default_realm(context, &krb_realm);
+  if (status)
+    {
+      com_err(whoami, status, "Getting default Kerberos realm.");
       exit(1);
     }
 

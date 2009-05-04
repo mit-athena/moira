@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $
+/* $Id: get_file.c,v 1.21 2009-05-04 20:49:13 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -17,17 +17,21 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_KRB4
 #include <des.h>
+#endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.20 2007-07-11 16:06:31 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.21 2009-05-04 20:49:13 zacheiss Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
 #endif /* MIN */
 
+#ifdef HAVE_KRB4
 static des_key_schedule sched;
 static des_cblock ivec;
 extern des_cblock session;
+#endif
 
 static int get_block(int conn, int fd, int max_size, int encrypt);
 
@@ -123,8 +127,15 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
 
   if (encrypt)
     {
+#ifdef HAVE_KRB4
       des_key_sched(session, sched);
       memcpy(ivec, session, sizeof(ivec));
+#else
+      /* The session key only gets stored if auth happens in krb4 to
+         begin with. If you don't have krb4, you can't possibly be
+         coming up with a valid session key. */
+      return MR_NO_KRB4;
+#endif
     }
 
   n_written = 0;
@@ -173,6 +184,7 @@ static int get_block(int conn, int fd, int max_size, int encrypt)
 
   if (encrypt)
     {
+#ifdef HAVE_KRB4
       char *unenc = malloc(len);
 
       if (!unenc)
@@ -186,6 +198,7 @@ static int get_block(int conn, int fd, int max_size, int encrypt)
 	ivec[i] = data[len - 8 + i] ^ unenc[len - 8 + i];
       free(data);
       data = unenc;
+#endif
     }
 
   n_read = MIN(len, max_size);

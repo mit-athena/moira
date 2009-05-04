@@ -852,7 +852,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-com_err=PREFIX   Specify location of com_err
   --with-krb4=PREFIX      Specify location of krb4
-  --with-krb5=PREFIX      Specify location of krb5 (for reg_svr)
+  --with-krb5=PREFIX      Specify location of krb5
   --with-hesiod=PREFIX    Specify location of Hesiod
   --with-zephyr=PREFIX    Specify location of Zephyr
   --with-rsaref=PREFIX      Specify location of RSAREF
@@ -2554,20 +2554,6 @@ if test "$athena" = true; then
 
 
 
-
-    case $CPPFLAGS in
-	*-I/usr/athena/include/kerberosIV*) ;;
-	*) CPPFLAGS=-I/usr/athena/include/kerberosIV\ $CPPFLAGS ;;
-    esac
-
-
-    case $PRO_C_INCLUDES in
-	*INCLUDE=/usr/athena/include/kerberosIV*) ;;
-	*) PRO_C_INCLUDES=INCLUDE=/usr/athena/include/kerberosIV\ $PRO_C_INCLUDES ;;
-    esac
-
-
-
     case $LIBPATH in
 	*-L/usr/athena/lib*) ;;
 	*) LIBPATH=-L/usr/athena/lib\ $LIBPATH ;;
@@ -3168,72 +3154,6 @@ fi;
 
 
 
-# Kerberos (Kerberos 4 required, Kerberos 5 optional for reg_svr)
-echo "$as_me:$LINENO: checking for Kerberos 4" >&5
-echo $ECHO_N "checking for Kerberos 4... $ECHO_C" >&6
-
-# Check whether --with-krb4 or --without-krb4 was given.
-if test "${with_krb4+set}" = set; then
-  withval="$with_krb4"
-  krb4="$withval"
-else
-  krb4=no
-fi;
-echo "$as_me:$LINENO: result: $krb4" >&5
-echo "${ECHO_T}$krb4" >&6
-if test "$krb4" != yes; then
-
-
-    case $CPPFLAGS in
-	*-I$krb4/include*) ;;
-	*) CPPFLAGS=-I$krb4/include\ $CPPFLAGS ;;
-    esac
-
-
-    case $PRO_C_INCLUDES in
-	*INCLUDE=$krb4/include*) ;;
-	*) PRO_C_INCLUDES=INCLUDE=$krb4/include\ $PRO_C_INCLUDES ;;
-    esac
-
-
-    if test -d "$krb4/include/kerberosIV"; then
-
-
-    case $CPPFLAGS in
-	*-I$krb4/include/kerberosIV*) ;;
-	*) CPPFLAGS=-I$krb4/include/kerberosIV\ $CPPFLAGS ;;
-    esac
-
-
-    case $PRO_C_INCLUDES in
-	*INCLUDE=$krb4/include/kerberosIV*) ;;
-	*) PRO_C_INCLUDES=INCLUDE=$krb4/include/kerberosIV\ $PRO_C_INCLUDES ;;
-    esac
-
-
-    fi
-
-    case $LIBPATH in
-	*-L$krb4/lib*) ;;
-	*) LIBPATH=-L$krb4/lib\ $LIBPATH ;;
-    esac
-
-elif test -d /usr/include/kerberosIV; then
-
-
-    case $CPPFLAGS in
-	*-I/usr/include/kerberosIV*) ;;
-	*) CPPFLAGS=-I/usr/include/kerberosIV\ $CPPFLAGS ;;
-    esac
-
-
-    case $PRO_C_INCLUDES in
-	*INCLUDE=/usr/include/kerberosIV*) ;;
-	*) PRO_C_INCLUDES=INCLUDE=/usr/include/kerberosIV\ $PRO_C_INCLUDES ;;
-    esac
-
-
-fi
 echo "$as_me:$LINENO: checking for main in -lk5crypto" >&5
 echo $ECHO_N "checking for main in -lk5crypto... $ECHO_C" >&6
 if test "${ac_cv_lib_k5crypto_main+set}" = set; then
@@ -3359,7 +3279,87 @@ fi
 
 fi
 
-echo "$as_me:$LINENO: checking for krb_rd_req in -lkrb4" >&5
+
+# Kerberos (Kerberos 4 optional, Kerberos 5 required)
+echo "$as_me:$LINENO: checking for Kerberos 4" >&5
+echo $ECHO_N "checking for Kerberos 4... $ECHO_C" >&6
+
+# Check whether --with-krb4 or --without-krb4 was given.
+if test "${with_krb4+set}" = set; then
+  withval="$with_krb4"
+  krb4="$withval"
+else
+  krb4=no
+fi;
+echo "$as_me:$LINENO: result: $krb4" >&5
+echo "${ECHO_T}$krb4" >&6
+if test "$krb4" != no; then
+    if test "$krb4" != yes; then
+
+
+    case $CPPFLAGS in
+	*-I$krb4/include*) ;;
+	*) CPPFLAGS=-I$krb4/include\ $CPPFLAGS ;;
+    esac
+
+
+    case $PRO_C_INCLUDES in
+	*INCLUDE=$krb4/include*) ;;
+	*) PRO_C_INCLUDES=INCLUDE=$krb4/include\ $PRO_C_INCLUDES ;;
+    esac
+
+
+	if test -d "$krb4/include/kerberosIV"; then
+
+
+    case $CPPFLAGS in
+	*-I$krb4/include/kerberosIV*) ;;
+	*) CPPFLAGS=-I$krb4/include/kerberosIV\ $CPPFLAGS ;;
+    esac
+
+
+    case $PRO_C_INCLUDES in
+	*INCLUDE=$krb4/include/kerberosIV*) ;;
+	*) PRO_C_INCLUDES=INCLUDE=$krb4/include/kerberosIV\ $PRO_C_INCLUDES ;;
+    esac
+
+
+	fi
+
+    case $LIBPATH in
+	*-L$krb4/lib*) ;;
+	*) LIBPATH=-L$krb4/lib\ $LIBPATH ;;
+    esac
+
+    elif test -d /usr/include/kerberosIV; then
+
+
+    case $CPPFLAGS in
+	*-I/usr/include/kerberosIV*) ;;
+	*) CPPFLAGS=-I/usr/include/kerberosIV\ $CPPFLAGS ;;
+    esac
+
+
+    case $PRO_C_INCLUDES in
+	*INCLUDE=/usr/include/kerberosIV*) ;;
+	*) PRO_C_INCLUDES=INCLUDE=/usr/include/kerberosIV\ $PRO_C_INCLUDES ;;
+    esac
+
+
+    fi
+
+    cat >>confdefs.h <<\_ACEOF
+#define HAVE_KRB4 1
+_ACEOF
+
+
+    case $PRO_C_DEFS in
+	*DEFINE=HAVE_KRB4*) ;;
+	*) PRO_C_DEFS=DEFINE=HAVE_KRB4\ $PRO_C_DEFS ;;
+    esac
+
+
+    echo "$as_me:$LINENO: checking for krb_rd_req in -lkrb4" >&5
 echo $ECHO_N "checking for krb_rd_req in -lkrb4... $ECHO_C" >&6
 if test "${ac_cv_lib_krb4_krb_rd_req+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -3500,6 +3500,7 @@ fi
 
 fi
 
+fi
 
 echo "$as_me:$LINENO: checking for Kerberos 5" >&5
 echo $ECHO_N "checking for Kerberos 5... $ECHO_C" >&6
@@ -3518,7 +3519,40 @@ if test "$krb5" != no; then
     if test "$krb5" != yes; then
 	REG_SVR_INCLUDES=-I$krb5/include
 	REG_SVR_LIBS=-L$krb5/lib
+
+
+    case $CPPFLAGS in
+	*-I$krb5/include*) ;;
+	*) CPPFLAGS=-I$krb5/include\ $CPPFLAGS ;;
+    esac
+
+
+    case $PRO_C_INCLUDES in
+	*INCLUDE=$krb5/include*) ;;
+	*) PRO_C_INCLUDES=INCLUDE=$krb5/include\ $PRO_C_INCLUDES ;;
+    esac
+
+
+
+    case $LIBPATH in
+	*-L$krb5/lib*) ;;
+	*) LIBPATH=-L$krb5/lib\ $LIBPATH ;;
+    esac
+
     fi
+
+    cat >>confdefs.h <<\_ACEOF
+#define HAVE_KRB5 1
+_ACEOF
+
+
+    case $PRO_C_DEFS in
+	*DEFINE=HAVE_KRB5*) ;;
+	*) PRO_C_DEFS=DEFINE=HAVE_KRB5\ $PRO_C_DEFS ;;
+    esac
+
+
+    KRB5_LIBS="-lkrb5 -l${crypto} -lcom_err -lresolv"
     REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
 else
     REG_SVR_DEFS=-DKRB4
@@ -3861,7 +3895,7 @@ if test "${ac_cv_lib_zephyr_ZInitialize+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lzephyr $LIBPATH $KRB4_LIBS -lcom_err $LIBS"
+LIBS="-lzephyr $LIBPATH $KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -5874,12 +5908,12 @@ fi
 
 
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
-KLIBS="$KRB4_LIBS -lcom_err $LIBS"
+KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then
   KLIBS="-lhesiod $KLIBS"
 fi
-KLIBS="$KRB4_LIBS -lcom_err $KLIBS"
+KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $KLIBS"
 if test "$zephyr" != no; then
   KLIBS="-lzephyr $KLIBS"
 fi

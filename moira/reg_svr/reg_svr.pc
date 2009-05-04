@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.22 2009-04-09 20:25:54 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.23 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -33,11 +33,13 @@
 #include <unistd.h>
 
 #include <com_err.h>
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.22 2009-04-09 20:25:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.23 2009-05-04 20:49:12 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -805,13 +807,7 @@ int register_user(int uid, char *username)
       return MR_DOWN;
     }
 
-  status = krb_get_svc_in_tkt(REG_SVR_PRINCIPAL, REG_SVR_INSTANCE,
-			      krb_realmofhost(hostname), MOIRA_SNAME,
-			      shorthostname, 3, KEYFILE);
-  if (status)
-    status += ERROR_TABLE_BASE_krb;
-  else
-    status = mr_krb5_auth("reg_svr");
+  status = mr_krb5_auth("reg_svr");
   if (status)
     {
       com_err(whoami, status, "authenticating to moira");

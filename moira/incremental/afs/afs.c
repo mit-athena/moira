@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.3 2006-08-22 17:36:25 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.4 2009-05-04 20:49:11 zacheiss Exp $
  *
  * Do AFS incremental updates
  *
@@ -21,7 +21,10 @@
 #include <unistd.h>
 
 #include <com_err.h>
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
+#include <krb5.h>
 
 #include <afs/param.h>
 #include <afs/cellconfig.h>
@@ -552,14 +555,24 @@ void edit_group(int op, char *group, char *type, char *member)
   char *p = 0;
   char buf[PR_MAXNAMELEN];
   int code, ustate;
-  static char local_realm[REALM_SZ+1] = "";
+  static char *local_realm = NULL;
   struct member *m;
+  krb5_context context = NULL;
 
   /* The following KERBEROS code allows for the use of entities
    * user@foreign_cell.
    */
-  if (!local_realm[0])
-    krb_get_lrealm(local_realm, 1);
+  if (!local_realm)
+    {
+      code = krb5_init_context(&context);
+      if (code)
+	goto out;
+
+      code = krb5_get_default_realm(context, &local_realm);
+      if (code)
+	goto out;
+    }
+
   if (!strcmp(type, "KERBEROS"))
     {
       p = strchr(member, '@');
@@ -631,6 +644,12 @@ void edit_group(int op, char *group, char *type, char *member)
 	    return; /* inactive user */
 	  code = PRNOENT;
 	}
+
+    out:
+      if (context)
+	krb5_free_context(context);
+      if (local_realm)
+	free(local_realm);
 
       critical_alert("incremental", "Couldn't %s %s %s %s: %s",
 		     op ? "add" : "remove", member,

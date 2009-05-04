@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.26 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: update_server.c,v 1.27 2009-05-04 20:49:13 zacheiss Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -25,15 +25,19 @@
 #include <unistd.h>
 #include <syslog.h>
 
+#ifdef HAVE_KRB4
 #include <des.h>
+#endif
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.26 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.27 2009-05-04 20:49:13 zacheiss Exp $");
 
 char *whoami, *hostname;
 
 int have_authorization = 0;
+#ifdef HAVE_KRB4
 des_cblock session;
+#endif
 int uid = 0;
 
 void child_handler(int signal);
@@ -44,7 +48,9 @@ struct _dt {
   char *str;
   void (*proc)(int, char *);
 } dispatch_table[] = {
+#ifdef HAVE_KRB4
   { "AUTH_002", auth_002 },
+#endif
   { "AUTH_003", auth_003 },
   { "XFER_002", xfer_002 },
   { "XFER_003", xfer_003 },

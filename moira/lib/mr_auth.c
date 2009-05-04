@@ -1,4 +1,4 @@
-/* $Id: mr_auth.c,v 1.28 2007-07-25 15:38:48 zacheiss Exp $
+/* $Id: mr_auth.c,v 1.29 2009-05-04 20:49:11 zacheiss Exp $
  *
  * Handles the client side of the sending of authenticators to the moira server
  *
@@ -15,13 +15,15 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 #include <krb5.h>
 
 krb5_context context = NULL;
 krb5_auth_context auth_con = NULL;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.28 2007-07-25 15:38:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.29 2009-05-04 20:49:11 zacheiss Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.
@@ -29,6 +31,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/li
 
 int mr_auth(char *prog)
 {
+#ifdef HAVE_KRB4
   int status;
   mr_params params, reply;
   char *args[2];
@@ -70,6 +73,9 @@ int mr_auth(char *prog)
   mr_destroy_reply(reply);
 
   return status;
+#else
+  return MR_NO_KRB4;
+#endif
 }
 
 int mr_proxy(char *principal, char *orig_authtype)

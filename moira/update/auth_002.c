@@ -1,4 +1,4 @@
-/* $Id: auth_002.c,v 1.9 1998-10-21 19:27:29 danw Exp $
+/* $Id: auth_002.c,v 1.10 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,14 +15,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.9 1998-10-21 19:27:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.10 2009-05-04 20:49:12 zacheiss Exp $");
 
 static char service[] = "rcmd";
 static char master[] = "sms";
 static char qmark[] = "???";
+#ifdef HAVE_KRB4
 extern des_cblock session;
+#endif
 
 /*
  * authentication request auth_002:
@@ -39,6 +43,7 @@ extern des_cblock session;
 
 void auth_002(int conn, char *str)
 {
+#ifdef HAVE_KRB4
   char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
   AUTH_DAT ad;
   char *p, *first, *data;
@@ -126,4 +131,7 @@ auth_failed:
   com_err(whoami, code, "auth for %s.%s@%s failed",
 	  ad.pname, ad.pinst, ad.prealm);
   send_int(conn, code);
+#else
+  return MR_NO_KRB4;
+#endif
 }

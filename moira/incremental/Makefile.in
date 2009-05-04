@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 2009-01-05 22:25:37 zacheiss Exp $
+# $Id: Makefile.in,v 1.12 2009-05-04 20:49:11 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -21,10 +21,6 @@ mrbindir=@mrbindir@
 
 SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@
 
-KSRVTGT_OBJS=ksrvtgt.o
-
-TARGET=ksrvtgt
-
 .SUFFIXES: .pc
 
 .pc.c:
@@ -33,7 +29,7 @@ TARGET=ksrvtgt
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<
 
-all: $(TARGET)
+all:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 clean:
@@ -50,6 +46,3 @@ depend:
 install:
 	$(INSTALL_PROGRAM) ksrvtgt $(DESTDIR)$(mrbindir)
 	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
-
-ksrvtgt: $(KSRVTGT_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(KSRVTGT_OBJS) $(LIBS)

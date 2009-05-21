@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.20 2009-04-28 05:29:12 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.21 2009-05-21 17:17:20 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -380,6 +380,7 @@ CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 #define PORT "PORT:"
 #define PROCESS_MACHINE_CONTAINER "PROCESS_MACHINE_CONTAINER:"
 #define GROUP_POPULATE_MEMBERS "GROUP_POPULATE_MEMBERS:"
+#define MAX_MEMBERS "MAX_MEMBERS:"
 #define MAX_DOMAINS 10
 char DomainNames[MAX_DOMAINS][128];
 
@@ -420,6 +421,8 @@ int  ActiveDirectory = 1;
 int  UpdateDomainList;
 int  fsgCount;
 int  GroupPopulateDelete = 0;
+int  group_members = 0;
+int  max_group_members = 0;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -534,7 +537,7 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
                   char *pUserOu, char *MoiraId);
 int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
                    char *group_ou, char *group_membership, 
-                   int group_security_flag, char *MoiraId);
+                   int group_security_flag, char *MoiraId, int synchronize);
 int SetHomeDirectory(LDAP *ldap_handle, char *user_name, 
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
@@ -1160,7 +1163,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (atoi(after[L_ACTIVE]))
         {
           populate_group(ldap_handle, dn_path, after[L_NAME], group_ou, 
-                         group_membership, security_flag, list_id);
+                         group_membership, security_flag, list_id, 1);
         }
 
       moira_disconnect();
@@ -1387,7 +1390,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (atoi(ptr[LM_EXTRA_ACTIVE]))
         {
           populate_group(ldap_handle, dn_path, ptr[LM_LIST], group_ou, 
-                         group_membership, security_flag, moira_list_id);
+                         group_membership, security_flag, moira_list_id, 1);
         }
 
       moira_disconnect();
@@ -1472,30 +1475,18 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       
       if (rc = populate_group(ldap_handle, dn_path, group_name,
 			      group_ou, group_membership, 
-			      security_flag, moira_list_id))
+			      security_flag, moira_list_id, 0))
 	com_err(whoami, 0, "Unable to remove %s from group %s", user_name, 
 		group_name);
       
       moira_disconnect();
-      
-      if (!strcasecmp(ptr[LM_TYPE], "STRING"))
-	{
-	  if (rc = moira_connect())
-	    {
-	      critical_alert("Ldap incremental",
-			     "Error contacting Moira server : %s",
-			     error_message(rc));
-	      return;
-	    }
-	  
-	  if (rc = populate_group(ldap_handle, dn_path, group_name,
-				  group_ou, group_membership, security_flag,
-				  moira_list_id))
-	    com_err(whoami, 0, "Unable to remove %s from group %s",
-		    user_name, group_name);
 
-	  moira_disconnect();
-	}
+      if (rc = member_remove(ldap_handle, dn_path, group_name,
+                             group_ou, group_membership, ptr[LM_MEMBER],
+                             pUserOu, moira_list_id))
+        com_err(whoami, 0, "Unable to remove %s from group %s", user_name,
+                group_name);
+      
       return;
     }
   
@@ -1649,30 +1640,16 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (rc = populate_group(ldap_handle, dn_path, group_name,
 			  group_ou, group_membership, security_flag,
-			  moira_list_id))
+			  moira_list_id, 0))
     com_err(whoami, 0, "Unable to add %s to group %s", user_name, 
 	    group_name);
   
   moira_disconnect();
 
-  if (!strcasecmp(ptr[LM_TYPE], "STRING"))
-    {
-      if (rc = moira_connect())
-	{
-	  critical_alert("Ldap incremental",
-			 "Error contacting Moira server : %s",
-			 error_message(rc));
-	  return;
-	}
-      
-      if (rc = populate_group(ldap_handle, dn_path, group_name,
-			      group_ou, group_membership, security_flag,
-			      moira_list_id))
-	com_err(whoami, 0, "Unable to add %s to group %s",
-		user_name, group_name);
-      
-      moira_disconnect();
-    }
+  if (rc = member_add(ldap_handle, dn_path, group_name,
+                      group_ou, group_membership, ptr[LM_MEMBER],
+                      pUserOu, moira_list_id))
+    com_err(whoami, 0, "Unable to add %s to group %s", user_name, group_name);
 
   return;
 }
@@ -2577,11 +2554,6 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
 
-  if(!ActiveDirectory) 
-    {
-      ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
-    }
-
   if (Exchange)
     {
       if(atoi(maillist) && !MailDisabled && email_isvalid(mail)) 
@@ -3445,7 +3417,7 @@ int process_lists(int ac, char **av, void *ptr)
   get_group_membership(group_membership, group_ou, &security_flag, av);
   rc = populate_group((LDAP *)call_args[0], (char *)call_args[1], 
 		      av[L_NAME], group_ou, group_membership, 
-		      security_flag, "");
+		      security_flag, "", 1);
 
   return(0);
 }
@@ -3557,6 +3529,9 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   LK_ENTRY    *group_base;
   ULONG       rc;
   char        *s;
+
+  if (max_group_members && (group_members < max_group_members))
+    return(0);
 
   if (!check_string(group_name))
     return(AD_INVALID_NAME);
@@ -3684,6 +3659,9 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
   LDAPMod     *mods[20];
   LK_ENTRY    *group_base;
   ULONG       rc;
+
+  if (max_group_members && (group_members < max_group_members))
+    return(0);
 
   if (!check_string(group_name))
     return(AD_INVALID_NAME);
@@ -4767,7 +4745,6 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
       ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_REPLACE);
       ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
       ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_REPLACE);
-      ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
     }
 
   if (Exchange)
@@ -5963,7 +5940,7 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
             return(1);
 
 	  populate_group(ldap_handle, dn_path, AceName, AceOu, AceMembership,
-			 0, "");
+			 0, "", 1);
         }
       else if (!strcasecmp(AceInfo[0], "USER"))
         {
@@ -6065,7 +6042,8 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
 
 int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
                    char *group_ou, char *group_membership, 
-                   int group_security_flag, char *MoiraId)
+                   int group_security_flag, char *MoiraId, 
+		   int synchronize)
 {
   char      *av[3];
   char      *call_args[7];
@@ -6094,6 +6072,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 			  MOIRA_MACHINE);
   call_args[4] = NULL;
   member_base = NULL;
+  group_members = 0;
 
   if (rc = mr_query("get_end_members_of_list", 1, av,
                     member_list_build, call_args))
@@ -6104,6 +6083,47 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
       com_err(whoami, 0, "Unable to populate list %s : %s", 
               group_name, error_message(rc));
       return(3);
+    }
+
+  if (member_base != NULL)
+    {
+      ptr = member_base;
+
+      while(ptr != NULL)
+        {
+          if (!strcasecmp(ptr->type, "LIST"))
+            {
+              ptr = ptr->next;
+              continue;
+            }
+
+          if (!strcasecmp(ptr->type, "MACHINE") && !ProcessMachineContainer)
+            {
+              ptr = ptr->next;
+              continue;
+            }
+
+          if(!strcasecmp(ptr->type, "USER"))
+            {
+              if(!strcasecmp(ptr->member, PRODUCTION_PRINCIPAL) ||
+                 !strcasecmp(ptr->member, TEST_PRINCIPAL))
+                {
+                  ptr = ptr->next;
+                  continue;
+                }
+            }
+
+          ptr = ptr->next;
+          group_members++;
+        }
+    }
+
+  if(max_group_members && !synchronize && (group_members > max_group_members))
+    {
+      com_err(whoami, 0, 
+	      "Group %s membership of %d exceeds maximum %d, skipping",
+	      group_name, group_members, max_group_members);
+      return(0);
     }
 
   members = (char **)malloc(sizeof(char *) * 2);
@@ -8659,6 +8679,15 @@ int ReadConfigFile(char *DomainName)
 		      }
 		  }
 	      }
+            else if (!strncmp(temp, MAX_MEMBERS, strlen(MAX_MEMBERS)))
+              {
+                if (strlen(temp) > (strlen(MAX_MEMBERS)))
+                  {
+                    strcpy(temp1, &temp[strlen(MAX_MEMBERS)]);
+                    StringTrim(temp1);
+                    max_group_members = atoi(temp1);
+                  }
+              }
             else
 	      {
                 if (strlen(ldap_domain) != 0)

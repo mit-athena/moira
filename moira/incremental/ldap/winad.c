@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.22 2009-05-28 16:13:54 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.23 2009-05-28 18:38:39 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -9151,15 +9151,9 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
     }
           
   if (group_count)
-    {
-      com_err(whoami, 0, "Group %s contains member %s", group_name, user_name);
-      rc = 1;
-    }
+    rc = 1;
   else 
-    {
-      com_err(whoami, 0, "Group %s does not contain member %s", group_name, user_name);
-      rc = 0;
-    }
+    rc = 0;
 
   linklist_free(group_base);
   group_count = 0;

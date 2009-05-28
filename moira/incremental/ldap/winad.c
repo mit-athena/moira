@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.21 2009-05-21 17:17:20 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.22 2009-05-28 16:13:54 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -535,6 +535,8 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
 int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name, 
                   char *group_ou, char *group_membership, char *user_name,
                   char *pUserOu, char *MoiraId);
+int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
+		   char *UserOu, char *member);
 int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
                    char *group_ou, char *group_membership, 
                    int group_security_flag, char *MoiraId, int synchronize);
@@ -2644,6 +2646,7 @@ int group_create(int ac, char **av, void *ptr)
   char *mitMoiraId_v[] = {NULL, NULL};
   char *mitMoiraPublic_v[] = {NULL, NULL};
   char *mitMoiraHidden_v[] = {NULL, NULL};
+  char *mitMoiraActive_v[] = {NULL, NULL};
   char *groupTypeControl_v[] = {NULL, NULL};
   char *mail_v[] = {NULL, NULL};
   char *proxy_address_v[] = {NULL, NULL};
@@ -2722,9 +2725,11 @@ int group_create(int ac, char **av, void *ptr)
 	{
 	  mitMoiraPublic_v[0] = av[L_PUBLIC];
 	  mitMoiraHidden_v[0] = av[L_HIDDEN];
+	  mitMoiraActive_v[0] = av[L_ACTIVE];
 	  ADD_ATTR("objectClass", objectClass_ldap_v, LDAP_MOD_ADD);
 	  ADD_ATTR("mitMoiraPublic", mitMoiraPublic_v, LDAP_MOD_ADD);
 	  ADD_ATTR("mitMoiraHidden", mitMoiraHidden_v, LDAP_MOD_ADD);
+	  ADD_ATTR("mitMoiraActive", mitMoiraActive_v, LDAP_MOD_ADD);
 	  
 	  if(atoi(av[L_GROUP])) 
 	    {
@@ -2860,8 +2865,10 @@ int group_create(int ac, char **av, void *ptr)
 	{
           mitMoiraPublic_v[0] = av[L_PUBLIC];
           mitMoiraHidden_v[0] = av[L_HIDDEN];
+	  mitMoiraActive_v[0] = av[L_ACTIVE];
           ADD_ATTR("mitMoiraPublic", mitMoiraPublic_v, LDAP_MOD_REPLACE);
           ADD_ATTR("mitMoiraHidden", mitMoiraHidden_v, LDAP_MOD_REPLACE);
+          ADD_ATTR("mitMoiraActive", mitMoiraActive_v, LDAP_MOD_REPLACE);
 
 	  if(atoi(av[L_GROUP])) 
 	    {
@@ -3536,6 +3543,9 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   if (!check_string(group_name))
     return(AD_INVALID_NAME);
 
+  if(!contains_member(ldap_handle, dn_path, group_name, UserOu, user_name))
+    return(0);
+
   memset(filter, '\0', sizeof(filter));
   group_base = NULL;
   group_count = 0;
@@ -3665,6 +3675,9 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
 
   if (!check_string(group_name))
     return(AD_INVALID_NAME);
+
+  if(contains_member(ldap_handle, dn_path, group_name, UserOu, user_name) > 0)
+    return(0);
 
   rc = 0;
   memset(filter, '\0', sizeof(filter));
@@ -9095,4 +9108,62 @@ int save_fsgroup_info(int argc, char **argv, void *hint)
     }
 
   return MR_CONT;
+}
+
+int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name, 
+		    char *UserOu, char *user_name)
+{
+  char         search_filter[1024];
+  char         *attr_array[3];
+  LK_ENTRY     *group_base;
+  int          group_count;
+  int          rc;
+  char         temp[256];
+
+  if(ActiveDirectory)
+    {
+      sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+    }
+  else
+    {
+      if(!strcmp(UserOu, user_ou))
+	sprintf(temp, "uid=%s,%s,%s", user_name, UserOu, dn_path);
+      else
+	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+    }
+
+  group_base = NULL;
+  group_count = 0;
+  
+  sprintf(search_filter, "(&(objectClass=group)(cn=%s)(member=%s))",
+	  group_name, temp);
+
+  attr_array[0] = "mitMoiraId";
+  attr_array[1] = NULL;
+
+  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+			   attr_array, &group_base, &group_count,
+			   LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      com_err(whoami, 0, "Unable to check group %s for membership of %s : %s",
+	      group_name, user_name, ldap_err2string(rc));
+      return(-1);
+    }
+          
+  if (group_count)
+    {
+      com_err(whoami, 0, "Group %s contains member %s", group_name, user_name);
+      rc = 1;
+    }
+  else 
+    {
+      com_err(whoami, 0, "Group %s does not contain member %s", group_name, user_name);
+      rc = 0;
+    }
+
+  linklist_free(group_base);
+  group_count = 0;
+  group_base = NULL;
+
+  return(rc);
 }

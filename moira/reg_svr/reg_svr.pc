@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.23 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.24 2009-05-29 15:52:15 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -39,7 +39,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.23 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.24 2009-05-29 15:52:15 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -716,6 +716,7 @@ void PSWD(reg_client *rc, int argc, char **argv)
   char *password = argv[0], *p;
   EXEC SQL BEGIN DECLARE SECTION;
   char *login = rc->username;
+  char potype[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   if (!rc->username || rc->id || argc != 1)
@@ -780,7 +781,11 @@ void PSWD(reg_client *rc, int argc, char **argv)
     EXEC SQL UPDATE users SET status = 1 WHERE login = :login;
   EXEC SQL COMMIT;
 
-  reply(rc, DONE, "INIT", "c", NULL, rc->username);
+  EXEC SQL SELECT potype INTO :potype FROM users WHERE login = :login;
+  if (!strcmp(potype, "EXCHANGE"))
+    reply(rc, DONE, "INIT", "c", NULL, rc->username, "http://owa.mit.edu");
+  else
+    reply(rc, DONE, "INIT", "c", NULL, rc->username, "http://webmail.mit.edu");
 }
 
 void QUIT(reg_client *rc, int argc, char **argv)

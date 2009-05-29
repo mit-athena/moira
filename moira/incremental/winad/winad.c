@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.59 2009-04-05 18:55:09 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.60 2009-05-29 15:26:32 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -7849,6 +7849,7 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
       
       while(gPtr) {
 	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "Recovery")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;

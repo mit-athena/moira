@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.35 2009-05-04 20:49:10 zacheiss Exp $
+/* $Id: moira.h,v 1.36 2009-06-01 21:05:00 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -84,7 +84,7 @@ struct hash {
 };
 
 /* prototypes from critical.c */
-void critical_alert(char *instance, char *msg, ...);
+void critical_alert(char *whoami, char *instance, char *msg, ...);
 void send_zgram(char *inst, char *msg);
 
 /* prototypes from fixhost.c */

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2009-01-05 22:25:22 zacheiss Exp $
+# $Id: Makefile.in,v 1.7 2009-06-01 21:04:58 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 LIBS=../lib/libmrclient.a @CURSES_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -17,22 +18,25 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-OBJS=mailmaint.o
+OBJS=mailmaint.lo
 
 TARGET=mailmaint
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -40,7 +44,7 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) mailmaint $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mailmaint $(DESTDIR)$(bindir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

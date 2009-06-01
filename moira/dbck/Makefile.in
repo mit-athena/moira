@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2009-01-05 22:25:33 zacheiss Exp $
+# $Id: Makefile.in,v 1.9 2009-06-01 21:04:59 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -22,29 +23,30 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-DBCK_OBJS=dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
-MEMBERS_OBJS=members.o
+DBCK_OBJS=dbck.lo fix.lo phase1.lo phase2.lo phase3.lo phase4.lo
+MEMBERS_OBJS=members.lo
 OBJS= $(DBCK_OBJS) $(MEMBERS_OBJS)
 
 CFILES=dbck.c fix.c phase1.c phase2.c phase3.c phase4.c members.c
 
 TARGET=dbck members
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(CFILES) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(CFILES) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -52,14 +54,14 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) dbck $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) members $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) dbck $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) members $(DESTDIR)$(mrbindir)
 
 dbck: $(DBCK_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(DBCK_OBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(DBCK_OBJS) $(LIBS)
 
-members: members.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) members.o $(LIBS)
+members: $(MEMBERS_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(MEMBERS_OBJS) $(LIBS)
 
 
 

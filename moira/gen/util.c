@@ -1,4 +1,4 @@
-/* $Id: util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $
+/* $Id: util.c,v 1.15 2009-06-01 21:05:00 zacheiss Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -16,7 +16,7 @@
 
 #include "util.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.15 2009-06-01 21:05:00 zacheiss Exp $");
 
 /* Julian day of the UNIX epoch (January 1, 1970) */
 #define UNIX_EPOCH 2440588
@@ -99,7 +99,7 @@ void db_error(int code)
   sqlglm(buf, &bufsize, &len);
   buf[len] = 0;
   com_err(whoami, 0, "SQL error text = %s", buf);
-  critical_alert("DCM", "%s build encountered DATABASE ERROR %d\n%s",
+  critical_alert(whoami, "DCM", "%s build encountered DATABASE ERROR %d\n%s",
 		 whoami, code, buf);
   exit(MR_DBMS_ERR);
 }

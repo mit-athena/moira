@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2009-01-05 22:25:10 zacheiss Exp $
+# $Id: Makefile.in,v 1.10 2009-06-01 21:04:56 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -9,6 +9,7 @@ AFS_CPPFLAGS=@AFS_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -27,28 +28,29 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-SYNC_OBJS=sync.o ptutils.o utils.o ubik.o
-UTIL_OBJS=pt_util.o ptutils.o utils.o ubik.o vis.o
+SYNC_OBJS=sync.lo ptutils.lo utils.lo ubik.lo
+UTIL_OBJS=pt_util.lo ptutils.lo utils.lo ubik.lo vis.lo
 
 CFILES=sync.c
 
 TARGET=afssync pt_util
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(SYNC_OBJS) $(UTIL_OBJS) $(CFILES) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(SYNC_OBJS) $(UTIL_OBJS) $(CFILES) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -56,12 +58,12 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) afssync $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) pt_util $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) afssync $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) pt_util $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
 
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)
 
 pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(LIBS)

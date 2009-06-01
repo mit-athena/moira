@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.23 2009-05-28 18:38:39 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.24 2009-06-01 21:05:00 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -740,7 +740,7 @@ int main(int argc, char **argv)
 
       if ((rc) || (ldap_handle == NULL))
 	{
-  	  critical_alert("incremental",
+  	  critical_alert(whoami, "incremental",
 			 "ldap.incr cannot connect to any server in "
 			 "domain %s", DomainNames[k]);
 	  continue;
@@ -809,7 +809,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   
   if (rc = moira_connect())
     {
-      critical_alert("Ldap incremental",
+      critical_alert(whoami, "Ldap incremental",
 		     "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
@@ -901,7 +901,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (rc = moira_connect())
     {
-      critical_alert("Ldap incremental", "Error contacting Moira server : %s",
+      critical_alert(whoami, "Ldap incremental", "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
     }
@@ -1135,7 +1135,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("Ldap incremental",
+          critical_alert(whoami, "Ldap incremental",
                          "Error contacting Moira server : %s",
                          error_message(rc));
           return;
@@ -1361,7 +1361,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (rc = moira_connect())
         {
-          critical_alert("Ldap incremental",
+          critical_alert(whoami, "Ldap incremental",
                          "Error contacting Moira server : %s",
                          error_message(rc));
           return;
@@ -1469,7 +1469,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	}
 
       if (rc = moira_connect()) {
-	critical_alert("Ldap incremental",
+	critical_alert(whoami, "Ldap incremental",
 		       "Error contacting Moira server : %s",
 		       error_message(rc));              
 	return;
@@ -1558,7 +1558,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         {
           if (rc = moira_connect())
             {
-              critical_alert("Ldap incremental", 
+              critical_alert(whoami, "Ldap incremental", 
                              "Error connection to Moira : %s",
                              error_message(rc));
               return;
@@ -1634,7 +1634,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     }
 
   if (rc = moira_connect()) {
-    critical_alert("Ldap incremental",
+    critical_alert(whoami, "Ldap incremental",
 		   "Error contacting Moira server : %s",
 		   error_message(rc));              
     return;
@@ -1729,7 +1729,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("Ldap incremental", 
+          critical_alert(whoami, "Ldap incremental", 
                          "Error connection to Moira : %s",
                          error_message(rc));
           return;
@@ -2236,7 +2236,7 @@ int check_winad(void)
     {
       if (i > 30)
         {
-          critical_alert("Ldap incremental",
+          critical_alert(whoami, "Ldap incremental",
                          "Ldap incremental failed (%s exists): %s",
                          STOP_FILE, tbl_buf);
           return(1);
@@ -4236,7 +4236,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("Ldap incremental", 
+	  critical_alert(whoami, "Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -4493,7 +4493,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("Ldap incremental", 
+	  critical_alert(whoami, "Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -5281,7 +5281,7 @@ int user_create(int ac, char **av, void *ptr)
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("Ldap incremental", 
+	  critical_alert(whoami, "Ldap incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -8193,7 +8193,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     {
       if (rc = moira_connect())
 	{
-          critical_alert("Ldap incremental",
+          critical_alert(whoami, "Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -8264,7 +8264,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     {
       if (rc = moira_connect())
 	{
-          critical_alert("Ldap incremental",
+          critical_alert(whoami, "Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -8786,7 +8786,7 @@ int ReadDomainList()
 
   if (Count == 0)
     {
-      critical_alert("incremental", "%s", "ldap.incr cannot run due to a "
+      critical_alert(whoami, "incremental", "%s", "ldap.incr cannot run due to a "
 		     "configuration error in ldap.cfg");
       return(1);
     }

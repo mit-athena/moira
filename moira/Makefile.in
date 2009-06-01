@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2009-01-05 22:25:07 zacheiss Exp $
+# $Id: Makefile.in,v 1.13 2009-06-01 21:04:55 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -11,6 +11,7 @@ bindir=@bindir@
 sbindir=@sbindir@
 mandir=@mandir@
 mrbindir=@mrbindir@
+libdir=@libdir@
 
 CLIENTDIRS=include lib clients update man @WEBMOIRA_SUBDIRS@
 SVRDIRS=db server backup dbck dcm gen regtape incremental @AFS_SYNCDIR@ @RSAREF_SUBDIRS@
@@ -35,11 +36,11 @@ depend:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 install:
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(DESTDIR)$(mandir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(DESTDIR)$(mandir) $(DESTDIR)$(libdir)
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 svrinstall:
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mrbindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mrbindir) $(DESTDIR)$(libdir)
 	@for d in $(SVRDIRS); do (echo "### Making install in $$d"; cd $$d; $(MAKE) install) || exit 1; done
 
 world: depend all

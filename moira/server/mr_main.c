@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.55 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id: mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $
  *
  * Moira server process.
  *
@@ -33,7 +33,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.55 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $");
 
 client *cur_client;
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 
       if (child_exited_abnormally)
 	{
-	  critical_alert("moirad", "%d: child exits with signal %d status %d",
+	  critical_alert(whoami, "moirad", "%d: child exits with signal %d status %d",
 			 child_pid, child_signal, child_status);
 	  child_exited_abnormally = 0;
 	}

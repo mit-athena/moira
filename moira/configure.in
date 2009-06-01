@@ -47,12 +47,14 @@ AC_DEFUN(MR_LIBS, [MR_EXTEND(LIBPATH, -L$1)])
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 
 if test "$athena" = true; then
     enable_athena=yes
     prefix=/afs/.athena.mit.edu/system/moira
     bindir=$prefix/arch/$ATHENA_SYS/bin
+    libdir=$prefix/arch/$ATHENA_SYS/lib
     sbindir=$bindir
     MR_INCLUDE(/usr/athena/include)
     MR_LIBS(/usr/athena/lib)
@@ -465,7 +467,7 @@ fi
 LIBS="-lmoira $KLIBS"
 AC_SUBST(KLIBS)
 
-MR_LIBDEP='$(BUILDTOP)/lib/libmoira.a'
+MR_LIBDEP='$(BUILDTOP)/lib/libmoira.la'
 AC_SUBST(MR_LIBDEP)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \

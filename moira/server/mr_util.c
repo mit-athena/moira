@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.33 2004-02-15 01:54:58 zacheiss Exp $
+/* $Id: mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.33 2004-02-15 01:54:58 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $");
 
 extern char *whoami;
 
@@ -152,7 +152,7 @@ void *xmalloc(size_t bytes)
   if (buf)
     return buf;
 
-  critical_alert("moirad", "Out of memory");
+  critical_alert(whoami, "moirad", "Out of memory");
   exit(1);
 }
 
@@ -163,7 +163,7 @@ void *xrealloc(void *ptr, size_t bytes)
   if (buf)
     return buf;
 
-  critical_alert("moirad", "Out of memory");
+  critical_alert(whoami, "moirad", "Out of memory");
   exit(1);
 }
 
@@ -174,6 +174,6 @@ char *xstrdup(char *str)
   if (buf)
     return buf;
 
-  critical_alert("moirad", "Out of memory");
+  critical_alert(whoami, "moirad", "Out of memory");
   exit(1);
 }

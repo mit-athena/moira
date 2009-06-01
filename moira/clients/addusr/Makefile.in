@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2009-01-05 22:25:14 zacheiss Exp $
+# $Id: Makefile.in,v 1.8 2009-06-01 21:04:57 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 LIBS=../lib/libmrclient.a @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -17,22 +18,25 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-OBJS=addusr.o
+OBJS=addusr.lo
 
 TARGET=addusr
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: depend $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -40,7 +44,7 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) -m 755 addusr $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) -m 755 addusr $(DESTDIR)$(bindir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

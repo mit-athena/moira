@@ -1,4 +1,4 @@
-/* $Id: startmoira.c,v 1.19 1998-02-05 22:51:55 danw Exp $
+/* $Id: startmoira.c,v 1.20 2009-06-01 21:05:02 zacheiss Exp $
  *
  * This program starts the moira server in a "clean" environment.
  * and then waits for it to exit.
@@ -22,7 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.19 1998-02-05 22:51:55 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.20 2009-06-01 21:05:02 zacheiss Exp $");
 
 #define PROG	"moirad"
 
@@ -44,7 +44,7 @@ void cleanup(void)
 	  if (WEXITSTATUS(stat))
 	    {
 	      sprintf(buf, "exited with code %d\n", WEXITSTATUS(stat));
-	      critical_alert("startmoira", "%s", buf);
+	      critical_alert(whoami, "startmoira", "%s", buf);
 	    }
 	}
       if (WIFSIGNALED(stat))
@@ -52,7 +52,7 @@ void cleanup(void)
 	  sprintf(buf, "exited on signal %d%s\n", WTERMSIG(stat),
 		  (WCOREDUMP(stat) ? "; Core dumped" : ""));
 	  if (WCOREDUMP(stat))
-	    critical_alert("startmoira", "%s", buf);
+	    critical_alert(whoami, "startmoira", "%s", buf);
 	}
       write(rdpipe[1], buf, strlen(buf));
       close(rdpipe[1]);

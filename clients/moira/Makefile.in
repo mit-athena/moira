@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.10 2009-01-05 22:25:24 zacheiss Exp $
+# $Id: Makefile.in,v 1.11 2009-06-01 21:04:58 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 LIBS=../lib/libmrclient.a @CURSES_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -17,26 +18,29 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-MOBJS=	acl.o attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
-	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
-	misc.o zephyr.o
-NOBJS=	namespace.o globals.o lists.o menu.o pobox.o user.o utils.o misc.o
+MOBJS=	acl.lo attach.lo cluster.lo delete.lo globals.lo lists.lo main.lo menu.lo \
+	menus.lo nfs.lo pobox.lo quota.lo user.lo utils.lo dcmmaint.lo printer.lo \
+	misc.lo zephyr.lo
+NOBJS=	namespace.lo globals.lo lists.lo menu.lo pobox.lo user.lo utils.lo misc.lo
 OBJS=	${MOBJS} ${NOBJS}
 
 TARGET=moira namespace
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -44,8 +48,8 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) namespace $(DESTDIR)$(bindir)
-	$(INSTALL_PROGRAM) moira $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) namespace $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) moira $(DESTDIR)$(bindir)
 	rm -f $(DESTDIR)$(bindir)/listmaint
 	ln -s moira $(DESTDIR)$(bindir)/listmaint
 	rm -f $(DESTDIR)$(bindir)/dcmmaint
@@ -54,7 +58,7 @@ install: all
 	ln -s moira $(DESTDIR)$(bindir)/usermaint
 
 moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
 
 namespace: $(NOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

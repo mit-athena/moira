@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2009-01-05 22:25:12 zacheiss Exp $
+# $Id: Makefile.in,v 1.10 2009-06-01 21:04:57 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=-I$(srcdir) $(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -22,29 +23,30 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-BOBJS=dump_db.o bkup1.o bkup.o dumprest.o 
-ROBJS=rest_db.o rest1.o rest.o dumprest.o
+BOBJS=dump_db.lo bkup1.lo bkup.lo dumprest.lo 
+ROBJS=rest_db.lo rest1.lo rest.lo dumprest.lo
 
 CFILES=dump_db.c rest_db.c bkup.c bkup1.c rest.c rest1.c dumprest.c
 GENFILES=bkup.pc bkup1.pc bkup.h rest.pc rest1.pc rest.h
 
 TARGET=mrbackup mrrestore
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(BOBJS) $(ROBJS) $(CFILES) $(GENFILES) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(BOBJS) $(ROBJS) $(CFILES) $(GENFILES) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -52,15 +54,15 @@ cleandir distclean: clean
 depend: $(GENFILES) $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) mrbackup $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) mrrestore $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) $(srcdir)/report.pl $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mrbackup $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mrrestore $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(srcdir)/report.pl $(DESTDIR)$(mrbindir)
 
 mrbackup: $(BOBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)
 
 mrrestore: $(ROBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(ROBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(ROBJS) $(LIBS)
 
 bkup.pc bkup1.pc bkup.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2bkup.awk
 	awk -f $(srcdir)/db2bkup.awk < $(SRCTOP)/db/schema.sql > bkup.pc

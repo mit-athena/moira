@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $
+/* $Id: mr_sauth.c,v 1.33 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.32 2007-05-08 16:25:28 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.33 2009-05-04 20:49:12 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
@@ -28,6 +28,7 @@ extern krb5_context context;
 static int set_client(client *cl, char *kname,
 		      char *name, char *inst, char *realm);
 
+#ifdef HAVE_KRB4
 typedef struct _replay_cache {
   KTEXT_ST auth;
   time_t expires;
@@ -35,6 +36,7 @@ typedef struct _replay_cache {
 } replay_cache;
 
 replay_cache *rcache = NULL;
+#endif
 
 /*
  * Handle a MOIRA_AUTH RPC request.
@@ -46,6 +48,7 @@ replay_cache *rcache = NULL;
 
 void do_auth(client *cl)
 {
+#ifdef HAVE_KRB4
   KTEXT_ST auth;
   AUTH_DAT ad;
   int status;
@@ -123,6 +126,9 @@ void do_auth(client *cl)
     client_reply(cl, status);
   else
     client_reply(cl, MR_USER_AUTH);
+#else
+  client_reply(cl, MR_NO_KRB4);
+#endif
 }
 
 void do_proxy(client *cl)
@@ -137,7 +143,7 @@ void do_proxy(client *cl)
       return;
     }
 
-  if (kname_parse(name, inst, realm, cl->req.mr_argv[0]) != KSUCCESS)
+  if (mr_kname_parse(name, inst, realm, cl->req.mr_argv[0]) != 0)
     {
       com_err(whoami, KE_KNAME_FMT, "while parsing proxy name %s",
 	      cl->req.mr_argv);

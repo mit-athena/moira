@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-DEB_AUTO_UPDATE_AUTOCONF=2.59
-
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 include /usr/share/cdbs/1/rules/patchsys-quilt.mk
@@ -13,8 +11,9 @@ else
     DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4
 endif
 
-DEB_CONFIGURE_EXTRA_FLAGS += --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs
+DEB_CONFIGURE_EXTRA_FLAGS += --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath
 DEB_DH_INSTALL_SOURCEDIR = $(DEB_DESTDIR)
+DEB_DH_STRIP_ARGS += --dbg-package=debathena-libmoira0
 
 common-install-impl::
 	mv $(DEB_DESTDIR)/usr/bin/chfn $(DEB_DESTDIR)/usr/bin/chfn.moira
@@ -23,9 +22,6 @@ common-install-impl::
 		$(DEB_DESTDIR)/usr/share/man/man1/chsh.moira.1
 	mv $(DEB_DESTDIR)/usr/share/man/man1/chfn.1 \
 		$(DEB_DESTDIR)/usr/share/man/man1/chfn.moira.1
-	dh_install -pdebathena-libmoira-dev include/moira.h lib/mr_et.h \
-		lib/krb_et.h lib/ureg_err.h /usr/include/moira
-	dh_install -pdebathena-libmoira-dev lib/libmoira.a /usr/lib
 
 clean::
 	rm -f util/rsaref/Makefile

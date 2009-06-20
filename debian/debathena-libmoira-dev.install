@@ -1,1 +1,4 @@
 usr/share/man/man3/*
+usr/lib/libmoira.so
+usr/lib/libmoira.la
+usr/lib/libmoira.a

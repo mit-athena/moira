@@ -1,4 +1,4 @@
-/* $Id: student.pc,v 1.5 2001-06-13 05:40:08 zacheiss Exp $
+/* $Id: student.pc,v 1.6 2009-06-17 15:43:06 zacheiss Exp $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/student.pc,v 1.5 2001-06-13 05:40:08 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/student.pc,v 1.6 2009-06-17 15:43:06 zacheiss Exp $");
 
 /* File format is:
 
@@ -180,7 +180,7 @@ struct entry *get_next_entry(FILE *in)
       gettimeofday(&tv, NULL);
       tm = localtime(&tv.tv_sec);
       nyear = tm->tm_year;
-      if (tm->tm_mon > 5)
+      if (tm->tm_mon >= 5)
 	nyear++;
     }
 

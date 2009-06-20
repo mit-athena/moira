@@ -49,7 +49,9 @@ Abstract:
 #include "port-sockets.h"
 #endif
 #include <krb5.h>
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 #include <ldap.h>
 #ifdef _WIN32
 #include <wshelper.h>
@@ -99,7 +101,7 @@ extern krb5_error_code decode_krb5_error
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.1 2009-02-25 22:29:51 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c,v 1.2 2009-05-04 20:49:11 zacheiss Exp $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 

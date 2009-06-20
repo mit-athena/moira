@@ -1,4 +1,4 @@
-/* $Id: client.c,v 1.27 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: client.c,v 1.28 2009-05-04 20:49:13 zacheiss Exp $
  *
  * This code handles the actual distribution of data files
  * to servers in the Moira server-update program.
@@ -17,13 +17,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <des.h>
 #include <krb.h>
+#endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.27 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.28 2009-05-04 20:49:13 zacheiss Exp $");
 
+#ifdef HAVE_KRB4
 extern des_cblock session;
+#endif
 extern char *whoami;
 extern krb5_context context;
 
@@ -71,6 +75,7 @@ int mr_send_krb5_auth(int conn, char *host_name)
 
 int mr_send_auth(int conn, char *host_name)
 {
+#ifdef HAVE_KRB4
   KTEXT_ST ticket_st;
   int code, auth_version = 2;
   long response;
@@ -129,6 +134,9 @@ int mr_send_auth(int conn, char *host_name)
     }
 
   return MR_SUCCESS;
+#else
+  return MR_NO_KRB4;
+#endif
 }
 
 int mr_execute(int conn, char *path)

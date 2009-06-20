@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2009-02-25 22:29:50 zacheiss Exp $
+# $Id: Makefile.in,v 1.2 2009-06-01 21:05:00 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -9,6 +9,7 @@ LDAP_CPPFLAGS=@LDAP_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(LDAP_CPPFLAGS) $(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 LDAP_LIBS=@LDAP_LIBS@
 LIBS=@LIBS@
@@ -19,25 +20,26 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 mrbindir=@mrbindir@
 
-WINAD_OBJS=winad.o ldap_adgssapi_bind.o krb5_utils.o setpw.o
+WINAD_OBJS=winad.lo ldap_adgssapi_bind.lo krb5_utils.lo setpw.lo
 
 TARGET=ldap.incr
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(WINAD_OBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(WINAD_OBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -45,8 +47,8 @@ cleandir distclean: clean
 depend:
 
 install:
-	$(INSTALL_PROGRAM) ldap.incr $(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) ldap.incr $(mrbindir)
 
 ldap.incr: $(WINAD_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber \
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber \
 	-lgssapi_krb5 $(LIBS)

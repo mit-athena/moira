@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.3 2006-08-22 17:36:25 zacheiss Exp $
+/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.5 2009-06-01 21:05:00 zacheiss Exp $
  *
  * Do AFS incremental updates
  *
@@ -21,7 +21,10 @@
 #include <unistd.h>
 
 #include <com_err.h>
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
+#include <krb5.h>
 
 #include <afs/param.h>
 #include <afs/cellconfig.h>
@@ -173,7 +176,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
       code = pr_try(pr_ChangeEntry, before[U_NAME], after[U_NAME], auid, "");
       if (code)
 	{
-	  critical_alert("incremental",
+	  critical_alert(whoami, "incremental",
 			 "Couldn't change user %s (id %d) to %s (id %d): %s",
 			 before[U_NAME], buid, after[U_NAME], auid,
 			 error_message(code));
@@ -188,7 +191,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
       code = pr_try(pr_DeleteByID, buid);
       if (code && code != PRNOENT)
 	{
-	  critical_alert("incremental", "Couldn't delete user %s (id %d): %s",
+	  critical_alert(whoami, "incremental", "Couldn't delete user %s (id %d): %s",
 			 before[U_NAME], buid, error_message(code));
 	}
       return;
@@ -213,7 +216,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
 	}
       if (code)
 	{
-	  critical_alert("incremental", "Couldn't create user %s (id %d): %s",
+	  critical_alert(whoami, "incremental", "Couldn't create user %s (id %d): %s",
 			 after[U_NAME], auid, error_message(code));
 	  return;
 	}
@@ -224,7 +227,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
 	  code = moira_connect();
 	  if (code)
 	    {
-	      critical_alert("incremental", "Error contacting Moira server "
+	      critical_alert(whoami, "incremental", "Error contacting Moira server "
 			     "to retrieve grouplist of user %s: %s",
 			     after[U_NAME], error_message(code));
 	      return;
@@ -235,7 +238,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
 			  after[U_NAME]);
 	  if (code && code != MR_NO_MATCH)
 	    {
-	      critical_alert("incremental",
+	      critical_alert(whoami, "incremental",
 			     "Couldn't retrieve membership of user %s: %s",
 			     after[U_NAME], error_message(code));
 	    }
@@ -285,7 +288,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 	  code = pr_try(pr_ChangeEntry, g1, g2, -agid, "");
 	  if (code)
 	    {
-	      critical_alert("incremental", "Couldn't change group %s (id %d) "
+	      critical_alert(whoami, "incremental", "Couldn't change group %s (id %d) "
 			     "to %s (id %d): %s", before[L_NAME], -bgid,
 			     after[L_NAME], -agid, error_message(code));
 	    }
@@ -299,7 +302,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 			PRIVATE_SHIFT, 0 /*ngroups*/, 0 /*nusers*/);
 	  if (code)
 	    {
-	      critical_alert("incremental",
+	      critical_alert(whoami, "incremental",
 			     "Couldn't set flags of group %s: %s",
 			     after[L_NAME], error_message(code));
 	    }
@@ -312,7 +315,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
       code = pr_try(pr_DeleteByID, -bgid);
       if (code && code != PRNOENT)
 	{
-	  critical_alert("incremental",
+	  critical_alert(whoami, "incremental",
 			 "Couldn't delete group %s (id %d): %s",
 			 before[L_NAME], -bgid, error_message(code));
 	}
@@ -336,7 +339,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 	}
       if (code)
 	{
-	  critical_alert("incremental", "Couldn't create group %s (id %d): %s",
+	  critical_alert(whoami, "incremental", "Couldn't create group %s (id %d): %s",
 			 after[L_NAME], id, error_message(code));
 	  return;
 	}
@@ -347,7 +350,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 			PRIVATE_SHIFT, 0 /*ngroups*/, 0 /*nusers*/);
 	  if (code)
 	    {
-	      critical_alert("incremental",
+	      critical_alert(whoami, "incremental",
 			     "Couldn't set flags of group %s: %s",
 			     after[L_NAME], error_message(code));
 	    }
@@ -360,7 +363,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
       code = moira_connect();
       if (code)
 	{
-	  critical_alert("incremental",
+	  critical_alert(whoami, "incremental",
 			 "Error contacting Moira server to resolve %s: %s",
 			 after[L_NAME], error_message(code));
 	  return;
@@ -370,7 +373,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 		      add_list_members, after[L_NAME]);
       if (code)
 	{
-	  critical_alert("incremental",
+	  critical_alert(whoami, "incremental",
 			 "Couldn't retrieve full membership of list %s: %s",
 			 after[L_NAME], error_message(code));
 	}
@@ -449,7 +452,7 @@ void do_filesys(char **before, int beforec, char **after, int afterc)
   if (afterc < FS_CREATE)
     {
       if (btype && bcreate)
-	critical_alert("incremental", "Cannot delete AFS filesystem %s: "
+	critical_alert(whoami, "incremental", "Cannot delete AFS filesystem %s: "
 		       "Operation not supported", before[FS_NAME]);
       return;
     }
@@ -475,7 +478,7 @@ void do_filesys(char **before, int beforec, char **after, int afterc)
   if (strcmp(before[FS_OWNER], after[FS_OWNER]) ||
       strcmp(before[FS_OWNERS], after[FS_OWNERS]))
     {
-      critical_alert("incremental",
+      critical_alert(whoami, "incremental",
 		     "Cannot change ownership of filesystem %s: Operation not yet supported",
 		     after[FS_NAME]);
     }
@@ -522,7 +525,7 @@ void run_cmd(char *cmd)
 	success++;
     }
   if (!success)
-    critical_alert("incremental", "failed command: %s", cmd);
+    critical_alert(whoami, "incremental", "failed command: %s", cmd);
 }
 
 
@@ -552,14 +555,24 @@ void edit_group(int op, char *group, char *type, char *member)
   char *p = 0;
   char buf[PR_MAXNAMELEN];
   int code, ustate;
-  static char local_realm[REALM_SZ+1] = "";
+  static char *local_realm = NULL;
   struct member *m;
+  krb5_context context = NULL;
 
   /* The following KERBEROS code allows for the use of entities
    * user@foreign_cell.
    */
-  if (!local_realm[0])
-    krb_get_lrealm(local_realm, 1);
+  if (!local_realm)
+    {
+      code = krb5_init_context(&context);
+      if (code)
+	goto out;
+
+      code = krb5_get_default_realm(context, &local_realm);
+      if (code)
+	goto out;
+    }
+
   if (!strcmp(type, "KERBEROS"))
     {
       p = strchr(member, '@');
@@ -578,7 +591,7 @@ void edit_group(int op, char *group, char *type, char *member)
       m = malloc(sizeof(struct member));
       if (!m)
 	{
-	  critical_alert("incremental", "Out of memory");
+	  critical_alert(whoami, "incremental", "Out of memory");
 	  exit(1);
 	}
       m->op = op;
@@ -616,7 +629,7 @@ void edit_group(int op, char *group, char *type, char *member)
 	    }
 	  if (code)
 	    {
-	      critical_alert("incremental", "Error contacting Moira server "
+	      critical_alert(whoami, "incremental", "Error contacting Moira server "
 			     "to lookup user %s: %s", member,
 			     error_message(code));
 	    }
@@ -632,7 +645,13 @@ void edit_group(int op, char *group, char *type, char *member)
 	  code = PRNOENT;
 	}
 
-      critical_alert("incremental", "Couldn't %s %s %s %s: %s",
+    out:
+      if (context)
+	krb5_free_context(context);
+      if (local_realm)
+	free(local_realm);
+
+      critical_alert(whoami, "incremental", "Couldn't %s %s %s %s: %s",
 		     op ? "add" : "remove", member,
 		     op ? "to" : "from", buf,
 		     error_message(code));
@@ -660,7 +679,7 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
     code = pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
   if (code)
     {
-      critical_alert("incremental", "Couldn't initialize libprot: %s",
+      critical_alert(whoami, "incremental", "Couldn't initialize libprot: %s",
 		     error_message(code));
       return code;
     }
@@ -685,7 +704,7 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
 	code = pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
       if (code)
 	{
-	  critical_alert("incremental", "Couldn't re-initialize libprot: %s",
+	  critical_alert(whoami, "incremental", "Couldn't re-initialize libprot: %s",
 			 error_message(code));
 	  initd = 0;				/* we lost */
 	  break;
@@ -703,7 +722,7 @@ void check_afs(void)
     {
       if (i > 30)
 	{
-	  critical_alert("incremental",
+	  critical_alert(whoami, "incremental",
 			 "AFS incremental failed (%s exists): %s",
 			 STOP_FILE, tbl_buf);
 	  exit(1);

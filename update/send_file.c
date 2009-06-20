@@ -1,4 +1,4 @@
-/* $Id: send_file.c,v 1.16 2001-09-04 19:46:21 zacheiss Exp $
+/* $Id: send_file.c,v 1.17 2009-05-04 20:49:13 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -17,12 +17,16 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_KRB4
 #include <des.h>
+#endif
 #include <update.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.16 2001-09-04 19:46:21 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.17 2009-05-04 20:49:13 zacheiss Exp $");
 
+#ifdef HAVE_KRB4
 extern des_cblock session;
+#endif
 
 /*
  * syntax:
@@ -47,8 +51,10 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
   char data[UPDATE_BUFSIZ], enc[UPDATE_BUFSIZ];
   long response;
   struct stat statb;
+#ifdef HAVE_KRB4
   des_key_schedule sched;
   des_cblock ivec;
+#endif
 
   /* send file over */
   fd = open(pathname, O_RDONLY, 0);
@@ -105,8 +111,15 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 
   if (encrypt)
     {
+#ifdef HAVE_KRB4
       des_key_sched(session, sched);
       memmove(ivec, session, sizeof(ivec));
+#else
+      /* The session key only gets stored if auth happens in krb4 to
+         begin with. If you don't have krb4, you can't possibly be
+         coming up with a valid session key. */
+      return MR_NO_KRB4;
+#endif
     }
 
   while (n_to_send > 0)
@@ -120,6 +133,7 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 	}
       if (encrypt)
 	{
+#ifdef HAVE_KRB4
 	  memset(data + n, 0, sizeof(data) -n);
 	  des_pcbc_encrypt(data, enc, (n + 7) & ~7, sched, ivec, 0);
 	  /* save vector to continue chaining */
@@ -128,6 +142,7 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 	  /* round up to multiple of 8 */
 	  n = (n + 7) & ~7;
 	  code = send_string(conn, enc, n);
+#endif
 	}
       else
 	code = send_string(conn, data, n);

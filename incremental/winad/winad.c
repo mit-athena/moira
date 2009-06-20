@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.59 2009-04-05 18:55:09 zacheiss Exp $
+/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.61 2009-06-01 21:05:01 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -703,7 +703,7 @@ int main(int argc, char **argv)
 
       if ((rc) || (ldap_handle == NULL))
 	{
-  	  critical_alert("incremental",
+  	  critical_alert(whoami, "incremental",
 			 "winad.incr cannot connect to any server in "
 			 "domain %s", DomainNames[k]);
 	  continue;
@@ -771,7 +771,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   
   if (rc = moira_connect())
     {
-      critical_alert("AD incremental",
+      critical_alert(whoami, "AD incremental",
 		     "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
@@ -863,7 +863,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (rc = moira_connect())
     {
-      critical_alert("AD incremental", "Error contacting Moira server : %s",
+      critical_alert(whoami, "AD incremental", "Error contacting Moira server : %s",
 		     error_message(rc));
       return;
     }
@@ -1097,8 +1097,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental",
-                         "Error contacting Moira server : %s",
+          critical_alert(whoami, "AD incremental",
+                         "Error contactng Moira server : %s",
                          error_message(rc));
           return;
         }
@@ -1323,7 +1323,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental",
+          critical_alert(whoami, "AD incremental",
                          "Error contacting Moira server : %s",
                          error_message(rc));
           return;
@@ -1431,7 +1431,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	{
 	  if (rc = moira_connect())
 	    {
-	      critical_alert("AD incremental",
+	      critical_alert(whoami, "AD incremental",
 			     "Error contacting Moira server : %s",
 			     error_message(rc));
 	      return;
@@ -1511,7 +1511,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         {
           if (rc = moira_connect())
             {
-              critical_alert("AD incremental", 
+              critical_alert(whoami, "AD incremental", 
                              "Error connection to Moira : %s",
                              error_message(rc));
               return;
@@ -1595,7 +1595,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental",
+	  critical_alert(whoami, "AD incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -1685,7 +1685,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (rc = moira_connect())
         {
-          critical_alert("AD incremental", 
+          critical_alert(whoami, "AD incremental", 
                          "Error connection to Moira : %s",
                          error_message(rc));
           return;
@@ -2191,7 +2191,7 @@ int check_winad(void)
     {
       if (i > 30)
         {
-          critical_alert("AD incremental",
+          critical_alert(whoami, "AD incremental",
                          "WINAD incremental failed (%s exists): %s",
                          STOP_FILE, tbl_buf);
           return(1);
@@ -4061,7 +4061,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (rc = moira_connect())
 	{
-	  critical_alert("AD incremental", 
+	  critical_alert(whoami, "AD incremental", 
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
 	  return;
@@ -7731,7 +7731,7 @@ int ReadDomainList()
 
   if (Count == 0)
     {
-      critical_alert("incremental", "%s", "winad.incr cannot run due to a "
+      critical_alert(whoami, "incremental", "%s", "winad.incr cannot run due to a "
 		     "configuration error in winad.cfg");
       return(1);
     }
@@ -7849,6 +7849,7 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
       
       while(gPtr) {
 	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "Recovery")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1999-07-12 16:21:01 danw Exp $
+# $Id: Makefile.in,v 1.3 2009-06-01 21:04:59 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -6,6 +6,7 @@ SHELL=/bin/sh
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 
 CC=@CC@
@@ -13,14 +14,17 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
 
-all: moira_schema.h moira_schema.c moira_schema.o
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: moira_schema.h moira_schema.c moira_schema.lo
 
 clean:
-	rm -f moira_schema.h moira_schema.c moira_schema.o
+	$(LIBTOOL) --mode=clean rm -f moira_schema.h moira_schema.c moira_schema.lo
 
 cleandir distclean: clean
 	rm -f Makefile

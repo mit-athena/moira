@@ -15,7 +15,4 @@ int mr_send_auth(int conn, char *hostname);
 int mr_execute(int conn, char *path);
 void mr_send_quit(int conn);
 
-#include <krb.h>
-int get_mr_update_ticket(char *host, KTEXT ticket);
-
 extern char *whoami;

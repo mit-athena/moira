@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2009-01-05 22:25:50 zacheiss Exp $
+# $Id: Makefile.in,v 1.7 2009-06-01 21:05:02 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -17,6 +18,7 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -24,19 +26,21 @@ bindir=@bindir@
 sbindir=@sbindir@
 sysconfdir=@sysconfdir@
 
-SOBJS=	auth_002.o auth_003.o checksum.o config.o exec_002.o get_file.o \
-	update_server.o xfer_002.o xfer_003.o sendrecv.o
-COBJS=	update_test.o checksum.o client.o send_file.o ticket.o sendrecv.o
+SOBJS=	auth_002.lo auth_003.lo checksum.lo config.lo exec_002.lo get_file.lo \
+	update_server.lo xfer_002.lo xfer_003.lo sendrecv.lo
+COBJS=	update_test.lo checksum.lo client.lo send_file.lo ticket.lo sendrecv.lo
 
 TARGET=update_server update_test
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(SOBJS) $(COBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(SOBJS) $(COBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -44,13 +48,13 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) update_test $(DESTDIR)$(bindir)
-	$(INSTALL_PROGRAM) update_server $(DESTDIR)$(sbindir)
-	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(sysconfdir)/athena
-	$(INSTALL) -m 644 moira.conf $(DESTDIR)$(sysconfdir)/athena/moira.conf
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) update_test $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) update_server $(DESTDIR)$(sbindir)
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)/etc/athena
+	$(INSTALL) -m 644 moira.conf $(DESTDIR)/etc/athena/moira.conf
 
 update_test: $(COBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)
 
 update_server: $(SOBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(SOBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(SOBJS) $(LIBS)

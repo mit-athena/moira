@@ -1,0 +1,13 @@
+Index: debathena-moira_4.0.0+cvs20090618.bak/lib/kname_unparse.c
+===================================================================
+--- debathena-moira_4.0.0+cvs20090618.bak.orig/lib/kname_unparse.c	2009-06-20 18:09:57.000000000 -0400
++++ debathena-moira_4.0.0+cvs20090618.bak/lib/kname_unparse.c	2009-06-20 18:10:18.000000000 -0400
+@@ -13,7 +13,7 @@
+ 
+ #include <stdio.h>
+ 
+-#ifdef HAVE_KRB5
++#ifdef HAVE_KRB4
+ #include <krb.h>
+ #else
+ #include <mr_krb.h>

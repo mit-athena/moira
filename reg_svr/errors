@@ -89,10 +89,17 @@ User Accounts Office in N42-105A, x3-1325.
 # 20 DONE
 Your account has been registered and will become active later tonight.
 
-You should be able to log in by tomorrow morning using your Athena
+You should be able to log in by tomorrow morning using your Kerberos
 username (%s) and the password you chose.
 
-Welcome to Athena!
+MIT's central email service is in transition.
+
+Please note: To access your email account via a web browser (Firefox, 
+Internet Explorer, Safari), please use:
+
+%s
+
+Welcome to computing at MIT!
 # 21 BAD_PIN
 The PIN you typed was incorrect. Please make sure you typed it correctly.
 

@@ -1,4 +1,4 @@
-/* $Id: auth_003.c,v 1.2 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,10 +15,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#include <mr_krb.h>
+#endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_003.c,v 1.2 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $");
 
 static char service[] = "host";
 static char master[] = "sms";
@@ -44,6 +48,7 @@ void auth_003(int conn, char *str)
   char *p, *first, *data;
   char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
   char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
+  char *lrealm = NULL;
   size_t size;
   long code;
   struct utsname uts;
@@ -143,7 +148,11 @@ void auth_003(int conn, char *str)
     {
       strcpy(aname, master);
       strcpy(ainst, "");
-      if (krb_get_lrealm(arealm, 1))
+      if (!krb5_get_default_realm(context, &lrealm))
+        {
+          strcpy(arealm, lrealm);
+        }
+      else
 	strcpy(arealm, KRB_REALM);
     }
   code = EPERM;
@@ -159,6 +168,8 @@ void auth_003(int conn, char *str)
   have_authorization = 1;
 
  out:
+  if (lrealm)
+    free(lrealm);
   if (client)
     krb5_free_principal(context, client);
   if (server)

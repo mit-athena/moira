@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 2009-01-05 22:25:39 zacheiss Exp $
+# $Id: Makefile.in,v 1.4 2009-06-01 21:05:00 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -9,6 +9,7 @@ AFS_CPPFLAGS=@AFS_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 AFS_LIBS=@AFS_LIBS@
 AFS_DIR=@AFS_DIR@
@@ -20,25 +21,26 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 mrbindir=@mrbindir@
 
-AFS_OBJS=afs.o
+AFS_OBJS=afs.lo
 
 TARGET=afs.incr
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(AFS_OBJS) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(AFS_OBJS) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -46,10 +48,10 @@ cleandir distclean: clean
 depend:
 
 install:
-	$(INSTALL_PROGRAM) afs.incr $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) afs.incr $(DESTDIR)$(mrbindir)
 	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
 
 afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
 	-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit \
 	$(AFS_DIR)/lib/afs/util.a $(LIBS)

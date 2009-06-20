@@ -1,4 +1,4 @@
-/* $Id: acl.pc,v 1.5 2005-12-28 21:38:00 zacheiss Exp $
+/* $Id: acl.pc,v 1.6 2009-05-04 20:49:10 zacheiss Exp $
  *
  * This generates acl files for various servers.
  *
@@ -19,15 +19,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/acl.pc,v 1.5 2005-12-28 21:38:00 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/acl.pc,v 1.6 2009-05-04 20:49:10 zacheiss Exp $");
 
 char *whoami = "acl.gen";
 char *db = "moira/moira";
-char defaultrealm[REALM_SZ];
 
 void dump_access_file(FILE *out, int lid);
 char *merge_access_bits(char *t1, char *t2);

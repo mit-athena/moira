@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.47 2006-08-23 20:07:17 zacheiss Exp $
+/* $Id: mailmaint.c,v 1.48 2009-05-04 20:49:10 zacheiss Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -31,8 +31,6 @@
 #include <unistd.h>
 #endif
 
-#include <krb.h>
-
 #ifdef _WIN32
 #define INPUT_MASK 0xff
 #ifdef getchar
@@ -54,7 +52,7 @@ static void DELETE_A_CHAR(void)
 #define DELETE_A_CHAR() printf("\b \b");
 #endif /* !_WIN32 */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.47 2006-08-23 20:07:17 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.48 2009-05-04 20:49:10 zacheiss Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3

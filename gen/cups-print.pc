@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.7 2008-12-10 20:48:48 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.8 2009-05-04 20:49:10 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -19,16 +19,16 @@
 #include <string.h>
 
 #include <time.h>
+#ifdef HAVE_KRB4
 #include <krb.h>
+#endif
 #include <krb5.h>
 
 #include "util.h"
 
-
-
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.7 2008-12-10 20:48:48 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.8 2009-05-04 20:49:10 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.54 2009-02-18 00:55:00 jweiss Exp $
+# $Id: Makefile.in,v 1.55 2009-06-01 21:04:59 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -23,6 +24,7 @@ RANLIB=@RANLIB@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
@@ -30,9 +32,9 @@ LIB_OBJS=util.o tar.o genacl.o
 LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
-OBJS=	acl.o boot.o confluence.o cups-print.o dhcp.o directory.o events.o \
-	hesiod.o hosts.o lpcaccess.o mailhub.o ndb.o network.o nfs.o pobox.o \
-	postoffice.o print.o warehouse-lists.o winad.o www.o zephyr.o
+OBJS=	acl.lo boot.lo confluence.lo cups-print.lo dhcp.lo directory.lo events.lo \
+	hesiod.lo hosts.lo lpcaccess.lo mailhub.lo ndb.lo network.lo nfs.lo pobox.lo \
+	postoffice.lo print.lo warehouse-lists.lo winad.lo www.lo zephyr.lo
 
 CFILES= acl.c boot.c confluence.c cups-print.c dhcp.c directory.c events.c \
 	hesiod.c hosts.c lpcaccess.c mailhub.c ndb.c network.c nfs.c pobox.c \
@@ -54,18 +56,18 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	winstats.gen winstats.sh www.sh zephyr.sh install_dirs \
 	install_quotas zero_quotas
 
-.SUFFIXES: .pc .gen
+.SUFFIXES: .pc .gen .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(LIB_OBJS) $(OBJS) $(LIB_CFILES) $(CFILES) $(LIB_TARGET) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(LIB_OBJS) $(OBJS) $(LIB_CFILES) $(CFILES) $(LIB_TARGET) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -73,78 +75,78 @@ cleandir distclean: clean
 depend: $(LIB_CFILES) $(CFILES)
 
 install:
-	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
+	@set -x; for p in $(TARGET); do $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
 	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(DESTDIR)$(mrbindir); done
 
 libdcm.a: $(LIB_OBJS)
 	ar cru $@ $(LIB_OBJS)
 	$(RANLIB) $@
 
-hesiod.gen: hesiod.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) hesiod.o libdcm.a $(SQL_LIBS) $(LIBS)
+hesiod.gen: hesiod.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) hesiod.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-hosts.gen: hosts.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) hosts.o libdcm.a $(SQL_LIBS) $(LIBS)
+hosts.gen: hosts.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) hosts.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-nfs.gen: nfs.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) nfs.o libdcm.a $(SQL_LIBS) $(LIBS)
+nfs.gen: nfs.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) nfs.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-dhcp.gen: dhcp.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) dhcp.o libdcm.a $(SQL_LIBS) $(LIBS)
+dhcp.gen: dhcp.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) dhcp.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-directory.gen: directory.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) directory.o libdcm.a $(SQL_LIBS) $(LIBS)
+directory.gen: directory.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) directory.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-events.gen: events.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) events.o libdcm.a $(SQL_LIBS) $(LIBS)
+events.gen: events.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) events.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-confluence.gen: confluence.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) confluence.o libdcm.a $(SQL_LIBS) $(LIBS)
+confluence.gen: confluence.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) confluence.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-ndb.gen: ndb.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) ndb.o libdcm.a $(SQL_LIBS) $(LIBS)
+ndb.gen: ndb.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) ndb.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-mailhub.gen: mailhub.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) mailhub.o libdcm.a $(SQL_LIBS) $(LIBS)
+mailhub.gen: mailhub.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) mailhub.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-pobox.gen: pobox.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) pobox.o libdcm.a $(SQL_LIBS) $(LIBS)
+pobox.gen: pobox.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) pobox.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-network.gen: network.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) network.o libdcm.a $(SQL_LIBS) $(LIBS)
+network.gen: network.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) network.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-warehouse.gen: warehouse.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) warehouse.o libdcm.a $(SQL_LIBS) $(LIBS)
+warehouse.gen: warehouse.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) warehouse.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-print.gen: print.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) print.o libdcm.a $(SQL_LIBS) $(LIBS)
+print.gen: print.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) print.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-printng.gen: printng.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) printng.o libdcm.a $(SQL_LIBS) $(LIBS)
+printng.gen: printng.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) printng.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-boot.gen: boot.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) boot.o libdcm.a $(SQL_LIBS) $(LIBS)
+boot.gen: boot.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) boot.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-acl.gen: acl.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) acl.o libdcm.a $(SQL_LIBS) $(LIBS)
+acl.gen: acl.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) acl.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-zephyr.gen: zephyr.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) zephyr.o libdcm.a $(SQL_LIBS) $(LIBS)
+zephyr.gen: zephyr.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) zephyr.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-postoffice.gen: postoffice.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) postoffice.o libdcm.a $(SQL_LIBS) $(LIBS)
+postoffice.gen: postoffice.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) postoffice.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-www.gen: www.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) www.o libdcm.a $(SQL_LIBS) $(LIBS)
+www.gen: www.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) www.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-winad.gen: winad.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) winad.o libdcm.a $(SQL_LIBS) $(LIBS)
+winad.gen: winad.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) winad.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-lpcaccess.gen: lpcaccess.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) lpcaccess.o libdcm.a $(SQL_LIBS) $(LIBS)
+lpcaccess.gen: lpcaccess.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) lpcaccess.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-warehouse-lists.gen: warehouse-lists.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) warehouse-lists.o libdcm.a $(SQL_LIBS) $(LIBS)
+warehouse-lists.gen: warehouse-lists.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) warehouse-lists.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
-cups-print.gen: cups-print.o libdcm.a $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) cups-print.o libdcm.a $(SQL_LIBS) $(LIBS)
+cups-print.gen: cups-print.lo libdcm.a $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) cups-print.lo libdcm.a $(SQL_LIBS) $(LIBS)

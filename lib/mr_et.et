@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.31 2008-05-16 16:50:33 zacheiss Exp $
+# $Id: mr_et.et,v 1.32 2009-05-04 20:49:12 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -236,5 +236,8 @@ ec      MR_CONTAINER_NO_PARENT,
 
 ec	MR_BAD_MAIL_STRING,
 	"Address refers to nonexistent domain or MIT internal mail server"
+
+ec	MR_NO_KRB4,
+	"Unable to complete operation using Kerberos v4"
 
 	end

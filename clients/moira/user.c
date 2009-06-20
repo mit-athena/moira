@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.74 2009-03-31 19:13:09 zacheiss Exp $
+/* $Id: user.c,v 1.75 2009-05-04 20:49:10 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,9 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-#include <krb.h>
-
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.74 2009-03-31 19:13:09 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.75 2009-05-04 20:49:10 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);

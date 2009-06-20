@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.29 2008-08-29 14:50:07 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.30 2009-06-01 21:05:02 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.29 2008-08-29 14:50:07 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.30 2009-06-01 21:05:02 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -78,7 +78,7 @@ void dbmserr(void)
   sqlglm(err_msg, &bufsize, &msglength);
   err_msg[msglength] = 0;
   com_err(whoami, 0, "SQL error text = %s", err_msg);
-  critical_alert("MOIRA", "Moira server encountered DBMS ERROR %d\n%s",
+  critical_alert(whoami, "MOIRA", "Moira server encountered DBMS ERROR %d\n%s",
 		 dbms_errno, err_msg);
 }
 
@@ -952,7 +952,7 @@ int do_for_all_rows(char *query, int count,
     return mr_errcode;
   if (rowcount == max_row_count)
     {
-      critical_alert("moirad", "attempted query with too many rows");
+      critical_alert(whoami, "moirad", "attempted query with too many rows");
       return MR_NO_MEM;
     }
   else if (rowcount == 0)

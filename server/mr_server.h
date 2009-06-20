@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.67 2008-09-30 18:42:42 zacheiss Exp $
+/* $Id: mr_server.h,v 1.68 2009-05-04 20:49:12 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -14,7 +14,11 @@
 
 #include <stdarg.h>
 
+#ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#include <mr_krb.h>
+#endif
 #include <krb5.h>
 
 enum clstate { CL_ACCEPTING, CL_ACTIVE, CL_CLOSING };
@@ -51,7 +55,7 @@ struct mxentry
   int pref;
 };
 
-extern char krb_realm[REALM_SZ];
+extern char *krb_realm;
 
 /* max length of query argument allowed */
 #define ARGLEN	257

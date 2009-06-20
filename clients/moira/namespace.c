@@ -1,4 +1,4 @@
-/* $Id: namespace.c,v 1.16 2006-08-23 19:02:27 zacheiss Exp $
+/* $Id: namespace.c,v 1.17 2009-05-04 20:49:10 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,9 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <krb.h>
-
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.16 2006-08-23 19:02:27 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.17 2009-05-04 20:49:10 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -176,7 +174,6 @@ int main(int argc, char **argv)
   int status;
   Menu *menu;
   char *motd, **arg;
-  char pname[ANAME_SZ];
   struct sigaction act;
 
   if (!(program_name = strrchr(argv[0], '/')))

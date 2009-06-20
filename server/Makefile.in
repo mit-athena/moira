@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.9 2009-01-05 22:25:48 zacheiss Exp $
+# $Id: Makefile.in,v 2.10 2009-06-01 21:05:02 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -8,6 +8,7 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -23,32 +24,36 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
+mrlibdir=@mrlibdir@
+libdir=@mrlibdir@
 
-SERVER_OBJS=	mr_main.o mr_sauth.o mr_scall.o mr_shutdown.o mr_util.o \
-		qvalidate.o qaccess.o qsetup.o qsupport.o qfollow.o \
-		queries2.o qrtn.o qsubs.o increment.o 
-SCHEMA_OBJS=	../db/moira_schema.o
-START_OBJS=	startmoira.o
+
+SERVER_OBJS=	mr_main.lo mr_sauth.lo mr_scall.lo mr_shutdown.lo mr_util.lo \
+		qvalidate.lo qaccess.lo qsetup.lo qsupport.lo qfollow.lo \
+		queries2.lo qrtn.lo qsubs.lo increment.lo 
+SCHEMA_OBJS=	../db/moira_schema.lo
+START_OBJS=	startmoira.lo
 
 CFILES=		qvalidate.c qaccess.c qsetup.c qsupport.c qfollow.c \
 		qrtn.c increment.c
 
 TARGET=moirad startmoira
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .lo
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(SERVER_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(SERVER_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -56,11 +61,11 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(INSTALL_PROGRAM) moirad $(DESTDIR)$(mrbindir)
-	$(INSTALL_PROGRAM) startmoira $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) moirad $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) startmoira $(DESTDIR)$(mrbindir)
 
 moirad: $(SERVER_OBJS) $(SCHEMA_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(SERVER_OBJS) $(SCHEMA_OBJS) $(SQL_LIBS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SERVER_OBJS) $(SCHEMA_OBJS) $(SQL_LIBS) $(LIBS)
 
 startmoira: $(START_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)

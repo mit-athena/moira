@@ -1,3 +1,10 @@
+debathena-moira (4.0.0+cvs20090621-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot.
+  * Drop krb4less-fix; it was incorporated upstream.
+
+ -- Evan Broder <broder@mit.edu>  Fri, 26 Jun 2009 00:50:42 -0400
+
 debathena-moira (4.0.0+cvs20090618-0debathena1) unstable; urgency=low
 
   * New upstream release

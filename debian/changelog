@@ -2,8 +2,9 @@ debathena-moira (4.0.0+cvs20090621-0debathena1) unstable; urgency=low
 
   * New CVS snapshot.
   * Drop krb4less-fix; it was incorporated upstream.
+  * Universally stop building Moira with krb4 support.
 
- -- Evan Broder <broder@mit.edu>  Fri, 26 Jun 2009 00:50:42 -0400
+ -- Evan Broder <broder@mit.edu>  Fri, 26 Jun 2009 00:51:28 -0400
 
 debathena-moira (4.0.0+cvs20090618-0debathena1) unstable; urgency=low
 

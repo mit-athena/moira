@@ -4,14 +4,7 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 
-KRB5_VERSION=$(shell dpkg-query -W -f '$${Version}\n' libkrb5-dev)
-ifeq (yes,$(shell dpkg --compare-versions '$(KRB5_VERSION)' lt '1.6.dfsg.4~beta1-7' && echo yes))
-    DEB_CONFIGURE_EXTRA_FLAGS += --with-krb4=$(shell krb5-config --prefix krb4)
-else
-    DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4
-endif
-
-DEB_CONFIGURE_EXTRA_FLAGS += --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath
+DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4 --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath
 DEB_DH_INSTALL_SOURCEDIR = $(DEB_DESTDIR)
 DEB_DH_STRIP_ARGS += --dbg-package=debathena-libmoira0
 

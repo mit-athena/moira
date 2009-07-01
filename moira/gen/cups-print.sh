@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.2 2008-10-31 20:46:11 zacheiss Exp $
+# $Id: cups-print.sh,v 1.3 2009-07-01 16:28:43 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -30,8 +30,15 @@ tar xf $TARFILE || exit $MR_TARERR
 /etc/cups/bin/gen-ppd.pl
 
 /etc/init.d/cups restart
+
 if [ $? != 0 ]; then
     exit $MR_MKCRED
+fi
+
+# if Samba-enabled, then restart it too to have it pick up
+# new definitions
+if [ -x /etc/init.d/smb ]; then
+       /etc/init.d/smb restart
 fi
 
 # cleanup

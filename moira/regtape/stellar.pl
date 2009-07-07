@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: stellar.pl,v 1.1 2009-06-30 16:31:13 zacheiss Exp $
+# $Id: stellar.pl,v 1.2 2009-07-07 03:09:30 zacheiss Exp $
 
 $db = "";
 $mrtest = "mrtest";
@@ -155,7 +155,7 @@ sub check_list {
     my ( $name, $owner, $export, $desc ) = @_;
     if (!$lists{$name}) {
         print LOG "Creating $name\n";
-        print MRTEST "qy alis $name 0 0 1 $export $export \"create unique GID\" 0 0 [NONE] LIST $owner NONE NONE \"$desc\"\n";
+        print MRTEST "qy alis $name 1 0 1 1 $export \"create unique GID\" 0 0 [NONE] LIST $owner NONE NONE \"$desc\"\n";
     }
 }
 

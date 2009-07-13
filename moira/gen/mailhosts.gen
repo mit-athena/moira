@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: mailhosts.gen,v 1.6 2009-07-10 20:18:10 zacheiss Exp $
+# $Id: mailhosts.gen,v 1.7 2009-07-13 02:15:32 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -32,10 +32,18 @@ while (($login, $potype, $exchange_id, $imap_id, $pop_id) = $sth->fetchrow_array
     $login =~ tr/a-z/A-Z/;
 
     if ($exchange_id != 0) {
-	($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM machine WHERE " .
-					   "name = 'IMAP.EXCHANGE.MIT.EDU'");
+	$imap_filesystem = lc($login) . ".po";
+	($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM filesys " .
+					   "WHERE label = " . $dbh->quote($imap_filesystem) .
+					   "AND type = 'IMAP'");
 	if (defined($mach_id)) {
 	    $pop_id = $mach_id;
+	} else {
+	    ($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM machine WHERE " .
+					       "name = 'IMAP.EXCHANGE.MIT.EDU'");
+	    if (defined($mach_id)) {
+		$pop_id = $mach_id;
+	    }
 	}
     }
 

@@ -1,8 +1,10 @@
 debathena-moira (4.0.0+cvs20090728-0debathena1) unstable; urgency=low
 
   * New CVS snapshot.
+  * Fix zephyr dependencies to actually pull in Kerberized libraries; drop
+    build-dep on Kerberized library.
 
- -- Evan Broder <broder@mit.edu>  Tue, 28 Jul 2009 13:32:02 -0400
+ -- Evan Broder <broder@mit.edu>  Tue, 28 Jul 2009 13:43:28 -0400
 
 debathena-moira (4.0.0+cvs20090621-0debathena1) unstable; urgency=low
 

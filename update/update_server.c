@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.27 2009-05-04 20:49:13 zacheiss Exp $
+/* $Id: update_server.c,v 1.28 2009-07-28 16:18:53 zacheiss Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -30,7 +30,7 @@
 #endif
 #include "update.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.27 2009-05-04 20:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.28 2009-07-28 16:18:53 zacheiss Exp $");
 
 char *whoami, *hostname;
 
@@ -48,9 +48,7 @@ struct _dt {
   char *str;
   void (*proc)(int, char *);
 } dispatch_table[] = {
-#ifdef HAVE_KRB4
   { "AUTH_002", auth_002 },
-#endif
   { "AUTH_003", auth_003 },
   { "XFER_002", xfer_002 },
   { "XFER_003", xfer_003 },

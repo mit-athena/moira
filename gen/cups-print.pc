@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.8 2009-05-04 20:49:10 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.10 2009-07-21 21:39:13 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.8 2009-05-04 20:49:10 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.10 2009-07-21 21:39:13 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -50,6 +50,7 @@ const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
  CUPS-Accept-Jobs CUPS-Reject-Jobs>";
 const char *canceljob = "<Limit Cancel-Job CUPS-Authenticate-Job>";
 const char *catchall = "<Limit All>";
+const char *phost = "printers.MIT.EDU";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -134,7 +135,7 @@ void do_host(char *host)
 
   /* printers.conf */
   out = tarfile_start(tf, "/etc/cups/printers.conf", 0644, 0, 0,
-		      "root", "lp", now);
+		      "lp", "lp", now);
 
   EXEC SQL DECLARE csr_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
@@ -211,7 +212,7 @@ void do_host(char *host)
 
   /* aliases are in classes.conf */
   out = tarfile_start(tf, "/etc/cups/classes.conf", 0644, 0, 0,
-		      "root", "root", now);
+	          "lp", "lp", now);
   EXEC SQL DECLARE csr_duplexqs CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka, 
@@ -338,13 +339,19 @@ void do_host(char *host)
   fprintf(out, "ServerCertificate /etc/cups/ssl/%s-ipp-crt.pem\n", lhost);
   fprintf(out, "ServerKey /etc/cups/ssl/%s-ipp-key.pem\n", lhost);
   fprintf(out, "ServerName %s\n", lhost);
+  fprintf(out, "ServerAlias %s\n", phost);
   fprintf(out, "Krb5Keytab /etc/krb5-ipp.keytab\n");
-  fprintf(out, "Browsing On\n");
-  fprintf(out, "BrowseProtocols cups\n");
 
   /* The other CUPS servers should be aware of the other hosts'
      queues, so we'll let them browse each other. */
+  fprintf(out, "Include cups.local.conf\n");
+  fprintf(out, "Include cups.locations.conf\n");
+  fprintf(out, "Include cups.policies.conf\n");
+  tarfile_end(tf);
 
+  /* cups.hosts.conf */
+  out = tarfile_start(tf, "/etc/cups/cups.hosts.conf", 0755, 1, 1,
+		      "root", "lp", now);
   EXEC SQL DECLARE csr_cupshosts CURSOR FOR
     SELECT m.name AS cupshosts FROM machine m, printservers ps
     WHERE m.mach_id = ps.mach_id AND ps.kind = 'CUPS';
@@ -362,8 +369,6 @@ void do_host(char *host)
          fprintf(out, "BrowsePoll %s\n", cupshosts);
     }
   EXEC SQL CLOSE csr_cupshosts;
-  fprintf(out, "Include cups.locations.conf\n");
-  fprintf(out, "Include cups.policies.conf\n");
 
   tarfile_end(tf);
 

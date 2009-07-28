@@ -1,0 +1,199 @@
+/* $Id: cups-lpd.pc,v 1.1 2009-07-21 21:39:13 zacheiss Exp $
+ *
+ * This generates printcaps and other files for Athena print servers
+ *
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <time.h>
+#ifdef HAVE_KRB4
+#include <krb.h>
+#endif
+#include <krb5.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-lpd.pc,v 1.1 2009-07-21 21:39:13 zacheiss Exp $");
+
+char *whoami = "cups-lpd-print.gen";
+char *db = "moira/moira";
+
+/* OMG, I hate this, but it's cleaner, I guess? */
+
+void do_host(char *host);
+void sqlerr(void);
+#ifndef MAX
+#define MAX(a, b) ( (a) > (b) ? (a) : (b) )
+#endif
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  init_acls();
+
+  EXEC SQL CONNECT :db;
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+
+  EXEC SQL DECLARE csr_hosts CURSOR FOR
+    SELECT m.name FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-LPD' AND sh.enable = 1;
+  EXEC SQL OPEN csr_hosts;
+  while (1)
+    {
+      EXEC SQL FETCH csr_hosts INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      do_host(name);
+    }
+  EXEC SQL CLOSE csr_hosts;
+
+  exit(MR_SUCCESS);
+}
+
+void printer_user_list(FILE *out, char *type, int id, char *str)
+{
+  struct save_queue *sq;
+  struct imember *m;
+
+  sq = get_acl(type, id, NULL);
+  while (sq_remove_data(sq, &m))
+    {
+      if (m->type == 'U')
+        fprintf(out, "%s %s\n", str, m->name);
+      freeimember(m);
+    }
+  sq_destroy(sq);
+}
+
+
+
+void do_host(char *host)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char rp[PRINTERS_RP_SIZE], name[PRINTERS_NAME_SIZE];
+  char duplexname[PRINTERS_DUPLEXNAME_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char hwtype[PRINTERS_HWTYPE_SIZE], lowerhwtype[PRINTERS_HWTYPE_SIZE];
+  char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE], hostname[MACHINE_NAME_SIZE];
+  char cupshosts[MACHINE_NAME_SIZE], prtype [PRINTERS_TYPE_SIZE];
+  char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
+  char *lhost;
+  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm;
+  EXEC SQL END DECLARE SECTION;
+  TARFILE *tf;
+  FILE *out;
+  char filename[MAXPATHLEN], *duptc;
+  time_t mtime, now = time(NULL);
+
+  lhost = (char *) strdup (host);
+  for (p = lhost; *p; p++)
+     *p = tolower(*p);
+
+  sprintf(filename, "%s/cups-lpd/%s", DCM_DIR, host);
+  tf = tarfile_open(filename);
+
+  /* LPRng printers */
+  out = tarfile_start(tf, "/etc/cups/lprng.printers.txt", 0644, 0, 0,
+		      "root", "lp", now);
+
+  EXEC SQL DECLARE csr_lprng CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.type as prtype
+    FROM printers pr, machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND sh.enable = 1
+    AND pr.rm = m.mach_id ORDER BY pr.name;
+  EXEC SQL OPEN csr_lprng;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lprng INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :prtype;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strcpy(lowerhwtype, hwtype);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+      for (p = name;*p;p++)
+	*p = tolower(*p);
+      for (p = duplexname;*p;p++)
+	*p = tolower(*p);
+
+      fprintf(out, "%s|%s|%s|%s|%s|%s\n", name,duplexname,hostname,location,hwtype,prtype);
+    }
+  EXEC SQL CLOSE csr_lprng;
+  tarfile_end(tf);
+
+  /* CUPS printers */
+  out = tarfile_start(tf, "/etc/cups/cups.printers.txt", 0644, 0, 0,
+		      "root", "lp", now);
+
+  EXEC SQL DECLARE csr_cups CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.type as prtype
+    FROM printers pr, machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1
+    AND pr.rm = m.mach_id ORDER BY pr.name;
+  EXEC SQL OPEN csr_cups;
+  while (1)
+    {
+      EXEC SQL FETCH csr_cups INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :prtype;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strcpy(lowerhwtype, hwtype);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+      for (p = name;*p;p++)
+	*p = tolower(*p);
+      for (p = duplexname;*p;p++)
+	*p = tolower(*p);
+
+      fprintf(out, "%s|%s|%s|%s|%s|%s\n", name,duplexname,hostname,location,hwtype,prtype);
+    }
+  EXEC SQL CLOSE csr_cups;
+  tarfile_end(tf);
+  tarfile_close(tf);
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+}

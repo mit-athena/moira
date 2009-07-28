@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.14 2009-06-01 21:05:01 zacheiss Exp $
+# $Id: Makefile.in,v 1.15 2009-06-30 16:31:13 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -35,7 +35,7 @@ VOTE_OBJS=vote.lo
 CFILES=student.c staff.c common.c vote.c
 
 TARGET=student staff vote
-SCRIPTS=grouper.pl staff.sql student.sql
+SCRIPTS=grouper.pl staff.sql stellar.pl student.sql
 
 .SUFFIXES: .pc .lo
 

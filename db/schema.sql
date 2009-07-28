@@ -144,7 +144,7 @@ create table svc
 
 create table list
 (
-	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(56) 	DEFAULT CHR(0)	NOT NULL,
 	list_id		INTEGER		DEFAULT 0	NOT NULL,
 	active		INTEGER 	DEFAULT 0	NOT NULL,
 	publicflg	INTEGER 	DEFAULT 0	NOT NULL,

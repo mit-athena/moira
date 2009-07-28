@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.30 2009-06-01 21:05:02 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.31 2009-07-06 16:23:15 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.30 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.31 2009-07-06 16:23:15 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -641,16 +641,20 @@ int find_member(char *list_type, int list_id, client *cl)
   if (!strcmp(strtrim(list_type), "KERBEROS") && list_id == -cl->client_id)
     return 1;
 
-  /* see if client is a member of list */
-  flag = 0;
-  users_id = cl->users_id;
-  client_id = -cl->client_id;
-  EXEC SQL SELECT COUNT(member_id) INTO :flag FROM imembers
-    WHERE list_id = :list_id
-    AND ( ( member_type = 'USER' AND member_id = :users_id )
-	  OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
-  if (sqlca.sqlcode == 0)
-    return flag;
+  if (!strcmp(strtrim(list_type), "LIST"))
+    {
+      /* see if client is a member of list */
+      flag = 0;
+      users_id = cl->users_id;
+      client_id = -cl->client_id;
+      EXEC SQL SELECT COUNT(member_id) INTO :flag FROM imembers
+	WHERE list_id = :list_id
+	AND ( ( member_type = 'USER' AND member_id = :users_id )
+	      OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
+      if (sqlca.sqlcode == 0)
+	return flag;
+    }
+
   return 0;
 }
 

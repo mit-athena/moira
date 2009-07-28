@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.3 2009-07-01 16:28:43 zacheiss Exp $
+# $Id: cups-lpd.sh,v 1.1 2009-07-21 21:39:13 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -14,7 +14,7 @@ MR_MKCRED=47836474
 MR_TARERR=47836476
 
 PATH=/bin
-TARFILE=/var/tmp/cups-print.out
+TARFILE=/var/tmp/cups-lpd.out
 CUPSLOCAL=/etc/cups
 
 # Alert if the tar file or other needed files do not exist
@@ -26,19 +26,19 @@ test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 cd /
 tar xf $TARFILE || exit $MR_TARERR
 
-# Now, make a stab at the PPD file.
-/etc/cups/bin/gen-ppd.pl
+/etc/cups/bin/sync_lpd_ldap.pl 2>/dev/null
+/etc/cups/bin/gen-ppd.pl 2>/dev/null
 
 /etc/init.d/cups restart
-
-if [ $? != 0 ]; then
-    exit $MR_MKCRED
-fi
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions
 if [ -x /etc/init.d/smb ]; then
        /etc/init.d/smb restart
+fi
+
+if [ $? != 0 ]; then
+    exit $MR_MKCRED
 fi
 
 # cleanup

@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.24 2009-05-04 20:49:13 zacheiss Exp $
+/* $Id: ticket.c,v 1.25 2009-07-28 16:18:53 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -21,7 +21,7 @@
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.24 2009-05-04 20:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.25 2009-07-28 16:18:53 zacheiss Exp $");
 
 #ifdef HAVE_KRB4
 static char realm[REALM_SZ];
@@ -35,7 +35,7 @@ krb5_context context = NULL;
 static int get_mr_tgt(void);
 #endif
 
-int get_mr_krb5_update_ticket(char *host, krb5_data auth)
+int get_mr_krb5_update_ticket(char *host, krb5_data *auth)
 {
   krb5_auth_context auth_con = NULL;
   krb5_ccache ccache = NULL;
@@ -54,7 +54,7 @@ int get_mr_krb5_update_ticket(char *host, krb5_data auth)
     goto out;
 
   code = krb5_mk_req(context, &auth_con, 0, "host", host, NULL, ccache,
-		     &auth);
+		     auth);
 
  out:
   if (ccache)

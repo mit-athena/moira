@@ -1,4 +1,4 @@
-/* $Id: auth_002.c,v 1.10 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id: auth_002.c,v 1.11 2009-07-28 16:18:52 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -19,7 +19,7 @@
 #include <krb.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.10 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.11 2009-07-28 16:18:52 zacheiss Exp $");
 
 static char service[] = "rcmd";
 static char master[] = "sms";
@@ -132,6 +132,6 @@ auth_failed:
 	  ad.pname, ad.pinst, ad.prealm);
   send_int(conn, code);
 #else
-  return MR_NO_KRB4;
+  send_int(conn, MR_NO_KRB4);
 #endif
 }

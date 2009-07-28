@@ -2,12 +2,13 @@ Source: debathena-moira
 Section: debathena/net
 Priority: extra
 Maintainer: Debathena Project <debathena@mit.edu>
-Build-Depends: @cdbs@, comerr-dev, libkrb5-dev, libhesiod-dev, libzephyr-dev, libzephyr3-krb, libreadline-dev, libncurses-dev
+Build-Depends: @cdbs@, comerr-dev, libkrb5-dev, libhesiod-dev,
+ libzephyr-dev, libreadline-dev, libncurses-dev
 Standards-Version: 3.7.2
 
 Package: debathena-moira-clients
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libzephyr3-krb | libzephyr4-krb5
 Description: Clients for the Moira database
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 
@@ -17,7 +18,8 @@ Description: Clients for the Moira database
 
 Package: debathena-moira-update-server
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libzephyr3-krb |
+ libzephyr4-krb5
 Description: Athena update_server
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 
@@ -40,7 +42,8 @@ Description: The Moira library
 Package: debathena-libmoira0-dbg
 Section: debathena/libdevel
 Architecture: any
-Depends: debathena-libmoira0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: debathena-libmoira0 (= ${binary:Version}), ${shlibs:Depends},
+ ${misc:Depends}
 Description: The Moira library - library with debugging symbols
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 
@@ -53,7 +56,9 @@ Package: debathena-libmoira-dev
 Section: debathena/libdevel
 Architecture: any
 Provides: libmoira-dev
-Depends: debathena-libmoira0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, comerr-dev, libkrb5-dev, libhesiod-dev, libzephyr-dev, libzephyr3-krb
+Depends: debathena-libmoira0 (= ${binary:Version}), ${shlibs:Depends},
+ ${misc:Depends}, comerr-dev, libkrb5-dev, libhesiod-dev,
+ libzephyr-dev, libzephyr3-krb | libzephyr4-krb5
 Description: Development files for Moira library
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 

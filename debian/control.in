@@ -9,6 +9,7 @@ Standards-Version: 3.7.2
 Package: debathena-moira-clients
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libzephyr4-krb5 | libzephyr3-krb
+Conflicts: debathena-moira-update-server (<= 4.0.0+cvs20090728-0debathena1)
 Description: Clients for the Moira database
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 

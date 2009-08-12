@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: dhcp.sh,v 1.3 2001-01-16 18:37:27 zacheiss Exp $
+# $Id: dhcp.sh,v 1.4 2009-08-12 22:03:05 jweiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -13,7 +13,7 @@ MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
 
-PATH=/usr/bin
+PATH=/usr/bin:/bin
 TARFILE=/var/tmp/dhcp.out
 BOOTGEN=/var/boot/dhcpd.conf.print
 BOOTHEAD=/var/boot/dhcpd.conf.head

@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.25 2009-07-28 16:18:53 zacheiss Exp $
+/* $Id: ticket.c,v 1.26 2009-09-08 21:59:26 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -21,7 +21,7 @@
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.25 2009-07-28 16:18:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.26 2009-09-08 21:59:26 zacheiss Exp $");
 
 #ifdef HAVE_KRB4
 static char realm[REALM_SZ];
@@ -31,6 +31,7 @@ des_cblock session;
 #endif
 krb5_context context = NULL;
 
+static int get_mr_krb5_tgt(krb5_context context, krb5_ccache ccache);
 #ifdef HAVE_KRB4
 static int get_mr_tgt(void);
 #endif
@@ -40,6 +41,7 @@ int get_mr_krb5_update_ticket(char *host, krb5_data *auth)
   krb5_auth_context auth_con = NULL;
   krb5_ccache ccache = NULL;
   krb5_error_code code;
+  int pass = 1;
 
   code = krb5_init_context(&context);
   if (code)
@@ -53,14 +55,61 @@ int get_mr_krb5_update_ticket(char *host, krb5_data *auth)
   if (code)
     goto out;
 
+ try_it:
   code = krb5_mk_req(context, &auth_con, 0, "host", host, NULL, ccache,
 		     auth);
+  if (code)
+    {
+      if (pass == 1)
+	{
+	  if ((code = get_mr_krb5_tgt(context, ccache)))
+	    {
+	      com_err(whoami, code, "can't get Kerberos v5 TGT");
+	      return code;
+	    }
+	  pass++;
+	  goto try_it;
+	}
+      com_err(whoami, code, "in krb5_mk_req");
+    }
 
  out:
   if (ccache)
     krb5_cc_close(context, ccache);
   if (auth_con)
     krb5_auth_con_free(context, auth_con);
+  return code;
+}
+
+int get_mr_krb5_tgt(krb5_context context, krb5_ccache ccache)
+{
+  krb5_creds my_creds;
+  krb5_principal me = NULL;
+  krb5_error_code code;
+
+  memset(&my_creds, 0, sizeof(my_creds));
+
+  code = krb5_parse_name(context, master, &me);
+  if (code)
+    goto out;
+  
+  code = krb5_get_init_creds_keytab(context, &my_creds, me, NULL, NULL, NULL, NULL);
+  if (code)
+    goto out;
+  
+  code = krb5_cc_initialize(context, ccache, me);
+  if (code)
+    goto out;
+
+  code = krb5_cc_store_cred(context, ccache, &my_creds);
+  if (code)
+    goto out;
+
+ out:
+  if (me)
+    krb5_free_principal(context, me);
+  krb5_free_cred_contents(context, &my_creds);
+
   return code;
 }
 

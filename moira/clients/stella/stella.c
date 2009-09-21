@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.20 2003-12-20 02:55:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.21 2009-09-21 16:08:19 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -686,10 +686,21 @@ int main(int argc, char **argv)
     args[0] = canonicalize_hostname(strdup(hostname));
     args[1] = args[2] = args[3] = "*";
     status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+
+    /* We might be looking for an alias of a deleted host. */
+    if (status && status == MR_NO_MATCH) {
+      status = wrap_mr_query("get_hostalias", 2, args, store_host_info, argv);
+      if (!status) {
+	args[0] = strdup(argv[1]);
+	status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+      }
+    }
+
     if (status) {
       com_err(whoami, status, "while getting host information");
       exit(1);
     }
+
     if (unformatted_flag)
       show_host_info_unformatted(argv);
     else

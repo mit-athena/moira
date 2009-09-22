@@ -1,8 +1,9 @@
 debathena-moira (4.0.0+cvs20090922-0debathena1) unstable; urgency=low
 
   * New CVS snapshot.
+  * Add patch to fix builds without krb4.
 
- -- Evan Broder <broder@mit.edu>  Tue, 22 Sep 2009 00:15:15 -0400
+ -- Evan Broder <broder@mit.edu>  Tue, 22 Sep 2009 00:35:12 -0400
 
 debathena-moira (4.0.0+cvs20090728-0debathena3) unstable; urgency=low
 

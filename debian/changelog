@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+cvs20090922-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot.
+
+ -- Evan Broder <broder@mit.edu>  Tue, 22 Sep 2009 00:15:15 -0400
+
 debathena-moira (4.0.0+cvs20090728-0debathena3) unstable; urgency=low
 
   * Add a missing conflicts to make upgrades run more smoothly.

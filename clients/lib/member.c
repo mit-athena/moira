@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.6 2009-05-04 20:49:09 zacheiss Exp $
+/* $Id: member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $
  *
  * Shared routines for playing with list membership.
  *
@@ -19,7 +19,7 @@
 
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.6 2009-05-04 20:49:09 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $");
 
 int mrcl_validate_string_member(char *str)
 {
@@ -99,11 +99,11 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
 	}
 
       code = krb5_init_context(&context);
-      if (!code)
+      if (code)
         goto out;
 
       code = krb5_get_default_realm(context, &default_realm);
-      if (!code)
+      if (code)
         goto out;
 
       *ret = malloc(strlen(str) + strlen(default_realm) + 2);

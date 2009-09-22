@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: dhcp.sh,v 1.3 2001-01-16 18:37:27 zacheiss Exp $
+# $Id: dhcp.sh,v 1.5 2009-08-12 22:38:37 jweiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -13,15 +13,12 @@ MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
 
-PATH=/usr/bin
+PATH=/usr/bin:/bin
 TARFILE=/var/tmp/dhcp.out
 BOOTGEN=/var/boot/dhcpd.conf.print
 BOOTHEAD=/var/boot/dhcpd.conf.head
 BOOTFOOT=/var/boot/dhcpd.conf.foot
 BOOTFILE=/var/boot/dhcpd.conf
-LEASEFILE=/var/boot/dhcpd.leases
-PIDFILE=/var/boot/dhcpd.pid
-BINFILE=/var/boot/dhcpd
 PSWDFILE=/var/boot/hp.add
 
 # Alert if the tar file or other needed files do not exist
@@ -43,8 +40,8 @@ done
 cat $BOOTHEAD $BOOTGEN $BOOTFOOT > $BOOTFILE
 
 # kill and rerun dhcpd
-test -f $PIDFILE && kill `cat $PIDFILE`
-test -x $BINFILE && $BINFILE -cf $BOOTFILE -lf $LEASEFILE -pf $PIDFILE 
+/etc/init.d/dhcpd stop
+/etc/init.d/dhcpd start
 
 # cleanup
 test -f $TARFILE && rm -f $TARFILE

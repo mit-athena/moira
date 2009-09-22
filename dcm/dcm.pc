@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.17 2006-08-22 17:36:24 zacheiss Exp $
+/* $Id: dcm.pc,v 1.18 2009-09-08 22:00:20 zacheiss Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.17 2006-08-22 17:36:24 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.18 2009-09-08 22:00:20 zacheiss Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -525,7 +525,9 @@ int dcm_execute(char *service, char *host, char *script)
       return MR_CANT_CONNECT;
     }
 
-  code = mr_send_auth(conn, host);
+  code = mr_send_krb5_auth(conn, host);
+  if (code)
+    code = mr_send_auth(conn, host);
   if (code)
     {
       com_err(whoami, code, "authenticating to %s", host);

@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.24 2009-06-01 21:05:00 zacheiss Exp $
+/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.25 2009-09-02 19:17:35 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -4346,6 +4346,20 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 			  user_name, ldap_err2string(rc));
 	      }
 	    }
+	} else if(rc==MR_NO_MATCH) {
+	  
+	  n = 0;
+	  ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_REPLACE);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+	  
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+	    rc = LDAP_SUCCESS;
+
+	  if(rc)
+	    com_err(whoami, 0, 
+		    "Unable to set the mailRoutingAddress for %s : %s",
+		    user_name, ldap_err2string(rc));
 	}
       moira_disconnect();
     }

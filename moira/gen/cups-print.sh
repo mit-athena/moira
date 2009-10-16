@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.3 2009-07-01 16:28:43 zacheiss Exp $
+# $Id: cups-print.sh,v 1.4 2009-10-16 20:37:18 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -21,15 +21,23 @@ CUPSLOCAL=/etc/cups
 test -r $TARFILE || exit $MR_MISSINGFILE
 test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 
+/etc/cups/bin/check-disabled.pl 2>/dev/null
+
 # Unpack the tar file, getting only files that are newer than the
 # on-disk copies (-u).
 cd /
 tar xf $TARFILE || exit $MR_TARERR
 
+/etc/cups/bin/post-dcm-disable.pl 2>/dev/null
+if [ -s /etc/cups/printers.conf.tmp ]; then
+    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
+fi
+
 # Now, make a stab at the PPD file.
 /etc/cups/bin/gen-ppd.pl
 
-/etc/init.d/cups restart
+/etc/init.d/cups stop
+/etc/init.d/cups start
 
 if [ $? != 0 ]; then
     exit $MR_MKCRED

@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-lpd.sh,v 1.1 2009-07-21 21:39:13 zacheiss Exp $
+# $Id: cups-lpd.sh,v 1.2 2009-10-16 16:34:11 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -29,7 +29,8 @@ tar xf $TARFILE || exit $MR_TARERR
 /etc/cups/bin/sync_lpd_ldap.pl 2>/dev/null
 /etc/cups/bin/gen-ppd.pl 2>/dev/null
 
-/etc/init.d/cups restart
+/etc/init.d/cups stop
+/etc/init.d/cups start
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions

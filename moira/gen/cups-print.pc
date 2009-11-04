@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.10 2009-07-21 21:39:13 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.11 2009-11-04 18:10:14 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,10 +28,12 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.10 2009-07-21 21:39:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.11 2009-11-04 18:10:14 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
+
+const int krbvers = 5;	/* use Kerberos 5 */
 
 /* OMG, I hate this, but it's cleaner, I guess? */
 
@@ -92,12 +94,22 @@ void printer_user_list(FILE *out, char *type, int id, char *str)
 {
   struct save_queue *sq;
   struct imember *m;
+  char kbuf[MAX_K_NAME_SZ];
+  char *cp;
 
   sq = get_acl(type, id, NULL);
   while (sq_remove_data(sq, &m))
     {
-      if (m->type == 'U')
-        fprintf(out, "%s %s\n", str, m->name);
+      if (m->type != 'S' && m->type != NULL) {
+	/* CUPS wants mmanley/root, not mmanley.root@ATHENA.MIT.EDU */
+        canon_krb(m, krbvers, kbuf, sizeof(kbuf));
+
+	/* now, take out all the @realm */
+        for (cp=kbuf; *cp; cp++) {
+	  if (*cp == '@') *cp = '\0';
+ 	}
+        fprintf(out, "%s %s\n", str, kbuf);
+      }
       freeimember(m);
     }
   sq_destroy(sq);
@@ -140,7 +152,7 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
-    pr.ac
+    pr.ac, pr.lpc_acl
     FROM printers pr, machine m
     WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
     AND pr.type != 'ALIAS';
@@ -148,7 +160,7 @@ void do_host(char *host)
   while (1)
     {
       EXEC SQL FETCH csr_printers INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl;
       if (sqlca.sqlcode)
 	break;
 
@@ -184,10 +196,10 @@ void do_host(char *host)
       if (location[0])
         fprintf(out, "Location %s\n", location);
       fprintf(out, "ErrorPolicy abort-job\n");
-      if (! ka || ! lpc_acl)
-        fprintf(out, "OpPolicy default\n");
-      else
+      if (ka || lpc_acl)
    	fprintf(out, "OpPolicy %s-policy\n", rp);
+      else
+        fprintf(out, "OpPolicy default\n");
 
       /* Access-control list. */
       if (ac)
@@ -195,7 +207,7 @@ void do_host(char *host)
           if (ka)
    	    fprintf(out, "AuthType Negotiate\n");
 	  else
-   	    fprintf(out, "AuthType Negotiate\n");
+   	    fprintf(out, "AuthType Default\n");
           printer_user_list(out, "LIST", ac, "AllowUser");
         }
 
@@ -253,10 +265,10 @@ void do_host(char *host)
           if (location[0])
             fprintf(out, "Location %s\n", location);
           fprintf(out, "ErrorPolicy abort-job\n");
-          if (! ka || ! lpc_acl)
-            fprintf(out, "OpPolicy default\n");
-          else
+          if (ka || lpc_acl)
        	    fprintf(out, "OpPolicy %s-policy\n", rp);
+          else
+            fprintf(out, "OpPolicy default\n");
     
           /* Access-control list. */
           if (ac)
@@ -264,7 +276,7 @@ void do_host(char *host)
               if (ka)
        	        fprintf(out, "AuthType Negotiate\n");
     	      else
-       	        fprintf(out, "AuthType Negotiate\n");
+   	        fprintf(out, "AuthType Default\n");
               printer_user_list(out, "LIST", ac, "AllowUser");
             }
     
@@ -298,10 +310,10 @@ void do_host(char *host)
           if (location[0])
             fprintf(out, "Location %s\n", location);
           fprintf(out, "ErrorPolicy abort-job\n");
-          if (! ka || ! lpc_acl)
-            fprintf(out, "OpPolicy default\n");
-          else
+          if (ka || lpc_acl)
        	    fprintf(out, "OpPolicy %s-policy\n", rp);
+          else
+            fprintf(out, "OpPolicy default\n");
     
           /* Access-control list. */
           if (ac)
@@ -309,7 +321,7 @@ void do_host(char *host)
               if (ka)
        	        fprintf(out, "AuthType Negotiate\n");
     	      else
-       	        fprintf(out, "AuthType Negotiate\n");
+   	        fprintf(out, "AuthType Default\n");
               printer_user_list(out, "LIST", ac, "AllowUser");
             }
     

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.31 2008-08-29 14:50:07 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.32 2009-11-05 22:12:02 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.31 2008-08-29 14:50:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.32 2009-11-05 22:12:02 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -42,12 +42,16 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int set_modtime(struct query *q, char *argv[], client *cl)
 {
   char *name, *entity, *table;
-  int who;
+  int who, row = 0;
 
   entity = cl->entity;
   who = cl->client_id;
   table = table_name[q->rtable];
-  name = argv[0];
+
+  if (q->type == MR_Q_UPDATE)
+    row = 1;
+
+  name = argv[0 + row];
 
   sprintf(stmt_buf, "UPDATE %s SET modtime = SYSDATE, modby = %d, "
 	  "modwith = '%s' WHERE name = '%s'", table, who, entity, name);

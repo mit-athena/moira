@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.28 2007-03-27 15:07:36 zacheiss Exp $
+/* $Id: printer.c,v 1.29 2009-11-05 22:13:44 zacheiss Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.28 2007-03-27 15:07:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.29 2009-11-05 22:13:44 zacheiss Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -203,10 +203,10 @@ static char *PrintPrnInfo(char **info)
  *	Returns: none.
  */
 
-static char **AskPrnInfo(char **info)
+static char **AskPrnInfo(char **info, Bool name)
 {
   char temp_buf[BUFSIZ];
-  char *args[3], *lpc_acl;
+  char *args[3], *lpc_acl, *newname;
   int status;
 
   Put_message("");
@@ -214,6 +214,18 @@ static char **AskPrnInfo(char **info)
   Put_message(temp_buf);
   Put_message("");
 
+  if (name)
+    {
+      while (1)
+	{
+	  newname = strdup(info[PRN_NAME]);
+	  if (GetValueFromUser("The new name for this printer? ", &newname) ==
+	      SUB_ERROR)
+	    return NULL;
+	  if (ValidName(newname))
+	    break;
+	}
+    }
   if (GetTypeFromUser("Type of Printer", "printertype", &info[PRN_TYPE]) ==
       SUB_ERROR)
     return NULL;
@@ -266,6 +278,9 @@ static char **AskPrnInfo(char **info)
   FreeAndClear(&info[PRN_MODTIME], TRUE);
   FreeAndClear(&info[PRN_MODBY], TRUE);
   FreeAndClear(&info[PRN_MODWITH], TRUE);
+
+  if (name)
+    SlipInNewName(info, newname);
 
   return info;
 }
@@ -399,7 +414,7 @@ int AddPrn(int argc, char **argv)
       return DM_NORMAL;
     }
 
-  args = AskPrnInfo(SetDefaults(info, argv[1]));
+  args = AskPrnInfo(SetDefaults(info, argv[1]), FALSE);
   if (!args)
     {
       Put_message("Aborted.");
@@ -426,25 +441,16 @@ int AddPrn(int argc, char **argv)
 void ChangePrn(char **info, Bool one_item)
 {
   int stat;
-  char **oldinfo;
 
-  oldinfo = CopyInfo(info);
-  if (!AskPrnInfo(info))
-    return;
-  if ((stat = do_mr_query("delete_printer", 1, &info[PRN_NAME], NULL, NULL)))
+  if (!AskPrnInfo(info, TRUE))
     {
-      com_err(program_name, stat, " printer not updated.");
+      Put_message("Aborted.");
       return;
     }
-  if ((stat = do_mr_query("add_printer", CountArgs(info), info, NULL, NULL)))
-    {
-      com_err(program_name, stat, " in ChngPrn");
-      if ((stat = do_mr_query("add_printer", CountArgs(oldinfo) - 3,
-			      oldinfo, NULL, NULL)))
-	com_err(program_name, stat, " while attempting to put old info back");
-    }
-  FreeInfo(oldinfo);
-  return;
+  if ((stat = do_mr_query("update_printer", CountArgs(info), info, NULL, NULL)))
+    com_err(program_name, stat, " in ChngPrn");
+  else
+    Put_message("Printer successfully updated.");
 }
 
 

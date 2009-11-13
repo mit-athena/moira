@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.11 2009-11-04 18:10:14 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.12 2009-11-13 23:05:07 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.11 2009-11-04 18:10:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.12 2009-11-13 23:05:07 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -145,7 +145,7 @@ void do_host(char *host)
   sprintf(filename, "%s/cups-print/%s", DCM_DIR, host);
   tf = tarfile_open(filename);
 
-  /* printers.conf */
+  /* printers.conf entries for locally run queues */
   out = tarfile_start(tf, "/etc/cups/printers.conf", 0644, 0, 0,
 		      "lp", "lp", now);
 
@@ -172,6 +172,8 @@ void do_host(char *host)
       strtrim(location);
       strtrim(contact);
       strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
 
@@ -193,6 +195,11 @@ void do_host(char *host)
       fprintf(out, "PageLimit 0\n");
       fprintf(out, "Klimit 0\n");
       fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
       if (location[0])
         fprintf(out, "Location %s\n", location);
       fprintf(out, "ErrorPolicy abort-job\n");
@@ -219,6 +226,141 @@ void do_host(char *host)
 
     }
   EXEC SQL CLOSE csr_printers;
+
+  /* printers.conf entries for non-local CUPS queues */
+  EXEC SQL DECLARE csr_remote_printers CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.lpc_acl, m.name as cupshosts
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
+    m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND 
+    sh.enable = 1 AND m.mach_id = sh.mach_id;
+
+  EXEC SQL OPEN csr_remote_printers;
+  while (1)
+    {
+      EXEC SQL FETCH csr_remote_printers INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(cupshosts);
+      strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      fprintf(out, "<Printer %s>\n",rp);
+      fprintf(out, "Info %s:%s\n", rp, hwtype);
+      fprintf(out, "DeviceURI ipp://%s:631/printers/%s\n", cupshosts, rp);
+      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      fprintf(out, "Accepting Yes\n");
+      fprintf(out, "Shared Yes\n");
+      fprintf(out, "QuotaPeriod 0\n");
+      fprintf(out, "PageLimit 0\n");
+      fprintf(out, "Klimit 0\n");
+      fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
+      if (location[0])
+        fprintf(out, "Location %s\n", location);
+      fprintf(out, "ErrorPolicy abort-job\n");
+      if (ka || lpc_acl)
+   	fprintf(out, "OpPolicy %s-policy\n", rp);
+      else
+        fprintf(out, "OpPolicy default\n");
+
+      /* Access-control list. */
+      if (ac)
+        {
+          if (ka)
+   	    fprintf(out, "AuthType Negotiate\n");
+	  else
+   	    fprintf(out, "AuthType Default\n");
+          printer_user_list(out, "LIST", ac, "AllowUser");
+        }
+
+      if (banner == PRN_BANNER_NONE)
+	fprintf(out, "JobSheets none none\n");
+      else 
+	fprintf(out, "JobSheets athena none\n");
+      fprintf(out, "</Printer>\n");
+
+    }
+  EXEC SQL CLOSE csr_remote_printers;
+
+  /* printers.conf entries for non-local LPRng queues */
+  EXEC SQL DECLARE csr_lprng_printers CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.lpc_acl, m.name as cupshosts
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
+    m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND 
+    sh.enable = 1;
+
+  EXEC SQL OPEN csr_lprng_printers;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lprng_printers INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(cupshosts);
+      strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      fprintf(out, "<Printer %s>\n",rp);
+      fprintf(out, "Info %s:LPRng Queue on %s\n", rp, cupshosts);
+      fprintf(out, "DeviceURI lpd://%s/%s\n", cupshosts, rp);
+      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      fprintf(out, "Accepting Yes\n");
+      fprintf(out, "Shared Yes\n");
+      fprintf(out, "QuotaPeriod 0\n");
+      fprintf(out, "PageLimit 0\n");
+      fprintf(out, "Klimit 0\n");
+      fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
+      if (location[0])
+        fprintf(out, "Location %s\n", location);
+      fprintf(out, "ErrorPolicy abort-job\n");
+      fprintf(out, "OpPolicy default\n");
+      fprintf(out, "JobSheets none none\n");
+      fprintf(out, "</Printer>\n");
+
+    }
+  EXEC SQL CLOSE csr_lprng_printers;
   tarfile_end(tf);
 
 
@@ -229,8 +371,10 @@ void do_host(char *host)
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka, 
     pr.type as prtype, pr.ac
-    FROM printers pr, machine m
-    WHERE pr.rm = :rm AND m.mach_id = pr.mach_id;
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND m.mach_id = sh.mach_id AND sh.enable = 1 
+    AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT');
   EXEC SQL OPEN csr_duplexqs;
   while (1)
     {
@@ -264,7 +408,7 @@ void do_host(char *host)
           fprintf(out, "PageLimit 0\n");
           if (location[0])
             fprintf(out, "Location %s\n", location);
-          fprintf(out, "ErrorPolicy abort-job\n");
+          /* fprintf(out, "ErrorPolicy abort-job\n"); */
           if (ka || lpc_acl)
        	    fprintf(out, "OpPolicy %s-policy\n", rp);
           else
@@ -438,7 +582,8 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_lpc CURSOR FOR
     SELECT UNIQUE rp, ka, ac, lpc_acl
     FROM printers
-    WHERE rm = :rm AND ( ac != 0 OR lpc_acl != 0);
+    WHERE (ac != 0 OR lpc_acl != 0) AND rm in (SELECT m.mach_id FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1);
   EXEC SQL OPEN csr_lpc;
   while (1)
     {

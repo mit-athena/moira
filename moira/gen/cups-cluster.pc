@@ -1,0 +1,657 @@
+/* $Id: cups-cluster.pc,v 1.1 2009-11-13 23:05:07 zacheiss Exp $
+ *
+ * This generates printcaps and other files for Athena print servers
+ *
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <time.h>
+#ifdef HAVE_KRB4
+#include <krb.h>
+#endif
+#include <krb5.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-cluster.pc,v 1.1 2009-11-13 23:05:07 zacheiss Exp $");
+
+char *whoami = "cups-print.gen";
+char *db = "moira/moira";
+
+const int krbvers = 5;	/* use Kerberos 5 */
+
+/* OMG, I hate this, but it's cleaner, I guess? */
+
+const char *alterjob = "<Limit Hold-Job Release-Job\
+ Restart-Job Purge-Jobs Reprocess-Job Set-Job-Attributes\
+ Cancel-Current-Job Suspend-Current-Job Resume-Job CUPS-Move-Job>";
+const char *submitjob = "<Limit Create-Job Print-Job Print-URI Send-Document\
+ Set-Job-Attributes Send-URI Create-Job-Subscription Renew-Subscription\
+ Cancel-Subscription Get-Notifications CUPS-Move-Job>";
+const char *alterpntr = "<Limit CUPS-Add-Modify-Printer CUPS-Delete-Printer\
+ CUPS-Add-Modify-Class CUPS-Delete-Class CUPS-Set-Default>";
+const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
+ Disable-Printer Pause-Printer-After-Current-Job Hold-New-Jobs\
+ Release-Held-New-Jobs Deactivate-Printer Activate-Printer Restart-Printer\
+ Shutdown-Printer Startup-Printer Promote-Job Schedule-Job-After\
+ CUPS-Accept-Jobs CUPS-Reject-Jobs>";
+const char *canceljob = "<Limit Cancel-Job CUPS-Authenticate-Job>";
+const char *catchall = "<Limit All>";
+const char *phost = "printers.MIT.EDU";
+
+void do_host(char *host);
+void sqlerr(void);
+#ifndef MAX
+#define MAX(a, b) ( (a) > (b) ? (a) : (b) )
+#endif
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  init_acls();
+
+  EXEC SQL CONNECT :db;
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+
+  EXEC SQL DECLARE csr_hosts CURSOR FOR
+    SELECT m.name FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-CLUSTER' AND sh.enable = 1;
+  EXEC SQL OPEN csr_hosts;
+  while (1)
+    {
+      EXEC SQL FETCH csr_hosts INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      do_host(name);
+    }
+  EXEC SQL CLOSE csr_hosts;
+
+  exit(MR_SUCCESS);
+}
+
+void printer_user_list(FILE *out, char *type, int id, char *str)
+{
+  struct save_queue *sq;
+  struct imember *m;
+  char kbuf[MAX_K_NAME_SZ];
+  char *cp;
+
+  sq = get_acl(type, id, NULL);
+  while (sq_remove_data(sq, &m))
+    {
+      if (m->type != 'S' && m->type != NULL) {
+	/* CUPS wants mmanley/root, not mmanley.root@ATHENA.MIT.EDU */
+        canon_krb(m, krbvers, kbuf, sizeof(kbuf));
+
+	/* now, take out all the @realm */
+        for (cp=kbuf; *cp; cp++) {
+	  if (*cp == '@') *cp = '\0';
+ 	}
+        fprintf(out, "%s %s\n", str, kbuf);
+      }
+      freeimember(m);
+    }
+  sq_destroy(sq);
+}
+
+
+
+void do_host(char *host)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char rp[PRINTERS_RP_SIZE], name[PRINTERS_NAME_SIZE];
+  char duplexname[PRINTERS_DUPLEXNAME_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char hwtype[PRINTERS_HWTYPE_SIZE], lowerhwtype[PRINTERS_HWTYPE_SIZE];
+  char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE], hostname[MACHINE_NAME_SIZE];
+  char cupshosts[MACHINE_NAME_SIZE], prtype [PRINTERS_TYPE_SIZE];
+  char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
+  char *lhost;
+  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm;
+  EXEC SQL END DECLARE SECTION;
+  TARFILE *tf;
+  FILE *out;
+  char filename[MAXPATHLEN], *duptc;
+  time_t mtime, now = time(NULL);
+
+  lhost = (char *) strdup (host);
+  for (p = lhost; *p; p++)
+     *p = tolower(*p);
+
+  EXEC SQL SELECT mach_id INTO :rm FROM machine
+    WHERE name = :spoolhost;
+
+  sprintf(filename, "%s/cups-cluster/%s", DCM_DIR, host);
+  tf = tarfile_open(filename);
+
+  /* printers.conf entries for locally run queues */
+  out = tarfile_start(tf, "/etc/cups/printers.conf", 0644, 0, 0,
+		      "lp", "lp", now);
+
+  EXEC SQL DECLARE csr_printers CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.lpc_acl
+    FROM printers pr, machine m
+    WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
+    AND (pr.type = 'DORM' or pr.type = 'CLUSTER');
+  EXEC SQL OPEN csr_printers;
+  while (1)
+    {
+      EXEC SQL FETCH csr_printers INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      fprintf(out, "<Printer %s>\n",rp);
+      fprintf(out, "Info %s:%s\n", rp, hwtype);
+      /* Note the use of "beh" to keep the CUPS from disabling print queues
+       * should they not respond versus discarding the job.  
+       * See the "beh" page for details.  
+       * The 1/0/60 says "don't disable/try 20 times/try every 60s */
+      if (!strncmp(hwtype, "HP", 2)) 
+	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s:9100\n", hostname);
+      else
+	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s\n", hostname);
+      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      fprintf(out, "Accepting Yes\n");
+      fprintf(out, "Shared Yes\n");
+      fprintf(out, "QuotaPeriod 0\n");
+      fprintf(out, "PageLimit 0\n");
+      fprintf(out, "Klimit 0\n");
+      fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
+      if (location[0])
+        fprintf(out, "Location %s\n", location);
+      fprintf(out, "ErrorPolicy abort-job\n");
+      if (ka || lpc_acl)
+   	fprintf(out, "OpPolicy %s-policy\n", rp);
+      else
+        fprintf(out, "OpPolicy default\n");
+
+      /* Access-control list. */
+      if (ac)
+        {
+          if (ka)
+   	    fprintf(out, "AuthType Negotiate\n");
+	  else
+   	    fprintf(out, "AuthType Default\n");
+          printer_user_list(out, "LIST", ac, "AllowUser");
+        }
+
+      if (banner == PRN_BANNER_NONE)
+	fprintf(out, "JobSheets none none\n");
+      else 
+	fprintf(out, "JobSheets athena none\n");
+      fprintf(out, "</Printer>\n");
+
+    }
+  EXEC SQL CLOSE csr_printers;
+
+  /* printers.conf entries for non-local CUPS queues */
+  EXEC SQL DECLARE csr_remote_printers CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.lpc_acl, m.name as cupshosts
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND (pr.type = 'CLUSTER' or pr.type = 'DORM') AND m.name <> :spoolhost AND
+    m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND 
+    sh.enable = 1 AND m.mach_id = sh.mach_id;
+
+  EXEC SQL OPEN csr_remote_printers;
+  while (1)
+    {
+      EXEC SQL FETCH csr_remote_printers INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(cupshosts);
+      strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      fprintf(out, "<Printer %s>\n",rp);
+      fprintf(out, "Info %s:%s\n", rp, hwtype);
+      fprintf(out, "DeviceURI ipp://%s:631/printers/%s\n", cupshosts, rp);
+      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      fprintf(out, "Accepting Yes\n");
+      fprintf(out, "Shared Yes\n");
+      fprintf(out, "QuotaPeriod 0\n");
+      fprintf(out, "PageLimit 0\n");
+      fprintf(out, "Klimit 0\n");
+      fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
+      if (location[0])
+        fprintf(out, "Location %s\n", location);
+      fprintf(out, "ErrorPolicy abort-job\n");
+      if (ka || lpc_acl)
+   	fprintf(out, "OpPolicy %s-policy\n", rp);
+      else
+        fprintf(out, "OpPolicy default\n");
+
+      /* Access-control list. */
+      if (ac)
+        {
+          if (ka)
+   	    fprintf(out, "AuthType Negotiate\n");
+	  else
+   	    fprintf(out, "AuthType Default\n");
+          printer_user_list(out, "LIST", ac, "AllowUser");
+        }
+
+      if (banner == PRN_BANNER_NONE)
+	fprintf(out, "JobSheets none none\n");
+      else 
+	fprintf(out, "JobSheets athena none\n");
+      fprintf(out, "</Printer>\n");
+
+    }
+  EXEC SQL CLOSE csr_remote_printers;
+
+  /* printers.conf entries for non-local LPRng queues */
+  EXEC SQL DECLARE csr_lprng_printers CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka,
+    pr.ac, pr.lpc_acl, m.name as cupshosts
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND (pr.type = 'DORM' or pr.type = 'CLUSTER') AND m.name <> :spoolhost AND
+    m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND 
+    sh.enable = 1;
+
+  EXEC SQL OPEN csr_lprng_printers;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lprng_printers INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(cupshosts);
+      strcpy(lowerhwtype, hwtype);
+      for (p = rp; *p; p++)	/* Because uppercased printer names suck */
+	*p = tolower(*p);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      fprintf(out, "<Printer %s>\n",rp);
+      fprintf(out, "Info %s:LPRng Queue on %s\n", rp, cupshosts);
+      fprintf(out, "DeviceURI lpd://%s/%s\n", cupshosts, rp);
+      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      fprintf(out, "Accepting Yes\n");
+      fprintf(out, "Shared Yes\n");
+      fprintf(out, "QuotaPeriod 0\n");
+      fprintf(out, "PageLimit 0\n");
+      fprintf(out, "Klimit 0\n");
+      fprintf(out, "Option sides one-sided\n");
+      fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
+      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
+      fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
+      if (location[0])
+        fprintf(out, "Location %s\n", location);
+      fprintf(out, "ErrorPolicy abort-job\n");
+      fprintf(out, "OpPolicy default\n");
+      fprintf(out, "JobSheets none none\n");
+      fprintf(out, "</Printer>\n");
+
+    }
+  EXEC SQL CLOSE csr_lprng_printers;
+  tarfile_end(tf);
+
+
+  /* aliases are in classes.conf */
+  out = tarfile_start(tf, "/etc/cups/classes.conf", 0644, 0, 0,
+	          "lp", "lp", now);
+  EXEC SQL DECLARE csr_duplexqs CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact, pr.ka, 
+    pr.type as prtype, pr.ac
+    FROM printers pr, machine m, serverhosts sh
+    WHERE pr.rm = m.mach_id 
+    AND m.mach_id = sh.mach_id AND sh.enable = 1 
+    AND (pr.type = 'DORM' or pr.type = 'CLUSTER')
+    AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT');
+  EXEC SQL OPEN csr_duplexqs;
+  while (1)
+    {
+      EXEC SQL FETCH csr_duplexqs INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :prtype, :ac;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(hwtype);
+      strtrim(rp);
+      strtrim(location);
+      strtrim(contact);
+      strtrim(prtype);
+
+      /* Define alias queues as classes to the regular queues for
+       * accounting reasons.  Annoyingly, classes don't always inherit
+       * their printer definitions.
+      */
+      if (!strcmp(prtype,"ALIAS")) 
+	{
+          strtrim(name);
+          fprintf(out, "<Class %s>\n",name);
+          fprintf(out, "Info Alias Queue to %s:%s\n", rp, hwtype);
+          fprintf(out, "Printer %s\n", rp);
+          fprintf(out, "Option sides one-sided\n");
+          fprintf(out, "State Idle\n");     // Always with the Idle
+          fprintf(out, "StateTime %ld\n", (long)time(NULL));
+          fprintf(out, "Accepting Yes\n");
+          fprintf(out, "Shared Yes\n");
+          fprintf(out, "QuotaPeriod 0\n");
+          fprintf(out, "PageLimit 0\n");
+          if (location[0])
+            fprintf(out, "Location %s\n", location);
+          /* fprintf(out, "ErrorPolicy abort-job\n"); */
+          if (ka || lpc_acl)
+       	    fprintf(out, "OpPolicy %s-policy\n", rp);
+          else
+            fprintf(out, "OpPolicy default\n");
+    
+          /* Access-control list. */
+          if (ac)
+            {
+              if (ka)
+       	        fprintf(out, "AuthType Negotiate\n");
+    	      else
+   	        fprintf(out, "AuthType Default\n");
+              printer_user_list(out, "LIST", ac, "AllowUser");
+            }
+    
+          if (banner == PRN_BANNER_NONE)
+    	    fprintf(out, "JobSheets none none\n");
+          else 
+    	    fprintf(out, "JobSheets athena none\n");
+          fprintf(out, "</Class>\n");
+      }
+
+      /* Define duplex queues as aliases to the regular queues for
+       * accounting reasons.  Annoyingly, classes don't always inherit
+       * their printer definitions.
+      */
+      if (*duplexname)
+	{
+          strtrim(duplexname);
+          fprintf(out, "<Class %s>\n",duplexname);
+          if (!strcmp(prtype,"ALIAS")) 
+            fprintf(out, "Info Duplex Alias Queue to %s:%s\n", rp, hwtype);
+	  else
+            fprintf(out, "Info Duplex Queue for %s:%s\n", rp, hwtype);
+	  fprintf(out, "Option sides two-sided-long-edge\n");	// duplex
+          fprintf(out, "Printer %s\n", rp);
+          fprintf(out, "State Idle\n");     // Always with the Idle
+          fprintf(out, "StateTime %ld\n", (long)time(NULL));
+          fprintf(out, "Accepting Yes\n");
+          fprintf(out, "Shared Yes\n");
+          fprintf(out, "QuotaPeriod 0\n");
+          fprintf(out, "PageLimit 0\n");
+          if (location[0])
+            fprintf(out, "Location %s\n", location);
+          fprintf(out, "ErrorPolicy abort-job\n");
+          if (ka || lpc_acl)
+       	    fprintf(out, "OpPolicy %s-policy\n", rp);
+          else
+            fprintf(out, "OpPolicy default\n");
+    
+          /* Access-control list. */
+          if (ac)
+            {
+              if (ka)
+       	        fprintf(out, "AuthType Negotiate\n");
+    	      else
+   	        fprintf(out, "AuthType Default\n");
+              printer_user_list(out, "LIST", ac, "AllowUser");
+            }
+    
+          if (banner == PRN_BANNER_NONE)
+    	    fprintf(out, "JobSheets none none\n");
+          else if (banner == PRN_BANNER_LAST)
+    	    fprintf(out, "JobSheets athena none\n");
+          fprintf(out, "</Class>\n");
+	}
+    }
+  EXEC SQL CLOSE csr_duplexqs;
+  tarfile_end(tf);
+
+  /* cups.conf */
+  out = tarfile_start(tf, "/etc/cups/cupsd.conf", 0755, 1, 1,
+		      "root", "lp", now);
+
+  fprintf(out, "LogLevel info\n");
+  fprintf(out, "SystemGroup sys root ops-group\n");
+  fprintf(out, "Port 631\n");
+  fprintf(out, "Listen /var/run/cups/cups.sock\n");
+  fprintf(out, "Browsing On\n");
+  fprintf(out, "BrowseOrder allow,deny\n");
+  fprintf(out, "BrowseAllow all\n");
+  fprintf(out, "BrowseAddress @LOCAL\n");
+  fprintf(out, "DefaultAuthType Negotiate\n");
+  fprintf(out, "ServerCertificate /etc/cups/ssl/%s-ipp-crt.pem\n", lhost);
+  fprintf(out, "ServerKey /etc/cups/ssl/%s-ipp-key.pem\n", lhost);
+  fprintf(out, "ServerName %s\n", lhost);
+  fprintf(out, "ServerAlias %s\n", phost);
+  fprintf(out, "Krb5Keytab /etc/krb5-ipp.keytab\n");
+
+  /* The other CUPS servers should be aware of the other hosts'
+     queues, so we'll let them browse each other. */
+  fprintf(out, "Include cups.local.conf\n");
+  fprintf(out, "Include cups.locations.conf\n");
+  fprintf(out, "Include cups.policies.conf\n");
+  tarfile_end(tf);
+
+  /* cups.hosts.conf */
+  out = tarfile_start(tf, "/etc/cups/cups.hosts.conf", 0755, 1, 1,
+		      "root", "lp", now);
+  EXEC SQL DECLARE csr_cupshosts CURSOR FOR
+    SELECT m.name AS cupshosts FROM machine m, printservers ps
+    WHERE m.mach_id = ps.mach_id AND ps.kind = 'CUPS';
+  EXEC SQL OPEN csr_cupshosts;
+  while (1)
+    {
+      EXEC SQL FETCH csr_cupshosts INTO :cupshosts;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(cupshosts);
+
+      /* Don't poll yourself looking for answers! */
+      if (strcmp(cupshosts,host))
+         fprintf(out, "BrowsePoll %s\n", cupshosts);
+    }
+  EXEC SQL CLOSE csr_cupshosts;
+
+  tarfile_end(tf);
+
+  /* cups.policies.conf */
+  out = tarfile_start(tf, "/etc/cups/cups.policies.conf", 0755, 1, 1,
+		      "root", "lp", now);
+  fprintf(out, "# Printer-specific LPC and LPR ACLs\n");
+  /* lpcaccess.top */
+  EXEC SQL SELECT ps.lpc_acl INTO :top_lpc_acl
+    FROM printservers ps, machine m
+    WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
+  if (!sqlca.sqlcode && lpc_acl)
+    {
+      fprintf (out, "<Policy default>\n");
+      fprintf (out, "%s\n", alterjob);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @OWNER @SYSTEM\n");
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", submitjob);
+      fprintf (out, "AuthType None\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", alterpntr);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @SYSTEM\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", lpcpntr);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @SYSTEM\n");
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", canceljob);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @OWNER @SYSTEM\n");
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", catchall);
+      fprintf (out, "AuthType None\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "</Policy>\n");
+    }
+
+  /* restrict lists and lpcaccess policies.  Sadly, we have to put the
+     top level for each new policy since CUPS doesn't have a way of 
+     doing it otherwise (well, Unix groups, but not moira) */
+  EXEC SQL DECLARE csr_lpc CURSOR FOR
+    SELECT UNIQUE rp, ka, ac, lpc_acl
+    FROM printers
+    WHERE (ac != 0 OR lpc_acl != 0) AND rm in (SELECT m.mach_id FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1);
+  EXEC SQL OPEN csr_lpc;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lpc INTO :name, :ka, :ac, :lpc_acl;
+      if (sqlca.sqlcode)
+        break;
+
+      strtrim(name);
+
+      fprintf (out, "<Policy %s-policy>\n", name);
+      fprintf (out, "%s\n", alterjob);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @OWNER @SYSTEM\n");
+      printer_user_list(out, "LIST", lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", submitjob);
+      /* If the printer is Kerberized? */
+      if (ka)
+        fprintf (out, "AuthType Negotiate\n");
+      else
+        fprintf (out, "AuthType None\n");
+      /* Access-control list. */
+      if (ac)
+        printer_user_list(out, "LIST", ac, "Require user");
+      else if (ka)
+        fprintf (out, "Require valid-user\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", alterpntr);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @SYSTEM\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", lpcpntr);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @SYSTEM\n");
+      /* printer-specific lpc access. */
+      if (lpc_acl)
+          printer_user_list(out, "LIST", lpc_acl, "Require user");
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", canceljob);
+      fprintf (out, "AuthType Default\n");
+      fprintf (out, "Require user @OWNER @SYSTEM\n");
+      printer_user_list(out, "LIST", lpc_acl, "Require user");
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "%s\n", catchall);
+      fprintf (out, "AuthType None\n");
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "</Policy>\n");
+    }
+  EXEC SQL CLOSE csr_lpc;
+  fprintf(out, "\n");
+  tarfile_end(tf);
+  tarfile_close(tf);
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+}

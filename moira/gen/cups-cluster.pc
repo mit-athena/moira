@@ -1,4 +1,4 @@
-/* $Id: cups-cluster.pc,v 1.1 2009-11-13 23:05:07 zacheiss Exp $
+/* $Id: cups-cluster.pc,v 1.2 2009-11-13 23:27:27 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-cluster.pc,v 1.1 2009-11-13 23:05:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-cluster.pc,v 1.2 2009-11-13 23:27:27 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";

@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-cluster.sh,v 1.1 2009-11-13 23:05:07 zacheiss Exp $
+# $Id: cups-cluster.sh,v 1.2 2009-11-16 22:58:31 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -17,6 +17,8 @@ PATH=/bin
 TARFILE=/var/tmp/cups-cluster.out
 CUPSLOCAL=/etc/cups
 
+/etc/init.d/cups stop
+
 # Alert if the tar file or other needed files do not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
 test -d $CUPSLOCAL || exit $MR_MISSINGFILE
@@ -26,11 +28,9 @@ test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 cd /
 tar xf $TARFILE || exit $MR_TARERR
 
-/etc/cups/bin/sync_lpd_ldap.pl 2>/dev/null
-/etc/cups/bin/gen-ppd.pl 2>/dev/null
-
-/etc/init.d/cups stop
 /etc/init.d/cups start
+
+/etc/cups/bin/gen-ppd.pl 2>/dev/null
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions

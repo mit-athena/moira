@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.4 2009-10-16 20:37:18 zacheiss Exp $
+# $Id: cups-print.sh,v 1.5 2009-11-16 21:55:31 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -21,6 +21,10 @@ CUPSLOCAL=/etc/cups
 test -r $TARFILE || exit $MR_MISSINGFILE
 test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 
+# We need to kill off CUPS to prevent it from overwriting
+# state data whilst updating
+/etc/init.d/cups stop
+
 /etc/cups/bin/check-disabled.pl 2>/dev/null
 
 # Unpack the tar file, getting only files that are newer than the
@@ -33,11 +37,11 @@ if [ -s /etc/cups/printers.conf.tmp ]; then
     mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
 fi
 
-# Now, make a stab at the PPD file.
-/etc/cups/bin/gen-ppd.pl
-
-/etc/init.d/cups stop
 /etc/init.d/cups start
+
+# Now, make a stab at the PPD file.  This is okay to run after
+# because CUPS will pick up the new PPDs later
+/etc/cups/bin/gen-ppd.pl
 
 if [ $? != 0 ]; then
     exit $MR_MKCRED

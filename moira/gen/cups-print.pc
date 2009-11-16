@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.12 2009-11-13 23:05:07 zacheiss Exp $
+/* $Id: cups-print.pc,v 1.13 2009-11-16 22:54:36 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.12 2009-11-13 23:05:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.13 2009-11-16 22:54:36 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -74,7 +74,8 @@ int main(int argc, char **argv)
 
   EXEC SQL DECLARE csr_hosts CURSOR FOR
     SELECT m.name FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1;
+    WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER')
+    AND sh.enable = 1;
   EXEC SQL OPEN csr_hosts;
   while (1)
     {
@@ -235,8 +236,8 @@ void do_host(char *host)
     FROM printers pr, machine m, serverhosts sh
     WHERE pr.rm = m.mach_id 
     AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
-    m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND 
-    sh.enable = 1 AND m.mach_id = sh.mach_id;
+    m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER')
+    AND sh.enable = 1 AND m.mach_id = sh.mach_id;
 
   EXEC SQL OPEN csr_remote_printers;
   while (1)
@@ -374,7 +375,7 @@ void do_host(char *host)
     FROM printers pr, machine m, serverhosts sh
     WHERE pr.rm = m.mach_id 
     AND m.mach_id = sh.mach_id AND sh.enable = 1 
-    AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT');
+    AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT' OR sh.service = 'CUPS-CLUSTER');
   EXEC SQL OPEN csr_duplexqs;
   while (1)
     {
@@ -583,7 +584,8 @@ void do_host(char *host)
     SELECT UNIQUE rp, ka, ac, lpc_acl
     FROM printers
     WHERE (ac != 0 OR lpc_acl != 0) AND rm in (SELECT m.mach_id FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND sh.service = 'CUPS-PRINT' AND sh.enable = 1);
+    WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER')
+    AND sh.enable = 1);
   EXEC SQL OPEN csr_lpc;
   while (1)
     {

@@ -1,3 +1,11 @@
+debathena-moira (4.0.0+cvs20090922-0debathena2) unstable; urgency=low
+
+  * Add a missing definition of ${prefix} in include/Makefile.in so that
+    the moira.h header actually gets installed in
+    /usr/include/moira. (Trac: #445)
+
+ -- Evan Broder <broder@mit.edu>  Thu, 19 Nov 2009 10:24:36 -0500
+
 debathena-moira (4.0.0+cvs20090922-0debathena1) unstable; urgency=low
 
   * New CVS snapshot.

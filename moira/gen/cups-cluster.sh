@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-cluster.sh,v 1.2 2009-11-16 22:58:31 zacheiss Exp $
+# $Id: cups-cluster.sh,v 1.3 2009-11-19 16:49:03 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -23,10 +23,14 @@ CUPSLOCAL=/etc/cups
 test -r $TARFILE || exit $MR_MISSINGFILE
 test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 
+/etc/cups/bin/check-disabled.pl 2>/dev/null
+
 # Unpack the tar file, getting only files that are newer than the
 # on-disk copies (-u).
 cd /
 tar xf $TARFILE || exit $MR_TARERR
+
+/etc/cups/bin/post-dcm-disable.pl 2>/dev/null
 
 /etc/init.d/cups start
 

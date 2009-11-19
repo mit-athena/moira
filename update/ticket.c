@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.26 2009-09-08 21:59:26 zacheiss Exp $
+/* $Id: ticket.c,v 1.27 2009-09-22 18:45:17 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -17,16 +17,17 @@
 #include <krb.h>
 #else
 #define KTEXT void*
+#include <mr_krb.h>
 #endif
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.26 2009-09-08 21:59:26 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.27 2009-09-22 18:45:17 zacheiss Exp $");
 
-#ifdef HAVE_KRB4
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
+#ifdef HAVE_KRB4
 des_cblock session;
 #endif
 krb5_context context = NULL;

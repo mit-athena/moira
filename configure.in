@@ -464,11 +464,11 @@ KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $KLIBS"
 if test "$zephyr" != no; then
   KLIBS="-lzephyr $KLIBS"
 fi
-LIBS="-lmoira $KLIBS"
-AC_SUBST(KLIBS)
-
 MR_LIBDEP='$(BUILDTOP)/lib/libmoira.la'
 AC_SUBST(MR_LIBDEP)
+
+LIBS="$MR_LIBDEP $KLIBS"
+AC_SUBST(KLIBS)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \

@@ -464,7 +464,7 @@ ac_includes_default="\
 #endif"
 
 ac_subdirs_all="$ac_subdirs_all util/et"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os SO_LDFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB EGREP LN_S ECHO AR ac_ct_AR STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL SET_MAKE mrbindir subdirs COM_ERR_SUBDIR COMPILE_ET REG_SVR_DEFS REG_SVR_INCLUDES REG_SVR_LIBS RSAREF_CPPFLAGS RSAREF_LIBS RSAREF_SUBDIRS RSAREF_LIBDEP PRO_C PRO_C_DEFS PRO_C_INCLUDES PRO_C_OPTS SQL_LIBS SVRSUBDIRS JAVA_CPPFLAGS WEBMOIRA_SUBDIRS LDAP_CPPFLAGS LDAP_LIBS WINAD_SUBDIRS AFS_CPPFLAGS AFS_PRO_C_INCLUDES AFS_LIBS AFS_DIR AFS_SUBDIRS AFS_SYNCDIR READLINE_CPPFLAGS READLINE_LIBS CURSES_CPPFLAGS CURSES_LIBS CURSES_SUBDIRS KLIBS MR_LIBDEP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os SO_LDFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB EGREP LN_S ECHO AR ac_ct_AR STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL SET_MAKE mrbindir subdirs COM_ERR_SUBDIR COMPILE_ET REG_SVR_DEFS REG_SVR_INCLUDES REG_SVR_LIBS RSAREF_CPPFLAGS RSAREF_LIBS RSAREF_SUBDIRS RSAREF_LIBDEP PRO_C PRO_C_DEFS PRO_C_INCLUDES PRO_C_OPTS SQL_LIBS SVRSUBDIRS JAVA_CPPFLAGS WEBMOIRA_SUBDIRS LDAP_CPPFLAGS LDAP_LIBS WINAD_SUBDIRS AFS_CPPFLAGS AFS_PRO_C_INCLUDES AFS_LIBS AFS_DIR AFS_SUBDIRS AFS_SYNCDIR READLINE_CPPFLAGS READLINE_LIBS CURSES_CPPFLAGS CURSES_LIBS CURSES_SUBDIRS MR_LIBDEP KLIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -21538,10 +21538,10 @@ KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $KLIBS"
 if test "$zephyr" != no; then
   KLIBS="-lzephyr $KLIBS"
 fi
-LIBS="-lmoira $KLIBS"
-
-
 MR_LIBDEP='$(BUILDTOP)/lib/libmoira.la'
+
+
+LIBS="$MR_LIBDEP $KLIBS"
 
 
                                                                                                                                                                                                                                                 ac_config_files="$ac_config_files Makefile lib/Makefile include/Makefile clients/Makefile clients/lib/Makefile clients/addusr/Makefile clients/blanche/Makefile clients/chfn/Makefile clients/chpobox/Makefile clients/chsh/Makefile clients/mailmaint/Makefile clients/mitch/Makefile clients/moira/Makefile clients/mrcheck/Makefile clients/mrtest/Makefile clients/stanley/Makefile clients/stella/Makefile update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES"
@@ -22274,8 +22274,8 @@ s,@READLINE_LIBS@,$READLINE_LIBS,;t t
 s,@CURSES_CPPFLAGS@,$CURSES_CPPFLAGS,;t t
 s,@CURSES_LIBS@,$CURSES_LIBS,;t t
 s,@CURSES_SUBDIRS@,$CURSES_SUBDIRS,;t t
-s,@KLIBS@,$KLIBS,;t t
 s,@MR_LIBDEP@,$MR_LIBDEP,;t t
+s,@KLIBS@,$KLIBS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

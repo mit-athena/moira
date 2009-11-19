@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.5 2009-11-16 21:55:31 zacheiss Exp $
+# $Id: cups-cluster.sh,v 1.2 2009-11-16 22:58:31 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -14,43 +14,32 @@ MR_MKCRED=47836474
 MR_TARERR=47836476
 
 PATH=/bin
-TARFILE=/var/tmp/cups-print.out
+TARFILE=/var/tmp/cups-cluster.out
 CUPSLOCAL=/etc/cups
+
+/etc/init.d/cups stop
 
 # Alert if the tar file or other needed files do not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
 test -d $CUPSLOCAL || exit $MR_MISSINGFILE
-
-# We need to kill off CUPS to prevent it from overwriting
-# state data whilst updating
-/etc/init.d/cups stop
-
-/etc/cups/bin/check-disabled.pl 2>/dev/null
 
 # Unpack the tar file, getting only files that are newer than the
 # on-disk copies (-u).
 cd /
 tar xf $TARFILE || exit $MR_TARERR
 
-/etc/cups/bin/post-dcm-disable.pl 2>/dev/null
-if [ -s /etc/cups/printers.conf.tmp ]; then
-    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
-fi
-
 /etc/init.d/cups start
 
-# Now, make a stab at the PPD file.  This is okay to run after
-# because CUPS will pick up the new PPDs later
-/etc/cups/bin/gen-ppd.pl
-
-if [ $? != 0 ]; then
-    exit $MR_MKCRED
-fi
+/etc/cups/bin/gen-ppd.pl 2>/dev/null
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions
 if [ -x /etc/init.d/smb ]; then
        /etc/init.d/smb restart
+fi
+
+if [ $? != 0 ]; then
+    exit $MR_MKCRED
 fi
 
 # cleanup

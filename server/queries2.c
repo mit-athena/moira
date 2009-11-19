@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.108 2008-09-30 18:42:42 zacheiss Exp $
+/* $Id: queries2.c,v 2.109 2009-11-05 22:12:02 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -7445,11 +7445,11 @@ struct query Queries[] = {
     MR_Q_UPDATE,
     "pr",
     PRINTERS_TABLE,
-    "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %d, pc = %d, ac = %d, lpc_acl = %d, banner = %d, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
+    "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %s, pc = %s, ac = %d, lpc_acl = %d, banner = %s, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
     uprn_fields,
     16,
-    0,
-    0,
+    "name = '%s'",
+    1,
     NULL,
     &uprn_validate,
   },

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.27 2009-12-01 06:30:56 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.28 2009-12-03 19:05:08 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -365,6 +365,9 @@ CN=Services,CN=Configuration,"
 #define ALL_ADDRESS_LIST_PREFIX "CN=All Users,CN=All Address Lists,\
 CN=Address Lists Container,CN=Massachusetts Institute of Technology,\
 CN=Microsoft Exchange,CN=Services,CN=Configuration,"
+
+#define X500_PREFIX "X500:/o=Massachusetts Institute of Technology/\
+ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients"
 
 #define ADD_ATTR(t, v, o) 		\
   mods[n] = malloc(sizeof(LDAPMod));	\
@@ -1460,24 +1463,10 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	  if (Exchange) 
 	    {
 	      if((s = strchr(member, '@')) == (char *) NULL)
-		{ 
-		  strcat(member, "@mit.edu");
-		  
-		  if (ptr[LM_MEMBER] != NULL)
-		    free(ptr[LM_MEMBER]);
-		  ptr[LM_MEMBER] = strdup(member);
-		}
+		return;
 	  
 	      if(!strncasecmp(&member[strlen(member) - 6], ".LOCAL", 6)) 
-		{
-		  s = strrchr(member, '.');
-		  *s = '\0';
-		  strcat(s, ".mit.edu");
-		  
-		  if (ptr[LM_MEMBER] != NULL)
-		    free(ptr[LM_MEMBER]);
-		  ptr[LM_MEMBER] = strdup(member);
-		}
+		return;
 	    }
 
 	  if (contact_create(ldap_handle, dn_path, ptr[LM_MEMBER], 
@@ -1545,24 +1534,10 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (Exchange) 
 	{
 	  if((s = strchr(member, '@')) == (char *) NULL)
-	    { 
-	      strcat(member, "@mit.edu");
-	      
-	      if (ptr[LM_MEMBER] != NULL)
-		free(ptr[LM_MEMBER]);
-	      ptr[LM_MEMBER] = strdup(member);
-	    }
+	    return;
 	  
 	  if(!strncasecmp(&member[strlen(member) - 6], ".LOCAL", 6)) 
-	    {
-	      s = strrchr(member, '.');
-	      *s = '\0';
-	      strcat(s, ".mit.edu");
-	      
-	      if (ptr[LM_MEMBER] != NULL)
-		free(ptr[LM_MEMBER]);
-	      ptr[LM_MEMBER] = strdup(member);
-	    }
+	    return;
 	}
       
       if (contact_create(ldap_handle, dn_path, ptr[LM_MEMBER], 
@@ -3492,16 +3467,10 @@ int member_list_build(int ac, char **av, void *ptr)
       if (Exchange)
 	{
 	  if((s = strchr(temp, '@')) == (char *) NULL) 
-	    {
-	      strcat(temp, "@mit.edu");
-	    }
+	    return(0);
 	  
 	  if(!strncasecmp(&temp[strlen(temp) - 6], ".LOCAL", 6))
-	    {
-	      s = strrchr(temp, '.');
-	      *s = '\0';
-	      strcat(s, ".mit.edu");
-	    }
+	    return(0);
 	}
 
       if (!((int)call_args[3] & MOIRA_STRINGS))
@@ -3649,7 +3618,8 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
       if (Exchange)
 	{
 	  if(!strcmp(UserOu, contact_ou) && 
-	     ((s = strstr(user_name, "@mit.edu")) != (char *) NULL))
+	     ((s = strstr(user_name, 
+			  "@exchange-forwarding.mit.edu")) != (char *) NULL))
 	    {
 	      memset(temp, '\0', sizeof(temp));
 	      strcpy(temp, user_name);
@@ -3945,6 +3915,9 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 
   if (Exchange)
     {
+      if((s = strstr(mail, "@mit.edu")) != (char *) NULL)
+	return(rc);
+
       if (!strcmp(group_ou, contact_ou) && email_isvalid(mail))
 	{
 	  group_count = 0;
@@ -4017,7 +3990,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 		      user);
 	      return(1);
 	    }
-
+	
 	  linklist_free(group_base);
 	  group_base = NULL;
 	  group_count = 0;
@@ -4045,6 +4018,50 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  linklist_free(group_base);
 	  group_base = NULL;
 	  group_count = 0;
+
+	  sprintf(filter, "(&(objectClass=user)(proxyAddresses=smtp:%s))", mail);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+
+	  if ((rc = linklist_build(ld, bind_path, filter, attr_array,
+				   &group_base, &group_count, 
+				   LDAP_SCOPE_SUBTREE)) != 0) 
+	    {
+	      com_err(whoami, 0, "Unable to process contact %s : %s", 
+		      user, ldap_err2string(rc));
+	      return(rc);
+	    }
+      
+	  if (group_count) 
+	    {
+	      com_err(whoami, 0, "Object already exists with name %s",
+		      user);
+	      return(1);
+	    }
+
+	  linklist_free(group_base);
+	  group_base = NULL;
+	  group_count = 0;
+
+	  sprintf(filter, "(&(objectClass=group)(proxyAddresses=smtp:%s))", mail);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+
+	  if ((rc = linklist_build(ld, bind_path, filter, attr_array,
+				   &group_base, &group_count, 
+				   LDAP_SCOPE_SUBTREE)) != 0) 
+	    {
+	      com_err(whoami, 0, "Unable to process contact %s : %s", 
+		      user, ldap_err2string(rc));
+	      return(rc);
+	    }
+      
+	  if (group_count) 
+	    {
+	      com_err(whoami, 0, "Object already exists with name %s",
+		      user);
+	      return(1);
+	    }
 
 	  ADD_ATTR("mail", email_v, LDAP_MOD_ADD);
 	  ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
@@ -4814,6 +4831,8 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   char mail[256];
   char contact_mail[256];
   char proxy_address[256];
+  char proxy_address_mit[256];
+  char proxy_address_x500[256];
   char query_base_dn[256];
   char temp[256];
   char *userPrincipalName_v[] = {NULL, NULL};
@@ -4822,7 +4841,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   char *samAccountName_v[] = {NULL, NULL};
   char *mail_v[] = {NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
-  char *proxy_address_v[] = {NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
   char *query_base_dn_v[] = {NULL, NULL};
   char *principal_v[] = {NULL, NULL};
   char principal[256];
@@ -4857,8 +4876,14 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
     sprintf(new_dn, "uid=%s", user_name);
 
   sprintf(mail, "%s@%s", user_name, lowercase(ldap_domain));
-  sprintf(contact_mail, "%s@mit.edu", user_name);
-  sprintf(proxy_address, "SMTP:%s@%s", user_name, lowercase(ldap_domain)); 
+  if(Exchange)
+    sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
+  else
+    sprintf(contact_mail, "%s@mit.edu", user_name);
+  sprintf(proxy_address, "smtp:%s@%s", user_name, lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", user_name);
+  sprintf(proxy_address_x500, "%s/cn=%s?mit.edu", X500_PREFIX, user_name);
+  
   sprintf(principal, "%s@%s", user_name, PRIMARY_REALM);
 
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, NULL, TRUE, 
@@ -4871,8 +4896,8 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   if (Exchange)
     {
-      sprintf(temp, "cn=%s@mit.edu,%s,%s", before_user_name, contact_ou, 
-	      dn_path);
+      sprintf(temp, "cn=%s@exchange-forwarding.mit.edu,%s,%s", before_user_name, 
+	      contact_ou, dn_path);
 
       if(rc = ldap_delete_s(ldap_handle, temp))
 	{
@@ -4896,7 +4921,8 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   samAccountName_v[0] = user_name;
   mail_v[0] = mail;
   mail_nickname_v[0] = user_name;
-  proxy_address_v[0] = proxy_address; 
+  proxy_address_v[0] = proxy_address_mit; 
+  proxy_address_v[1] = proxy_address;
   query_base_dn_v[0] = query_base_dn;
 
   n = 0;
@@ -4918,7 +4944,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
       ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_REPLACE);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE); 
       ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE); 
-      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
+      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE); 
     }
   else
     {
@@ -5822,10 +5848,11 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
     }
 
   /* Need to add code to delete mit.edu contact */
-  
+
   if (Exchange)
     {
-      sprintf(temp, "cn=%s@mit.edu,%s,%s", user_name, contact_ou, dn_path);
+      sprintf(temp, "cn=%s@exchange-forwarding.mit.edu,%s,%s", user_name, 
+	      contact_ou, dn_path);
 
       if(rc = ldap_delete_s(ldap_handle, temp))
 	{

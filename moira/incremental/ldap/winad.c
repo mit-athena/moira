@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.28 2009-12-03 19:05:08 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.29 2009-12-10 17:01:23 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -5124,39 +5124,11 @@ int user_create(int ac, char **av, void *ptr)
   }
 
   samAccountName_v[0] = sam_name;
+
   if ((atoi(av[U_STATE]) != US_NO_PASSWD) && 
       (atoi(av[U_STATE]) != US_REGISTERED))
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
-
-      if (Exchange)
-	{
-	  hide_address_lists_v[0] = "TRUE";
-
-	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
-		   LDAP_MOD_ADD);
-
-	  /*
-	  sprintf(address_book, "%s%s", GLOBAL_ADDRESS_LIST_PREFIX, 
-		  call_args[1]);
-	  address_book_v[0] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", ADDRESS_LIST_PREFIX, call_args[1]);
-	  address_book_v[1] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", EMAIL_ADDRESS_LIST_PREFIX, 
-		  call_args[1]);
-	  address_book_v[2] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", ALL_ADDRESS_LIST_PREFIX, 
-		  call_args[1]);
-	  address_book_v[3] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  
-	  ADD_ATTR("showInAddressBook", address_book_v,
-		   LDAP_MOD_ADD);
-	  */
-	}
     }
 
   sprintf(userAccountControlStr, "%ld", userAccountControl);
@@ -5250,6 +5222,20 @@ int user_create(int ac, char **av, void *ptr)
 
   if (Exchange)
     {
+      if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
+	  (atoi(av[U_STATE]) != US_REGISTERED))
+	{
+	  hide_address_lists_v[0] = "TRUE";
+          ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
+                   LDAP_MOD_ADD);
+	} 
+      else 
+	{
+          hide_address_lists_v[0] = "FALSE";
+          ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
+                   LDAP_MOD_ADD);
+	}
+
       ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_ADD);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
       ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);

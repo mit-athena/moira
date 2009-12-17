@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-cluster.sh,v 1.3 2009-11-19 16:49:03 zacheiss Exp $
+# $Id: cups-cluster.sh,v 1.4 2009-12-17 20:58:52 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -35,6 +35,9 @@ tar xf $TARFILE || exit $MR_TARERR
 /etc/init.d/cups start
 
 /etc/cups/bin/gen-ppd.pl 2>/dev/null
+if [ -s /etc/cups/printers.conf.tmp ]; then
+    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
+fi
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions

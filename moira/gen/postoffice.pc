@@ -1,4 +1,4 @@
-/* $Id: postoffice.pc,v 1.2 2000-11-30 23:27:48 zacheiss Exp $
+/* $Id: postoffice.pc,v 1.3 2009-12-21 16:35:38 zacheiss Exp $
  *
  * This generates the post office location data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.2 2000-11-30 23:27:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.3 2009-12-21 16:35:38 zacheiss Exp $");
 
 
 #ifndef PO_SUBDIR
@@ -183,10 +183,11 @@ void pobox(char *path)
 
       EXEC SQL DECLARE filsys_cursor CURSOR FOR
 	SELECT f.label, f.lockertype, p.dir, q.quota
-	FROM filesys f, nfsphys p, quota q
+	FROM filesys f, nfsphys p, quota q, users u
 	WHERE f.mach_id=:mid AND f.type='IMAP' AND f.createflg!=0
 	AND f.filsys_id=q.filsys_id
 	AND f.mach_id=p.mach_id AND f.phys_id=p.nfsphys_id
+	AND f.owner = u.users_id AND u.status != 3
 	ORDER BY f.label, p.dir, q.quota;
       EXEC SQL OPEN filsys_cursor;
 

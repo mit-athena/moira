@@ -1,7 +1,7 @@
 #!/bin/sh 
 # This script performs postoffice updates.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.sh,v 1.3 2000-05-08 18:30:30 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.sh,v 1.4 2009-12-21 16:35:38 zacheiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
@@ -76,10 +76,6 @@ if [ $? != 0 ]; then
 	exit ${MR_NOCRED}
 fi
 
-if [ -r {$IMAP_MBOXES} ]; then
-	egrep "\..*\." ${IMAP_CONFIG}/mailboxes >> ${IMAP_MBOXES}
-fi
-
 sort -o ${IMAP_MBOXES} ${IMAP_MBOXES}
 
 
@@ -106,7 +102,7 @@ cp ${IMAP_CONFIG}/mailboxes ${IMAP_CONFIG}/mailboxes.save
 LD_LIBRARY_PATH=/usr/local/tcl/lib
 export LD_LIBRARY_PATH
 
-${IMAP_BIN}/cyradm -file ${IMAP_BIN}/sync.cyradm sync -d
+${IMAP_BIN}/sync.pl
 if [ $? != 0 ]; then
 	exit ${MR_MKCRED}
 fi

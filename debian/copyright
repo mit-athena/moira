@@ -2,7 +2,7 @@ This package was debianized as part of the Debathena Project
 <http://debathena.mit.edu/> of the MIT Student Information Processing
 Board.
 
-The Moria source code was obtained from the Moira CVS repository at 
+The Moira source code was obtained from the Moira CVS repository at 
 /afs/athena.mit.edu/astaff/project/moiradev, and is licensed as follows:
 
   Copyright © 1987-1998 by the Massachusetts Institute of Technology

@@ -21544,7 +21544,7 @@ MR_LIBDEP='$(BUILDTOP)/lib/libmoira.la'
 LIBS="$MR_LIBDEP $KLIBS"
 
 
-                                                                                                                                                                                                                                                ac_config_files="$ac_config_files Makefile lib/Makefile include/Makefile clients/Makefile clients/lib/Makefile clients/addusr/Makefile clients/blanche/Makefile clients/chfn/Makefile clients/chpobox/Makefile clients/chsh/Makefile clients/mailmaint/Makefile clients/mitch/Makefile clients/moira/Makefile clients/mrcheck/Makefile clients/mrtest/Makefile clients/stanley/Makefile clients/stella/Makefile update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES"
+                                                                                                                                                                                                                                                          ac_config_files="$ac_config_files Makefile lib/Makefile include/Makefile clients/Makefile clients/lib/Makefile clients/addusr/Makefile clients/blanche/Makefile clients/chfn/Makefile clients/chpobox/Makefile clients/chsh/Makefile clients/eunice/Makefile clients/mailmaint/Makefile clients/mitch/Makefile clients/moira/Makefile clients/mrcheck/Makefile clients/mrtest/Makefile clients/stanley/Makefile clients/stella/Makefile update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -22106,6 +22106,7 @@ do
   "clients/chfn/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/chfn/Makefile" ;;
   "clients/chpobox/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/chpobox/Makefile" ;;
   "clients/chsh/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/chsh/Makefile" ;;
+  "clients/eunice/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/eunice/Makefile" ;;
   "clients/mailmaint/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/mailmaint/Makefile" ;;
   "clients/mitch/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/mitch/Makefile" ;;
   "clients/moira/Makefile" ) CONFIG_FILES="$CONFIG_FILES clients/moira/Makefile" ;;

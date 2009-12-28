@@ -1,4 +1,4 @@
-/* $Id: cups-cluster.pc,v 1.3 2009-11-16 22:54:36 zacheiss Exp $
+/* $Id: cups-cluster.pc,v 1.4 2009-12-07 20:28:34 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-cluster.pc,v 1.3 2009-11-16 22:54:36 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-cluster.pc,v 1.4 2009-12-07 20:28:34 zacheiss Exp $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -40,19 +40,20 @@ const int krbvers = 5;	/* use Kerberos 5 */
 const char *alterjob = "<Limit Hold-Job Release-Job\
  Restart-Job Purge-Jobs Reprocess-Job Set-Job-Attributes\
  Cancel-Current-Job Suspend-Current-Job Resume-Job CUPS-Move-Job>";
-const char *submitjob = "<Limit Create-Job Print-Job Print-URI Send-Document\
+const char *submitjob = "<Limit Create-Job Print-Job Print-URI \
  Set-Job-Attributes Send-URI Create-Job-Subscription Renew-Subscription\
- Cancel-Subscription Get-Notifications CUPS-Move-Job>";
+ Cancel-Subscription Get-Notifications CUPS-Move-Job CUPS-Authenticate-Job>";
 const char *alterpntr = "<Limit CUPS-Add-Modify-Printer CUPS-Delete-Printer\
- CUPS-Add-Modify-Class CUPS-Delete-Class CUPS-Set-Default>";
+ CUPS-Add-Modify-Class CUPS-Delete-Class>";
 const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
  Disable-Printer Pause-Printer-After-Current-Job Hold-New-Jobs\
  Release-Held-New-Jobs Deactivate-Printer Activate-Printer Restart-Printer\
  Shutdown-Printer Startup-Printer Promote-Job Schedule-Job-After\
- CUPS-Accept-Jobs CUPS-Reject-Jobs>";
-const char *canceljob = "<Limit Cancel-Job CUPS-Authenticate-Job>";
+ CUPS-Accept-Jobs CUPS-Reject-Jobs CUPS-Set-Default>";
+const char *canceljob = "<Limit Cancel-Job>";
 const char *catchall = "<Limit All>";
-const char *phost = "printers.MIT.EDU";
+const char *phost = "cluster-printers.MIT.EDU";
+const char *svrlist = "cups-hosts";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -90,7 +91,7 @@ int main(int argc, char **argv)
   exit(MR_SUCCESS);
 }
 
-void printer_user_list(FILE *out, char *type, int id, char *str)
+void printer_user_list(FILE *out, char *type, int id, char *str, int striprealm)
 {
   struct save_queue *sq;
   struct imember *m;
@@ -105,8 +106,10 @@ void printer_user_list(FILE *out, char *type, int id, char *str)
         canon_krb(m, krbvers, kbuf, sizeof(kbuf));
 
 	/* now, take out all the @realm */
+	if (striprealm) {
         for (cp=kbuf; *cp; cp++) {
 	  if (*cp == '@') *cp = '\0';
+ 	}
  	}
         fprintf(out, "%s %s\n", str, kbuf);
       }
@@ -114,8 +117,6 @@ void printer_user_list(FILE *out, char *type, int id, char *str)
     }
   sq_destroy(sq);
 }
-
-
 
 void do_host(char *host)
 {
@@ -126,6 +127,7 @@ void do_host(char *host)
   char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
   char contact[PRINTERS_CONTACT_SIZE], hostname[MACHINE_NAME_SIZE];
   char cupshosts[MACHINE_NAME_SIZE], prtype [PRINTERS_TYPE_SIZE];
+  char service[SERVERHOSTS_SERVICE_SIZE];
   char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
   char *lhost;
   int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm;
@@ -215,7 +217,7 @@ void do_host(char *host)
    	    fprintf(out, "AuthType Negotiate\n");
 	  else
    	    fprintf(out, "AuthType Default\n");
-          printer_user_list(out, "LIST", ac, "AllowUser");
+          printer_user_list(out, "LIST", ac, "AllowUser", 0);
         }
 
       if (banner == PRN_BANNER_NONE)
@@ -291,7 +293,7 @@ void do_host(char *host)
    	    fprintf(out, "AuthType Negotiate\n");
 	  else
    	    fprintf(out, "AuthType Default\n");
-          printer_user_list(out, "LIST", ac, "AllowUser");
+          printer_user_list(out, "LIST", ac, "AllowUser", 0);
         }
 
       if (banner == PRN_BANNER_NONE)
@@ -370,7 +372,7 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_duplexqs CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka, 
-    pr.type as prtype, pr.ac
+    pr.type as prtype, pr.ac, sh.service
     FROM printers pr, machine m, serverhosts sh
     WHERE pr.rm = m.mach_id 
     AND m.mach_id = sh.mach_id AND sh.enable = 1 
@@ -380,11 +382,12 @@ void do_host(char *host)
   while (1)
     {
       EXEC SQL FETCH csr_duplexqs INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :prtype, :ac;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :prtype, :ac, :service;
       if (sqlca.sqlcode)
 	break;
 
       strtrim(hwtype);
+      strtrim(service);
       strtrim(rp);
       strtrim(location);
       strtrim(contact);
@@ -409,21 +412,15 @@ void do_host(char *host)
           fprintf(out, "PageLimit 0\n");
           if (location[0])
             fprintf(out, "Location %s\n", location);
-          /* fprintf(out, "ErrorPolicy abort-job\n"); */
-          if (ka || lpc_acl)
+          /* do not use custom policies for LPRng printers */
+          if (strcmp(service,"PRINT") && (ka || lpc_acl))
        	    fprintf(out, "OpPolicy %s-policy\n", rp);
           else
             fprintf(out, "OpPolicy default\n");
     
           /* Access-control list. */
           if (ac)
-            {
-              if (ka)
-       	        fprintf(out, "AuthType Negotiate\n");
-    	      else
-   	        fprintf(out, "AuthType Default\n");
-              printer_user_list(out, "LIST", ac, "AllowUser");
-            }
+            printer_user_list(out, "LIST", ac, "AllowUser", 0);
     
           if (banner == PRN_BANNER_NONE)
     	    fprintf(out, "JobSheets none none\n");
@@ -454,21 +451,15 @@ void do_host(char *host)
           fprintf(out, "PageLimit 0\n");
           if (location[0])
             fprintf(out, "Location %s\n", location);
-          fprintf(out, "ErrorPolicy abort-job\n");
-          if (ka || lpc_acl)
+          /* do not use custom policies for LPRng printers */
+          if (strcmp(service,"PRINT") && (ka || lpc_acl))
        	    fprintf(out, "OpPolicy %s-policy\n", rp);
           else
             fprintf(out, "OpPolicy default\n");
     
           /* Access-control list. */
           if (ac)
-            {
-              if (ka)
-       	        fprintf(out, "AuthType Negotiate\n");
-    	      else
-   	        fprintf(out, "AuthType Default\n");
-              printer_user_list(out, "LIST", ac, "AllowUser");
-            }
+            printer_user_list(out, "LIST", ac, "AllowUser", 0);
     
           if (banner == PRN_BANNER_NONE)
     	    fprintf(out, "JobSheets none none\n");
@@ -487,6 +478,7 @@ void do_host(char *host)
   fprintf(out, "LogLevel info\n");
   fprintf(out, "SystemGroup sys root ops-group\n");
   fprintf(out, "Port 631\n");
+  fprintf(out, "SSLPort 443\n");
   fprintf(out, "Listen /var/run/cups/cups.sock\n");
   fprintf(out, "Browsing On\n");
   fprintf(out, "BrowseOrder allow,deny\n");
@@ -497,7 +489,7 @@ void do_host(char *host)
   fprintf(out, "ServerKey /etc/cups/ssl/%s-ipp-key.pem\n", lhost);
   fprintf(out, "ServerName %s\n", lhost);
   fprintf(out, "ServerAlias %s\n", phost);
-  fprintf(out, "Krb5Keytab /etc/krb5-ipp.keytab\n");
+  /* fprintf(out, "Krb5Keytab /etc/krb5-ipp.keytab\n"); */
 
   /* The other CUPS servers should be aware of the other hosts'
      queues, so we'll let them browse each other. */
@@ -537,14 +529,18 @@ void do_host(char *host)
   EXEC SQL SELECT ps.lpc_acl INTO :top_lpc_acl
     FROM printservers ps, machine m
     WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
-  if (!sqlca.sqlcode && lpc_acl)
-    {
       fprintf (out, "<Policy default>\n");
       fprintf (out, "%s\n", alterjob);
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
-      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+  printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "<Limit Send-Document CUPS-Get-Document>\n");
+  fprintf (out, "AuthType None\n");
+  fprintf (out, "Require user @OWNER @SYSTEM\n");
       fprintf (out, "Order deny,allow\n");
+  fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
       fprintf (out, "%s\n", submitjob);
       fprintf (out, "AuthType None\n");
@@ -559,13 +555,13 @@ void do_host(char *host)
       fprintf (out, "%s\n", lpcpntr);
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @SYSTEM\n");
-      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+  printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "</Limit>\n");
       fprintf (out, "%s\n", canceljob);
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
-      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+  printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -575,7 +571,6 @@ void do_host(char *host)
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
       fprintf (out, "</Policy>\n");
-    }
 
   /* restrict lists and lpcaccess policies.  Sadly, we have to put the
      top level for each new policy since CUPS doesn't have a way of 
@@ -584,7 +579,8 @@ void do_host(char *host)
     SELECT UNIQUE rp, ka, ac, lpc_acl
     FROM printers
     WHERE (ac != 0 OR lpc_acl != 0) AND rm in (SELECT m.mach_id FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER') AND sh.enable = 1);
+    WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' or sh.service = 'CUPS-CLUSTER') 
+    AND sh.enable = 1);
   EXEC SQL OPEN csr_lpc;
   while (1)
     {
@@ -598,7 +594,14 @@ void do_host(char *host)
       fprintf (out, "%s\n", alterjob);
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
-      printer_user_list(out, "LIST", lpc_acl, "Require user");
+      printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", svrlist, "Require user", 1); 
+      fprintf (out, "Order deny,allow\n");
+      fprintf (out, "Allow from all\n");
+      fprintf (out, "</Limit>\n");
+      fprintf (out, "<Limit Send-Document CUPS-Get-Document>\n");
+      fprintf (out, "AuthType None\n");
+      fprintf (out, "Require user @OWNER @SYSTEM\n");
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -609,8 +612,10 @@ void do_host(char *host)
       else
         fprintf (out, "AuthType None\n");
       /* Access-control list. */
-      if (ac)
-        printer_user_list(out, "LIST", ac, "Require user");
+      if (ac) {
+        printer_user_list(out, "LIST", ac, "Require user", 1);
+        printer_user_list(out, "LIST", svrlist, "Require user", 1); 
+      }
       else if (ka)
         fprintf (out, "Require valid-user\n");
       fprintf (out, "Order deny,allow\n");
@@ -626,15 +631,15 @@ void do_host(char *host)
       fprintf (out, "Require user @SYSTEM\n");
       /* printer-specific lpc access. */
       if (lpc_acl)
-          printer_user_list(out, "LIST", lpc_acl, "Require user");
-      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+        printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "</Limit>\n");
       fprintf (out, "%s\n", canceljob);
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
-      printer_user_list(out, "LIST", lpc_acl, "Require user");
-      printer_user_list(out, "LIST", top_lpc_acl, "Require user");
+      printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");

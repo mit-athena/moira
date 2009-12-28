@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+cvs20091228-0debathena1) unstable; urgency=low
+
+  * New CVS snapshot.
+
+ -- Evan Broder <broder@mit.edu>  Mon, 28 Dec 2009 17:46:21 -0500
+
 debathena-moira (4.0.0+cvs20091116-0debathena1) unstable; urgency=low
 
   * New CVS snapshot.

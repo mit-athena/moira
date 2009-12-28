@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.21 2008-08-22 17:49:12 zacheiss Exp $
+/* $Id: increment.pc,v 2.22 2009-12-01 06:17:50 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.21 2008-08-22 17:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.22 2009-12-01 06:17:50 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -198,14 +198,14 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case LIST_TABLE:
       sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
 	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-	      "l.description, l.list_id FROM list l WHERE %s", qual);
+	      "l.description, l.list_id, l.nfsgroup FROM list l WHERE %s", qual);
       dosql(before);
-      beforec = 11;
+      beforec = 12;
       break;
     case IMEMBERS_TABLE:
       id = (int) argv[0];
       sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
-	      "grouplist, gid FROM list WHERE list_id = %d", id);
+	      "grouplist, gid, nfsgroup FROM list WHERE list_id = %d", id);
       dosql(&(before[3]));
       name = xmalloc(0);
       id_to_name(id, LIST_TABLE, &name);
@@ -213,37 +213,37 @@ void incremental_before(enum tables table, char *qual, char **argv)
       strcpy(before[0], name);
       strcpy(before[1], argv[1]);
       id = (int) argv[2];
-      beforec = 10;
+      beforec = 11;
       if (!strcmp(before[1], "USER"))
 	{
 	  id_to_name(id, USERS_TABLE, &name2);
-	  EXEC SQL SELECT status, users_id INTO :before[9], :before[11] 
+	  EXEC SQL SELECT status, users_id INTO :before[10], :before[12] 
 	    FROM users WHERE users_id = :id;
-	  EXEC SQL SELECT list_id INTO :before[10] FROM list
+	  EXEC SQL SELECT list_id INTO :before[11] FROM list
 	    WHERE name = :name;
-	  beforec = 12;
+	  beforec = 13;
       }
       else if (!strcmp(before[1], "LIST"))
 	{
 	  id_to_name(id, LIST_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :before[9] FROM list
+	  EXEC SQL SELECT list_id INTO :before[10] FROM list
 	    WHERE name = :name;
-	  sprintf(before[10], "%d", id);
-	  beforec = 11;
+	  sprintf(before[11], "%d", id);
+	  beforec = 12;
 	}
       else if (!strcmp(before[1], "STRING") || !strcmp(before[1], "KERBEROS"))
 	{
 	  id_to_name(id, STRINGS_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :before[9] FROM list
+	  EXEC SQL SELECT list_id INTO :before[10] FROM list
 	    WHERE name = :name;
 	}
       else if (!strcmp(before[1], "MACHINE"))
 	{
 	  id_to_name(id, MACHINE_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :before[9] FROM list
+	  EXEC SQL SELECT list_id INTO :before[10] FROM list
 	    WHERE name = :name;
-	  sprintf(before[10], "%d", id);
-	  beforec = 11;
+	  sprintf(before[11], "%d", id);
+	  beforec = 12;
 	}
       strcpy(before[2], name2);
       free(name);
@@ -382,14 +382,14 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case LIST_TABLE:
       sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
 	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-	      "l.description, l.list_id FROM list l WHERE %s", qual);
+	      "l.description, l.list_id, l.nfsgroup FROM list l WHERE %s", qual);
       dosql(after);
-      afterc = 11;
+      afterc = 12;
       break;
     case IMEMBERS_TABLE:
       id = (int) argv[0];
       sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
-	      "grouplist, gid FROM list WHERE list_id = %d", id);
+	      "grouplist, gid, nfsgroup FROM list WHERE list_id = %d", id);
       dosql(&(after[3]));
       name = xmalloc(0);
       id_to_name(id, LIST_TABLE, &name);
@@ -397,37 +397,37 @@ void incremental_after(enum tables table, char *qual, char **argv)
       strcpy(after[0], name);
       strcpy(after[1], argv[1]);
       id = (int) argv[2];
-      afterc = 10;
+      afterc = 11;
       if (!strcmp(after[1], "USER"))
 	{
 	  id_to_name(id, USERS_TABLE, &name2);
-	  EXEC SQL SELECT status, users_id INTO :after[9], :after[11]
+	  EXEC SQL SELECT status, users_id INTO :after[10], :after[12]
 	    FROM users WHERE users_id = :id;
-	  EXEC SQL SELECT list_id INTO :after[10] FROM list
+	  EXEC SQL SELECT list_id INTO :after[11] FROM list
 	    WHERE name = :name;
-	  afterc = 12;
+	  afterc = 13;
 	}
       else if (!strcmp(after[1], "LIST"))
 	{
 	  id_to_name(id, LIST_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :after[9] FROM list
+	  EXEC SQL SELECT list_id INTO :after[10] FROM list
 	    WHERE name = :name;
-	  sprintf(after[10], "%d", id);
-	  afterc = 11;
+	  sprintf(after[11], "%d", id);
+	  afterc = 12;
 	}
       else if (!strcmp(after[1], "STRING") || !strcmp(after[1], "KERBEROS"))
 	{
 	  id_to_name(id, STRINGS_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :after[9] FROM list
+	  EXEC SQL SELECT list_id INTO :after[10] FROM list
 	    WHERE name = :name;
 	}
       else if (!strcmp(after[1], "MACHINE"))
 	{
 	  id_to_name(id, MACHINE_TABLE, &name2);
-	  EXEC SQL SELECT list_id INTO :after[9] FROM list
+	  EXEC SQL SELECT list_id INTO :after[10] FROM list
 	    WHERE name = :name;
-	  sprintf(after[10], "%d", id);
-	  afterc = 11;
+	  sprintf(after[11], "%d", id);
+	  afterc = 12;
 	}
       strcpy(after[2], name2);
       free(name);

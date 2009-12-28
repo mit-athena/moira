@@ -3,6 +3,7 @@ usr/bin/blanche
 usr/bin/chfn.moira
 usr/bin/chpobox
 usr/bin/chsh.moira
+usr/bin/eunice
 usr/bin/mitch
 usr/bin/namespace
 usr/bin/moira

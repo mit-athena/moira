@@ -474,9 +474,10 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \
 	  clients/blanche/Makefile clients/chfn/Makefile \
 	  clients/chpobox/Makefile clients/chsh/Makefile \
-	  clients/mailmaint/Makefile clients/mitch/Makefile \
-	  clients/moira/Makefile clients/mrcheck/Makefile \
-	  clients/mrtest/Makefile clients/stanley/Makefile \
-	  clients/stella/Makefile update/Makefile man/Makefile \
-	  $WEBMOIRA_OUTPUT_FILES $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES \
+	  clients/eunice/Makefile clients/mailmaint/Makefile \
+	  clients/mitch/Makefile clients/moira/Makefile \
+	  clients/mrcheck/Makefile clients/mrtest/Makefile \
+	  clients/stanley/Makefile clients/stella/Makefile \
+	  update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES \
+	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES \
 	  $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)

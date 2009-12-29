@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.24 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: phase2.pc,v 1.25 2009-12-29 17:29:28 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.24 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.25 2009-12-29 17:29:28 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -96,7 +96,7 @@ int show_pdm_mach(void *id);
 int show_mcm_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[CLUSTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -122,7 +122,7 @@ int show_mcm_mach(void *id)
 int show_mcm_clu(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -149,7 +149,7 @@ int show_mcm_clu(void *id)
 int show_mcntmap_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[CONTAINERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -175,7 +175,7 @@ int show_mcntmap_mach(void *id)
 int show_mcntmap_cnt(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -202,7 +202,7 @@ int show_mcntmap_cnt(void *id)
 int show_hostalias(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[HOSTALIAS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -228,7 +228,7 @@ int show_hostalias(void *id)
 int show_printer_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -254,7 +254,7 @@ int show_printer_mach(void *id)
 int show_printer_server(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -280,7 +280,7 @@ int show_printer_server(void *id)
 int show_printer_loghost(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -306,7 +306,7 @@ int show_printer_loghost(void *id)
 int show_printer_spool(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -332,7 +332,7 @@ int show_printer_spool(void *id)
 int show_printer_quota(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -358,7 +358,7 @@ int show_printer_quota(void *id)
 int show_printer_ac(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -384,7 +384,7 @@ int show_printer_ac(void *id)
 int show_printer_lpc_acl(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -410,7 +410,7 @@ int show_printer_lpc_acl(void *id)
 void fix_printer_ac(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE printers SET ac = 0 WHERE ac = :iid;
@@ -425,7 +425,7 @@ void fix_printer_ac(void *id)
 void fix_printer_lpc_acl(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE printers SET lpc_acl = 0 WHERE lpc_acl = :iid;
@@ -498,7 +498,7 @@ int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
   char stmt_buf[500];
   EXEC SQL END DECLARE SECTION;
 
-  if ((newid = (int)hash_lookup(string_dups, ret)))
+  if ((newid = (int)(long)hash_lookup(string_dups, ret)))
     {
       printf("%s entry %s(%d) has a %s with duplicate string %d\n",
 	     table, oname, oid, field, ret);
@@ -578,7 +578,7 @@ int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid)
   char stmt_buf[500];
   EXEC SQL END DECLARE SECTION;
 
-  if ((newid = (int)hash_lookup(string_dups, ret)))
+  if ((newid = (int)(long)hash_lookup(string_dups, ret)))
     {
       printf("%s entry has a %s with duplicate string %d\n",
 	     table, field, ret);
@@ -689,8 +689,8 @@ void pobox_check(int id, struct user *u)
 	    {
 	      printf("Replacing box_id dup string ID %d with %d\n",
 		     u->pobox_id,
-		     (int)hash_lookup(string_dups, u->pobox_id));
-	      u->pobox_id = (int)hash_lookup(string_dups, u->pobox_id);
+		     (int)(long)hash_lookup(string_dups, u->pobox_id));
+	      u->pobox_id = (int)(long)hash_lookup(string_dups, u->pobox_id);
 	      fix_smtp_pobox(u->users_id, u->pobox_id);
 	      string_check(u->pobox_id);
 	    }
@@ -740,7 +740,7 @@ void pobox_check(int id, struct user *u)
 void remove_pobox(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE users SET potype = 'NONE' WHERE users.users_id = :iid;
@@ -931,7 +931,7 @@ void cluster_check(int id, void *cluster, void *hint)
 int show_svc(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1;
+  int iid = (int)(long)id, found = 1;
   char label[SVC_SERV_LABEL_SIZE], data[SVC_SERV_CLUSTER_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -1027,7 +1027,7 @@ void list_check(int id, void *list, void *hint)
 void fix_list_acl(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE list SET acl_id = :iid, acl_type = 'LIST'
@@ -1043,7 +1043,7 @@ void fix_list_acl(int id)
 void fix_list_memacl(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE list SET memacl_id = 0, memacl_type = 'NONE'
@@ -1059,7 +1059,7 @@ void fix_list_memacl(int id)
 int show_member_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid, iid = (int)id, found = 1;
+  int mid, iid = (int)(long)id, found = 1;
   char mtype[IMEMBERS_MEMBER_TYPE_SIZE], *name = NULL;
   EXEC SQL END DECLARE SECTION;
 
@@ -1108,7 +1108,7 @@ int show_member_list(void *id)
 int show_mem_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = (int)id, found = 1;
+  int lid, iid = (int)(long)id, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct list *l;
 
@@ -1135,7 +1135,7 @@ int show_mem_user(void *id)
 int show_mem_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = (int)id, found = 1;
+  int lid, iid = (int)(long)id, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct list *l;
 
@@ -1162,7 +1162,7 @@ int show_mem_list(void *id)
 int show_mem_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = (int)id, found = 1;
+  int lid, iid = (int)(long)id, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct list *l;
 
@@ -1190,7 +1190,7 @@ int show_mem_str(void *id)
 int show_mem_krb(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = (int)id, found = 1;
+  int lid, iid = (int)(long)id, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct list *l;
 
@@ -1218,7 +1218,7 @@ int show_mem_krb(void *id)
 int show_mem_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = (int)id, found = 1;
+  int lid, iid = (int)(long)id, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct list *l; 
 
@@ -1246,7 +1246,7 @@ int show_mem_mach(void *id)
 void del_mem_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'USER' AND
@@ -1262,7 +1262,7 @@ void del_mem_user(void *id)
 void del_mem_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'LIST' AND
@@ -1278,7 +1278,7 @@ void del_mem_list(void *id)
 void del_mem_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'STRING' AND
@@ -1295,7 +1295,7 @@ void del_mem_str(void *id)
 void del_mem_krb(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'KERBEROS' AND
@@ -1311,7 +1311,7 @@ void del_mem_krb(void *id)
 void del_mem_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'MACHINE' AND
@@ -1328,7 +1328,7 @@ int show_sh(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[SERVERHOSTS_SERVICE_SIZE];
-  int iid = (int)id;
+  int iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -1353,7 +1353,7 @@ int show_sh(void *id)
 void del_sh_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM serverhosts WHERE mach_id = :iid;
@@ -1649,7 +1649,7 @@ static void clear_container_list(struct container *cnt)
 void fix_container_acl(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE containers SET acl_id = 0, acl_type = 'NONE'
@@ -1665,7 +1665,7 @@ void fix_container_acl(int id)
 void fix_container_memacl(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = (int)id;
+  int rowcount, iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE containers SET memacl_id = 0, memacl_type = 'NONE'
@@ -1762,7 +1762,7 @@ void check_container(int id, void *container, void *hint)
 int show_fsg_missing(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
 
@@ -1837,7 +1837,7 @@ void fix_fsg_type(void *filesys)
 int show_fsg_nomember(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
 
@@ -1864,7 +1864,7 @@ int show_fsg_nomember(void *id)
 int show_quota_nouser(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr212 CURSOR FOR
@@ -1887,7 +1887,7 @@ int show_quota_nouser(void *id)
 int show_quota_nolist(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr213 CURSOR FOR
@@ -1910,7 +1910,7 @@ int show_quota_nolist(void *id)
 void fix_quota_nouser(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM quota
@@ -1926,7 +1926,7 @@ void fix_quota_nouser(void *id)
 void fix_quota_nolist(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM quota WHERE entity_id = :iid AND type = 'GROUP';
@@ -1941,7 +1941,7 @@ void fix_quota_nolist(void *id)
 int show_quota_nofs(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   char type[QUOTA_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -1964,13 +1964,13 @@ int show_quota_nofs(void *id)
 
 void fix_quota_nofs(void *id)
 {
-  single_delete("quota", "filsys_id", (int)id);
+  single_delete("quota", "filsys_id", (int)(long)id);
 }
 
 int show_quota_wrongpid(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, id1, found = 1;
+  int iid = (int)(long)id, id1, found = 1;
   char type[QUOTA_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
@@ -1997,7 +1997,7 @@ int show_quota_wrongpid(void *id)
 void fix_quota_physid(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount, id1;
+  int iid = (int)(long)id, rowcount, id1;
   EXEC SQL END DECLARE SECTION;
 
   id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
@@ -2015,7 +2015,7 @@ int show_srv_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[SERVERS_NAME_SIZE];
-  int iid = (int)id;
+  int iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -2041,7 +2041,7 @@ int show_srv_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[SERVERS_NAME_SIZE];
-  int iid = (int)id;
+  int iid = (int)(long)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -2066,7 +2066,7 @@ int show_srv_list(void *id)
 void zero_srv_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
@@ -2082,7 +2082,7 @@ void zero_srv_user(void *id)
 void zero_srv_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount;
+  int iid = (int)(long)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
@@ -2098,7 +2098,7 @@ void zero_srv_list(void *id)
 int show_krb_usr(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1, id1;
+  int iid = (int)(long)id, found = 1, id1;
   EXEC SQL END DECLARE SECTION;
   struct string *s;
   char *ss;
@@ -2128,7 +2128,7 @@ int show_krb_usr(void *id)
 int show_krb_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, found = 1, id1;
+  int iid = (int)(long)id, found = 1, id1;
   EXEC SQL END DECLARE SECTION;
   struct user *u;
   char *s;
@@ -2195,9 +2195,9 @@ void phase2(void)
 	break;
 
       if (!(m = hash_lookup(machines, mach_id)))
-	sq_save_unique_data(sq1, (void *)mach_id);
+	sq_save_unique_data(sq1, (void *)(long)mach_id);
       else if (!hash_lookup(clusters, clu_id))
-	sq_save_unique_data(sq2, (void *)clu_id);
+	sq_save_unique_data(sq2, (void *)(long)clu_id);
       if (m)
 	m->clucount++;
     }
@@ -2221,7 +2221,7 @@ void phase2(void)
 	break;
 
       if (!hash_lookup(clusters, clu_id))
-	sq_save_unique_data(sq1, (void *)clu_id);
+	sq_save_unique_data(sq1, (void *)(long)clu_id);
     }
   EXEC SQL CLOSE csr222;
   generic_delete(sq1, show_svc, "svc", "clu_id", 1);
@@ -2255,17 +2255,17 @@ void phase2(void)
       strtrim(rowid);
 
       if (!(l = hash_lookup(lists, list_id)))
-	sq_save_unique_data(sq1, (void *)list_id);
+	sq_save_unique_data(sq1, (void *)(long)list_id);
       else if (type[0] == 'U' && !hash_lookup(users, id))
-	sq_save_unique_data(sq2, (void *)id);
+	sq_save_unique_data(sq2, (void *)(long)id);
       else if (type[0] == 'L' && !hash_lookup(lists, id))
-	sq_save_unique_data(sq3, (void *)id);
+	sq_save_unique_data(sq3, (void *)(long)id);
       else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
-	sq_save_unique_data(sq4, (void *)id);
+	sq_save_unique_data(sq4, (void *)(long)id);
       else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
-	sq_save_unique_data(sq5, (void *)id);
+	sq_save_unique_data(sq5, (void *)(long)id);
       else if (type[0] == 'M' && !hash_lookup(machines, id))
-	sq_save_unique_data(sq6, (void *)id);
+	sq_save_unique_data(sq6, (void *)(long)id);
       else
 	l->members++;
       maybe_fixup_unref_string2("imembers", "tag", rowid, tag);
@@ -2299,9 +2299,9 @@ void phase2(void)
       maybe_fixup_modby2("servers", "modby", strtrim(rowid), modby);
       strtrim(acl_type);
       if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
-	sq_save_data(sq1, (void *)acl_id);
+	sq_save_data(sq1, (void *)(long)acl_id);
       else if (!strcmp(acl_type, "LIST") && !hash_lookup(lists, acl_id))
-	sq_save_data(sq2, (void *)acl_id);
+	sq_save_data(sq2, (void *)(long)acl_id);
     }
   EXEC SQL CLOSE csr224;
   generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
@@ -2325,7 +2325,7 @@ void phase2(void)
 
       maybe_fixup_modby2("serverhosts", "modby", strtrim(rowid), modby);
       if (!hash_lookup(machines, mach_id))
-	sq_save_data(sq, (void *)mach_id);
+	sq_save_data(sq, (void *)(long)mach_id);
     }
   EXEC SQL CLOSE csr225;
   generic_fix(sq, show_sh, "Delete", del_sh_mach, 0);
@@ -2354,9 +2354,9 @@ void phase2(void)
 	break;
 
       if (!(f = hash_lookup(filesys, group_id)))
-	sq_save_data(sq1, (void *)group_id);
+	sq_save_data(sq1, (void *)(long)group_id);
       if (!hash_lookup(filesys, filsys_id))
-	sq_save_data(sq3, (void *)filsys_id);
+	sq_save_data(sq3, (void *)(long)filsys_id);
     }
   EXEC SQL CLOSE csr226;
   generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
@@ -2385,13 +2385,13 @@ void phase2(void)
 
       maybe_fixup_modby2("quota", "modby", strtrim(rowid), modby);
       if (type[0] == 'U' && entity_id != 0 && !hash_lookup(users, entity_id))
-	sq_save_data(sq1, (void *)entity_id);
+	sq_save_data(sq1, (void *)(long)entity_id);
       else if (type[0] == 'G' && !hash_lookup(lists, entity_id))
-	sq_save_data(sq4, (void *)entity_id);
+	sq_save_data(sq4, (void *)(long)entity_id);
       else if (!(f = hash_lookup(filesys, filsys_id)))
-	sq_save_data(sq2, (void *)filsys_id);
+	sq_save_data(sq2, (void *)(long)filsys_id);
       else if (phys_id != f->phys_id || !(n = hash_lookup(nfsphys, phys_id)))
-	sq_save_data(sq3, (void *)phys_id);
+	sq_save_data(sq3, (void *)(long)phys_id);
       else
 	n->count += quota;
     }
@@ -2536,9 +2536,9 @@ void phase2(void)
 	break;
 
       if (!hash_lookup(users, users_id))
-	sq_save_unique_data(sq1, (void *)users_id);
+	sq_save_unique_data(sq1, (void *)(long)users_id);
       else if (!maybe_fixup_unref_string2("krbmap", "string_id", strtrim(rowid), string_id))
-	sq_save_unique_data(sq2, (void *)string_id);
+	sq_save_unique_data(sq2, (void *)(long)string_id);
     }
   EXEC SQL CLOSE csr230;
   generic_delete(sq1, show_krb_usr, "krbmap", "users_id", 1);
@@ -2583,7 +2583,7 @@ void phase2(void)
 	break;
 
       if (!hash_lookup(machines, mach_id))
-	sq_save_unique_data(sq1, (void *)mach_id);
+	sq_save_unique_data(sq1, (void *)(long)mach_id);
     }
   EXEC SQL CLOSE csr232;
   generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
@@ -2611,21 +2611,21 @@ void phase2(void)
 
       maybe_fixup_modby2("printers", "modby", strtrim(rowid), modby);
       if (!hash_lookup(machines, mach_id))
-	sq_save_unique_data(sq1, (void *)mach_id);
+	sq_save_unique_data(sq1, (void *)(long)mach_id);
       else if (!hash_lookup(machines, rm))
-	sq_save_unique_data(sq2, (void *)rm);
+	sq_save_unique_data(sq2, (void *)(long)rm);
       else if (!hash_lookup(printservers, rm))
-	sq_save_unique_data(sq6, (void *)mach_id);
+	sq_save_unique_data(sq6, (void *)(long)mach_id);
       else if (!hash_lookup(machines, rq))
-	sq_save_unique_data(sq3, (void *)rq);
+	sq_save_unique_data(sq3, (void *)(long)rq);
       else {
 	if (!hash_lookup(lists, ac))
-	  sq_save_unique_data(sq4, (void *)ac);
+	  sq_save_unique_data(sq4, (void *)(long)ac);
 	if (!hash_lookup(lists, lpc_acl))
-	  sq_save_unique_data(sq5, (void *)lpc_acl);
+	  sq_save_unique_data(sq5, (void *)(long)lpc_acl);
 	if (!hash_lookup(machines, loghost))
 	  {
-	    show_printer_loghost((void *)loghost);
+	    show_printer_loghost((void *)(long)loghost);
 	    cant_fix();
 	  }
       }
@@ -2661,9 +2661,9 @@ void phase2(void)
 	break;
 
       if (!(m = hash_lookup(machines, mach_id)))
-	sq_save_unique_data(sq1, (void *)mach_id);
+	sq_save_unique_data(sq1, (void *)(long)mach_id);
       else if (!hash_lookup(containers, cnt_id))
-	sq_save_unique_data(sq2, (void *)cnt_id);
+	sq_save_unique_data(sq2, (void *)(long)cnt_id);
     }
   EXEC SQL CLOSE csr_mcntmap;
   generic_delete(sq1, show_mcntmap_mach, "mcntmap", "mach_id", 1);

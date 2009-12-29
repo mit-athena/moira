@@ -1,4 +1,4 @@
-/* $Id: namespace.c,v 1.17 2009-05-04 20:49:10 zacheiss Exp $
+/* $Id: namespace.c,v 1.18 2009-12-29 17:29:27 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.17 2009-05-04 20:49:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.18 2009-12-29 17:29:27 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
-static void Signal_Handler(void);
-static void CatchInterrupt(void);
+static void Signal_Handler(int signal);
+static void CatchInterrupt(int signal);
 int NewListHelp(int argc, char **argv);
 
 char *whoami;			/* used by menu.c ugh!!! */
@@ -316,7 +316,7 @@ static void Usage(void)
  *	Returns: doesn't
  */
 
-static void Signal_Handler(void)
+static void Signal_Handler(int signal)
 {
   Put_message("Signal caught - exiting");
 #ifdef HAVE_CURSES
@@ -328,7 +328,7 @@ static void Signal_Handler(void)
 }
 
 
-static void CatchInterrupt(void)
+static void CatchInterrupt(int signal)
 {
   Put_message("Interrupt! Press RETURN to continue");
   interrupt = 1;

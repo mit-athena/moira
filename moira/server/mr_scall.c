@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: mr_scall.c,v 1.40 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Do RPC
  *
@@ -22,9 +22,10 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.39 2006-08-22 17:36:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.40 2009-12-29 17:29:33 zacheiss Exp $");
 
 extern int nclients;
 extern client **clients;

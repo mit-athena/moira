@@ -1,8 +1,9 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.4 2002-08-14 14:01:21 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.5 2009-12-29 17:29:28 zacheiss Exp $
  */
 
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 #include <moira.h>
 
 #define FIXERRORS

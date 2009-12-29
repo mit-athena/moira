@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.22 2009-12-01 06:17:50 zacheiss Exp $
+/* $Id: increment.pc,v 2.23 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -17,10 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/param.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.22 2009-12-01 06:17:50 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.23 2009-12-29 17:29:33 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -203,7 +204,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       beforec = 12;
       break;
     case IMEMBERS_TABLE:
-      id = (int) argv[0];
+      id = (int)(long)argv[0];
       sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
 	      "grouplist, gid, nfsgroup FROM list WHERE list_id = %d", id);
       dosql(&(before[3]));
@@ -212,7 +213,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       name2 = xmalloc(0);
       strcpy(before[0], name);
       strcpy(before[1], argv[1]);
-      id = (int) argv[2];
+      id = (int)(long)argv[2];
       beforec = 11;
       if (!strcmp(before[1], "USER"))
 	{
@@ -387,7 +388,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
       afterc = 12;
       break;
     case IMEMBERS_TABLE:
-      id = (int) argv[0];
+      id = (int)(long)argv[0];
       sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
 	      "grouplist, gid, nfsgroup FROM list WHERE list_id = %d", id);
       dosql(&(after[3]));
@@ -396,7 +397,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
       name2 = xmalloc(0);
       strcpy(after[0], name);
       strcpy(after[1], argv[1]);
-      id = (int) argv[2];
+      id = (int)(long)argv[2];
       afterc = 11;
       if (!strcmp(after[1], "USER"))
 	{

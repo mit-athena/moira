@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.61 2009-06-01 21:05:01 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.62 2009-12-29 17:29:32 zacheiss Exp $
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 
@@ -173,9 +173,7 @@
 #include <moira_site.h>
 #include <mrclient.h>
 #include <krb5.h>
-#include <gsssasl.h>
-#include <gssldap.h> 
-#include "kpasswd.h"
+#include <sasl/sasl.h>
 
 #ifdef _WIN32
 #ifndef ECONNABORTED
@@ -202,6 +200,10 @@
 
 #define CFG_PATH "/moira/winad/"
 #define WINADCFG "winad.cfg"
+
+#define LDAP_SERVICE "_ldap"
+#define TCP_PROTOCOL "_tcp"
+
 #define strnicmp(A,B,C) strncasecmp(A,B,C)
 #define UCHAR unsigned char
 
@@ -378,7 +380,14 @@ CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 #define MAX_DOMAINS 10
 char DomainNames[MAX_DOMAINS][128];
 
+#define KDC_PORT  464
+#define SOCKET int
+#define INVALID_SOCKET  ((SOCKET)~0)
+#define SOCKET_ERROR    (-1)
+
 LK_ENTRY *member_base = NULL;
+
+LDAP *ldap_handle = NULL;
 
 char   PrincipalName[128];
 static char tbl_buf[1024];
@@ -397,6 +406,8 @@ char *whoami;
 char ldap_domain[256];
 char *ServerList[MAX_SERVER_NAMES];
 char default_server[256];
+char connected_server[128];
+char ldap_domain_name[128];
 static char tbl_buf[1024];
 char group_suffix[256];
 char exchange_acl[256];
@@ -410,6 +421,15 @@ int  SetPassword = 1;
 int  Exchange = 0;
 int  ProcessMachineContainer = 1;
 int  UpdateDomainList;
+
+struct sockaddr_in  kdc_server;
+int                 kdc_socket;
+krb5_context        context;
+krb5_ccache         ccache;
+krb5_auth_context   auth_context = NULL;
+krb5_data           ap_req;
+krb5_creds          *credsp = NULL;
+krb5_creds          creds;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -566,7 +586,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
                         char ***modvalues, int type);
 void free_values(char **modvalues);
 
-int convert_domain_to_dn(char *domain, char **bind_path);
+int convert_domain_to_dn(char *domain, char *dnp);
 void get_distinguished_name(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                             char *distinguished_name);
 int moira_disconnect(void);
@@ -2624,7 +2644,7 @@ int group_create(int ac, char **av, void *ptr)
       return(AD_INVALID_NAME);
     }
 
-  updateGroup = (int)call_args[4];
+  updateGroup = (int)(long)call_args[4];
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -3270,7 +3290,7 @@ int member_list_build(int ac, char **av, void *ptr)
 
   if (!strcmp(av[ACE_TYPE], "USER"))
     {
-      if (!((int)call_args[3] & MOIRA_USERS))
+      if (!((int)(long)call_args[3] & MOIRA_USERS))
         return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "STRING"))
@@ -3290,7 +3310,7 @@ int member_list_build(int ac, char **av, void *ptr)
 	    }
 	}
       
-      if (!((int)call_args[3] & MOIRA_STRINGS))
+      if (!((int)(long)call_args[3] & MOIRA_STRINGS))
         return(0);
 
       if (contact_create((LDAP *)call_args[0], call_args[1], temp, contact_ou))
@@ -3299,12 +3319,12 @@ int member_list_build(int ac, char **av, void *ptr)
     }
   else if (!strcmp(av[ACE_TYPE], "LIST"))
     {
-      if (!((int)call_args[3] & MOIRA_LISTS))
+      if (!((int)(long)call_args[3] & MOIRA_LISTS))
         return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "KERBEROS"))
     {
-      if (!((int)call_args[3] & MOIRA_KERBEROS))
+      if (!((int)(long)call_args[3] & MOIRA_KERBEROS))
         return(0);
 
       if (contact_create((LDAP *)call_args[0], call_args[1], temp, 
@@ -5301,7 +5321,7 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
-  call_args[4] = (char *)updateGroup;
+  call_args[4] = (char *)(long)updateGroup;
   call_args[5] = MoiraId;
   call_args[6] = "0";
   call_args[7] = NULL;
@@ -7997,4 +8017,323 @@ int save_query_info(int argc, char **argv, void *hint)
     nargv[i] = strdup(argv[i]);
 
   return MR_CONT;
+}
+
+static int sasl_flags = LDAP_SASL_QUIET;
+static char *sasl_mech = "GSSAPI";
+
+/* warning! - the following requires intimate knowledge of sasl.h */
+static char *default_values[] = {
+  "", /* SASL_CB_USER         0x4001 */
+  "", /* SASL_CB_AUTHNAME     0x4002 */
+  "", /* SASL_CB_LANGUAGE     0x4003 */ /* not used */
+  "", /* SASL_CB_PASS         0x4004 */
+  "", /* SASL_CB_ECHOPROMPT   0x4005 */
+  "", /* SASL_CB_NOECHOPROMPT   0x4005 */
+  "", /* SASL_CB_CNONCE       0x4007 */
+  ""  /* SASL_CB_GETREALM     0x4008 */
+};
+
+/* this is so we can use SASL_CB_USER etc. to index into default_values */
+#define VALIDVAL(n) ((n >= SASL_CB_USER) && (n <= SASL_CB_GETREALM))
+#define VAL(n) default_values[n-0x4001]
+
+static int example_sasl_interact( LDAP *ld, unsigned flags, void *defaults, void *prompts ) {
+  sasl_interact_t         *interact = NULL;
+  int                     rc;
+
+  if (prompts == NULL) {
+    return (LDAP_PARAM_ERROR);
+  }
+
+  for (interact = prompts; interact->id != SASL_CB_LIST_END; interact++) {
+    if (VALIDVAL(interact->id)) {
+      interact->result = VAL(interact->id);
+      interact->len = strlen((char *)interact->result);
+    }
+  }
+  return (LDAP_SUCCESS);
+}
+
+int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
+               char *Win2kPassword, char *Win2kUser, char *default_server,
+               int connect_to_kdc, char **ServerList)
+{ 
+  int         i;
+  int         k;
+  int         Count;
+  char        *server_name[MAX_SERVER_NAMES];
+  static char temp[128];
+  ULONG       version = LDAP_VERSION3;
+  ULONG       rc;
+  int         Max_wait_time = 1000;
+  int         Max_size_limit = LDAP_NO_LIMIT;
+  LDAPControl **ctrls = NULL;
+
+  if (strlen(ldap_domain) == 0)
+    return(1);
+
+  convert_domain_to_dn(ldap_domain, dn_path);
+
+  if (strlen(dn_path) == 0)
+    return(1);
+
+  Count = 0;
+  while (ServerList[Count] != NULL)
+    ++Count;
+
+  if ((Count == 0) && (connect_to_kdc))
+    return(1);
+
+  memset(server_name, 0, sizeof(server_name[0]) * MAX_SERVER_NAMES);
+  if (locate_ldap_server(ldap_domain, server_name) == -1)
+    return(1);
+
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    { 
+      if (server_name[i] != NULL)
+        { 
+          if (Count >= MAX_SERVER_NAMES)
+            { 
+              free(server_name[i]);
+              server_name[i] = NULL;
+              continue;
+            }
+          for (k = 0; k < (int)strlen(server_name[i]); k++)
+	    server_name[i][k] = toupper(server_name[i][k]);
+          for (k = 0; k < Count; k++)
+            { 
+              if (!strcasecmp(server_name[i], ServerList[k]))
+                { 
+                  free(server_name[i]);
+                  server_name[i] = NULL;
+                  break;
+                }
+            }
+          if (k == Count)
+            { 
+              ServerList[Count] = calloc(1, 256);
+              strcpy(ServerList[Count], server_name[i]);
+              ServerList[Count] = (char *)strdup((char *)server_name[i]);
+              ++Count;
+              free(server_name[i]);
+            }
+        }
+    }
+
+  for (i = 0; i < Count; i++)
+    { 
+      if (ServerList[i] == NULL)
+	continue;
+
+      if (((*ldap_handle) = ldap_open(ServerList[i], LDAP_PORT)) != NULL)
+	{ 
+	  rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION, &version);
+	  rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT,
+			       (void *)&Max_wait_time);
+	  rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT,
+			       (void *)&Max_size_limit);
+	  rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+	  rc = ldap_sasl_interactive_bind_ext_s((*ldap_handle), "", sasl_mech,
+						NULL, NULL, sasl_flags,
+						example_sasl_interact,
+						NULL, &ctrls);
+
+	  if (rc == LDAP_SUCCESS)
+	    { 
+	      if (connect_to_kdc)
+		{ 
+		  if (!ad_server_connect(ServerList[i], ldap_domain))
+		    { 
+		      ldap_unbind_s((*ldap_handle));
+		      (*ldap_handle) = NULL;
+		      continue;
+		    }
+		}
+	      if (strlen(default_server) == 0)
+		strcpy(default_server, ServerList[i]);
+	      strcpy(connected_server, ServerList[i]);
+	      break;
+	    }
+	  else
+	    { 
+	      (*ldap_handle) = NULL;
+	    }
+	}
+    }
+  if ((*ldap_handle) == NULL)
+    return(1);
+  return(0);
+}
+
+int ad_server_connect(char *connectedServer, char *domain)
+{ 
+  krb5_error_code   rc;
+  krb5_creds        creds;
+  krb5_creds        *credsp;
+  char              temp[256];
+  char              userrealm[256];
+  int               i;
+  unsigned short    port = KDC_PORT;
+  
+  context = NULL;
+  credsp = NULL;
+  memset(&ccache, 0, sizeof(ccache));
+  memset(&creds, 0, sizeof(creds));
+  memset(userrealm, '\0', sizeof(userrealm));
+  
+  rc = 0;
+  if (krb5_init_context(&context))
+    goto cleanup;
+  if (krb5_cc_default(context, &ccache))
+    goto cleanup;
+  
+  for (i = 0; i < (int)strlen(domain); i++)
+    userrealm[i] = toupper(domain[i]);
+  sprintf(temp, "%s@%s", "kadmin/changepw", userrealm);
+  if (krb5_parse_name(context, temp, &creds.server))
+    goto cleanup;
+  if (krb5_cc_get_principal(context, ccache, &creds.client))
+    goto cleanup;
+  if (krb5_get_credentials(context, 0, ccache, &creds, &credsp))
+    goto cleanup;
+  
+  rc = ad_kdc_connect(connectedServer);
+ cleanup:
+  if (!rc)
+    {
+      krb5_cc_close(context, ccache);
+      krb5_free_context(context);
+    }
+  krb5_free_cred_contents(context, &creds);
+  if (credsp != NULL)
+    krb5_free_creds(context, credsp);
+  return(rc);
+}
+
+int ad_kdc_connect(char *connectedServer)
+{ 
+  struct hostent  *hp;
+  int             rc;
+  
+  rc = 0;
+  hp = gethostbyname(connectedServer);
+  if (hp == NULL)
+    goto cleanup;
+  memset(&kdc_server, 0, sizeof(kdc_server));
+  memcpy(&(kdc_server.sin_addr),hp->h_addr_list[0],hp->h_length);
+  kdc_server.sin_family = hp->h_addrtype;
+  kdc_server.sin_port = htons(KDC_PORT);
+  
+  if ((kdc_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+    goto cleanup;
+  if (connect(kdc_socket, (struct sockaddr*)&kdc_server, sizeof(kdc_server)) == SOCKET_ERROR)
+    goto cleanup;
+  rc = 1;
+  
+ cleanup:
+  return(rc);
+}
+
+void ad_kdc_disconnect()
+{
+  
+  if (auth_context != NULL)
+    {
+      krb5_auth_con_free(context, auth_context);
+      if (ap_req.data != NULL)
+	free(ap_req.data);
+      krb5_free_cred_contents(context, &creds);
+      if (credsp != NULL)
+	krb5_free_creds(context, credsp);
+    }
+  credsp = NULL;
+  auth_context = NULL;
+  if (context != NULL)
+    {
+      krb5_cc_close(context, ccache);
+      krb5_free_context(context);
+    }
+  close(kdc_socket);
+  
+}
+
+int convert_domain_to_dn(char *domain, char *dnp)
+{
+  char    *fp;
+  char    *dp;
+  char    dn[512];
+
+  memset(dn, '\0', sizeof(dn));
+  strcpy(dn, "dc=");
+  dp = dn+3;
+  for (fp = domain; *fp; fp++)
+    {
+      if (*fp == '.')
+        {
+          strcpy(dp, ",dc=");
+          dp += 4;
+        }
+      else
+        *dp++ = *fp;
+    }
+  
+  strcpy(dnp, dn);
+  return 0;
+}
+
+int locate_ldap_server(char *domain, char **server_name)
+{
+  char  service[128];
+  char  host[128];
+  int   location_type;
+  int   length;
+  int   rc;
+  int   return_code;
+  int   entry_length;
+  int   server_count;
+  unsigned char   reply[1024];
+  unsigned char   *ptr;
+    
+  strcpy(ldap_domain_name, domain);
+  sprintf(service, "%s.%s.%s.", LDAP_SERVICE, TCP_PROTOCOL, domain);
+
+  return_code = -1;
+  server_count = 0;
+  memset(reply, '\0', sizeof(reply));
+  length = res_search(service, C_IN, T_SRV, reply, sizeof(reply));
+  if (length >= 0)
+    {
+      ptr = reply;
+      ptr += sizeof(HEADER);
+      if ((rc = dn_expand(reply, reply + length, ptr, host, 
+                          sizeof(host))) < 0)
+        return(-1);
+      ptr += (rc + 4);
+
+      while (ptr < reply + length)
+        {
+          if ((rc = dn_expand(reply, reply + length, ptr, host, 
+                              sizeof(host))) < 0)
+            break;
+          ptr += rc;
+          location_type = (ptr[0] << 8) | ptr[1];
+          ptr += 8;
+	  entry_length = (ptr[0] << 8) | ptr[1];
+          ptr += 2;
+          if (location_type == T_SRV)
+            {
+              if ((rc = dn_expand(reply, reply + length, ptr + 6, host, 
+                                  sizeof(host))) < 0)
+                return -1;
+              
+              (*server_name) = strdup(host);
+              ++server_name;
+              return_code = 1;
+              server_count++;
+            }
+	  ptr += entry_length;
+        }
+    }
+  return(return_code);
 }

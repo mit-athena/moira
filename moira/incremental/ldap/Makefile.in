@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 2009-06-01 21:05:00 zacheiss Exp $
+# $Id: Makefile.in,v 1.3 2009-12-29 17:29:30 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -24,7 +24,7 @@ top_builddir=@top_builddir@
 BUILDTOP=../..
 mrbindir=@mrbindir@
 
-WINAD_OBJS=winad.lo ldap_adgssapi_bind.lo krb5_utils.lo setpw.lo
+WINAD_OBJS=winad.lo setpw.lo
 
 TARGET=ldap.incr
 
@@ -50,5 +50,5 @@ install:
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) ldap.incr $(mrbindir)
 
 ldap.incr: $(WINAD_OBJS) $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber \
-	-lgssapi_krb5 $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDAP_LIBS) $(LDFLAGS) $(WINAD_OBJS) -lldap -llber -lsasl2 \
+	-lgssapi_krb5 -lpthread $(LIBS)

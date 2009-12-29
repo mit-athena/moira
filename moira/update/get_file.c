@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.21 2009-05-04 20:49:13 zacheiss Exp $
+/* $Id: get_file.c,v 1.22 2009-12-29 17:29:34 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -21,7 +21,7 @@
 #include <des.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.21 2009-05-04 20:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.22 2009-12-29 17:29:34 zacheiss Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
@@ -177,7 +177,7 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
 static int get_block(int conn, int fd, int max_size, int encrypt)
 {
   char *data;
-  size_t len;
+  long len;
   int n_read, n, i, code;
 
   recv_string(conn, &data, &len);
@@ -193,7 +193,7 @@ static int get_block(int conn, int fd, int max_size, int encrypt)
 	  return -1;
 	}
 
-      des_pcbc_encrypt(data, unenc, len, sched, ivec, 1);
+      des_pcbc_encrypt((des_cblock *)data, (des_cblock *)unenc, len, sched, &ivec, 1);
       for (i = 0; i < 8; i++)
 	ivec[i] = data[len - 8 + i] ^ unenc[len - 8 + i];
       free(data);

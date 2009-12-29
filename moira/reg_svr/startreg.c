@@ -1,4 +1,4 @@
-/* $Id: startreg.c,v 1.12 1998-02-05 22:51:35 danw Exp $
+/* $Id: startreg.c,v 1.13 2009-12-29 17:29:32 zacheiss Exp $
  *
  * This program starts the user registration server
  * in a "clean" environment, and then waits for it to exit.
@@ -20,17 +20,18 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.12 1998-02-05 22:51:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.13 2009-12-29 17:29:32 zacheiss Exp $");
 
 #define PROG	"reg_svr"
 
 int rdpipe[2];
 
-void cleanup(void);
+void cleanup(int signal);
 
-void cleanup(void)
+void cleanup(int signal)
 {
   int stat, serrno = errno;
   char buf[BUFSIZ];
@@ -123,7 +124,7 @@ int main(int argc, char **argv)
   do
     {
       char *time_s;
-      long foo;
+      time_t now;
 
       done = 0;
       errno = 0;
@@ -138,8 +139,8 @@ int main(int argc, char **argv)
 	  else
 	    break;
 	}
-      time(&foo);
-      time_s = ctime(&foo) + 4;
+      time(&now);
+      time_s = ctime(&now) + 4;
       time_s[strlen(time_s) - 6] = '\0';
       fprintf(log, "%s <%d> %s", time_s, pid, buf);
       fflush(log);

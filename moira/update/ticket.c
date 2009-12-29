@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.27 2009-09-22 18:45:17 zacheiss Exp $
+/* $Id: ticket.c,v 1.28 2009-12-29 17:29:34 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -22,7 +22,7 @@
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.27 2009-09-22 18:45:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.28 2009-12-29 17:29:34 zacheiss Exp $");
 
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
@@ -94,7 +94,7 @@ int get_mr_krb5_tgt(krb5_context context, krb5_ccache ccache)
   if (code)
     goto out;
   
-  code = krb5_get_init_creds_keytab(context, &my_creds, me, NULL, NULL, NULL, NULL);
+  code = krb5_get_init_creds_keytab(context, &my_creds, me, NULL, 0, NULL, NULL);
   if (code)
     goto out;
   

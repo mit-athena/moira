@@ -1,4 +1,4 @@
-/* $Id: kname_unparse.c,v 1.7 2009-06-21 15:29:55 zacheiss Exp $
+/* $Id: kname_unparse.c,v 1.8 2009-12-29 17:29:32 zacheiss Exp $
  *
  * Don't know why this function is not in libkrb.a.  It's the inverse
  * of kname_parse() which is there.
@@ -12,6 +12,7 @@
 #include <moira.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_KRB4
 #include <krb.h>
@@ -19,7 +20,7 @@
 #include <mr_krb.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.7 2009-06-21 15:29:55 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.8 2009-12-29 17:29:32 zacheiss Exp $");
 
 /* Turn a principal, instance, realm triple into a single non-ambiguous
  * string.  This is the inverse of kname_parse().  It returns a pointer

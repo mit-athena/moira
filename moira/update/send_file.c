@@ -1,4 +1,4 @@
-/* $Id: send_file.c,v 1.17 2009-05-04 20:49:13 zacheiss Exp $
+/* $Id: send_file.c,v 1.18 2009-12-29 17:29:34 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -22,7 +22,7 @@
 #endif
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.17 2009-05-04 20:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.18 2009-12-29 17:29:34 zacheiss Exp $");
 
 #ifdef HAVE_KRB4
 extern des_cblock session;
@@ -135,7 +135,7 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 	{
 #ifdef HAVE_KRB4
 	  memset(data + n, 0, sizeof(data) -n);
-	  des_pcbc_encrypt(data, enc, (n + 7) & ~7, sched, ivec, 0);
+	  des_pcbc_encrypt((des_cblock *)data, (des_cblock *)enc, (n + 7) & ~7, sched, &ivec, 0);
 	  /* save vector to continue chaining */
 	  for (i = 0; i < 8; i++)
 	    ivec[i] = data[n - 8 + i] ^ enc[n - 8 + i];

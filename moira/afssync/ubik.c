@@ -1,4 +1,4 @@
-/* $Id: ubik.c,v 1.6 2006-05-12 20:20:08 zacheiss Exp $ */
+/* $Id: ubik.c,v 1.7 2009-12-29 17:29:27 zacheiss Exp $ */
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -12,20 +12,6 @@
 
 /* Stolen bits of ubik.h. */
 
-struct ubik_version {
-  afs_int32 epoch;
-  afs_int32 counter;
-};
-typedef struct ubik_version ubik_version;
-
-/* ubik header file structure */
-struct ubik_hdr {
-  afs_int32 magic;            /* magic number */
-  short pad1;                 /* some 0-initd padding */
-  short size;                 /* header allocation size */
-  struct ubik_version version;        /* the version for this file */
-};
-
 #define HDRSIZE             64  /* bytes of header per dbfile */
 #define UBIK_MAGIC      0x354545
 
@@ -37,7 +23,8 @@ int ubik_ServerInit()
     return(0);
 }
 
-int ubik_BeginTrans()
+int ubik_BeginTrans(register struct ubik_dbase *dbase,
+                    afs_int32 transMode, struct ubik_trans **transPtr)
 {
     static int init=0;
     struct ubik_hdr thdr;
@@ -65,7 +52,7 @@ int ubik_AbortTrans()
     return(0);
 }
 
-int ubik_EndTrans()
+int ubik_EndTrans(register struct ubik_trans *transPtr)
 {
     return(0);
 }

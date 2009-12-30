@@ -198,13 +198,13 @@ static char **SetSubnetDefaults(char **info, char *name)
   info[SN_STATUS] = strdup("1");
   info[SN_CONTACT] = strdup(DEFAULT_NONE);
   info[SN_ACCT_NUMBER] = strdup("");
-  sprintf(buf, "%ld", ntohl(inet_addr("18.255.0.0")));
+  sprintf(buf, "%d", ntohl(inet_addr("18.255.0.0")));
   info[SN_ADDRESS] = strdup(buf);
-  sprintf(buf, "%ld", ntohl(inet_addr("255.255.0.0")));
+  sprintf(buf, "%d", ntohl(inet_addr("255.255.0.0")));
   info[SN_MASK] = strdup(buf);
-  sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_LOW)));
+  sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_LOW)));
   info[SN_LOW] = strdup(buf);
-  sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_HIGH)));
+  sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_HIGH)));
   info[SN_HIGH] = strdup(buf);
   info[SN_PREFIX] = strdup("");
   info[SN_ACE_TYPE] = strdup("LIST");
@@ -756,14 +756,14 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (atoi(info[SN_LOW]) == (int)ntohl(inet_addr(S_DEFAULT_LOW)))
 	{
 	  struct in_addr low;
-	  unsigned long mask, addr;
+	  unsigned int mask, addr;
 
 	  addr = atoi(info[SN_ADDRESS]);
 	  mask = atoi(info[SN_MASK]);
 	  low.s_addr = atoi(info[SN_LOW]);
 	  low.s_addr = (low.s_addr & ~mask) | (addr & mask);
 	  free(info[SN_LOW]);
-	  sprintf(temp_buf, "%ld", low.s_addr);
+	  sprintf(temp_buf, "%d", low.s_addr);
 	  info[SN_LOW] = strdup(temp_buf);
 	}
       if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) ==
@@ -772,14 +772,14 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (atoi(info[SN_HIGH]) == (int)ntohl(inet_addr(S_DEFAULT_HIGH)))
 	{
 	  struct in_addr high;
-	  unsigned long mask, addr;
+	  unsigned int mask, addr;
 
 	  addr = atoi(info[SN_ADDRESS]);
 	  mask = atoi(info[SN_MASK]);
 	  high.s_addr = atoi(info[SN_HIGH]);
 	  high.s_addr = (high.s_addr & ~mask) | (addr & mask);
 	  free(info[SN_HIGH]);
-	  sprintf(temp_buf, "%ld", high.s_addr);
+	  sprintf(temp_buf, "%d", high.s_addr);
 	  info[SN_HIGH] = strdup(temp_buf);
 	}
       if (GetAddressFromUser("Highest assignable address", &info[SN_HIGH]) ==

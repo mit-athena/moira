@@ -805,7 +805,7 @@ int toggle_logging(int argc, char *argv[])
 
   if (!log_file)
     {
-      sprintf(buf, "%s/%s-log.%ld", get_tmp_dir(), whoami, (long)getpid());
+      sprintf(buf, "%s/%s-log.%d", get_tmp_dir(), whoami, getpid());
 
       /* open the file */
       log_file = fopen(buf, "a");

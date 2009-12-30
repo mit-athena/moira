@@ -867,7 +867,7 @@ int GetAddressFromUser(char *prompt, char **pointer)
     return SUB_ERROR;
   addr.s_addr = inet_addr(value);
   free(*pointer);
-  sprintf(buf, "%ld", ntohl(addr.s_addr));
+  sprintf(buf, "%d", ntohl(addr.s_addr));
   *pointer = strdup(buf);
   return SUB_NORMAL;
 }

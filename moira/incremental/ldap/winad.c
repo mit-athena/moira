@@ -2441,7 +2441,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(search_filter, "(&(objectClass=user)(cn=%s))", 
+	  sprintf(search_filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
 		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -2767,7 +2767,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      group_base = NULL;
 	      
-	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
+		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2909,7 +2910,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      group_base = NULL;
 	      
-	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
+		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -3622,54 +3624,6 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
       goto cleanup;
     }
 
-  if ((!strcmp(UserOu, contact_ou)) || (!strcmp(UserOu, kerberos_ou))) 
-    {
-      if (Exchange)
-	{
-	  if(!strcmp(UserOu, contact_ou) && 
-	     ((s = strstr(user_name, 
-			  "@exchange-forwarding.mit.edu")) != (char *) NULL))
-	    {
-	      memset(temp, '\0', sizeof(temp));
-	      strcpy(temp, user_name);
-	      s = strchr(temp, '@');
-	      *s = '\0';
-	      
-	      sprintf(filter, "(&(objectClass=user)(mailNickName=%s))", temp);
-	  
-	      if ((rc = linklist_build(ldap_handle, dn_path, filter, NULL,
-				       &group_base, &group_count, 
-				       LDAP_SCOPE_SUBTREE) != 0))
-		return(rc);	  
-	      
-	      if(group_count)
-		goto cleanup;
-	      
-	      linklist_free(group_base);
-	      group_base = NULL;
-	      group_count = 0;
-	    }
-	  
-	  sprintf(filter, "(distinguishedName=%s)", temp);
-	  attr_array[0] = "memberOf";
-	  attr_array[1] = NULL;
-	  
-	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-				   &group_base, &group_count, 
-				   LDAP_SCOPE_SUBTREE) != 0))
-	    return(rc);
-	  
-
-	  if(!group_count) 
-	    {
-	      com_err(whoami, 0, "Removing unreferenced object %s", temp);
-	  
-	      if ((rc = ldap_delete_s(ldap_handle, temp)) != 0) 
-		return(rc);
-	    }
-	}
-    }
-
  cleanup:
   return(rc);
 }
@@ -3932,7 +3886,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(filter, "(&(objectClass=user)(cn=%s))", mail);
+	  sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -3980,7 +3934,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	  group_base = NULL;
 
-	  sprintf(filter, "(&(objectClass=user)(mail=%s))", mail);
+	  sprintf(filter, "(&(objectClass=user)(homeMDB=*)(mail=%s))", mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4028,7 +3982,9 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_base = NULL;
 	  group_count = 0;
 
-	  sprintf(filter, "(&(objectClass=user)(proxyAddresses=smtp:%s))", mail);
+	  sprintf(filter, 
+		  "(&(objectClass=user)(homeMDB=*)(proxyAddresses=smtp:%s))", 
+		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4052,7 +4008,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_base = NULL;
 	  group_count = 0;
 
-	  sprintf(filter, "(&(objectClass=group)(proxyAddresses=smtp:%s))", mail);
+	  sprintf(filter, "(&(objectClass=group)(proxyAddresses=smtp:%s))", 
+		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 

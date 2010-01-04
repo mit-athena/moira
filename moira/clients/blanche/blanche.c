@@ -490,7 +490,7 @@ int main(int argc, char **argv)
     }
   else if (setinfo)
     {
-      char *argv[14];
+      char *argv[16];
 
       status = mr_query("get_list_info", 1, &listname,
 			save_list_info, argv);

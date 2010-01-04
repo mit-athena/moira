@@ -26,8 +26,6 @@
 
 RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.7 1998-02-15 17:49:27 danw Exp $");
 
-#define CONFIG_FILE	"/etc/athena/moira.conf"
-
 /* Variables currently supported:
  * chroot directory	daemon will run chrooted to this directory
  * user username	daemon will run with this user's uid

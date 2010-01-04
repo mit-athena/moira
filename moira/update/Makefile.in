@@ -4,7 +4,7 @@ SHELL=/bin/sh
 @SET_MAKE@
 
 CC=@CC@
-CPPFLAGS=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@ -DCONFIG_FILE=\"$(sysconfdir)/moira.conf\"
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
@@ -50,8 +50,8 @@ depend:
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) update_test $(DESTDIR)$(bindir)
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) update_server $(DESTDIR)$(sbindir)
-	$(SRCTOP)/mkinstalldirs $(DESTDIR)/etc/athena
-	$(INSTALL) -m 644 moira.conf $(DESTDIR)/etc/athena/moira.conf
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(sysconfdir)
+	$(INSTALL) -m 644 moira.conf $(DESTDIR)$(sysconfdir)/moira.conf
 
 update_test: $(COBJS) $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)

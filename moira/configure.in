@@ -142,6 +142,12 @@ if test "$krb4" != no; then
 			       $LIBPATH -ldes)],
 		 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
 fi
+if test "$KRB4_LIBS" != "" ; then
+    AC_CANONICAL_TARGET
+    case "$target_os" in
+    darwin*) KRB4_LIBS="$KRB4_LIBS -framework Kerberos"
+    esac
+fi
 
 AC_MSG_CHECKING(for Kerberos 5)
 AC_ARG_WITH(krb5,
@@ -162,6 +168,12 @@ if test "$krb5" != no; then
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm
+fi
+if test "$KRB5_LIBS" != "" ; then
+    AC_CANONICAL_TARGET
+    case "$target_os" in
+    darwin*) KRB5_LIBS="$KRB5_LIBS -framework Kerberos"
+    esac
 fi
 AC_SUBST(REG_SVR_DEFS)
 AC_SUBST(REG_SVR_INCLUDES)

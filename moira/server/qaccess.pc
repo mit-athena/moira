@@ -19,7 +19,9 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#ifndef _PROC_
 #include <resolv.h>
+#endif
 
 EXEC SQL INCLUDE sqlca;
 

@@ -21599,7 +21599,7 @@ fi
     esac
 
 
-LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
+LDFLAGS="$LDFLAGS $LIBPATH"
 KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then

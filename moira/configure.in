@@ -473,7 +473,7 @@ MR_INCLUDE('$(SRCTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 MR_INCLUDE('$(srcdir)')
-LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
+LDFLAGS="$LDFLAGS $LIBPATH"
 KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then

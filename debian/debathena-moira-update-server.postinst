@@ -19,8 +19,8 @@ set -e
 
 # Move a conffile without triggering a dpkg question
 mv_conffile() {
-    local OLDCONFFILE="$1"
-    local NEWCONFFILE="$2"
+    OLDCONFFILE="$1"
+    NEWCONFFILE="$2"
 
     [ -e "$OLDCONFFILE" ] || return 0
 

@@ -15,13 +15,13 @@ set -e
 
 # Prepare to move a conffile without triggering a dpkg question
 prep_mv_conffile() {
-    local PKGNAME="$1"
-    local CONFFILE="$2"
+    PKGNAME="$1"
+    CONFFILE="$2"
 
     [ -e "$CONFFILE" ] || return 0
 
-    local md5sum="$(md5sum $CONFFILE | sed -e 's/ .*//')"
-    local old_md5sum="$(dpkg-query -W -f='${Conffiles}' $PKGNAME | sed -n -e "\' $CONFFILE ' { s/ obsolete$//; s/.* //; p }")"
+    md5sum="$(md5sum $CONFFILE | sed -e 's/ .*//')"
+    old_md5sum="$(dpkg-query -W -f='${Conffiles}' $PKGNAME | sed -n -e "\' $CONFFILE ' { s/ obsolete$//; s/.* //; p }")"
     if [ "$md5sum" = "$old_md5sum" ]; then
         rm -f "$CONFFILE"
     fi

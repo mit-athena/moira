@@ -2,8 +2,9 @@ debathena-moira (4.0.0+svn20100104-0debathena1) unstable; urgency=low
 
   * New SVN snapshot.
   * Build and install libmrclient as a shared library.
+  * Deal with rename of /etc{/athena => }/moira.conf
 
- -- Evan Broder <broder@mit.edu>  Mon, 04 Jan 2010 20:29:56 -0500
+ -- Evan Broder <broder@mit.edu>  Mon, 04 Jan 2010 21:03:54 -0500
 
 debathena-moira (4.0.0+cvs20091116-0debathena1) unstable; urgency=low
 

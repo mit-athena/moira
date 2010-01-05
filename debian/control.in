@@ -66,3 +66,39 @@ Description: Development files for Moira library
  queues, and several other aspects of the Athena environment.
  .
  This package contains headers and static libraries for development.
+
+Package: debathena-libmrclient0
+Section: debathena/lib
+Architecture: any
+Depends: ${shlibs:Depends}, ${miscDepends}
+Description: The Moira client library
+ Moira is the Athena Service Management system.  It serves as the 
+ central repository for information about users, groups hosts, print 
+ queues, and several other aspects of the Athena environment.
+ .
+ This package contains the shared Moira client library.
+
+Package: debathena-libmrclient0-dbg
+Section: debathena/libdevel
+Architecture: any
+Depends: debathena-libmrclient0 (= ${binary:Version}),
+ ${shlibs:Depends}, ${misc:Depends}
+Description: The Moira client library - library with debugging symbols.
+ Moira is the Athena Service Management system.  It serves as the 
+ central repository for information about users, groups hosts, print 
+ queues, and several other aspects of the Athena environment.
+ .
+ This package contains an unstripped shared library. It will be used
+ automatically by gdb for debugging libmrclient-related issues.
+
+Package: debathena-libmrclient-dev
+Section: debathena/libdevel
+Architecture: any
+Depends: debathena-libmrclient0 (= ${binary:Version}),
+ ${shlibs:Depends}, ${misc:Depends}, debathena-libmoira-dev
+Description: Development files for the Moira client library
+ Moira is the Athena Service Management system.  It serves as the 
+ central repository for information about users, groups hosts, print 
+ queues, and several other aspects of the Athena environment.
+ .
+ This package contains headers and static libraries for development.

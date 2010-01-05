@@ -25,6 +25,7 @@ top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+includedir=@includedir@
 
 OBJS=	critical.lo fixhost.lo fixname.lo \
 	hash.lo kname_unparse.lo kname_parse.lo krb_et.lo mr_access.lo mr_auth.lo \
@@ -54,6 +55,8 @@ depend: $(ET_C)
 
 install: all
 	$(LIBTOOL) --mode=install  $(INSTALL) libmoira.la $(DESTDIR)$(libdir)/libmoira.la
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(includedir)/moira
+	$(INSTALL) mr_et.h krb_et.h ureg_err.h $(DESTDIR)$(includedir)/moira
 
 libmoira.la: $(OBJS)
 	$(LIBTOOL) --mode=link $(CC) $(ALL_LDFLAGS) -o $@ $(OBJS) -rpath $(libdir) -version-info 0:0:0

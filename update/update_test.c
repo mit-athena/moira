@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.12 2006-08-22 17:36:26 zacheiss Exp $
+/* $Id: update_test.c,v 1.13 2009-12-29 17:29:34 zacheiss Exp $
  *
  * Test client for update_server protocol.
  *
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	      com_err(whoami, ENOMEM, "sending instructions");
 	      exit(1);
 	    }
-	  mktemp(ibuf);
+	  mkstemp(ibuf);
 	  fprintf(stderr, "Sending instructions %s to %s as %s\n",
 		  file, host, ibuf);
 	  mr_send_file(conn, file, ibuf, 0);

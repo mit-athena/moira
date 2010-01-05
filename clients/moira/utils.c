@@ -34,7 +34,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.51 2006-08-23 19:02:27 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.51 2006-08-23 19:02:27 zacheiss Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -867,7 +867,7 @@ int GetAddressFromUser(char *prompt, char **pointer)
     return SUB_ERROR;
   addr.s_addr = inet_addr(value);
   free(*pointer);
-  sprintf(buf, "%ld", ntohl(addr.s_addr));
+  sprintf(buf, "%d", ntohl(addr.s_addr));
   *pointer = strdup(buf);
   return SUB_NORMAL;
 }

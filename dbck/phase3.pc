@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.4 1998-02-05 22:51:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.4 1998-02-05 22:51:05 danw Exp $");
 
 void empty_list_check(int id, void *list, void *hint);
 void unref_string_check(int id, void *string, void *hint);

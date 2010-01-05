@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.8 2002-03-15 18:11:19 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.8 2002-03-15 18:11:19 zacheiss Exp $");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";

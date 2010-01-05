@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.52 2007-08-27 15:22:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.52 2007-08-27 15:22:15 zacheiss Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -97,8 +97,13 @@ int main(int argc, char **argv)
 	}
     }
 
+#if defined(__APPLE__) && defined(__MACH__)
+  add_error_table(&et_sms_error_table);
+  add_error_table(&et_krb_error_table);
+#else
   initialize_sms_error_table();
   initialize_krb_error_table();
+#endif
 
 #ifdef HAVE_READLINE
   /* we don't want filename completion */

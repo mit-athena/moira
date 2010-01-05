@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $");
 
 struct owner_type {
   int type;

@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.10 2004-06-22 18:26:27 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.10 2004-06-22 18:26:27 zacheiss Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";

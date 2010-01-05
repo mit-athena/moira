@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.13 2003-04-18 22:06:03 jweiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.13 2003-04-18 22:06:03 jweiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

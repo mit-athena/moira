@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.33 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.33 2009-05-04 20:49:12 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;

@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.20 1998-02-15 17:49:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.20 1998-02-15 17:49:27 danw Exp $");
 
 void exec_002(int conn, char *str)
 {

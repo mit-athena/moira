@@ -1,6 +1,6 @@
 /*
- * $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v 1.2 1998-02-05 22:13:07 danw Exp $
- * $Source: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v 1.2 1998-02-05 22:13:07 danw Exp $
+ * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v $
  * $Locker:  $
  *
  * Copyright 1987 by the Student Information Processing Board

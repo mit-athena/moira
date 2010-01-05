@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.32 2009-11-05 22:12:02 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.33 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -17,10 +17,12 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
+#include <unistd.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.32 2009-11-05 22:12:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.33 2009-12-29 17:29:33 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;

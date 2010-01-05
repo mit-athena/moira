@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $");
 
 /* Invoke a DCM update. */
 

@@ -24,7 +24,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/words.c,v 1.1 1998-07-22 14:55:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/words.c,v 1.1 1998-07-22 14:55:28 danw Exp $");
 
 /* One-Time Password dictionary, as specified by RFC 1938 */
 

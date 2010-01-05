@@ -1,4 +1,4 @@
-/* $Id: startmoira.c,v 1.20 2009-06-01 21:05:02 zacheiss Exp $
+/* $Id: startmoira.c,v 1.21 2009-12-29 17:29:33 zacheiss Exp $
  *
  * This program starts the moira server in a "clean" environment.
  * and then waits for it to exit.
@@ -21,16 +21,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.20 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.21 2009-12-29 17:29:33 zacheiss Exp $");
 
 #define PROG	"moirad"
 
 int rdpipe[2];
 char *whoami;
-void cleanup(void);
+void cleanup(int signal);
 
-void cleanup(void)
+void cleanup(int signal)
 {
   int stat, serrno = errno;
   char buf[BUFSIZ];
@@ -130,7 +131,7 @@ int main(int argc, char *argv[])
   do
     {
       char *time_s;
-      long foo;
+      time_t now;
 
       done = 0;
       errno = 0;
@@ -145,8 +146,8 @@ int main(int argc, char *argv[])
 	  else
 	    break;
 	}
-      time(&foo);
-      time_s = ctime(&foo) + 4;
+      time(&now);
+      time_s = ctime(&now) + 4;
       time_s[strlen(time_s) - 6] = '\0';
       fprintf(log, "%s %s", time_s, buf);
       fflush(log);

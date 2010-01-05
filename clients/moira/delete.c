@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $");
 
 int CheckListForDeletion(char *name, Bool verbose);
 void CheckAce(char *type, char *name, Bool verbose);

@@ -26,7 +26,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);

@@ -22,7 +22,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $");
 
 static char service[] = "host";
 static char master[] = "sms";

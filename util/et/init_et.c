@@ -1,6 +1,6 @@
 /*
- * $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/init_et.c,v 1.2 1998-02-05 22:13:10 danw Exp $
- * $Source: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/init_et.c,v $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/init_et.c,v 1.2 1998-02-05 22:13:10 danw Exp $
+ * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/init_et.c,v $
  * $Locker:  $
  *
  * Copyright 1986, 1987, 1988 by MIT Information Systems and

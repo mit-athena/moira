@@ -59,7 +59,7 @@ int read_rsa_key(void);
 int read_errors(void);
 void reply(reg_client *rc, int msg, char *state, char *clean, char *data,
 	   ...);
-void parse_packet(reg_client *rc, int type, long len, char *buf, int sleeping);
+void parse_packet(reg_client *rc, int type, int len, char *buf, int sleeping);
 
 /* prototypes from reg_svr.pc */
 void *xmalloc(size_t);

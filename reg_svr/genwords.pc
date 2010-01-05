@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $");
 
 int main(int argc, char **argv)
 {

@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.16 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: phase1.pc,v 1.17 2009-12-29 17:29:28 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.16 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.17 2009-12-29 17:29:28 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -226,13 +226,13 @@ int show_str_id(void *string)
 
 int print_str_id(void *id)
 {
-  printf("String %d is a duplicate\n", (int)id);
+  printf("String %d is a duplicate\n", (int)(long)id);
   return 0;
 }
 
 void print_dup_map(int key, void *data, void *hint)
 {
-  printf("String %d is a duplicate of string %d\n", key, (int)data);
+  printf("String %d is a duplicate of string %d\n", key, (int)(long)data);
 }
 
 int show_cnt_name(void *container)
@@ -292,14 +292,14 @@ void phase1(void)
 	break;
       q++;
       /*  If id2 is already stored, skip this row. */
-      i = (int)hash_lookup(string_dups, id2);
+      i = (int)(long)hash_lookup(string_dups, id2);
       if (i > 0)
 	continue;
       /*  Follow the chain of id1 equivalent IDs back to the lowest one. */
       id = id1;
-      while ((tmp = (int)hash_lookup(string_dups, id)) > 0)
+      while ((tmp = (int)(long)hash_lookup(string_dups, id)) > 0)
 	id = tmp;
-      hash_store(string_dups, id2, (void *)id);
+      hash_store(string_dups, id2, (void *)(long)id);
     }
   EXEC SQL CLOSE csr116;
   dprintf("found %d duplicates\n", q);

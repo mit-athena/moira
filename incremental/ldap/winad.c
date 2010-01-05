@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.30 2009-12-18 03:31:29 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ldap/winad.c,v 1.31 2009-12-29 17:29:30 zacheiss Exp $
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -172,10 +172,8 @@
 #include <moira.h>
 #include <moira_site.h>
 #include <mrclient.h>
+#include <sasl/sasl.h>
 #include <krb5.h>
-#include <gsssasl.h>
-#include <gssldap.h> 
-#include "kpasswd.h"
 
 #ifdef _WIN32
 #ifndef ECONNABORTED
@@ -403,6 +401,8 @@ char DomainNames[MAX_DOMAINS][128];
 
 LK_ENTRY *member_base = NULL;
 
+LDAP *ldap_handle = NULL;
+
 char   PrincipalName[128];
 static char tbl_buf[1024];
 char  kerberos_ou[] = "OU=kerberos,OU=moira";
@@ -422,6 +422,7 @@ char ldap_realm[256];
 char ldap_port[256];
 char *ServerList[MAX_SERVER_NAMES];
 char default_server[256];
+char connected_server[128];
 static char tbl_buf[1024];
 char group_suffix[256];
 char exchange_acl[256];
@@ -441,6 +442,15 @@ int  GroupPopulateDelete = 0;
 int  group_members = 0;
 int  max_group_members = 0;
 
+struct sockaddr_in  kdc_server;
+int                 kdc_socket;
+krb5_context        context;
+krb5_ccache         ccache;
+krb5_auth_context   auth_context = NULL;
+krb5_data           ap_req;
+krb5_creds          *credsp = NULL;
+krb5_creds          creds;
+
 extern int set_password(char *user, char *password, char *domain);
 
 int ad_get_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
@@ -452,7 +462,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                char *Win2kPassword, char *Win2kUser, char *default_server,
                int connect_to_kdc, char **ServerList, char *ldap_realm,
 	       char *ldap_port);
-void ad_kdc_disconnect();
+void ad_kdc_disconnect(void);
 int ad_server_connect(char *connectedServer, char *domain);
 int attribute_update(LDAP *ldap_handle, char *distinguished_name, 
 		     char *attribute_value, char *attribute, char *user_name);
@@ -604,7 +614,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
                         char ***modvalues, int type);
 void free_values(char **modvalues);
 
-int convert_domain_to_dn(char *domain, char **bind_path);
+int convert_domain_to_dn(char *domain, char *dnp);
 void get_distinguished_name(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                             char *distinguished_name);
 int moira_disconnect(void);
@@ -630,7 +640,6 @@ int main(int argc, char **argv)
   char            *table;
   char            **before;
   char            **after;
-  LDAP            *ldap_handle;
   char            dn_path[256];
   char            *orig_argv[64];
   
@@ -2432,7 +2441,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(search_filter, "(&(objectClass=user)(cn=%s))", 
+	  sprintf(search_filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
 		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -2692,7 +2701,7 @@ int group_create(int ac, char **av, void *ptr)
       return(AD_INVALID_NAME);
     }
 
-  updateGroup = (int)call_args[4];
+  updateGroup = (int)(long)call_args[4];
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -2758,7 +2767,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      group_base = NULL;
 	      
-	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
+		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2900,7 +2910,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      group_base = NULL;
 	      
-	      sprintf(filter, "(&(objectClass=user)(cn=%s))", av[L_NAME]);
+	      sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", 
+		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -3459,7 +3470,7 @@ int member_list_build(int ac, char **av, void *ptr)
 
   if (!strcmp(av[ACE_TYPE], "USER"))
     {
-      if (!((int)call_args[3] & MOIRA_USERS))
+      if (!((int)(long)call_args[3] & MOIRA_USERS))
         return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "STRING"))
@@ -3473,7 +3484,7 @@ int member_list_build(int ac, char **av, void *ptr)
 	    return(0);
 	}
 
-      if (!((int)call_args[3] & MOIRA_STRINGS))
+      if (!((int)(long)call_args[3] & MOIRA_STRINGS))
         return(0);
 	
       if (contact_create((LDAP *)call_args[0], call_args[1], temp, contact_ou))
@@ -3481,12 +3492,12 @@ int member_list_build(int ac, char **av, void *ptr)
     }
   else if (!strcmp(av[ACE_TYPE], "LIST"))
     {
-      if (!((int)call_args[3] & MOIRA_LISTS))
+      if (!((int)(long)call_args[3] & MOIRA_LISTS))
         return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "KERBEROS"))
     {
-      if (!((int)call_args[3] & MOIRA_KERBEROS))
+      if (!((int)(long)call_args[3] & MOIRA_KERBEROS))
         return(0);
 
       if (contact_create((LDAP *)call_args[0], call_args[1], temp, 
@@ -3496,7 +3507,7 @@ int member_list_build(int ac, char **av, void *ptr)
     }
   else if (!strcmp(av[ACE_TYPE], "MACHINE"))
     {
-      if (!((int)call_args[3] & MOIRA_MACHINE))
+      if (!((int)(long)call_args[3] & MOIRA_MACHINE))
 	return(0);
     }
   else
@@ -3611,54 +3622,6 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
       com_err(whoami, 0, "Unable to modify list %s members : %s",
               group_name, ldap_err2string(rc));
       goto cleanup;
-    }
-
-  if ((!strcmp(UserOu, contact_ou)) || (!strcmp(UserOu, kerberos_ou))) 
-    {
-      if (Exchange)
-	{
-	  if(!strcmp(UserOu, contact_ou) && 
-	     ((s = strstr(user_name, 
-			  "@exchange-forwarding.mit.edu")) != (char *) NULL))
-	    {
-	      memset(temp, '\0', sizeof(temp));
-	      strcpy(temp, user_name);
-	      s = strchr(temp, '@');
-	      *s = '\0';
-	      
-	      sprintf(filter, "(&(objectClass=user)(mailNickName=%s))", temp);
-	  
-	      if ((rc = linklist_build(ldap_handle, dn_path, filter, NULL,
-				       &group_base, &group_count, 
-				       LDAP_SCOPE_SUBTREE) != 0))
-		return(rc);	  
-	      
-	      if(group_count)
-		goto cleanup;
-	      
-	      linklist_free(group_base);
-	      group_base = NULL;
-	      group_count = 0;
-	    }
-	  
-	  sprintf(filter, "(distinguishedName=%s)", temp);
-	  attr_array[0] = "memberOf";
-	  attr_array[1] = NULL;
-	  
-	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-				   &group_base, &group_count, 
-				   LDAP_SCOPE_SUBTREE) != 0))
-	    return(rc);
-	  
-
-	  if(!group_count) 
-	    {
-	      com_err(whoami, 0, "Removing unreferenced object %s", temp);
-	  
-	      if ((rc = ldap_delete_s(ldap_handle, temp)) != 0) 
-		return(rc);
-	    }
-	}
     }
 
  cleanup:
@@ -3923,7 +3886,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	  group_base = NULL;
 	  
-	  sprintf(filter, "(&(objectClass=user)(cn=%s))", mail);
+	  sprintf(filter, "(&(objectClass=user)(homeMDB=*)(cn=%s))", mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -3971,7 +3934,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	  group_base = NULL;
 
-	  sprintf(filter, "(&(objectClass=user)(mail=%s))", mail);
+	  sprintf(filter, "(&(objectClass=user)(homeMDB=*)(mail=%s))", mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4019,7 +3982,9 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_base = NULL;
 	  group_count = 0;
 
-	  sprintf(filter, "(&(objectClass=user)(proxyAddresses=smtp:%s))", mail);
+	  sprintf(filter, 
+		  "(&(objectClass=user)(homeMDB=*)(proxyAddresses=smtp:%s))", 
+		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4043,7 +4008,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_base = NULL;
 	  group_count = 0;
 
-	  sprintf(filter, "(&(objectClass=group)(proxyAddresses=smtp:%s))", mail);
+	  sprintf(filter, "(&(objectClass=group)(proxyAddresses=smtp:%s))", 
+		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4144,7 +4110,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *WinHomeDir, char *WinProfileDir, char *first,
 		char *middle, char *last, char *shell, char *class)
 {
-  LDAPMod   *mods[20];
+  LDAPMod   *mods[40];
   LK_ENTRY  *group_base;
   int  group_count;
   char distinguished_name[512];
@@ -4979,7 +4945,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
 int user_create(int ac, char **av, void *ptr)
 {
-  LDAPMod *mods[20];
+  LDAPMod *mods[40];
   char new_dn[256];
   char user_name[256];
   char sam_name[256];
@@ -6290,7 +6256,7 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
-  call_args[4] = (char *)updateGroup;
+  call_args[4] = (char *)(long)updateGroup;
   call_args[5] = MoiraId;
   call_args[6] = "0";
   call_args[7] = NULL;
@@ -9438,4 +9404,170 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
   group_base = NULL;
 
   return(rc);
+}
+
+static int sasl_flags = LDAP_SASL_QUIET;
+static char *sasl_mech = "GSSAPI";
+
+/* warning! - the following requires intimate knowledge of sasl.h */
+static char *default_values[] = {
+  "", /* SASL_CB_USER         0x4001 */
+  "", /* SASL_CB_AUTHNAME     0x4002 */
+  "", /* SASL_CB_LANGUAGE     0x4003 */ /* not used */
+  "", /* SASL_CB_PASS         0x4004 */
+  "", /* SASL_CB_ECHOPROMPT   0x4005 */
+  "", /* SASL_CB_NOECHOPROMPT   0x4005 */
+  "", /* SASL_CB_CNONCE       0x4007 */
+  ""  /* SASL_CB_GETREALM     0x4008 */
+};
+
+/* this is so we can use SASL_CB_USER etc. to index into default_values */
+#define VALIDVAL(n) ((n >= SASL_CB_USER) && (n <= SASL_CB_GETREALM))
+#define VAL(n) default_values[n-0x4001]
+
+static int example_sasl_interact( LDAP *ld, unsigned flags, void *defaults, void *prompts ) {
+  sasl_interact_t         *interact = NULL;
+  int                     rc;
+
+  if (prompts == NULL) {
+    return (LDAP_PARAM_ERROR);
+  }
+
+  for (interact = prompts; interact->id != SASL_CB_LIST_END; interact++) {
+    if (VALIDVAL(interact->id)) {
+      interact->result = VAL(interact->id);
+      interact->len = strlen((char *)interact->result);
+    }
+  }
+  return (LDAP_SUCCESS);
+}
+
+int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
+               char *Win2kPassword, char *Win2kUser, char *default_server,
+               int connect_to_kdc, char **ServerList, char *ldap_realm,
+               char *ldap_port)
+{
+  int         i;
+  int         k;
+  int         Count;
+  char        *server_name[MAX_SERVER_NAMES];
+  static char temp[128];
+  ULONG       version = LDAP_VERSION3;
+  ULONG       rc;
+  int         Max_wait_time = 1000;
+  int         Max_size_limit = LDAP_NO_LIMIT;
+  LDAPControl **ctrls = NULL;
+
+  if (strlen(ldap_domain) == 0)
+    return(1);
+
+  if (strlen(ldap_port) == 0)
+    return(1);
+
+  convert_domain_to_dn(ldap_domain, dn_path);
+  if (strlen(dn_path) == 0)
+    return(1);
+
+  Count = 0;
+  while (ServerList[Count] != NULL)
+    ++Count;
+
+  if ((Count == 0) && (connect_to_kdc))
+    return(1);
+
+  for (i = 0; i < Count; i++)
+    {
+      if (ServerList[i] == NULL)
+	continue;
+
+      if (((*ldap_handle) = ldap_init(ServerList[i], atoi(ldap_port))) != NULL)
+        {
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION,
+                               &version);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT,
+                               (void *)&Max_wait_time);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT,
+                               (void *)&Max_size_limit);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS,
+                               LDAP_OPT_OFF);
+
+	  rc = ldap_sasl_interactive_bind_ext_s((*ldap_handle), "", sasl_mech,
+						 NULL, NULL, sasl_flags,
+						 example_sasl_interact,
+						 NULL, &ctrls);
+
+	  
+          if (rc == LDAP_SUCCESS)
+            {
+              if (connect_to_kdc)
+                {
+                  if (!ad_server_connect(ServerList[i], ldap_domain))
+                    {
+		      printf("ad_server_connect failed\n");
+                      ldap_unbind_s((*ldap_handle));
+                      (*ldap_handle) = NULL;
+                      continue;
+                    }
+                }
+              if (strlen(default_server) == 0)
+		strcpy(default_server, ServerList[i]);
+              strcpy(connected_server, ServerList[i]);
+              break;
+            }
+          else
+            {
+              (*ldap_handle) = NULL;
+            }
+        }
+    }
+  if ((*ldap_handle) == NULL)
+    return(1);
+  return(0);
+}
+
+int convert_domain_to_dn(char *domain, char *dnp)
+{
+  char    *fp;
+  char    *dp;
+  char    dn[512];
+
+  memset(dn, '\0', sizeof(dn));
+  strcpy(dn, "dc=");
+  dp = dn+3;
+  for (fp = domain; *fp; fp++)
+    {
+      if (*fp == '.')
+        {
+          strcpy(dp, ",dc=");
+          dp += 4;
+        }
+      else
+        *dp++ = *fp;
+    }
+
+  strcpy(dnp, dn);
+  return 0;
+}
+
+void ad_kdc_disconnect()
+{
+
+  if (auth_context != NULL)
+    {
+      krb5_auth_con_free(context, auth_context);
+      if (ap_req.data != NULL)
+        free(ap_req.data);
+      krb5_free_cred_contents(context, &creds);
+      if (credsp != NULL)
+        krb5_free_creds(context, credsp);
+    }
+  credsp = NULL;
+  auth_context = NULL;
+  if (context != NULL)
+    {
+      krb5_cc_close(context, ccache);
+      krb5_free_context(context);
+    }
+  close(kdc_socket);
+
 }

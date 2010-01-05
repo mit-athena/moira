@@ -33,7 +33,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $");
 
 client *cur_client;
 

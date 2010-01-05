@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.21 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.22 2009-12-29 17:29:29 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -17,12 +17,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "util.h"
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.21 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.22 2009-12-29 17:29:29 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -34,7 +35,7 @@ char *divide = "##############################################################";
 #define FALSE 0
 #define TRUE (!FALSE)
 
-FILE *out = stdout;
+FILE *out;
 
 struct hash *users, *machines, *strings, *lists;
 struct user {
@@ -71,6 +72,8 @@ int main(int argc, char **argv)
 {
   time_t tm = time(NULL);
   char filename[MAXPATHLEN], *targetfile;
+
+  out = stdout;
 
   EXEC SQL CONNECT :db;
 

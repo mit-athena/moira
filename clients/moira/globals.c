@@ -16,7 +16,7 @@
 #include <moira.h>
 #include "defs.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.11 1998-03-10 21:09:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.11 1998-03-10 21:09:36 danw Exp $");
 
 Bool verbose;			/* TRUE if verbose mode is active (default). */
 Bool found_some;		/* used by lists.c for determining if there

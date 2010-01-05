@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $");
 
 /*
  *

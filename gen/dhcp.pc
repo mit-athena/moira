@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.7 2008-11-20 16:30:06 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.7 2008-11-20 16:30:06 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";

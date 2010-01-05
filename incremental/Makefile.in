@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2009-05-04 20:49:11 zacheiss Exp $
+# $Id: Makefile.in,v 1.13 2009-12-29 17:29:29 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -44,5 +44,4 @@ depend:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 install:
-	$(INSTALL_PROGRAM) ksrvtgt $(DESTDIR)$(mrbindir)
 	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done

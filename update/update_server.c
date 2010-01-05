@@ -30,7 +30,7 @@
 #endif
 #include "update.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.28 2009-07-28 16:18:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.28 2009-07-28 16:18:53 zacheiss Exp $");
 
 char *whoami, *hostname;
 

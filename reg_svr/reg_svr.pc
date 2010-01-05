@@ -39,7 +39,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.25 2009-06-19 02:18:47 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.25 2009-06-19 02:18:47 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 

@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.50 2000-08-03 21:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.50 2000-08-03 21:49:13 zacheiss Exp $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);

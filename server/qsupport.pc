@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.53 2008-08-22 17:49:13 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.54 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Special query routines
  *
@@ -14,11 +14,12 @@
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.53 2008-08-22 17:49:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.54 2009-12-29 17:29:33 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -372,9 +373,9 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 		    (list_id, member_type, member_id, tag, direct, ref_count)
 		    VALUES (:lid, :mtype, :mid, :tag, 0, :ref);
 		}
-	      iargv[0] = (char *)lid;
+	      iargv[0] = (void *)(long)lid;
 	      iargv[1] = mtype;
-	      iargv[2] = (char *)mid;
+	      iargv[2] = (void *)(long)mid;
 	      incremental_after(IMEMBERS_TABLE, 0, iargv);
 	    }
 	}
@@ -512,9 +513,9 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
 	  ref = aref[a] * dref[d];
 	  if (cnt <= ref)
 	    {
-	      iargv[0] = (char *)lid;
+	      iargv[0] = (void *)(long)lid;
 	      iargv[1] = mtype;
-	      iargv[2] = (char *)mid;
+	      iargv[2] = (void *)(long)mid;
 	      incremental_before(IMEMBERS_TABLE, 0, iargv);
 	      EXEC SQL DELETE FROM imembers
 		WHERE list_id = :lid AND member_id = :mid
@@ -574,9 +575,9 @@ int tag_member_of_list(struct query *q, char **argv, client *cl)
   if (dbms_errno)
     return mr_errcode;
   
-  iargv[0] = (char *)lid;
+  iargv[0] = (void *)(long)lid;
   iargv[1] = mtype;
-  iargv[2] = (char *)mid;
+  iargv[2] = (void *)(long)mid;
   incremental_after(IMEMBERS_TABLE, 0, iargv);
 
   return MR_SUCCESS;
@@ -638,7 +639,7 @@ int get_ace_use(struct query *q, char *argv[], client *cl,
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
   char *atype;
-  int aid, listid, id;
+  long aid, listid, id;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
 
@@ -1004,7 +1005,7 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
   char *atype;
-  int aid, listid, id;
+  long aid, listid, id;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
 
@@ -1150,7 +1151,7 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
   char *atype;
-  int aid, listid, id;
+  long aid, listid, id;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
 

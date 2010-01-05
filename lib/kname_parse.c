@@ -22,7 +22,7 @@
 #define KNAME_FMT                                (KRBET_KNAME_FMT - ERROR_TABLE_BASE_krb)
 #endif
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_parse.c,v 1.1 2009-05-21 19:38:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_parse.c,v 1.1 2009-05-21 19:38:46 zacheiss Exp $");
 
 #define NAME    0               /* which field are we in? */
 #define INST    1

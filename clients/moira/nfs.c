@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $");
 
 char **AskNFSInfo(char **info);
 

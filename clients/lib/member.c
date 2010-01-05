@@ -19,7 +19,7 @@
 
 #include <krb5.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $");
 
 int mrcl_validate_string_member(char *str)
 {

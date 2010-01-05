@@ -1,4 +1,4 @@
-@Comment($Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Doc/internal.mss,v 1.1 1996-07-02 02:01:45 danw Exp $)
+@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Doc/internal.mss,v 1.1 1996-07-02 02:01:45 danw Exp $)
 @Make(Manual)
 @Device(PostScript)
 @PageFooting(center "Draft of @value(date)")

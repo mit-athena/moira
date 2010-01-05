@@ -1,4 +1,4 @@
-/* $Id: rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $
+/* $Id: rest_db.pc,v 1.7 2009-12-29 17:29:27 zacheiss Exp $
  *
  * 	This program restores the Moira database from an mrbackup.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.7 2009-12-29 17:29:27 zacheiss Exp $");
 
 int yes_or_no(char *prompt);
 
@@ -62,9 +62,10 @@ int main(int argc, char **argv)
 
   printf("Prefix of backup to restore: ");
   fflush(stdout);
-  if (!gets(buf))
+  if (!fgets(buf, sizeof(buf), stdin))
     return 1;
-  prefix = buf;
+  
+  prefix = strtrim(buf);
 
   if (!yes_or_no("Are you SURE?"))
     {

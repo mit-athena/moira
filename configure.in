@@ -6,8 +6,14 @@ dnl copies of -I/usr/athena/include -L/usr/athena/lib in our command lines
 AC_DEFUN(MR_EXTEND, [
     case $$1 in
 	*$2*) ;;
-	*) $1=$2\ $$1 ;;
+	*) $1=$$1\ $2 ;;
     esac
+])
+
+dnl Define for both C and Pro*C                                                                                                                                                                                                               
+AC_DEFUN(MR_DEFINE, [
+    AC_DEFINE($1)
+    MR_EXTEND(PRO_C_DEFS, DEFINE=$1)
 ])
 
 AC_CANONICAL_HOST
@@ -17,6 +23,7 @@ case $host_os in
 solaris*)
 	short_os=solaris
 	SO_LDFLAGS="-G"
+	MR_DEFINE(__sparc)
 	;;
 irix*)
 	short_os=irix
@@ -28,12 +35,6 @@ linux*)
 	;;
 esac
 AC_SUBST(SO_LDFLAGS)
-
-dnl Define for both C and Pro*C
-AC_DEFUN(MR_DEFINE, [
-    AC_DEFINE($1)
-    MR_EXTEND(PRO_C_DEFS, DEFINE=$1)
-])
 
 dnl Add to include path for both C and Pro*C
 AC_DEFUN(MR_INCLUDE, [
@@ -97,6 +98,9 @@ AC_ARG_WITH(com_err,
      if test $withval = "no"; then
          AC_MSG_ERROR(com_err is required for Moira)
      fi
+     if test $withval = "yes"; then
+	 MR_INCLUDE(/usr/include/et)
+     fi
      if test $withval != "yes"; then
 	 MR_INCLUDE($withval/include)
 	 MR_LIBS($withval/lib)
@@ -138,6 +142,12 @@ if test "$krb4" != no; then
 			       $LIBPATH -ldes)],
 		 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
 fi
+if test "$KRB4_LIBS" != "" ; then
+    AC_CANONICAL_TARGET
+    case "$target_os" in
+    darwin*) KRB4_LIBS="$KRB4_LIBS -framework Kerberos"
+    esac
+fi
 
 AC_MSG_CHECKING(for Kerberos 5)
 AC_ARG_WITH(krb5,
@@ -158,6 +168,12 @@ if test "$krb5" != no; then
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm
+fi
+if test "$KRB5_LIBS" != "" ; then
+    AC_CANONICAL_TARGET
+    case "$target_os" in
+    darwin*) KRB5_LIBS="$KRB5_LIBS -framework Kerberos"
+    esac
 fi
 AC_SUBST(REG_SVR_DEFS)
 AC_SUBST(REG_SVR_INCLUDES)
@@ -258,6 +274,9 @@ if test "$oracle" != no; then
 	10.2.0.2.0)
 	    SQL_LIBS="-L$oracle/lib32 -lclntsh `cat $oracle/lib32/ldflags` `cat $oracle/lib32/sysliblist` -R$oracle/lib32 -laio -lposix4 -lm -lthread"
 	    ;;
+	10.2.0.4.0)
+	    SQL_LIBS="-L$oracle/lib -lclntsh `cat $oracle/lib/ldflags` `cat $oracle/lib/sysliblist` -Wl,-R$oracle/lib -lm"
+	    ;;
 	*)
 	    AC_MSG_ERROR(Unsupported Oracle release)
 	    ;;
@@ -266,7 +285,7 @@ if test "$oracle" != no; then
     SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/mailman/Makefile reg_svr/Makefile regtape/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
-    PRO_C_DEFS="DEFINE=_PROC_ DEFINE=__sparc $PRO_C_DEFS"
+    PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
 fi
 AC_SUBST(PRO_C)
 AC_SUBST(PRO_C_DEFS)
@@ -454,7 +473,7 @@ MR_INCLUDE('$(SRCTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 MR_INCLUDE('$(srcdir)')
-LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
+LDFLAGS="$LDFLAGS $LIBPATH"
 KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then

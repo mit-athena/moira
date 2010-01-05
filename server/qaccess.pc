@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.37 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -12,16 +12,20 @@
 #include "qrtn.h"
 #include "query.h"
 
+#include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#ifndef _PROC_
+#include <resolv.h>
+#endif
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.36 2008-08-29 14:50:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.37 2009-12-29 17:29:33 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;

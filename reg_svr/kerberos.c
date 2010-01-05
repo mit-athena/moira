@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.9 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id: kerberos.c,v 1.10 2009-12-29 17:29:32 zacheiss Exp $
  *
  * Kerberos routines for registration server
  *
@@ -38,7 +38,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.9 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.10 2009-12-29 17:29:32 zacheiss Exp $");
 
 extern char *hostname, *shorthostname;
 
@@ -141,7 +141,7 @@ long register_kerberos(char *username, char *password)
 
   status = kadm5_init_with_skey(admin_princ, NULL, KADM5_ADMIN_SERVICE,
 				&realm_params, KADM5_STRUCT_VERSION,
-				KADM5_API_VERSION_2, &kadm_server_handle);
+				KADM5_API_VERSION_2, NULL, &kadm_server_handle);
   if (status)
     goto cleanup;
 

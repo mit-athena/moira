@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.62 2009-01-12 21:39:29 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.62 2009-01-12 21:39:29 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;

@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.75 2009-05-04 20:49:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.75 2009-05-04 20:49:10 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);

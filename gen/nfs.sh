@@ -1,7 +1,7 @@
 #!/bin/sh
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.25 2000-05-25 05:43:22 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.25 2000-05-25 05:43:22 zacheiss Exp $
 
 # redirect output, and find the credentials directory (not robust, but
 # works for now).

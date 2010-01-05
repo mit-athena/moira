@@ -1,4 +1,4 @@
-/* $Id: fix.pc,v 1.3 1998-02-05 22:51:02 danw Exp $
+/* $Id: fix.pc,v 1.4 2009-12-29 17:29:28 zacheiss Exp $
  *
  * User interface routines for dbck (Moira database consistency checker)
  *
@@ -16,7 +16,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.3 1998-02-05 22:51:02 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.4 2009-12-29 17:29:28 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *_table;
@@ -32,7 +32,7 @@ void generic_ffunc(void *id)
   int rowcount;
 
   sprintf(stmt_buf, "DELETE FROM %s WHERE %s.%s = %d",
-	  _table, _table, _idfield, (int)id);
+	  _table, _table, _idfield, (int)(long)id);
   EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
@@ -56,7 +56,7 @@ void single_delete(char *table, char *idfield, int id)
 {
   _table = table;
   _idfield = idfield;
-  generic_ffunc((void *)id);
+  generic_ffunc((void *)(long)id);
 }
 
 
@@ -103,8 +103,8 @@ void generic_fix(struct save_queue *sq, int (*pfunc)(void *), char *msg,
 
   while (sq_get_data(sq, &id))
     {
-      if ((*pfunc)((void *)id) == 0 && single_fix(msg, preen))
-	(*ffunc)((void *)id);
+      if ((*pfunc)((void *)(long)id) == 0 && single_fix(msg, preen))
+	(*ffunc)((void *)(long)id);
     }
   sq_destroy(sq);
 }
@@ -121,7 +121,7 @@ int prompt(char *msg)
     {
       printf("%s (Y/N/Q)? ", msg);
       fflush(stdout);
-      gets(buf);
+      fgets(buf, sizeof(buf), stdin);
       if (buf[0] == 'Y' || buf[0] == 'y')
 	return 1;
       if (buf[0] == 'N' || buf[0] == 'n')

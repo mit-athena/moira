@@ -26,7 +26,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.43 2006-08-23 19:02:27 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.43 2006-08-23 19:02:27 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);

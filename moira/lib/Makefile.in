@@ -45,7 +45,7 @@ ET_C=	mr_et.c krb_et.c ureg_err.c
 all: depend libmoira.la
 
 clean:
-	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.a
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.la
 
 cleandir distclean: clean
 	rm -f Makefile

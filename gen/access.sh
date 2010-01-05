@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/access.sh,v 1.1 2003-10-21 18:35:48 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/access.sh,v 1.1 2003-10-21 18:35:48 zacheiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

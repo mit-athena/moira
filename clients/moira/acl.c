@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/acl.c,v 1.2 2000-03-15 22:44:01 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/acl.c,v 1.2 2000-03-15 22:44:01 rbasch Exp $");
 
 void RealDeleteACL(char **info, Bool one_item);
 void ChangeACL(char **info, Bool one_item);

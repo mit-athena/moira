@@ -10,7 +10,7 @@ DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
-LIBS=../lib/libmrclient.a @LIBS@
+LIBS=../lib/libmrclient.la @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
@@ -46,5 +46,5 @@ depend:
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(TARGET) $(DESTDIR)$(bindir)
 
-$(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+$(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $@.o $(LIBS)

@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.18 2009-09-08 22:00:20 zacheiss Exp $
+/* $Id: dcm.pc,v 1.19 2009-12-29 17:29:28 zacheiss Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.18 2009-09-08 22:00:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.19 2009-12-29 17:29:28 zacheiss Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -348,7 +348,7 @@ void do_hosts(char *service)
 	break;
 
       sq_save_data(sq, strdup(strtrim(host)));
-      sq_save_data(sq, (void *)mid);
+      sq_save_data(sq, (void *)(long)mid);
     }
   EXEC SQL CLOSE csr_hst1;
 
@@ -410,7 +410,7 @@ void do_hosts(char *service)
 	    break;
 
 	  sq_save_data(sq, strdup(strtrim(host)));
-	  sq_save_data(sq, (void *)mid);
+	  sq_save_data(sq, (void *)(long)mid);
 	}
       EXEC SQL CLOSE csr_hst2;
 
@@ -535,7 +535,7 @@ int dcm_execute(char *service, char *host, char *script)
     }
 
   sprintf(inst, "/tmp/moira-update.XXXXXX");
-  mktemp(inst);
+  mkstemp(inst);
   code = mr_send_file(conn, script, inst, 0);
   if (code)
     {

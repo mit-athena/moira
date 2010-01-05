@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.64 2009-04-24 18:24:32 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.64 2009-04-24 18:24:32 zacheiss Exp $");
 
 struct member {
   int type;
@@ -490,7 +490,7 @@ int main(int argc, char **argv)
     }
   else if (setinfo)
     {
-      char *argv[14];
+      char *argv[16];
 
       status = mr_query("get_list_info", 1, &listname,
 			save_list_info, argv);

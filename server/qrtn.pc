@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.31 2009-07-06 16:23:15 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.32 2009-12-29 17:29:33 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -16,11 +16,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.31 2009-07-06 16:23:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.32 2009-12-29 17:29:33 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;

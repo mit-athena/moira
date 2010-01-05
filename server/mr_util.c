@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $");
 
 extern char *whoami;
 

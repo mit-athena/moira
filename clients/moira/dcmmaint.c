@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.18 1998-03-10 21:09:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.18 1998-03-10 21:09:34 danw Exp $");
 
 extern char *whoami;
 static char buf[BUFSIZ];

@@ -22,7 +22,7 @@
 #include <unistd.h>
 #endif
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $");
 
 /* Moira RPC format:
 

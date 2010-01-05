@@ -18,7 +18,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.8 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.8 2008-08-22 17:49:11 zacheiss Exp $");
 
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);

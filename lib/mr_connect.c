@@ -45,7 +45,7 @@ struct hostent * WINAPI rgethostbyname(char *name);
 #endif
 #endif
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.37 2006-09-07 18:21:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.37 2006-09-07 18:21:48 zacheiss Exp $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775

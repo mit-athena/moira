@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $");
 
 #define FALSE 0
 #define TRUE 1

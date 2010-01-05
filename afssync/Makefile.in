@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.10 2009-06-01 21:04:56 zacheiss Exp $
+# $Id: Makefile.in,v 1.11 2009-12-29 17:29:27 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -63,7 +63,7 @@ install:
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
 
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(SQL_LIBS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil
 
 pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil

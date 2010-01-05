@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.36 2009-06-01 21:05:00 zacheiss Exp $
+/* $Id: moira.h,v 1.37 2009-12-29 17:29:29 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -125,7 +125,7 @@ char *format_filesys_type(char *fs_status);
 /* prototypes from sq.c */
 struct save_queue *sq_create(void);
 int sq_save_data(struct save_queue *sq, void *data);
-int sq_save_args(int argc, char *argv[], struct save_queue *sq);
+int sq_save_args(int argc, char *argv[], void *sq);
 int sq_save_unique_data(struct save_queue *sq, void *data);
 int sq_save_unique_string(struct save_queue *sq, char *data);
 /* in sq_get_data and sq_remove_data, the `data' arg should be a
@@ -155,6 +155,7 @@ int mr_connect(char *server);
 int mr_disconnect(void);
 int mr_do_update(void);
 int mr_host(char *host, int size);
+int mr_krb5_auth(char *prog);
 int mr_motd(char **motd);
 int mr_noop(void);
 int mr_proxy(char *principal, char *orig_authtype);

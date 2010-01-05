@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.39 2008-09-10 13:48:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.39 2008-09-10 13:48:40 zacheiss Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.

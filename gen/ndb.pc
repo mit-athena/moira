@@ -1,4 +1,4 @@
-/* $Id: ndb.pc,v 1.5 2000-07-17 17:52:43 zacheiss Exp $
+/* $Id: ndb.pc,v 1.6 2009-12-29 17:29:29 zacheiss Exp $
  *
  * This generates the msql database for the network tables.
  *
@@ -13,13 +13,14 @@
 #include <sys/stat.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "util.h"
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.5 2000-07-17 17:52:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.6 2009-12-29 17:29:29 zacheiss Exp $");
 
 char *whoami = "ndb.gen";
 char *db = "moira/moira";

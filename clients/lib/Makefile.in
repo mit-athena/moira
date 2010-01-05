@@ -7,22 +7,30 @@ CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
-RANLIB=@RANLIB@
+LDFLAGS=@LDFLAGS@
+LIBTOOL=@LIBTOOL@
+INSTALL=@INSTALL@
 
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 BUILDTOP=../..
+top_builddir=@top_builddir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
 
-OBJS=error.o mail.o member.o pobox.o utils.o
+OBJS=error.lo mail.lo member.lo pobox.lo utils.lo
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.SUFFIXES: .lo
 
-all: libmrclient.a
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: libmrclient.la
 
 clean:
-	rm -f $(OBJS) libmrclient.a
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) libmrclient.la
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -30,7 +38,7 @@ cleandir distclean: clean
 depend:
 
 install: all
+	$(LIBTOOL) --mode=install $(INSTALL) libmrclient.la $(DESTDIR)$(libdir)/libmrclient.la
 
-libmrclient.a: $(OBJS)
-	ar cru $@ $(OBJS)
-	$(RANLIB) $@
+libmrclient.la: $(OBJS)
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $(OBJS) -rpath $(libdir) -version-info 0:0:0

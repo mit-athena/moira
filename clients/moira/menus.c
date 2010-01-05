@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.47 2007-11-29 18:09:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.47 2007-11-29 18:09:07 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 

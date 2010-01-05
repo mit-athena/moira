@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.16 2004-02-15 01:54:32 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.16 2004-02-15 01:54:32 zacheiss Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100

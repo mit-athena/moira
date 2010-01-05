@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   int status, success;
   char **arg = argv;
   char *uargv[2];
-  char *pargv[PRN_END];
+  char *pargv[PRN_END + 1];
   char *membervec[4];
   struct member *memberstruct;
   char *server = NULL, *p;
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
         usage(argv);
     }
 
-  for (i = 0; i < PRN_END; i++)
+  for (i = 0; i < PRN_END + 1; i++)
       pargv[i] = NULL;
 
   /* check for name conflicts. */
@@ -545,10 +545,10 @@ void usage(char **argv)
 int show_printer_info(char *queuename)
 {
   char hwaddr[20];
-  char *pargv[PRN_END];
+  char *pargv[PRN_END + 1];
   int status, banner, i;
 
-  for (i = 0; i < PRN_END; i++)
+  for (i = 0; i < PRN_END + 1; i++)
     pargv[i] = NULL;
 
   memset (hwaddr,'\0',sizeof(hwaddr));

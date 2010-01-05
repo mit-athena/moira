@@ -1,4 +1,4 @@
-/* $Id: protocol.c,v 1.4 2005-06-29 06:39:35 zacheiss Exp $
+/* $Id: protocol.c,v 1.5 2009-12-29 17:29:32 zacheiss Exp $
  *
  * Reg_svr protocol and encryption/decryption routines
  *
@@ -28,7 +28,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.4 2005-06-29 06:39:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.5 2009-12-29 17:29:32 zacheiss Exp $");
 
 R_RSA_PRIVATE_KEY *rsa_key;
 char *emsg[NUM_REG_ERRORS], *ename[NUM_REG_ERRORS];
@@ -50,6 +50,7 @@ struct _handler {
 
 void parse_pdu(reg_client *rc, long len, char *buf);
 void printhex(unsigned char *buf, int len);
+static unsigned int swap_32(unsigned int val);
 
 int read_rsa_key(void)
 {
@@ -70,8 +71,23 @@ int read_rsa_key(void)
   if (read(fd, rsa_key, statbuf.st_size) != statbuf.st_size)
     return 0;
 
+  /* Attempt to byteswap the key length if we get something ridiculous. */
+  if (rsa_key->bits > MAX_RSA_MODULUS_BITS)
+    rsa_key->bits = swap_32(rsa_key->bits);
+  
   close(fd);
   return 1;
+}
+
+static unsigned int swap_32(val)
+     unsigned int val;
+{ 
+  unsigned char b1 = (val >> 24) & 0xff;
+  unsigned char b2 = (val >> 16) & 0xff;
+  unsigned char b3 = (val >> 8) & 0xff;
+  unsigned char b4 = val & 0xff;
+
+  return ((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
 }
 
 int read_errors(void)
@@ -121,7 +137,7 @@ int read_errors(void)
   return 1;
 }
 
-void parse_packet(reg_client *rc, int type, long len, char *buf, int sleeping)
+void parse_packet(reg_client *rc, int type, int len, char *buf, int sleeping)
 {
   switch (type)
     {
@@ -162,7 +178,7 @@ void parse_packet(reg_client *rc, int type, long len, char *buf, int sleeping)
 	    reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, "Out of memory");
 	    return;
 	  }
-	des_cbc_encrypt(buf, outbuf, len, rc->sched, iv, 0);
+	des_cbc_encrypt((des_cblock *)buf, (des_cblock *)outbuf, len, rc->sched, (const des_cblock *)iv, 0);
 
 	/* Undo PKCS#5 padding */
 	len -= outbuf[len - 1];
@@ -297,7 +313,8 @@ void reply(reg_client *rc, int msg, char *state, char *clean, char *data,
     {
       char iv[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-      des_cbc_encrypt(buf + 3, outbuf + 3, len, rc->sched, iv, 1);
+      des_cbc_encrypt((des_cblock *)(buf + 3), (des_cblock *)(outbuf + 3), len,
+		      rc->sched, (const des_cblock *)iv, 1);
       p = outbuf;
       *p = REG_ENCRYPTED;
     }

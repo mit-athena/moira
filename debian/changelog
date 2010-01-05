@@ -1,9 +1,8 @@
-debathena-moira (4.0.0+cvs20091228-0debathena1) unstable; urgency=low
+debathena-moira (4.0.0+svn20100104-0debathena1) unstable; urgency=low
 
-  * New CVS snapshot.
-  * Install new Moira client eunice in debathena-moira-clients.
+  * New SVN snapshot.
 
- -- Evan Broder <broder@mit.edu>  Mon, 28 Dec 2009 17:46:21 -0500
+ -- Evan Broder <broder@mit.edu>  Mon, 04 Jan 2010 20:16:46 -0500
 
 debathena-moira (4.0.0+cvs20091116-0debathena1) unstable; urgency=low
 

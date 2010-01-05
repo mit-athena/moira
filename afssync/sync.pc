@@ -1,4 +1,4 @@
-/* $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.7 2007-05-16 19:42:00 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.8 2009-12-29 17:29:27 zacheiss Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -12,8 +12,11 @@
 #include <string.h>
 
 #include <rx/xdr.h>
+/* PRO*C gets heartburn from variadic macro in rx/rx_prototypes.h, so hide it. */
+#ifndef _PROC_
 #include "ptint.h"
 #include "ptserver.h"
+#endif
 #include "pterror.h"
 
 #include <moira.h>

@@ -70,7 +70,7 @@ Description: Development files for Moira library
 Package: debathena-libmrclient0
 Section: debathena/lib
 Architecture: any
-Depends: ${shlibs:Depends}, ${miscDepends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: The Moira client library
  Moira is the Athena Service Management system.  It serves as the 
  central repository for information about users, groups hosts, print 

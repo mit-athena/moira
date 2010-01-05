@@ -155,6 +155,7 @@ int mr_connect(char *server);
 int mr_disconnect(void);
 int mr_do_update(void);
 int mr_host(char *host, int size);
+int mr_krb5_auth(char *prog);
 int mr_motd(char **motd);
 int mr_noop(void);
 int mr_proxy(char *principal, char *orig_authtype);

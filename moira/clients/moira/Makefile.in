@@ -10,7 +10,7 @@ DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
-LIBS=../lib/libmrclient.a @CURSES_LIBS@ @LIBS@
+LIBS=../lib/libmrclient.la @CURSES_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
@@ -57,8 +57,8 @@ install: all
 	rm -f $(DESTDIR)$(bindir)/usermaint
 	ln -s moira $(DESTDIR)$(bindir)/usermaint
 
-moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+moira: $(MOBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
 
-namespace: $(NOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+namespace: $(NOBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

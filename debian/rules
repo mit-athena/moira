@@ -18,4 +18,4 @@ common-install-impl::
 		$(DEB_DESTDIR)/usr/share/man/man1/chfn.moira.1
 
 clean::
-	rm -f util/rsaref/Makefile
+	rm -f libtool util/rsaref/Makefile

@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.23 2000-03-15 22:44:18 rbasch Exp $
+/* $Id$
  *
  * Canonicalize a hostname
  *
@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.23 2000-03-15 22:44:18 rbasch Exp $");
+RCSID("$HeadURL$ $Id$");
 
 static struct hostent *local_gethostbyname(void)
 {

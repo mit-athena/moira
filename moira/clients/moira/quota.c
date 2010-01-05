@@ -1,4 +1,4 @@
-/* $Id: quota.c,v 1.31 2003-09-22 20:44:16 zacheiss Exp $
+/* $Id$
  *
  *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RCSID("$HeadURL$ $Id$");
 
 int afsfilsyshelper(int argc, char **argv, void *hint);
 int afsfilesys(char *name);

@@ -1,4 +1,4 @@
-/* $Id: startdcm.c,v 1.13 2009-12-29 17:29:28 zacheiss Exp $
+/* $Id$
  *
  * This program starts the DCM in a "clean" environment.
  * and then waits for it to exit.
@@ -23,7 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.13 2009-12-29 17:29:28 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 #define PROG 	"dcm"
 

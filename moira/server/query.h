@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.15 2008-08-29 14:50:08 zacheiss Exp $
+/* $Id$
  *
  * Structures and constants used in the query dispatch table
  *

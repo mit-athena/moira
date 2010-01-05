@@ -1,4 +1,4 @@
-/* $Id: globals.h,v 1.9 1998-03-10 21:09:36 danw Exp $
+/* $Id$
  *
  *	This is the file globals.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.

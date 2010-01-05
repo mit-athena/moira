@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.10 2009-12-29 17:29:32 zacheiss Exp $
+/* $Id$
  *
  * Kerberos routines for registration server
  *
@@ -38,7 +38,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.10 2009-12-29 17:29:32 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *hostname, *shorthostname;
 

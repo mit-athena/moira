@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.32 2009-12-29 17:29:33 zacheiss Exp $
+/* $Id$
  *
  * Query-processing routines
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.32 2009-12-29 17:29:33 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;

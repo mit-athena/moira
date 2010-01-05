@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.5 2009-06-01 21:05:00 zacheiss Exp $
+/* $Id$
  *
  * Do AFS incremental updates
  *
@@ -40,6 +40,8 @@
 
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
+
+RCSID("$HeadURL$ $Id$");
 
 char *whoami;
 

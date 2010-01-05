@@ -1,6 +1,6 @@
 // crib'd from cryptix
 
-// $Id: ArrayUtil.java,v 1.1 1998-08-01 18:25:15 danw Exp $
+// $Id$
 
 /*
  * Copyright (c) 1997 Systemics Ltd

@@ -1,4 +1,4 @@
-/* $Id: mr_init.c,v 1.12 2000-01-28 00:03:30 danw Exp $
+/* $Id$
  *
  * Initialize libmoira
  *
@@ -11,7 +11,7 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.12 2000-01-28 00:03:30 danw Exp $");
+RCSID("$HeadURL$ $Id$");
 
 int mr_inited = 0;
 

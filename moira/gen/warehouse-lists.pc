@@ -1,4 +1,4 @@
-/* $Id: warehouse-lists.pc,v 1.1 2009-01-12 21:44:07 zacheiss Exp $
+/* $Id$
  *
  * (c) Copyright 2008 by the Massachusetts Institute of Technology.
  */

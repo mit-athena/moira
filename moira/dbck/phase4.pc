@@ -1,4 +1,4 @@
-/* $Id: phase4.pc,v 1.7 2009-12-29 17:29:28 zacheiss Exp $
+/* $Id$
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.7 2009-12-29 17:29:28 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 

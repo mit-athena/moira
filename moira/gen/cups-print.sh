@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh,v 1.5 2009-11-16 21:55:31 zacheiss Exp $
+# $Id$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

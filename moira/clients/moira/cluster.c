@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.69 2008-04-22 17:44:37 zacheiss Exp $
+/* $Id$
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RCSID("$HeadURL$ $Id$");
 
 void PrintAliases(char **info);
 static void PrintMachine(char **info);

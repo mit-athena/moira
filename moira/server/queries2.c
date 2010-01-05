@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.109 2009-11-05 22:12:02 zacheiss Exp $
+/* $Id$
  *
  * This file defines the query dispatch table
  *
@@ -12,6 +12,8 @@
 #include "query.h"
 
 #include "mr_et.h"
+
+RCSID("$HeadURL$ $Id$");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they

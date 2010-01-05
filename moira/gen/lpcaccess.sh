@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: lpcaccess.sh,v 1.1 2008-07-10 16:58:41 zacheiss Exp $
+# $Id$
 
 outfile=/home/cups/lpcaccess.out
 loadprog=/home/cups/update_acls

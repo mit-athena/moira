@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-cluster.sh,v 1.4 2009-12-17 20:58:52 zacheiss Exp $
+# $Id$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

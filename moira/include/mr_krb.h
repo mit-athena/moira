@@ -1,4 +1,4 @@
-/* $Id: mr_krb.h,v 1.1 2009-05-04 20:49:11 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 2009 by the Massachusetts Institute of Technology
  *

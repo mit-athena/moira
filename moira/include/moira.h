@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.37 2009-12-29 17:29:29 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *

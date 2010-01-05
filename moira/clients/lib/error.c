@@ -1,4 +1,4 @@
-/* $Id: error.c,v 1.2 2002-08-15 20:38:33 zacheiss Exp $
+/* $Id$
  *
  * mrcl error interface
  *
@@ -19,7 +19,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/error.c,v 1.2 2002-08-15 20:38:33 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 static char *mrcl_message = NULL;
 

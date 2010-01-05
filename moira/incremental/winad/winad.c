@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.62 2009-12-29 17:29:32 zacheiss Exp $
+/* $HeadURL$ $Id$ */
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 

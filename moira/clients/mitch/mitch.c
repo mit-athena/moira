@@ -1,4 +1,5 @@
-/*
+/* $Id$
+ *
  * Command line oriented Moira containers tool.
  *
  * Garry Zacheiss <zacheiss@mit.edu>, January 2003
@@ -21,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Id: mitch.c,v 1.1 2003-02-04 04:44:41 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 struct owner_type {
   int type;

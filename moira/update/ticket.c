@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.28 2009-12-29 17:29:34 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -22,7 +22,7 @@
 #include <krb5.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.28 2009-12-29 17:29:34 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";

@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.13 2009-12-29 17:29:34 zacheiss Exp $
+/* $Id$
  *
  * Test client for update_server protocol.
  *
@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RCSID("$HeadURL$ $Id$");
 
 void usage(void);
 

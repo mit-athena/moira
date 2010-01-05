@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.33 2009-12-29 17:29:33 zacheiss Exp $
+/* $Id$
  *
  * Query followup routines
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.33 2009-12-29 17:29:33 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;

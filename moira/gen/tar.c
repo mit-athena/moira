@@ -1,4 +1,4 @@
-/* $Id: tar.c,v 1.3 2009-12-29 17:29:29 zacheiss Exp $
+/* $Id$
  *
  * Utility routines for writing tar files.
  *
@@ -17,7 +17,7 @@
 
 #include "util.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/tar.c,v 1.3 2009-12-29 17:29:29 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 static char tar_zeros[512];
 

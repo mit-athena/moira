@@ -1,4 +1,4 @@
-/* $Id: sq.c,v 1.15 2009-12-29 17:29:32 zacheiss Exp $
+/* $Id$
  *
  * Generic Queue Routines
  *
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.15 2009-12-29 17:29:32 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 struct save_queue *sq_create(void)
 {

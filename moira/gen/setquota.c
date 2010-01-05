@@ -1,7 +1,4 @@
-/*
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.8 1998-01-06 20:39:51 danw Exp $
+/*      $Id$
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -13,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.8 1998-01-06 20:39:51 danw Exp $";
+static char *rcsid_setquota_c = "$HeadURL$ $Id$";
 #endif lint
 
 #include <stdio.h>

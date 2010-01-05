@@ -1,4 +1,4 @@
-/* $Id: hosts.pc,v 1.8 2000-11-30 23:27:40 zacheiss Exp $
+/* $Id$
  *
  * This generates the hstath.txt hosttable.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.8 2000-11-30 23:27:40 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "hosts.gen";
 char *db = "moira/moira";

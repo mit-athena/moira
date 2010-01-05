@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.68 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file

@@ -1,4 +1,4 @@
-/* $Id: auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -22,7 +22,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_003.c,v 1.3 2009-05-04 20:49:12 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 static char service[] = "host";
 static char master[] = "sms";

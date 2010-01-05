@@ -74,6 +74,5 @@ end
 exit 0
 
 #
-# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.12 1998-01-07 17:13:18 danw Exp $
+#	$HeadURL$ $Id$
 #

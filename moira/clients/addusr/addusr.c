@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $
+/* $Id$
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.24 2009-03-31 19:13:09 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 struct owner_type {
   int type;

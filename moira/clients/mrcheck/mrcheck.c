@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.22 2006-08-23 19:01:50 zacheiss Exp $
+/* $Id$
  *
  * Verify that all Moira updates are successful
  *
@@ -19,7 +19,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.22 2006-08-23 19:01:50 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);

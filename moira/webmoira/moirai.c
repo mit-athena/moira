@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/webmoira/moirai.c,v 1.3 2006-08-22 17:36:27 zacheiss Exp $ */
+/* $HeadURL$ $Id$ */
 #include "mit_moira_MoiraConnectInternal.h"
 #include <moira.h>
 #include <mr_et.h>

@@ -1,4 +1,4 @@
-/* $Id: mr_auth.c,v 1.29 2009-05-04 20:49:11 zacheiss Exp $
+/* $Id$
  *
  * Handles the client side of the sending of authenticators to the moira server
  *
@@ -23,7 +23,7 @@
 krb5_context context = NULL;
 krb5_auth_context auth_con = NULL;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.29 2009-05-04 20:49:11 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.

@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.25 2008-08-29 14:50:08 zacheiss Exp $
+/* $Id$
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.25 2008-08-29 14:50:08 zacheiss Exp $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;

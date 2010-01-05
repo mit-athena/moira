@@ -1,4 +1,5 @@
-/* 
+/* $Id$
+ *
  * Command line oriented Moira print queue tool.
  *
  * Code based on the blanche command line tool and the moira curses tool.
@@ -19,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RCSID("$HeadURL$ $Id$");
 
 struct member {
   int type;

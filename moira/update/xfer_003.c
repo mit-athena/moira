@@ -1,4 +1,4 @@
-/* $Id: xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $");
+RCSID("$HeadURL$ $Id$");
 
 /*
  *

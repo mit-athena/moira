@@ -1,6 +1,6 @@
 // Crib'd from cryptix by JIS
 
-// $Id: RSAAlgorithm.java,v 1.1 1998-08-01 18:25:19 danw Exp $
+// $Id$
 
 /*
  * Copyright (c) 1997 Systemics Ltd

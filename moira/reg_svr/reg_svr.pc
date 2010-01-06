@@ -717,7 +717,6 @@ void PSWD(reg_client *rc, int argc, char **argv)
   char *password = argv[0], *p;
   EXEC SQL BEGIN DECLARE SECTION;
   char *login = rc->username;
-  char potype[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   if (!rc->username || rc->id || argc != 1)
@@ -788,11 +787,7 @@ void PSWD(reg_client *rc, int argc, char **argv)
       return;
     }
 
-  EXEC SQL SELECT potype INTO :potype FROM users WHERE login = :login;
-  if (!strcmp(potype, "EXCHANGE"))
-    reply(rc, DONE, "INIT", "c", NULL, rc->username, "http://owa.mit.edu");
-  else
-    reply(rc, DONE, "INIT", "c", NULL, rc->username, "http://webmail.mit.edu");
+  reply(rc, DONE, "INIT", "c", NULL, rc->username, "http://owa.mit.edu");
 }
 
 void QUIT(reg_client *rc, int argc, char **argv)
@@ -836,9 +831,6 @@ int update_user_status(char *username, int account_status)
 /* Register a user in Moira */
 int register_user(int uid, char *username)
 {
-  EXEC SQL BEGIN DECLARE SECTION;
-  char class[USERS_TYPE_SIZE];
-  EXEC SQL END DECLARE SECTION;
   char uidbuf[10], *qargv[3], *motd = NULL;
   long status;
 
@@ -861,27 +853,10 @@ int register_user(int uid, char *username)
       return MR_INTERNAL;
     }
 
-  EXEC SQL SELECT type INTO :class FROM users WHERE unix_uid = :uid;
-
   sprintf(uidbuf, "%d", uid);
   qargv[0] = uidbuf;
   qargv[1] = username;
-
-  /* Incoming students should be given Exchange poboxes.
-   * Doesn't work for undergrads in the class of 2100 or higher.
-   */ 
-  if (!strcmp(strtrim(class), "G") || !strncmp(class, "FALL", 4) ||
-      !strncmp(class, "SPRING", 5) || !strncmp(class, "SUMMER", 6) ||
-      !strncmp(class, "20", 2))
-    {
-      com_err(whoami, 0, "assigning EXCHANGE pobox to user %s, class %s", username, class);
-      qargv[2] = "EXCHANGE";
-    }
-  else 
-    {
-      com_err(whoami, 0, "assigning IMAP pobox to user %s, class %s", username, class);
-      qargv[2] = "IMAP";
-    }
+  qargv[2] = "EXCHANGE";
 
   status = mr_query("register_user", 3, qargv, NULL, NULL);
   mr_disconnect();

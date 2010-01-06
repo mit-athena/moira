@@ -9565,7 +9565,8 @@ void ad_kdc_disconnect()
   auth_context = NULL;
   if (context != NULL)
     {
-      krb5_cc_close(context, ccache);
+      if (ccache)
+	krb5_cc_close(context, ccache);
       krb5_free_context(context);
     }
   close(kdc_socket);

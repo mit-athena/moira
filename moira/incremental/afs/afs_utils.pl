@@ -2,13 +2,17 @@
 
 use Fcntl;
 
-system("/bin/athena/aklog");
+$aklog="/bin/athena/aklog";
+if ( ! -x $aklog ) { $aklog="/usr/bin/aklog"; }
+
+system("$aklog");
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
 $pts="$afsbin/pts";
 $fs="$afsbin/fs";
 $zwrite="/usr/athena/bin/zwrite";
+if ( ! -x $zwrite ) { $zwrite="/usr/local/bin/zwrite"; }
 
 $afs_data="/moira/afs/afs_data";
 $afs_save="$afs_data.tmp";

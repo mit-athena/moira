@@ -696,7 +696,7 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
       if (code == UNOQUORUM)
 	sleep(90);
       else if (code == PRPERM)
-	system("/bin/athena/aklog");
+	system("/usr/bin/aklog");
       else
 	sleep(15);
 

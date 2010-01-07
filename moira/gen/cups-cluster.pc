@@ -53,6 +53,7 @@ const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
 const char *canceljob = "<Limit Cancel-Job>";
 const char *catchall = "<Limit All>";
 const char *phost = "cluster-printers.MIT.EDU";
+const char *svrlist = "cups-hosts";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -594,6 +595,7 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", svrlist, "Require user", 1); 
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -610,8 +612,10 @@ void do_host(char *host)
       else
         fprintf (out, "AuthType None\n");
       /* Access-control list. */
-      if (ac)
+      if (ac) {
         printer_user_list(out, "LIST", ac, "Require user", 1);
+        printer_user_list(out, "LIST", svrlist, "Require user", 1); 
+      }
       else if (ka)
         fprintf (out, "Require valid-user\n");
       fprintf (out, "Order deny,allow\n");

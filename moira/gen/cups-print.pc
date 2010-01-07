@@ -53,6 +53,7 @@ const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
 const char *canceljob = "<Limit Cancel-Job>";
 const char *catchall = "<Limit All>";
 const char *phost = "printers.MIT.EDU";
+const char *svrlist = "cups-servers";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -132,7 +133,7 @@ void do_host(char *host)
   char service[SERVERHOSTS_SERVICE_SIZE];
   char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
   char *lhost;
-  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm;
+  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm, svrlist_id;
   EXEC SQL END DECLARE SECTION;
   TARFILE *tf;
   FILE *out;
@@ -530,6 +531,10 @@ void do_host(char *host)
     FROM printservers ps, machine m
     WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
 
+  /* svrlist */
+  EXEC SQL SELECT list_id INTO :svrlist_id
+    FROM list l WHERE l.name = :svrlist;
+
   /* first, what's our defaults? */
       fprintf (out, "<Policy default>\n");
       fprintf (out, "%s\n", alterjob);
@@ -597,6 +602,7 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -613,8 +619,10 @@ void do_host(char *host)
       else
         fprintf (out, "AuthType None\n");
       /* Access-control list. */
-      if (ac)
+      if (ac) {
         printer_user_list(out, "LIST", ac, "Require user", 1);
+        printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
+      }
       else if (ka)
         fprintf (out, "Require valid-user\n");
       fprintf (out, "Order deny,allow\n");

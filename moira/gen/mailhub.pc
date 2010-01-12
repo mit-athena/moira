@@ -48,7 +48,6 @@ struct member {
 struct list {
   char *name;
   char maillist;
-  char *description;
   char acl_t;
   int acl_id;
   char mailman;
@@ -61,7 +60,6 @@ int check_string(char *s);
 void output_login(int dummy, void *names, void *out);
 void output_mlist(int id, void *list, void *out);
 void output_membership(struct list *l, FILE *out);
-void put_fill(FILE *aliases, char *string);
 void do_people(void);
 
 int incount = 0;
@@ -130,8 +128,8 @@ void get_info(void)
   int id, pid, iid, bid, eid, cnt, maillistp, acl, mid, mailman;
   char mname[MACHINE_NAME_SIZE], str[STRINGS_STRING_SIZE];
   char login[USERS_LOGIN_SIZE], potype[USERS_POTYPE_SIZE];
-  char lname[LIST_NAME_SIZE], desc[LIST_DESCRIPTION_SIZE];
-  char type[LIST_ACL_TYPE_SIZE], mailman_server[MACHINE_NAME_SIZE];
+  char lname[LIST_NAME_SIZE], type[LIST_ACL_TYPE_SIZE];
+  char mailman_server[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   char *s;
   struct user *u;
@@ -302,7 +300,7 @@ void get_info(void)
   lists = create_hash(15000);
 
   EXEC SQL DECLARE l_cursor CURSOR FOR
-    SELECT l.list_id, l.name, l.maillist, l.description, l.acl_type, l.acl_id,
+    SELECT l.list_id, l.name, l.maillist, l.acl_type, l.acl_id,
     l.mailman, m.name
     FROM list l, machine m
     WHERE active != 0 AND l.mailman_id = m.mach_id
@@ -310,14 +308,13 @@ void get_info(void)
   EXEC SQL OPEN l_cursor;
   while (1)
     {
-      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :desc, :type, :acl,
+      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :type, :acl,
 	:mailman, :mailman_server;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
       l->name = strdup(strtrim(lname));
       l->maillist = maillistp;
-      l->description = strdup(strtrim(desc));
       l->acl_t = type[0];
       l->acl_id = acl;
       l->mailman = mailman;
@@ -404,8 +401,6 @@ void output_mlist(int id, void *list, void *out)
   if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
     return;
 
-  put_fill(out, l->description);
-
   if (l->mailman && strcmp(l->mailman_server, "[NONE]"))
     {
       for (i = 0; mailman_suffixes[i]; i++)
@@ -482,60 +477,6 @@ void output_membership(struct list *l, FILE *out)
   if (!l->m)
     fprintf(out, "/dev/null");
 }
-
-/* Write a word-wrapped list description to the aliases file as a
- * comment. */
-void put_fill(FILE *aliases, char *string)
-{
-  char *c;
-  int line_width;
-  int word_width;
-
-  if (!string || !*string)
-    return;
-  fputs("#  ", aliases);
-  line_width = 3;
-
-  while (1)
-    {
-      while (*string == ' ')
-	string++;
-      c = strchr(string, ' ');
-      if (!c)
-	word_width = strlen(string);
-      else
-	{
-	  word_width = c - string;
-	  *c = '\0';
-	}
-
-      if (line_width + word_width > MAX_LINE_WIDTH)
-	{
-	  fputs("\n#  ", aliases);
-	  line_width = 3;
-	  fputs(string, aliases);
-	}
-      else
-	fputs(string, aliases);
-
-      if (!c)
-	break;
-      /* add a space after the word */
-      fputc(' ', aliases);
-      word_width++;
-      line_width += word_width;
-      string += word_width;
-      /* add another if after a period */
-      if (*--c == '.')
-	{
-	  fputc(' ', aliases);
-	  line_width++;
-	}
-    }
-
-  fputc('\n', aliases);
-}
-
 
 /* Illegal chars: this no longer corresponds to the array 
  * in setup_alis.  '+' is a valid character in a string on 

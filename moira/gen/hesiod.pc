@@ -148,7 +148,7 @@ void get_mach(void)
   EXEC SQL DECLARE m_cursor CURSOR FOR
     SELECT name, mach_id
     FROM machine
-    WHERE status = 1 and mach_id != 0
+    WHERE (status = 1 OR status = 2) and mach_id != 0
     ORDER BY mach_id;
   EXEC SQL OPEN m_cursor;
   while (1)

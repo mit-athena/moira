@@ -72,14 +72,14 @@ int main(int argc, char **argv)
   EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m
     WHERE (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT') 
     AND sh.mach_id = m.mach_id 
-    AND m.status = 1 AND m.address != 'unassigned';
+    AND (m.status = 1 OR m.status = 2) AND m.address != 'unassigned';
   allowlist = malloc(alcount * sizeof(*allowlist));
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
     SELECT m.address, sh.value3 FROM machine m, serverhosts sh
     WHERE m.mach_id = sh.mach_id AND 
     (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT')
-    AND m.status = 1 AND m.address != 'unassigned';
+    AND (m.status = 1 OR m.status = 2) AND m.address != 'unassigned';
   EXEC SQL OPEN csr_spool;
   for (i = 0; i < alcount; i++)
     {

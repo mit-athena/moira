@@ -148,7 +148,7 @@ void get_info(void)
   EXEC SQL DECLARE m_cursor CURSOR FOR
     SELECT mach_id, name
     FROM machine
-    WHERE status = 1
+    WHERE (status = 1 OR status = 2)
     AND ( mach_id IN ( SELECT UNIQUE pop_id FROM users ) OR
 	  mach_id IN ( SELECT UNIQUE mach_id FROM filesys
 		       WHERE type = 'IMAP' ) )
@@ -178,7 +178,7 @@ void get_info(void)
   EXEC SQL DECLARE e_cursor CURSOR FOR
     SELECT mach_id, name
     FROM machine
-    WHERE status = 1
+    WHERE (status = 1 OR status = 2)
     AND mach_id in (SELECT UNIQUE exchange_id FROM users)
     ORDER BY mach_id;
   EXEC SQL OPEN e_cursor;

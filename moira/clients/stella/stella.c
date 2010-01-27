@@ -828,7 +828,7 @@ int show_alias_info_unformatted(int argc, char **argv, void *hint)
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Local (2)",
   "Deleted (3)"
 };
 

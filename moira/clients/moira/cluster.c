@@ -81,7 +81,7 @@ static void RealRemoveMachineFromContainer(char **info, Bool one_contmap);
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Local (2)",
   "Deleted (3)"
 };
 

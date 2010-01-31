@@ -574,7 +574,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
                      char **homedir_v, char **winProfile_v,
-                     char **drives_v, LDAPMod **mods, 
+                     char **drives_v, char **apple_homedir_v, LDAPMod **mods, 
                      int OpType, int n);
 int sid_update(LDAP *ldap_handle, char *dn_path);
 void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n);
@@ -4122,6 +4122,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *uid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
   char *homedir_v[] = {NULL, NULL};
+  char *apple_homedir_v[] = {NULL, NULL};
   char *winProfile_v[] = {NULL, NULL};
   char *drives_v[] = {NULL, NULL};
   char *userAccountControl_v[] = {NULL, NULL};
@@ -4710,7 +4711,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   n = SetHomeDirectory(ldap_handle, user_name, distinguished_name, WinHomeDir, 
                        WinProfileDir, homedir_v, winProfile_v,
-                       drives_v, mods, LDAP_MOD_REPLACE, n);
+                       drives_v, apple_homedir_v, mods, LDAP_MOD_REPLACE, n);
 
   if(ActiveDirectory)
     {
@@ -4983,6 +4984,7 @@ int user_create(int ac, char **av, void *ptr)
   char *gid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
   char *homedir_v[] = {NULL, NULL};
+  char *apple_homedir_v[] = {NULL, NULL};
   char *winProfile_v[] = {NULL, NULL};
   char *drives_v[] = {NULL, NULL};
   char *mail_v[] = {NULL, NULL};
@@ -5351,7 +5353,7 @@ int user_create(int ac, char **av, void *ptr)
 
   n = SetHomeDirectory((LDAP *)call_args[0], user_name, new_dn, 
 		       WinHomeDir, WinProfileDir, homedir_v, winProfile_v,
-		       drives_v, mods, LDAP_MOD_ADD, n);
+		       drives_v, apple_homedir_v, mods, LDAP_MOD_ADD, n);
   
   if(ActiveDirectory) 
     {
@@ -8400,7 +8402,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
                      char **homedir_v, char **winProfile_v,
-                     char **drives_v, LDAPMod **mods, 
+                     char **drives_v, char **apple_homedir_v, LDAPMod **mods, 
                      int OpType, int n)
 {
   char cWeight[3];
@@ -8411,7 +8413,6 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
   char homeDrive[8];
   char homedir[1024];
   char apple_homedir[1024];
-  char *apple_homedir_v[] = {NULL, NULL};
   int  last_weight;
   int  i;
   int  rc;
@@ -8432,7 +8433,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
           critical_alert(whoami, "Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
-	  return;
+	  return(n);
 	}
       
       argv[0] = user_name;
@@ -8503,7 +8504,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
           critical_alert(whoami, "Ldap incremental",
 			 "Error contacting Moira server : %s",
 			 error_message(rc));
-	  return;
+	  return(n);
 	}
       
       argv[0] = user_name;

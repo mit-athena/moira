@@ -276,7 +276,7 @@ int generate_service(char *name, int force)
 	  errmsg = error_message(status);
 	  EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg,
 	    inprogress = 0 WHERE name = UPPER(:name);
-	  critical_alert("DCM", "DCM building config files for %s: %s",
+	  critical_alert(whoami, "DCM", "DCM building config files for %s: %s",
 			 name, errmsg);
 	}
     }
@@ -383,7 +383,7 @@ void do_hosts(char *service)
 	    {
 	      EXEC SQL UPDATE serverhosts SET hosterror = :status
 		WHERE service = UPPER(:service) AND mach_id = :mid;
-	      critical_alert("DCM", "DCM updating %s:%s: %s",
+	      critical_alert(whoami, "DCM", "DCM updating %s:%s: %s",
 			     service, name, errmsg);
 	    }
 	  EXEC SQL COMMIT;
@@ -430,7 +430,7 @@ void do_hosts(char *service)
 		{
 		  EXEC SQL UPDATE serverhosts SET hosterror = :status
 		    WHERE service = UPPER(:service) AND mach_id = :mid;
-		  critical_alert("DCM", "DCM updating %s:%s: %s",
+		  critical_alert(whoami, "DCM", "DCM updating %s:%s: %s",
 				 service, name, errmsg);
 		}
 

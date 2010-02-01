@@ -64,7 +64,7 @@ struct user {
  */
 int setsize;	/* = howmany(setbits, NSETBITS) */
 
-typedef long	set_mask;
+typedef int	set_mask;
 #define NSETBITS	(sizeof(set_mask) * NBBY)	/* bits per mask */
 #ifndef howmany
 #define	howmany(x, y)	(((x) + ((y) - 1)) / (y))

@@ -1225,11 +1225,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	  else
 	    value = htonl(id);
 	}
-      /*
-       * we have an address in value. Convert it to a string and store it.
-       */
-      addr.s_addr = htonl(value);
-      strcpy(argv[9 + row + idx], inet_ntoa(addr));
+      strcpy(argv[9 + row + idx], name);
     }
   else
     strcpy(argv[9 + row + idx], "unassigned");
@@ -1577,6 +1573,8 @@ int hostinfo_check(char *info, int num)
     }
   if (!isalnum(*(p - 1)))
     return 1;
+
+  return 1;
 }
 
 int setup_aali(struct query *q, char *argv[], client *cl)

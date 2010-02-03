@@ -31,13 +31,13 @@ cd /
 tar xf $TARFILE || exit $MR_TARERR
 
 /etc/cups/bin/post-dcm-disable.pl 2>/dev/null
+if [ -s /etc/cups/printers.conf.tmp ]; then
+    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
+fi
 
 /etc/init.d/cups start
 
 /etc/cups/bin/gen-ppd.pl 2>/dev/null
-if [ -s /etc/cups/printers.conf.tmp ]; then
-    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
-fi
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions

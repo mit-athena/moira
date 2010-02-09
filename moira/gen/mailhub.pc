@@ -409,15 +409,6 @@ void output_mlist(int id, void *list, void *out)
       fprintf(out, "owner-%s: %s-owner@%s\n", l->name, l->name,
 	      l->mailman_server);
     }
-  else if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
-    {
-      fprintf(out, "owner-%s: ", l->name);
-      alias_width = line_width = len + 8;
-      output_membership(l1, out);
-      fprintf(out, "\n");
-    }
-  else if (l->acl_t ==  'U' && (u = hash_lookup(users, l->acl_id)))
-    fprintf(out, "owner-%s: %s\n", l->name, u->login);
 
   fprintf(out, "%s: ", l->name);
   alias_width = line_width = len + 2;

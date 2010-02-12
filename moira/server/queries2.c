@@ -3344,62 +3344,119 @@ static struct validate dsvc_validate = {
   0,
 };
 
-static char *gprn_fields[] = {
+static char *gprn2_fields[] = {
   "name",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbd_fields[] = {
+static char *gpbd2_fields[] = {
   "duplexname",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbe_fields[] = {
+static char *gpbe2_fields[] = {
   "hwaddr",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbh_fields[] = {
+static char *gpbh2_fields[] = {
   "hostname",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbr_fields[] = {
+static char *gpbr2_fields[] = {
   "rm",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbl_fields[] = {
+static char *gpbl2_fields[] = {
   "location",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbc_fields[] = {
+static char *gpbc2_fields[] = {
   "contact",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *aprn_fields[] = {
+static char *gprn_fields[] = {
+  "name",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp", 
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner", 
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbd_fields[] = {
+  "duplexname",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbe_fields[] = {
+  "hwaddr",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbh_fields[] = {
+  "hostname",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbr_fields[] = {
+  "rm",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbl_fields[] = {
+  "location",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+
+};
+
+static char *gpbc_fields[] = {
+  "contact",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *aprn2_fields[] = {
   "printer", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact",
 };
 
-static struct valobj aprn_valobj[] = {
+static struct valobj aprn2_valobj[] = {
   {V_CHAR, 0, PRINTERS_TABLE, "name"},
   {V_TYPE, 1, 0, "printertype", 0, MR_TYPE},
   {V_TYPE, 2, 0, "printerhwtype", 0, MR_TYPE},
@@ -3418,8 +3475,8 @@ static struct valobj aprn_valobj[] = {
   {V_CHAR, 15, PRINTERS_TABLE, "contact"},
 };
 
-static struct validate aprn_validate = {
-  aprn_valobj,
+static struct validate aprn2_validate = {
+  aprn2_valobj,
   16,
   "name",
   "name = '%s'",
@@ -3430,14 +3487,56 @@ static struct validate aprn_validate = {
   set_modtime,
 };
 
-static char *uprn_fields[] = {
+static char *aprn_fields[] = {
+  "printer", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list", "banner",
+  "location", "contact",
+};
+
+static struct valobj aprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_TYPE, 1, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 3, PRINTERS_TABLE, "duplexname"},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_ID, 7, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 8, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 10, PRINTERS_TABLE, "rp"},
+  {V_ID, 11, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 12},
+  {V_NUM, 13},
+  {V_ID, 14, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 15, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 16, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_NUM, 17},
+  {V_CHAR, 18, PRINTERS_TABLE, "location"},
+  {V_CHAR, 19, PRINTERS_TABLE, "contact"},
+};
+
+static struct validate aprn_validate = {
+  aprn_valobj,
+  20,
+  "name",
+  "name = '%s'",
+  1,
+  0,
+  access_printer,
+  setup_aprn,
+  set_modtime,
+};
+
+static char *uprn2_fields[] = {
   "printer",
   "printer", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact",
 };
 
-static struct valobj uprn_valobj[] = {
+static struct valobj uprn2_valobj[] = {
   {V_CHAR, 0, PRINTERS_TABLE, "name"},
   {V_CHAR, 1, PRINTERS_TABLE, "name"},
   {V_TYPE, 2, 0, "printertype", 0, MR_TYPE},
@@ -3457,9 +3556,53 @@ static struct valobj uprn_valobj[] = {
   {V_CHAR, 16, PRINTERS_TABLE, "contact"},
 };
 
+static struct validate uprn2_validate = {
+  uprn2_valobj,
+  16,
+  "name",
+  "name = '%s'",
+  1,
+  0,
+  access_printer,
+  setup_aprn,
+  set_modtime,
+};
+
+static char *uprn_fields[] = {
+  "printer",
+  "printer", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list", "banner",
+  "location", "contact",
+};
+
+static struct valobj uprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_CHAR, 1, PRINTERS_TABLE, "name"},
+  {V_TYPE, 2, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 3, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 4, PRINTERS_TABLE, "duplexname"},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_ID, 8, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 10, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 11, PRINTERS_TABLE, "rp"},
+  {V_ID, 12, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 13},
+  {V_NUM, 14},
+  {V_ID, 15, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 16, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 17, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_NUM, 18},
+  {V_CHAR, 19, PRINTERS_TABLE, "location"},
+  {V_CHAR, 20, PRINTERS_TABLE, "contact"},
+};
+
 static struct validate uprn_validate = {
   uprn_valobj,
-  16,
+  20,
   "name",
   "name = '%s'",
   1,
@@ -7304,7 +7447,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPRN - GET_PRINTER */
+    /* Q_GPRN - GET_PRINTER, v2 */
     "get_printer",
     "gprn",
     2,
@@ -7312,7 +7455,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gprn_fields,
+    gprn2_fields,
     19,
     "pr.name LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7321,7 +7464,25 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME */
+    /* Q_GPRN - GET_PRINTER, v13 */
+    "get_printer",
+    "gprn",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gprn_fields,
+    23,
+    "pr.name LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+
+  {
+    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME, v2 */
     "get_printer_by_duplexname",
     "gpbd",
     2,
@@ -7329,7 +7490,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbd_fields,
+    gpbd2_fields,
     19,
     "pr.duplexname LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7338,7 +7499,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBE - GET_PRINTER_BY_ETHERNET */
+    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME, v13 */
+    "get_printer_by_duplexname",
+    "gpbd",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gpbd_fields,
+   23,
+    "pr.duplexname LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBE - GET_PRINTER_BY_ETHERNET, v2 */
     "get_printer_by_ethernet",
     "gpbe",
     2,
@@ -7346,7 +7524,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbd_fields,
+    gpbd2_fields,
     19,
     "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7355,7 +7533,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME */
+    /* Q_GPBE - GET_PRINTER_BY_ETHERNET, v13 */
+    "get_printer_by_ethernet",
+    "gpbe",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gpbd_fields,
+    23,
+    "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME, v2 */
     "get_printer_by_hostname",
     "gpbh",
     2,
@@ -7363,7 +7558,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbh_fields,
+    gpbh2_fields,
     19,
     "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7371,8 +7566,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME, v13 */
+    "get_printer_by_hostname",
+    "gpbh",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbh_fields,
+    23,
+    "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBR - GET_PRINTER_BY_RM */
+    /* Q_GPBR - GET_PRINTER_BY_RM, v2 */
     "get_printer_by_rm",
     "gpbr",
     2,
@@ -7380,7 +7592,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbr_fields,
+    gpbr2_fields,
     19,
     "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7388,8 +7600,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBR - GET_PRINTER_BY_RM, v13 */
+    "get_printer_by_rm",
+    "gpbr",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbr_fields,
+    23,
+    "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBL - GET_PRINTER_BY_LOCATION */
+    /* Q_GPBL - GET_PRINTER_BY_LOCATION, v2 */
     "get_printer_by_location",
     "gpbl",
     2,
@@ -7397,7 +7626,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbl_fields,
+    gpbl2_fields,
     19,
     "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7405,8 +7634,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBL - GET_PRINTER_BY_LOCATION, v13 */
+    "get_printer_by_location",
+    "gpbl",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbl_fields,
+    23,
+    "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBC - GET_PRINTER_BY_CONTACT */
+    /* Q_GPBC - GET_PRINTER_BY_CONTACT, v2 */
     "get_printer_by_contact",
     "gpbc",
     2,
@@ -7414,7 +7660,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbc_fields,
+    gpbc2_fields,
     19,
     "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7423,7 +7669,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_APRN - ADD_PRINTER */
+    /* Q_GPBC - GET_PRINTER_BY_CONTACT, v13 */
+    "get_printer_by_contact",
+    "gpbc",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbc_fields,
+    23,
+    "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_APRN - ADD_PRINTER, v2 */
     "add_printer",
     "aprn",
     2,
@@ -7431,8 +7694,25 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "INTO printers (name, type, hwtype, duplexname, mach_id, loghost, rm, rp, rq, ka, pc, ac, lpc_acl, banner, location, contact) VALUES ('%s', '%s', '%s', NVL('%s', CHR(0)), %d, %d, %d, NVL('%s', CHR(0)), %d, %s, %s, %d, %d, %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)))",
-    aprn_fields,
+    aprn2_fields,
     16,
+    0,
+    0,
+    NULL,
+    &aprn2_validate,
+  },
+
+  {
+    /* Q_APRN - ADD_PRINTER, v13 */
+    "add_printer",
+    "aprn",
+    13,
+    MR_Q_APPEND,
+    "pr",
+    PRINTERS_TABLE,
+    "INTO printers (name, type, hwtype, duplexname, duplexdefault, holddefault, status, mach_id, loghost, rm, rp, rq, ka, pc, ac, lpc_acl, report_list, banner, location, contact) VALUES ('%s', '%s', '%s', NVL('%s', CHR(0)), %s, %s, %s, %d, %d, %d, NVL('%s', CHR(0)), %d, %s, %s, %d, %d, %d, %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)))",
+    aprn_fields,
+    20,
     0,
     0,
     NULL,
@@ -7440,7 +7720,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_UPRN - UPDATE_PRINTER */
+    /* Q_UPRN - UPDATE_PRINTER, v2 */
     "update_printer",
     "uprn",
     2,
@@ -7448,8 +7728,25 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %s, pc = %s, ac = %d, lpc_acl = %d, banner = %s, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
-    uprn_fields,
+    uprn2_fields,
     16,
+    "name = '%s'",
+    1,
+    NULL,
+    &uprn2_validate,
+  },
+
+  { 
+    /* Q_UPRN - UPDATE_PRINTER, v13 */
+    "update_printer",
+    "uprn",
+    13,
+    MR_Q_UPDATE,
+    "pr",
+    PRINTERS_TABLE,
+    "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), duplexdefault = %s, holddefault = %s, status = %s, mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %s, pc = %s, ac = %d, lpc_acl = %d, report_list = %d, banner = %s, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
+    uprn_fields,
+    20,
     "name = '%s'",
     1,
     NULL,

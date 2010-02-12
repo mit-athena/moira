@@ -704,9 +704,19 @@ int access_printer(struct query *q, char *argv[], client *cl)
   char type[PRINTSERVERS_OWNER_TYPE_SIZE];
   int id, mach_id;
   EXEC SQL END DECLARE SECTION;
-  int status;
+  int status, row;
 
-  mach_id = *(int *)argv[PRN_RM];
+  /* Check for aprn or uprn. */
+  if (q->type == MR_Q_APPEND)
+    row = 0;
+  else
+    row = 1;
+
+  if (q->version < 13)
+    mach_id = *(int *)argv[6 + row];
+  else
+    mach_id = *(int *)argv[PRN_RM + row];
+
   EXEC SQL SELECT owner_type, owner_id INTO :type, :id
     FROM printservers WHERE mach_id = :mach_id;
   if (sqlca.sqlcode)

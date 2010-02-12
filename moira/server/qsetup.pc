@@ -1328,7 +1328,7 @@ int setup_uhha(struct query *q, char **argv, client *cl)
  */
 int setup_aprn(struct query *q, char **argv, client *cl)
 {
-  int best = -1, row;
+  int best = -1, row, idx = 0;
   char *p;
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, usage, count;
@@ -1340,6 +1340,9 @@ int setup_aprn(struct query *q, char **argv, client *cl)
     row = 0;
   else
     row = 1;
+
+  if (q->version < 13)
+    idx = 3;
 
   name = argv[PRN_NAME + row];
   duplexname = argv[PRN_DUPLEXNAME + row];
@@ -1389,7 +1392,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   if (!strcmp(name, duplexname))
     return MR_NOT_UNIQUE;
 
-  mid = *(int *)argv[PRN_RM + row];
+  mid = *(int *)argv[PRN_RM + row + idx];
   if (mid == -1)
     {
       EXEC SQL DECLARE csr_rm CURSOR FOR
@@ -1420,7 +1423,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
 		  if (best < 0 || usage < best)
 		    {
 		      best = usage;
-		      *(int *)argv[PRN_RM + row] = mid;
+		      *(int *)argv[PRN_RM + row + idx] = mid;
 		      break;
 		    }
 		}

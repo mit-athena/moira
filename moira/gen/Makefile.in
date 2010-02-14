@@ -33,15 +33,15 @@ LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
 OBJS=	acl.lo boot.lo confluence.lo cups-print.lo cups-cluster.lo dhcp.lo directory.lo events.lo \
-	hesiod.lo hosts.lo lpcaccess.lo mailhub.lo ndb.lo network.lo nfs.lo pobox.lo \
+	hesiod.lo hosts.lo mailhub.lo ndb.lo network.lo nfs.lo pobox.lo \
 	postoffice.lo print.lo warehouse-lists.lo winad.lo www.lo zephyr.lo
 
 CFILES= acl.c boot.c confluence.c cups-print.c cups-cluster.c dhcp.c directory.c events.c \
-	hesiod.c hosts.c lpcaccess.c mailhub.c ndb.c network.c nfs.c pobox.c \
+	hesiod.c hosts.c mailhub.c ndb.c network.c nfs.c pobox.c \
 	postoffice.c print.c warehouse-lists.c winad.c www.c zephyr.c
 
 TARGET=	acl.gen boot.gen confluence.gen cups-print.gen cups-cluster.gen dhcp.gen directory.gen \
-	events.gen hesiod.gen hosts.gen lpcaccess.gen mailhub.gen ndb.gen \
+	events.gen hesiod.gen hosts.gen mailhub.gen ndb.gen \
 	network.gen nfs.gen pobox.gen postoffice.gen print.gen \
 	warehouse-lists.gen winad.gen www.gen zephyr.gen
 
@@ -140,9 +140,6 @@ www.gen: www.lo libdcm.a $(MR_LIBDEP)
 
 winad.gen: winad.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) winad.lo libdcm.a $(SQL_LIBS) $(LIBS)
-
-lpcaccess.gen: lpcaccess.lo libdcm.a $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) lpcaccess.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
 warehouse-lists.gen: warehouse-lists.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) warehouse-lists.lo libdcm.a $(SQL_LIBS) $(LIBS)

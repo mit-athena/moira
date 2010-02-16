@@ -9,6 +9,9 @@ chsh \- change user login shell
 |
 .BI \-w
 ] [
+.BI \-s
+.I shell
+] [
 .BI \-db
 .I host:port
 ]
@@ -24,7 +27,9 @@ login shell to something else (i.e., a noninteractive program like
 .PP
 When invoked,
 .B chsh
-displays the current shell, and prompts for the new one.
+displays the current shell, and prompts for the new one unless the
+.BI \-s
+option has been specified.
 .PP
 If invoked with the 
 .BI \-w 

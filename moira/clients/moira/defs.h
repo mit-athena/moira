@@ -50,7 +50,7 @@ typedef int Bool;
 
 /* What version of the queries are we asking for? */
 
-#define QUERY_VERSION 13
+#define QUERY_VERSION 14
 
 /* This is unimplemented in the menu stuff, but would be nice. */
 

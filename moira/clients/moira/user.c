@@ -120,6 +120,10 @@ static void PrintUserInfo(char **info)
   sprintf(sponsor, "%s %s", info[U_SPONSOR_TYPE], info[U_SPONSOR_NAME]);
   sprintf(buf, "Sponsor: %-23s Expiration date: %s", sponsor,  info[U_EXPIRATION]);
   Put_message(buf);
+  sprintf(buf, "Alternate Email: %s", info[U_ALT_EMAIL]);
+  Put_message(buf);
+  sprintf(buf, "Alternate Phone: %s", info[U_ALT_PHONE]);
+  Put_message(buf);
   sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	  UserState(atoi(info[U_STATE])), info[U_MITID]);
   Put_message(buf);
@@ -168,6 +172,8 @@ static char **SetUserDefaults(char **info)
   info[U_SPONSOR_TYPE] = strdup("NONE");
   info[U_SPONSOR_NAME] = strdup("NONE");
   info[U_EXPIRATION] = strdup("");
+  info[U_ALT_EMAIL] = strdup("");
+  info[U_ALT_PHONE] = strdup("");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
   return info;
@@ -330,6 +336,12 @@ char **AskUserInfo(char **info, Bool name)
     return NULL;
 
   if (GetValueFromUser("Expiration date", &info[U_EXPIRATION]) == SUB_ERROR)
+    return NULL;
+
+  if (GetValueFromUser("Alternate Email", &info[U_ALT_EMAIL]) == SUB_ERROR)
+    return NULL;
+
+  if (GetValueFromUser("Alternate Phone", &info[U_ALT_PHONE]) == SUB_ERROR)
     return NULL;
 
   state = atoi(info[U_STATE]);
@@ -633,7 +645,7 @@ int RegisterUser(int argc, char **argv)
   Put_message("KERBEROS code not added, did not reserve name with kerberos.");
   args[1] = login;
   
-  sprintf(temp_buf, "IMAP");
+  sprintf(temp_buf, "EXCHANGE");
   potype = strdup(temp_buf);
   if (GetValueFromUser("P.O. Box Type for this user? ", &potype) == SUB_ERROR)
     {

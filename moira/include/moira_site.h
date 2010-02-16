@@ -381,12 +381,14 @@
 #define U_SPONSOR_TYPE 15
 #define U_SPONSOR_NAME 16
 #define U_EXPIRATION 17
-#define U_MODTIME 18
-#define U_MODBY   19
-#define U_MODWITH 20
-#define U_CREATED 21
-#define U_CREATOR 22
-#define U_END     23
+#define U_ALT_EMAIL 18
+#define U_ALT_PHONE 19
+#define U_MODTIME 20
+#define U_MODBY   21
+#define U_MODWITH 22
+#define U_CREATED 23
+#define U_CREATOR 24
+#define U_END     25
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

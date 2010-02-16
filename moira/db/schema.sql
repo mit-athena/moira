@@ -54,7 +54,9 @@ create table users
 	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
 	sponsor_type	VARCHAR(8) 	DEFAULT 'NONE'	NOT NULL,
 	sponsor_id	INTEGER		DEFAULT 0	NOT NULL,
-	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL
+	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
+	alternate_email	VARCHAR(255)	DEFAULT CHR(0)	NOT NULL,
+	alternate_phone	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL
 );
 
 create table krbmap

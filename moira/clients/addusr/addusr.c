@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     }
 
   /* fire up Moira */
-  if (mrcl_connect(server, "addusr", 12, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "addusr", 14, 1) != MRCL_SUCCESS)
     exit(2);
 
   qargv[U_NAME] = UNIQUE_LOGIN;
@@ -218,6 +218,8 @@ int main(int argc, char **argv)
   qargv[U_WINHOMEDIR] = DEFAULT_WINHOMEDIR;
   qargv[U_WINPROFILEDIR] = DEFAULT_WINPROFILEDIR;
   qargv[U_EXPIRATION] = expiration;
+  qargv[U_ALT_EMAIL] = "";
+  qargv[U_ALT_PHONE] = "";
   qargv[U_STATE] = status_str;
   qargv[U_CLASS] = class;
   qargv[U_COMMENT] = comment;
@@ -409,7 +411,7 @@ int main(int argc, char **argv)
 
 	  rargv[0] = uid;
 	  rargv[1] = login;
-	  rargv[2] = "IMAP";
+	  rargv[2] = "EXCHANGE";
 
 	  status = mr_query("register_user", 3, rargv, NULL, NULL);
 	  if (status)

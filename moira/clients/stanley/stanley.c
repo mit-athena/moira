@@ -54,6 +54,7 @@ char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
+char *alternate_email, *alternate_phone;
 
 struct owner_type *parse_member(char *s);
 
@@ -103,7 +104,7 @@ int main(int argc, char **argv)
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
-  winhomedir = winprofiledir = expiration = NULL;
+  winhomedir = winprofiledir = expiration = alternate_email = alternate_phone = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   sponsor = NULL;
   whoami = argv[0];
@@ -259,6 +260,22 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("ae", "alternateemail")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      alternate_email = *arg;
+	    } else
+	      usage(argv);
+	  }
+	  else if (argis("ap", "alternatephone")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      alternate_phone = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -313,7 +330,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 12, !noauth);
+  status = mrcl_connect(server, "stanley", 14, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -325,10 +342,10 @@ int main(int argc, char **argv)
   /* create if needed */
   if (create_flag)
     {
-      char *argv[20];
+      char *argv[25];
       int cnt;
 
-      for (cnt = 0; cnt < 20; cnt++) {
+      for (cnt = 0; cnt < 25; cnt++) {
 	argv[cnt] = "";
       }
 
@@ -380,6 +397,10 @@ int main(int argc, char **argv)
 	argv[U_WINPROFILEDIR] = "[DFS]";
       if (expiration)
 	argv[U_EXPIRATION] = expiration;
+      if (alternate_email)
+        argv[U_ALT_EMAIL] = alternate_email;
+      if (alternate_phone)
+        argv[U_ALT_PHONE] = alternate_phone;
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -388,13 +409,13 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[U_SPONSOR_TYPE] = "USER";
-	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      if (sponsor->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[U_SPONSOR_TYPE] = "LIST";
-	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
@@ -405,12 +426,12 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
 	      argv[U_SPONSOR_TYPE] = "NONE";
-	      status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -419,9 +440,9 @@ int main(int argc, char **argv)
 	  argv[U_SPONSOR_TYPE] = "NONE";
 	  argv[U_SPONSOR_NAME] = "NONE";
 	  
-	  status = wrap_mr_query("add_user_account", 18, argv, NULL, NULL);
+	  status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	}
-	      
+
       if (status)
 	{
 	  com_err(whoami, status, "while adding user account.");
@@ -430,8 +451,8 @@ int main(int argc, char **argv)
     }
   else if (update_flag)
     {
-      char *old_argv[20];
-      char *argv[20];
+      char *old_argv[25];
+      char *argv[25];
       char *args[5];
 
       args[0] = username;
@@ -462,7 +483,9 @@ int main(int argc, char **argv)
       argv[16] = old_argv[15];
       argv[17] = old_argv[16];
       argv[18] = old_argv[17];
-      
+      argv[19] = old_argv[18];
+      argv[20] = old_argv[19];
+
       argv[0] = username;
       if (newlogin)
 	argv[1] = newlogin;
@@ -494,6 +517,10 @@ int main(int argc, char **argv)
 	argv[15] = winprofiledir;
       if (expiration)
 	argv[18] = expiration;
+      if (alternate_email)
+	argv[19] = alternate_email;
+      if (alternate_phone)
+	argv[20] = alternate_phone;
       if (sponsor)
 	{
 	  argv[17] = sponsor->name;
@@ -502,14 +529,14 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[16] = "USER";
-	      status = wrap_mr_query("update_user_account", 19, argv, NULL, 
+	      status = wrap_mr_query("update_user_account", 21, argv, NULL, 
 				     NULL);
 	      if (sponsor->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[16] = "LIST";
-	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
 				     NULL);
 	      break;
 
@@ -520,19 +547,19 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
 				     NULL);
 	      break;
 
 	    case M_NONE:
 	      argv[16] = "NONE";
-	      status = wrap_mr_query("update_user_account", 19, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
 				     NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_user_account", 19, argv, NULL, NULL);
+	status = wrap_mr_query("update_user_account", 21, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating user.");
@@ -608,7 +635,7 @@ int main(int argc, char **argv)
   if (info_flag)
     {
       char *args[2];
-      char *argv[20];
+      char *argv[25];
 
       args[0] = username;
       status = wrap_mr_query("get_user_account_by_login", 1, args,
@@ -628,7 +655,7 @@ int main(int argc, char **argv)
   if (reg_flag)
     {
       char *args[3];
-      char *argv[20];
+      char *argv[25];
 
       args[0] = username;
       status = wrap_mr_query("get_user_account_by_login", 1, args,
@@ -641,7 +668,7 @@ int main(int argc, char **argv)
 
       args[0] = argv[U_UID];
       args[1] = username;
-      args[2] = "IMAP";
+      args[2] = "EXCHANGE";
 
       status = wrap_mr_query("register_user", 3, args, NULL, NULL);
       if (status)
@@ -772,11 +799,13 @@ void show_user_info(char **argv)
   printf("User id: %-23s Login shell: %-10s\n", argv[U_UID], argv[U_SHELL]);
   printf("Class: %-25s Windows Console Shell: %-10s\n", argv[U_CLASS],
 	 argv[U_WINCONSOLESHELL]);
+  printf("Account is: %-20s MIT ID number: %s\n",
+         UserState(atoi(argv[U_STATE])), argv[U_MITID]);
   sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
   printf("Sponsor: %-23s Expiration date: %s\n", tbuf, argv[U_EXPIRATION]);
-  printf("Account is: %-20s MIT ID number: %s\n",
-	 UserState(atoi(argv[U_STATE])), argv[U_MITID]);
+  printf("Alternate Email: %s\n", argv[U_ALT_EMAIL]);
+  printf("Alternate Phone: %s\n", argv[U_ALT_PHONE]);
   printf("Windows Home Directory: %s\n", argv[U_WINHOMEDIR]);
   printf("Windows Profile Directory: %s\n", argv[U_WINPROFILEDIR]);
   status = atoi(argv[U_STATE]);
@@ -805,6 +834,8 @@ void show_user_info_unformatted(char **argv)
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
   printf("Sponsor:                   %s\n", tbuf);
   printf("Expiration date:           %s\n", argv[U_EXPIRATION]);
+  printf("Alternate Email:           %s\n", argv[U_ALT_EMAIL]);
+  printf("Alternate Phone:           %s\n", argv[U_ALT_PHONE]);
   printf("Login shell:               %s\n", argv[U_SHELL]);
   printf("Windows Console Shell:     %s\n", argv[U_WINCONSOLESHELL]);
   printf("Account is:                %s\n", UserState(atoi(argv[U_STATE])));
@@ -851,6 +882,8 @@ void usage(char **argv)
 	  "-wp  | -winprofiledir winprofiledir");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
 	  "-e   | -expiration expiration date");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ae  | -alternateemail address",
+	  "-ap  | -alternatephone phone number");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
           "-n   | -noauth");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",

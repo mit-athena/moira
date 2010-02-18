@@ -60,7 +60,7 @@ void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
 		    char *argv[], char *qual);
 
 SQLDA *mr_alloc_sqlda(void);
-void sqlglm(char *, int *, int *);
+void sqlglm(char *, size_t *, size_t *);
 
 /*
  * dbmserr: Called when the DBMS indicates an error.
@@ -71,11 +71,12 @@ void dbmserr(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char err_msg[256];
   EXEC SQL END DECLARE SECTION;
-  int bufsize = 256, msglength = 0;
+  size_t bufsize, msglength;
 
   dbms_errno = -sqlca.sqlcode;
   mr_errcode = MR_DBMS_ERR;
   com_err(whoami, MR_DBMS_ERR, " code %d\n", dbms_errno);
+  bufsize = sizeof(err_msg);
   sqlglm(err_msg, &bufsize, &msglength);
   err_msg[msglength] = 0;
   com_err(whoami, 0, "SQL error text = %s", err_msg);

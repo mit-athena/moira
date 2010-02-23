@@ -1333,6 +1333,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, usage, count;
   char types[STRINGS_STRING_SIZE], *hwaddr, *name, *duplexname, *oldname;
+  char *service;
   EXEC SQL END DECLARE SECTION;
 
   /* Check for aprn or uprn. */
@@ -1341,7 +1342,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   else
     row = 1;
 
-  if (q->version < 13)
+  if (q->version >= 13)
     idx = 3;
 
   name = argv[PRN_NAME + row];
@@ -1392,15 +1393,24 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   if (!strcmp(name, duplexname))
     return MR_NOT_UNIQUE;
 
-  mid = *(int *)argv[PRN_RM + row + idx];
+  mid = *(int *)argv[6 + row + idx];
   if (mid == -1)
     {
+      if (!strcasecmp(argv[PRN_TYPE + row], "SAP"))
+	service = "PRINT";
+      else if (!strcasecmp(argv[PRN_TYPE + row], "DORM") ||
+	       !strcasecmp(argv[PRN_TYPE + row], "CLUSTER"))
+	service = "CUPS-CLUSTER";
+      else
+	service = "CUPS-PRINT";
+
       EXEC SQL DECLARE csr_rm CURSOR FOR
 	SELECT ps.mach_id, s.string FROM printservers ps, strings s
 	WHERE ps.mach_id IN
-	( SELECT mach_id FROM serverhosts WHERE service = 'PRINT'
+	( SELECT mach_id FROM serverhosts WHERE service = :service
 	  AND enable = 1 )
 	AND ps.printer_types = s.string_id;
+
       if (dbms_errno)
 	return mr_errcode;
       EXEC SQL OPEN csr_rm;
@@ -1423,7 +1433,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
 		  if (best < 0 || usage < best)
 		    {
 		      best = usage;
-		      *(int *)argv[PRN_RM + row + idx] = mid;
+		      *(int *)argv[6 + row + idx] = mid;
 		      break;
 		    }
 		}

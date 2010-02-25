@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.8 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: pobox.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Shared routines for pobox changing.
  *
@@ -18,7 +18,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.8 2008-08-22 17:49:11 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/lib/pobox.c $ $Id: pobox.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);

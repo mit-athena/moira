@@ -24,6 +24,5 @@ endif
 exit 0
 
 #
-# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.4 1998-01-07 17:13:18 danw Exp $
+#	$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/install_quotas $ $Id: install_quotas 3956 2010-01-05 20:56:56Z zacheiss $
 #

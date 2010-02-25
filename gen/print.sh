@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: print.sh,v 1.5 2002-02-23 03:53:49 zacheiss Exp $
+# $Id: print.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

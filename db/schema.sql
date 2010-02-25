@@ -54,7 +54,9 @@ create table users
 	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
 	sponsor_type	VARCHAR(8) 	DEFAULT 'NONE'	NOT NULL,
 	sponsor_id	INTEGER		DEFAULT 0	NOT NULL,
-	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL
+	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
+	alternate_email	VARCHAR(255)	DEFAULT CHR(0)	NOT NULL,
+	alternate_phone	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL
 );
 
 create table krbmap
@@ -331,6 +333,9 @@ create table printers
 	type		VARCHAR(8)	DEFAULT CHR(0)	NOT NULL,
 	hwtype		VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,
 	duplexname	VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	duplexdefault	INTEGER		DEFAULT 0	NOT NULL,
+	holddefault	INTEGER		DEFAULT 0	NOT NULL,
+	status		INTEGER		DEFAULT 0	NOT NULL,
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	loghost		INTEGER		DEFAULT 0	NOT NULL,
 	rm		INTEGER		DEFAULT 0	NOT NULL,
@@ -341,6 +346,7 @@ create table printers
 	mc		SMALLINT	DEFAULT 0	NOT NULL,
 	ac		INTEGER		DEFAULT 0	NOT NULL,
 	lpc_acl		INTEGER		DEFAULT 0	NOT NULL,
+	report_list	INTEGER		DEFAULT	0	NOT NULL,
 	banner		INTEGER		DEFAULT 0	NOT NULL,
 	location	VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,
 	contact		VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,

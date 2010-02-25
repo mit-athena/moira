@@ -1,4 +1,4 @@
-#!/usr/athena/bin/perl
+#!/usr/bin/perl
 # Usage: afs_change \
 # 		oldname oldcell oldtype oldltype oldpath \
 # 		newname newcell newtype newltype newpath

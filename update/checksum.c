@@ -1,4 +1,4 @@
-/* $Id: checksum.c,v 1.9 1998-02-15 17:49:26 danw Exp $
+/* $Id: checksum.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.9 1998-02-15 17:49:26 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/checksum.c $ $Id: checksum.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /*
  * checksum_fd(fd)

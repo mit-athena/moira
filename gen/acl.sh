@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.6 2005-12-28 21:42:14 zacheiss Exp $
+# $Id: acl.sh 3956 2010-01-05 20:56:56Z zacheiss $
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
 else 

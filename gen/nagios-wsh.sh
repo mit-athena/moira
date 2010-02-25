@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: nagios-wsh.sh,v 1.1 2008-01-16 16:56:09 zacheiss Exp $
+# $Id: nagios-wsh.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 file=/var/nagios/etc/moira-wsh-hosts.cfg
 

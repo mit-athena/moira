@@ -1,3 +1,3 @@
 #!/bin/sh
-# $Id: mailman.sh,v 1.1 2003-03-31 14:27:24 zacheiss Exp $
+# $Id: mailman.sh 3956 2010-01-05 20:56:56Z zacheiss $
 exec /home/mailman/moiraupdate

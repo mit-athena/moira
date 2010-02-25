@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-cluster.sh,v 1.4 2009-12-17 20:58:52 zacheiss Exp $
+# $Id: cups-cluster.sh 3974 2010-02-03 18:46:16Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -31,13 +31,13 @@ cd /
 tar xf $TARFILE || exit $MR_TARERR
 
 /etc/cups/bin/post-dcm-disable.pl 2>/dev/null
+if [ -s /etc/cups/printers.conf.tmp ]; then
+    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
+fi
 
 /etc/init.d/cups start
 
 /etc/cups/bin/gen-ppd.pl 2>/dev/null
-if [ -s /etc/cups/printers.conf.tmp ]; then
-    mv /etc/cups/printers.conf.tmp /etc/cups/printers.conf
-fi
 
 # if Samba-enabled, then restart it too to have it pick up
 # new definitions

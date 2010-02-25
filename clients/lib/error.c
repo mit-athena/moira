@@ -1,4 +1,4 @@
-/* $Id: error.c,v 1.2 2002-08-15 20:38:33 zacheiss Exp $
+/* $Id: error.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * mrcl error interface
  *
@@ -19,7 +19,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/error.c,v 1.2 2002-08-15 20:38:33 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/lib/error.c $ $Id: error.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 static char *mrcl_message = NULL;
 

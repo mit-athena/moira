@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $
+/* $Id: mr_main.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Moira server process.
  *
@@ -33,7 +33,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.56 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_main.c $ $Id: mr_main.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 client *cur_client;
 

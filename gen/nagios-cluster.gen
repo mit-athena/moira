@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-cluster.gen,v 1.2 2009-06-17 14:45:33 jweiss Exp $
+# $Id: nagios-cluster.gen 3956 2010-01-05 20:56:56Z zacheiss $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;

@@ -1,4 +1,4 @@
-/* $Id: mr_private.h,v 1.13 2000-03-15 22:44:20 rbasch Exp $
+/* $Id: mr_private.h 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Private declarations of the Moira library.
  *

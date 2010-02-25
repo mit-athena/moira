@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: confluence.sh,v 1.1 2009-03-12 21:17:25 zacheiss Exp $
+# $Id: confluence.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

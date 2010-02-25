@@ -1,4 +1,4 @@
-/* $Id: ureg_proto.h,v 1.5 1998-02-05 22:51:18 danw Exp $
+/* $Id: ureg_proto.h 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *

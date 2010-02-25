@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.37 2009-12-29 17:29:33 zacheiss Exp $
+/* $Id: qaccess.pc 3979 2010-02-16 20:26:57Z zacheiss $
  *
  * Check access to queries
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.37 2009-12-29 17:29:33 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 3979 2010-02-16 20:26:57Z zacheiss $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -52,12 +52,14 @@ int access_user(struct query *q, char *argv[], client *cl)
 int access_update_user(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int users_id, unix_uid, status, comments, secure;
+  int users_id, unix_uid, status, comments, secure, sponsor_id;
   char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
   char winconsoleshell[USERS_WINCONSOLESHELL_SIZE], last[USERS_LAST_SIZE];
   char first[USERS_FIRST_SIZE], middle[USERS_MIDDLE_SIZE];
   char clearid[USERS_CLEARID_SIZE], type[USERS_TYPE_SIZE];
-  char signature[USERS_SIGNATURE_SIZE];
+  char signature[USERS_SIGNATURE_SIZE], sponsor_type[USERS_SPONSOR_TYPE_SIZE];
+  char expiration[USERS_EXPIRATION_SIZE], alternate_email[USERS_ALTERNATE_EMAIL_SIZE];
+  char alternate_phone[USERS_ALTERNATE_PHONE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   /* The two fields we let users update themselves didn't appear until
@@ -73,8 +75,10 @@ int access_update_user(struct query *q, char *argv[], client *cl)
 
   EXEC SQL SELECT u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last,
     u.first, u.middle, u.status, u.clearid, u.type, u.comments, u.signature,
-    u.secure INTO :login, :unix_uid, :shell, :winconsoleshell, :last, :first,
-    :middle, :status, :clearid, :type, :comments, :signature, :secure
+    u.secure, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email,
+    u.alternate_phone INTO :login, :unix_uid, :shell, :winconsoleshell, :last, :first,
+    :middle, :status, :clearid, :type, :comments, :signature, :secure, :sponsor_type,
+    :sponsor_id, :expiration, :alternate_email, :alternate_phone
     FROM USERS u WHERE u.users_id = :users_id;
 
   /* None of these things can have changed. */
@@ -92,6 +96,23 @@ int access_update_user(struct query *q, char *argv[], client *cl)
       strcmp(argv[12], strtrim(signature)) ||
       (secure != atoi(argv[13])))
     return MR_PERM;
+
+  /* These fields added in version 12 of the query. */
+  if (q->version >= 12)
+    {
+      if (strcmp(argv[16], strtrim(sponsor_type)) ||
+	  (sponsor_id != atoi(argv[17])) ||
+	  strcmp(argv[18], strtrim(expiration)))
+	return MR_PERM;
+    }
+
+  /* These fields added in version 14 of the query. */
+  if (q->version >= 14)
+    {
+      if (strcmp(argv[19], strtrim(alternate_email)) ||
+	  strcmp(argv[20], strtrim(alternate_phone)))
+	return MR_PERM;
+    }
 
   return MR_SUCCESS;
 }
@@ -704,9 +725,19 @@ int access_printer(struct query *q, char *argv[], client *cl)
   char type[PRINTSERVERS_OWNER_TYPE_SIZE];
   int id, mach_id;
   EXEC SQL END DECLARE SECTION;
-  int status;
+  int status, row;
 
-  mach_id = *(int *)argv[PRN_RM];
+  /* Check for aprn or uprn. */
+  if (q->type == MR_Q_APPEND)
+    row = 0;
+  else
+    row = 1;
+
+  if (q->version < 13)
+    mach_id = *(int *)argv[6 + row];
+  else
+    mach_id = *(int *)argv[PRN_RM + row];
+
   EXEC SQL SELECT owner_type, owner_id INTO :type, :id
     FROM printservers WHERE mach_id = :mach_id;
   if (sqlca.sqlcode)

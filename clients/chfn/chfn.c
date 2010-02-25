@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $
+/* $Id: chfn.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.3 2006-08-23 20:33:33 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chfn/chfn.c $ $Id: chfn.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 #define FALSE 0
 #define TRUE 1

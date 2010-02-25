@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.17 2007-12-03 21:22:59 zacheiss Exp $
+/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dbck/dbck.h $ $Id: dbck.h 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Declarations for Moira database consistancy checker
  *

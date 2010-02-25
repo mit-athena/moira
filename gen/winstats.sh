@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: winstats.sh,v 1.4 2003-12-16 20:51:00 zacheiss Exp $
+# $Id: winstats.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 dir=/var/ops/populate/stats
 tarfile=/var/tmp/winstats.out

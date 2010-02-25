@@ -1,4 +1,4 @@
-/* $Id: kname_parse.c,v 1.1 2009-05-21 19:38:46 zacheiss Exp $
+/* $Id: kname_parse.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Provide a copy of kname_parse() from krb4 for when krb4 is no
  * longer available.
@@ -22,7 +22,7 @@
 #define KNAME_FMT                                (KRBET_KNAME_FMT - ERROR_TABLE_BASE_krb)
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_parse.c,v 1.1 2009-05-21 19:38:46 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/kname_parse.c $ $Id: kname_parse.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 #define NAME    0               /* which field are we in? */
 #define INST    1

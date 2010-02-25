@@ -1,4 +1,4 @@
-/* $Id: config.c,v 1.7 1998-02-15 17:49:27 danw Exp $
+/* $Id: config.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.7 1998-02-15 17:49:27 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/config.c $ $Id: config.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /* Variables currently supported:
  * chroot directory	daemon will run chrooted to this directory

@@ -1,0 +1,105 @@
+.TH MITCH 1 "6 Jan 2010" "MIT Athena"
+\" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/mitch.1 $ $Id: mitch.1 3956 2010-01-05 20:56:56Z zacheiss $
+.SH NAME
+eunice \- examine and modify informtion about printers in Moira
+.SH SYNOPSIS
+.B eunice printername [options]
+.SH DESCRIPTION
+.I Eunice
+is a tool for updating information about printers in Moira.  It
+supports all printer modification commands.
+
+If no options are specified, it will assume \fI-info\fR, which will
+result in all information about the specified printer being displayed.
+
+.SH OPTIONS
+
+.IP \fB-info\ \fRor\ \fB-i\fR
+Display information about a printer. This is the default mode if no
+other options are given. The output is similar to that of moira.
+
+.IP \fB-location\ \fIlocation\ \fRor\ \fB-l\ \fIlocation\fR
+Update the location field for the specified printer to \fIlocation\fR.
+.IP \fB-contact\ \fIcontact\ \fRor\ \fB-c\ \fIcontact\fR
+Update the contact field for the specified printer to \fIcontact\fR.
+
+.IP \fB-hostname\ \fIhostname\ \fRor\ \fB-H\ \fIhostname\fR
+Update the hostname for the specified printer to \fIhostname\fR.
+.IP \fB-mac\ \fIhwaddr\ \fRor\ \fB-m\ \fIhwaddr\fR
+Update the Ethernet hardware address for the printer's hostname record
+to \fIhwaddr\fR.  Note that this information is associated with the host
+record, not the print queue record.
+.IP \fB-remotename\ \fIname\ \fRor\ \fB-r\ \fIname\fR
+Update the remote queue name for the specified printer to \fIname\fR.
+.IP \fB-duplex\ \fIname\ \fRor\ \fB-d\ \fIname\fR
+Update the duplex queue name associated with the specific printer to \fIname\fR.
+.IP \fB-printserver\ \fIhostname\ \fRor\ \fB-s\ \fIhostname\fR
+Update the print server for the specific printer to \fIhostname\fR.  The
+print server may first need to be created via the "Print Servers" menu
+in the moira(1) client before queues may be assigned to it.
+
+.IP \fB-type\ \fItype\ \fRor\ \fB-T\ \fItype\fR
+Update the type for the specified printer to \fItype\fR.  Common types
+include CLUSTER, DORM, PRIVATE, and SAP.
+.IP \fB-model\ \fImodel\ \fRor\ \fB-M\ \fImodel\fR
+Update the model field for the specified printer to \fImodel\fR.  The
+model may first need to be created in the Moira aliases table before it
+can be used.
+
+.IP \fB-kerbauth\ \fRor\ \fB-K\fR
+Require Kerberos authentication of print requests.
+.IP \fB-nokerbauth\ \fRor\ \fB-NK\fR
+Do not require Kerberos authentication of print requests.
+.IP \fB-banner\ \fRor\ \fB-b\fR
+Print header pages by default.  They may still be suppressed by
+client configuration.
+.IP \fB-nobanner\ \fRor\ \fB-nb\fR
+Do not print header pages by default.  They may still be enabled by
+client configuration.
+
+.IP \fB-lpcacl\ \fIlist\ \fRor\ \fB-l\ \fIlist\fR
+Set the LPC acl for the specified printer to \fIlist\fR.
+
+.IP \fB-lpracl\ \fIlist\ \fRor\ \fB-ac\ \fIlist\fR
+Set the restrict list for the specified printer to \fIlist\fR.
+
+.IP \fB-verbose\ \fRor\ \fB-v\fR
+Give more information.  With this flag, mitch will display the
+queries it is making to the moira server.
+.IP \fB-noauth\ \fRor\ \fB-n\fR
+Do not attempt to perform Kerberos authentication with the Moira server.
+Most lookup operations should be still possible without tickets.
+.IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+database chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
+
+.IP \fB-create\ \fRor\ \fB-C\fR
+This will create the specified printer, with information provided by
+other options.
+.IP \fB-delete\ \fRor\ \fB-D\fR
+This will delete the specified printer.
+.IP \fB-rename\ \fInewname\ \fRor\ \fB-R\ \fInewname\fR
+This will rename the specified printer to \fInewname\fR.
+
+.SH AUTHORS
+Mark Manley, MIT Information Services & Technology.
+.br
+Garry Zacheiss, MIT Information Services & Technology.
+.SH SEE ALSO
+moira(1)
+
+.SH DIAGNOSTICS
+An exit status of 2 indicates a problem contacting the server. An exit
+status of 1 indicates that the arguments could not be parsed or some
+query to the moira server returned an error. An exit status of 0
+indicates that all operations requested completed successfully.
+
+.SH NOTES
+The printer name doesn't actually have to be the first argument, but
+if you put it anywhere else, it's easy to get the other arguments in the
+wrong order and do something other than what you intended.
+

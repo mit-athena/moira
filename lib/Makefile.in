@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2009-06-01 21:05:01 zacheiss Exp $
+# $Id: Makefile.in 3958 2010-01-05 21:27:04Z zacheiss $
 
 SHELL=/bin/sh
 
@@ -25,6 +25,7 @@ top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+includedir=@includedir@
 
 OBJS=	critical.lo fixhost.lo fixname.lo \
 	hash.lo kname_unparse.lo kname_parse.lo krb_et.lo mr_access.lo mr_auth.lo \
@@ -45,7 +46,7 @@ ET_C=	mr_et.c krb_et.c ureg_err.c
 all: depend libmoira.la
 
 clean:
-	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.a
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.la
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -54,6 +55,8 @@ depend: $(ET_C)
 
 install: all
 	$(LIBTOOL) --mode=install  $(INSTALL) libmoira.la $(DESTDIR)$(libdir)/libmoira.la
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(includedir)/moira
+	$(INSTALL) mr_et.h krb_et.h ureg_err.h $(DESTDIR)$(includedir)/moira
 
 libmoira.la: $(OBJS)
 	$(LIBTOOL) --mode=link $(CC) $(ALL_LDFLAGS) -o $@ $(OBJS) -rpath $(libdir) -version-info 0:0:0

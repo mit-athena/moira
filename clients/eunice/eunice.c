@@ -1,4 +1,5 @@
-/* 
+/* $Id: eunice.c 3977 2010-02-12 21:12:04Z zacheiss $
+ *
  * Command line oriented Moira print queue tool.
  *
  * Code based on the blanche command line tool and the moira curses tool.
@@ -20,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/eunice/eunice.c $ $Id: eunice.c 3977 2010-02-12 21:12:04Z zacheiss $");
+
 struct member {
   int type;
   char *name, *tag;
@@ -35,11 +38,11 @@ const char *pageprice = "10";
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
 /* flags from command line */
-int info_flag, verbose, noauth;
+int info_flag, verbose, noauth, duplex_default, hold_default;
 int create_flag, setmac, delete_flag, rename_flag, ka, banner, update_flag;
-char *lpracl, *lpcacl;
+char *lpracl, *lpcacl, *report_list;
 char *contact, *newname, *printserver, *type, *hwtype, *mac, *hostname, *queuename;
-char *duplexname, *logserver, *location, *realname;
+char *duplexname, *logserver, *location, *realname, *pr_status;
 
 char *queuename, *whoami, *testqueue;
 
@@ -54,6 +57,25 @@ int wrap_mr_query(char *handle, int argc, char **argv,
 void print_query(char *query_name, int argc, char **argv);
 int CountArgs(char **info);
 
+static char *states[] = {
+  "Reserved (0)",
+  "Active (1)",
+  "None (2)",
+  "Deleted (3)"
+};
+
+static char *PrnState(int state)
+{
+  static char buf[BUFSIZ];
+  
+  if (state < 0 || state > 3)
+    {
+      sprintf(buf, "Unknown (%d)", state);
+      return buf;
+    }
+  return states[state];
+}
+
 int main(int argc, char **argv)
 {
   int status, success;
@@ -67,8 +89,9 @@ int main(int argc, char **argv)
 
   /* clear all flags & lists */
   i = info_flag = verbose = noauth = 0;
-  setmac = ka = create_flag = delete_flag = update_flag = 0;
-  location = lpracl = lpcacl = NULL;
+  setmac = create_flag = delete_flag = update_flag = 0;
+  ka = duplex_default = hold_default = banner = -1;
+  location = lpracl = lpcacl = report_list = pr_status = NULL;
   logserver = duplexname = realname = newname = printserver = type = hwtype = mac = hostname = NULL;
 
 
@@ -143,9 +166,29 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+          else if (argis("S", "status"))
+	    {
+	      if (arg - argv < argc - 1) {
+		int i;
+		int len;
+		
+		arg++;
+		update_flag++;
+		pr_status = *arg;
+		
+		len = strlen(pr_status);
+		for(i = 0; i < len; i++) {
+		  if(!isdigit(pr_status[i])) {
+		    printf("Error: status code %s is not numeric.\n", pr_status);
+		    exit(1);
+		  }
+		}
+	      } else
+		usage(argv);
+	    }
 	  else if (argis("K", "kerbauth")) 
  	    {
-	      ka++;
+	      ka = 1;
   	      update_flag++;
  	    }
 	  else if (argis("NK", "nokerbauth"))
@@ -153,6 +196,26 @@ int main(int argc, char **argv)
 	      ka = 0;
   	      update_flag++;
  	    }
+	  else if (argis("DD", "duplexdefault"))
+	    {
+	      duplex_default = 1;
+	      update_flag++;
+	    }
+	  else if (argis("ND", "noduplexdefault"))
+	    {
+	      duplex_default = 0;
+	      update_flag++;
+	    }
+	  else if (argis("HD", "holddefault"))
+	    {
+	      hold_default = 1;
+	      update_flag++;
+	    }
+	  else if (argis("NH", "noholddefault"))
+	    {
+	      hold_default = 0;
+	      update_flag++;
+	    }
 	  else if (argis("H", "hostname"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -206,6 +269,17 @@ int main(int argc, char **argv)
 		{
 		  ++arg;
 		  lpracl = *arg;
+		  update_flag++;
+		}
+	      else
+		usage(argv);
+	    }
+	  else if (argis("rl", "reportlist"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  report_list = *arg;
 		  update_flag++;
 		}
 	      else
@@ -282,7 +356,7 @@ int main(int argc, char **argv)
     info_flag++;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "eunice", 10, !noauth);
+  status = mrcl_connect(server, "eunice", 13, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Authentication error while working on queue %s",
@@ -351,6 +425,14 @@ int main(int argc, char **argv)
 
       pargv[PRN_DUPLEXNAME] = (duplexname != NULL) ? duplexname : "";
 
+      pargv[PRN_DUPLEXDEFAULT] = (duplex_default == 1) ? "1" : "0";
+      pargv[PRN_HOLDDEFAULT] = (hold_default == 1) ? "1" : "0";
+
+      if (pr_status)
+	pargv[PRN_STATUS] = pr_status;
+      else
+	pargv[PRN_STATUS] = "1";
+
       pargv[PRN_HOSTNAME] = hostname;
       pargv[PRN_LOGHOST] = logserver;
 
@@ -393,6 +475,20 @@ int main(int argc, char **argv)
       else
         pargv[PRN_LPC_ACL] = "[none]";
 
+      if (report_list != NULL)
+        {
+          status = wrap_mr_query("get_list_info", 1, &report_list,
+				 NULL, NULL);
+          if (status)
+            {
+	      com_err(whoami, status, "while getting authentication list information");
+	      exit(1);
+            }
+          pargv[PRN_REPORT_LIST] = report_list;
+        }
+      else
+        pargv[PRN_REPORT_LIST] = "[none]";
+
       pargv[PRN_BANNER] = (banner == 1) ? "1" : "0";
 
       status = wrap_mr_query("add_printer", CountArgs(pargv), pargv, NULL, NULL); 
@@ -426,6 +522,15 @@ int main(int argc, char **argv)
       if (duplexname != NULL)
 	pargv[PRN_DUPLEXNAME + 1] = duplexname;
 
+      if (duplex_default != -1)
+	pargv[PRN_DUPLEXDEFAULT + 1] = duplex_default ? "1" : "0";
+
+      if (hold_default != -1)
+	pargv[PRN_HOLDDEFAULT + 1] = hold_default ? "1" : "0";
+
+      if (pr_status != NULL)
+	pargv[PRN_STATUS + 1] = pr_status;
+
       if (hostname != NULL)
 	pargv[PRN_HOSTNAME + 1] = hostname;
 
@@ -447,6 +552,8 @@ int main(int argc, char **argv)
 	pargv[PRN_AC + 1] = lpracl;
       if (lpcacl != NULL)
 	pargv[PRN_LPC_ACL + 1] = lpcacl;
+      if (report_list != NULL)
+	pargv[PRN_REPORT_LIST + 1] = report_list;
       if (banner != -1)
 	pargv[PRN_BANNER + 1] = banner ? "1" : "0";
       if (location != NULL)
@@ -533,8 +640,14 @@ void usage(char **argv)
 	  "-b   | -banner");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-NK | -nokerbauth",
 	  "-nb  | -nobanner");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-DD | -duplexdefault",
+	  "-HD | -holddefault");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ND | -noduplexdefault",
+	  "-NH | -noholddefault");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-S | -status status",
+	  "-rl | -reportlist list");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l  | -lpcacl list",
-	  "-ac  | -lpracl contact");
+	  "-ac  | -lpracl list");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d  | -duplex name",
 	  "-n   | -noauth");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-m  | -mac hwaddr", 
@@ -570,6 +683,10 @@ int show_printer_info(char *queuename)
 
   printf("Printer: %-18s Duplex queue: %-18s\n", pargv[PRN_NAME + 1],
           *pargv[PRN_DUPLEXNAME + 1] ? pargv[PRN_DUPLEXNAME + 1] : "[none]");
+  printf("Status: %-10s\n", PrnState(atoi(pargv[PRN_STATUS + 1])));
+  printf("Duplex by Default: %-8s Hold by Default: %-18s\n",
+	 atoi(pargv[PRN_DUPLEXDEFAULT + 1]) ? "yes" : "no",
+	 atoi(pargv[PRN_HOLDDEFAULT + 1]) ? "yes" : "no");
   printf("Type: %-10s Hardware type: %-10s Hardware address: %s\n",
           pargv[PRN_TYPE + 1], pargv[PRN_HWTYPE + 1], hwaddr);
   printf("Printer hostname: %s\n", pargv[PRN_HOSTNAME + 1]);
@@ -581,6 +698,7 @@ int show_printer_info(char *queuename)
           atoi(pargv[PRN_KA + 1]) ? "yes" : "no", pargv[PRN_PC + 1], pargv[PRN_RQ + 1]);
   printf("Restrict list: %-23s  LPC ACL: %-23s\n",
           pargv[PRN_AC + 1], pargv[PRN_LPC_ACL + 1]);
+  printf("Report list: %-23s\n", pargv[PRN_REPORT_LIST + 1]);
   printf("Location: %s\n", pargv[PRN_LOCATION + 1]);
   printf("Contact: %s\n", pargv[PRN_CONTACT + 1]);
   printf("\n");

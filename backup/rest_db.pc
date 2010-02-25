@@ -1,4 +1,4 @@
-/* $Id: rest_db.pc,v 1.7 2009-12-29 17:29:27 zacheiss Exp $
+/* $Id: rest_db.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * 	This program restores the Moira database from an mrbackup.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.7 2009-12-29 17:29:27 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/backup/rest_db.pc $ $Id: rest_db.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 int yes_or_no(char *prompt);
 

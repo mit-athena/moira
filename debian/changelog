@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+svn20100225-0debathena1) unstable; urgency=low
+
+  * New SVN snapshot.
+
+ -- Evan Broder <broder@mit.edu>  Thu, 25 Feb 2010 15:54:26 -0500
+
 debathena-moira (4.0.0+svn20100223-0debathena1) unstable; urgency=low
 
   * New SVN snapshot.

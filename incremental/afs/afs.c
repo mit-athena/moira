@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.5 2009-06-01 21:05:00 zacheiss Exp $
+/* $Id: afs.c 3973 2010-02-02 19:15:44Z zacheiss $
  *
  * Do AFS incremental updates
  *
@@ -41,6 +41,8 @@
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
 
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 3973 2010-02-02 19:15:44Z zacheiss $");
+
 char *whoami;
 
 /* Main stub routines */
@@ -56,21 +58,21 @@ int add_user_lists(int ac, char **av, void *user);
 int add_list_members(int ac, char **av, void  *group);
 int check_user(int ac, char **av, void *ustate);
 void edit_group(int op, char *group, char *type, char *member);
-long pr_try();
+int pr_try();
 void check_afs(void);
 int moira_connect(void);
 int moira_disconnect(void);
 
 /* libprot.a routines */
-extern long pr_Initialize();
-extern long pr_CreateUser();
-extern long pr_CreateGroup();
-extern long pr_DeleteByID();
-extern long pr_ChangeEntry();
-extern long pr_SetFieldsEntry();
-extern long pr_AddToGroup();
-extern long pr_RemoveUserFromGroup();
-extern long pr_SIdToName();
+extern int pr_Initialize();
+extern int pr_CreateUser();
+extern int pr_CreateGroup();
+extern int pr_DeleteByID();
+extern int pr_ChangeEntry();
+extern int pr_SetFieldsEntry();
+extern int pr_AddToGroup();
+extern int pr_RemoveUserFromGroup();
+extern int pr_SIdToName();
 
 static char tbl_buf[1024];
 static struct member {
@@ -173,7 +175,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
       com_err(whoami, 0, "Changing user %s (uid %d) to %s (uid %d)",
 	      before[U_NAME], buid, after[U_NAME], auid);
 
-      code = pr_try(pr_ChangeEntry, before[U_NAME], after[U_NAME], auid, "");
+      code = pr_try(pr_ChangeEntry, before[U_NAME], after[U_NAME], &auid, "");
       if (code)
 	{
 	  critical_alert(whoami, "incremental",
@@ -253,7 +255,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
 {
   int agid, bgid;
   int ahide, bhide;
-  long code, id;
+  int code, id;
   char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
   char *av[2];
 
@@ -281,11 +283,12 @@ void do_list(char **before, int beforec, char **after, int afterc)
 	  strcpy(g2, "system:");
 	  strcat(g1, before[L_NAME]);
 	  strcat(g2, after[L_NAME]);
+	  id = -agid;
 
 	  com_err(whoami, 0, "Changing group %s (gid %d) to %s (gid %d)",
 		  before[L_NAME], bgid, after[L_NAME], agid);
 
-	  code = pr_try(pr_ChangeEntry, g1, g2, -agid, "");
+	  code = pr_try(pr_ChangeEntry, g1, g2, &id, "");
 	  if (code)
 	    {
 	      critical_alert(whoami, "incremental", "Couldn't change group %s (id %d) "
@@ -659,11 +662,11 @@ void edit_group(int op, char *group, char *type, char *member)
 }
 
 
-long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
+int pr_try(int (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
 	    char *a6, char *a7, char *a8)
 {
   static int initd = 0;
-  long code;
+  int code;
   int tries = 0;
 
   check_afs();
@@ -694,7 +697,7 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
       if (code == UNOQUORUM)
 	sleep(90);
       else if (code == PRPERM)
-	system("/bin/athena/aklog");
+	system("/usr/bin/aklog");
       else
 	sleep(15);
 
@@ -734,7 +737,7 @@ void check_afs(void)
 
 int moira_connect(void)
 {
-  long code;
+  int code;
 
   if (!mr_connections++)
     {

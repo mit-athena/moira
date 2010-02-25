@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: tsm.sh,v 1.2 2007-07-03 19:22:09 zacheiss Exp $
+# $Id: tsm.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 outfile=/tsm-mit/data/tsmlists
 loadprog=/tsm-mit/bin/loadAdminTable.pl

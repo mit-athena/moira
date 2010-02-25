@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: boot.sh,v 1.3 2000-05-08 18:30:30 zacheiss Exp $
+# $Id: boot.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

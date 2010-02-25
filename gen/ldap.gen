@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.8 2007-11-13 17:37:31 zacheiss Exp $
+# $Id: ldap.gen 3956 2010-01-05 20:56:56Z zacheiss $
 
 use DBI;
 

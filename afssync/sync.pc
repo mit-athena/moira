@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.8 2009-12-29 17:29:27 zacheiss Exp $
+/* $Id: sync.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -22,6 +22,8 @@
 #include <moira.h>
 #include <moira_site.h>
 #include <ctype.h>
+
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/afssync/sync.pc $ $Id: sync.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 EXEC SQL INCLUDE sqlca;
 

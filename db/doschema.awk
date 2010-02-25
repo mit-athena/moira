@@ -1,4 +1,4 @@
-# $Id: doschema.awk,v 1.2 1998-04-15 03:00:15 danw Exp $
+# $Id: doschema.awk 3956 2010-01-05 20:56:56Z zacheiss $
 #
 # Build moira_schema.c and .h from the schema.sql file
 # It knows which one to build cased on whether or not its input is

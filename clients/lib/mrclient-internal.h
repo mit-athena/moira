@@ -1,4 +1,4 @@
-/* $Id: mrclient-internal.h,v 1.2 2008-08-22 17:49:11 zacheiss Exp $
+/* $Id: mrclient-internal.h 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Copyright (C) 1999 by the Massachusetts Institute of Technology
  *

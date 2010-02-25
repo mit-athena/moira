@@ -1,4 +1,4 @@
-#!/usr/athena/bin/perl
+#!/usr/bin/perl
 # Usage: afs_quota path quota
 
 require "/moira/bin/afs_utils.pl";

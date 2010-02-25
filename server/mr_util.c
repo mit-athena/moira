@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $
+/* $Id: mr_util.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.34 2009-06-01 21:05:02 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_util.c $ $Id: mr_util.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 extern char *whoami;
 

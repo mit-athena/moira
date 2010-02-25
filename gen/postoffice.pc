@@ -1,4 +1,4 @@
-/* $Id: postoffice.pc,v 1.3 2009-12-21 16:35:38 zacheiss Exp $
+/* $Id: postoffice.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * This generates the post office location data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.3 2009-12-21 16:35:38 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/postoffice.pc $ $Id: postoffice.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 
 #ifndef PO_SUBDIR

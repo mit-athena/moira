@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1999-07-12 16:21:05 danw Exp $
+# $Id: Makefile.in 3958 2010-01-05 21:27:04Z zacheiss $
 
 SHELL=/bin/sh
 
@@ -6,6 +6,10 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 BUILDTOP=../..
+
+prefix=@prefix@
+includedir=@includedir@
+INSTALL=@INSTALL@
 
 all:
 
@@ -17,3 +21,5 @@ cleandir distclean: clean
 depend:
 
 install:
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(includedir)/moira
+	$(INSTALL) moira.h mrclient.h $(DESTDIR)$(includedir)/moira

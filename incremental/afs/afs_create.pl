@@ -1,4 +1,4 @@
-#!/usr/athena/bin/perl
+#!/usr/bin/perl
 # Usage: afs_create locker type cell path quota user group
 
 require "/moira/bin/afs_utils.pl";

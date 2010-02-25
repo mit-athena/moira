@@ -1,4 +1,4 @@
-/* $Id: genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $
+/* $Id: genwords.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Utility program to generate magic words for a given ID
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/genwords.pc $ $Id: genwords.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 int main(int argc, char **argv)
 {

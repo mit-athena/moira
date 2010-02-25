@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.109 2009-11-05 22:12:02 zacheiss Exp $
+/* $Id: queries2.c 3979 2010-02-16 20:26:57Z zacheiss $
  *
  * This file defines the query dispatch table
  *
@@ -12,6 +12,8 @@
 #include "query.h"
 
 #include "mr_et.h"
+
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 3979 2010-02-16 20:26:57Z zacheiss $");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -101,12 +103,20 @@ static char *gual11_fields[] = {
   "creator",
 };
 
-static char *gual_fields[] = {
+static char *gual12_fields[] = {
   "login",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *gual_fields[] = {
+  "login",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *gubl2_fields[] = {
@@ -170,12 +180,20 @@ static char *guau11_fields[] = {
   "creator",
 };
 
-static char *guau_fields[] = {
+static char *guau12_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure", 
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guau_fields[] = {
+  "unix_uid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guan2_fields[] = {
@@ -200,12 +218,20 @@ static char *guan11_fields[] = {
   "creator",
 };
 
-static char *guan_fields[] = {
+static char *guan12_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guan_fields[] = {
+  "first", "last",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
 };
 
 static struct validate guan2_validate =
@@ -256,12 +282,20 @@ static char *guac11_fields[] = {
   "creator",
 };
 
-static char *guac_fields[] = {
+static char *guac12_fields[] = {
   "class",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guac_fields[] = {
+  "class",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guam2_fields[] = {
@@ -286,12 +320,20 @@ static char *guam11_fields[] = {
   "creator", 
 };
 
-static char *guam_fields[] = {
+static char *guam12_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "modtime", "modby", "modwith", "created", "creator", 
+};
+
+static char *guam_fields[] = {
+  "clearid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guas_fields[] = {
@@ -436,10 +478,17 @@ static char *auac11_fields[] = {
   "winhomedir", "winprofiledir",
 };
 
+static char *auac12_fields[] = {
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+};
+
 static char *auac_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone",
 };
 
 static struct valobj auac2_valobj[] = {
@@ -488,6 +537,26 @@ static struct valobj auac11_valobj[] = {
   {V_LEN, 14, USERS_TABLE, "winprofiledir"},
 };
 
+static struct valobj auac12_valobj[] = {
+  {V_CHAR, 0, USERS_TABLE, "login"},
+  {V_NUM, 1},
+  {V_CHAR, 2, USERS_TABLE, "shell"},
+  {V_CHAR, 3, USERS_TABLE, "winconsoleshell"},
+  {V_CHAR, 4, USERS_TABLE, "last"},
+  {V_CHAR, 5, USERS_TABLE, "first"},
+  {V_CHAR, 6, USERS_TABLE, "middle"},
+  {V_NUM, 7},
+  {V_CHAR, 8, USERS_TABLE, "clearid"},
+  {V_TYPE, 9, 0, "class", 0, MR_BAD_CLASS},
+  {V_ID, 10, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_NUM, 12},
+  {V_LEN, 13, USERS_TABLE, "winhomedir"},
+  {V_LEN, 14, USERS_TABLE, "winprofiledir"},
+  {V_TYPE, 15, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 16, 0, 0, "list_id", MR_ACE},
+  {V_CHAR, 17, USERS_TABLE, "expiration"},
+};
+
 static struct valobj auac_valobj[] = {
   {V_CHAR, 0, USERS_TABLE, "login"},
   {V_NUM, 1},
@@ -506,6 +575,8 @@ static struct valobj auac_valobj[] = {
   {V_TYPE, 15, 0, "ace_type", 0, MR_ACE},
   {V_TYPEDATA, 16, 0, 0, "list_id", MR_ACE},
   {V_CHAR, 17, USERS_TABLE, "expiration"},
+  {V_CHAR, 18, USERS_TABLE, "alternate_email"},
+  {V_CHAR, 19, USERS_TABLE, "alternate_phone"},
 };
 
 static struct validate auac2_validate = {
@@ -544,9 +615,21 @@ static struct validate auac11_validate = {
   followup_ausr,
 };
 
+static struct validate auac12_validate = {
+  auac12_valobj,
+  17,
+  "login",
+  "login = '%s'",
+  1,
+  "users_id",
+  0,
+  setup_ausr,
+  followup_ausr,
+};
+
 static struct validate auac_validate = {
   auac_valobj,
-  17,
+  19,
   "login",
   "login = '%s'",
   1,
@@ -592,9 +675,21 @@ static struct validate ausr11_validate = {
   followup_ausr,
 };
 
+static struct validate ausr12_validate = {
+  auac12_valobj,
+  15,
+  "login",
+  "login = '%s'",
+  1,
+  "users_id",
+  0,
+  setup_ausr,
+  followup_ausr,
+};
+
 static struct validate ausr_validate = {
   auac_valobj,
-  15,
+  17,
   "login",
   "login = '%s'",
   1,
@@ -644,11 +739,19 @@ static char *uuac11_fields[] = {
   "winhomedir", "winprofiledir",
 };
 
+static char *uuac12_fields[] = {
+  "login",
+  "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first",
+  "middle", "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+};
+
 static char *uuac_fields[] = {
   "login",
   "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first",
   "middle", "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone",
 };
 
 static struct valobj uuac2_valobj[] = {
@@ -700,6 +803,27 @@ static struct valobj uuac11_valobj[] = {
   {V_LEN, 15, USERS_TABLE, "winprofiledir"},
 };
 
+static struct valobj uuac12_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_RENAME, 1, USERS_TABLE, "login", "users_id", MR_NOT_UNIQUE},
+  {V_NUM, 2},
+  {V_CHAR, 3, USERS_TABLE, "shell"},
+  {V_CHAR, 4, USERS_TABLE, "winconsoleshell"},
+  {V_CHAR, 5, USERS_TABLE, "first"},
+  {V_CHAR, 6, USERS_TABLE, "last"},
+  {V_CHAR, 7, USERS_TABLE, "middle"},
+  {V_NUM, 8},
+  {V_CHAR, 9, USERS_TABLE, "clearid"},
+  {V_TYPE, 10, 0, "class", 0, MR_BAD_CLASS},
+  {V_ID, 11, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_NUM, 13},
+  {V_LEN, 14, USERS_TABLE, "winhomedir"},
+  {V_LEN, 15, USERS_TABLE, "winprofiledir"},
+  {V_TYPE, 16, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 17, 0, 0, "list_id", MR_ACE},
+  {V_CHAR, 18, USERS_TABLE, "expiration"},
+};
+
 static struct valobj uuac_valobj[] = {
   {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
   {V_RENAME, 1, USERS_TABLE, "login", "users_id", MR_NOT_UNIQUE},
@@ -719,6 +843,8 @@ static struct valobj uuac_valobj[] = {
   {V_TYPE, 16, 0, "ace_type", 0, MR_ACE},
   {V_TYPEDATA, 17, 0, 0, "list_id", MR_ACE},
   {V_CHAR, 18, USERS_TABLE, "expiration"},
+  {V_CHAR, 19, USERS_TABLE, "alternate_email"},
+  {V_CHAR, 20, USERS_TABLE, "alternate_phone"},
 };
 
 static struct validate uuac2_validate = {
@@ -757,9 +883,21 @@ static struct validate uuac11_validate = {
   set_modtime_by_id,
 };
 
+static struct validate uuac12_validate = {
+  uuac12_valobj,
+  18,
+  0,
+  0,
+  0,
+  "users_id",
+  access_update_user,
+  setup_ausr,
+  set_modtime_by_id,
+};
+
 static struct validate uuac_validate = {
   uuac_valobj,
-  18,
+  20,
   0,
   0,
   0,
@@ -805,9 +943,21 @@ static struct validate uusr11_validate = {
   set_modtime_by_id,
 };
 
+static struct validate uusr12_validate = {
+  uuac12_valobj,
+  16,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  setup_ausr,
+  set_modtime_by_id,
+};
+
 static struct validate uusr_validate = {
   uuac_valobj,
-  16,
+  18,
   0,
   0,
   0,
@@ -3342,62 +3492,119 @@ static struct validate dsvc_validate = {
   0,
 };
 
-static char *gprn_fields[] = {
+static char *gprn2_fields[] = {
   "name",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbd_fields[] = {
+static char *gpbd2_fields[] = {
   "duplexname",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbe_fields[] = {
+static char *gpbe2_fields[] = {
   "hwaddr",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbh_fields[] = {
+static char *gpbh2_fields[] = {
   "hostname",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbr_fields[] = {
+static char *gpbr2_fields[] = {
   "rm",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbl_fields[] = {
+static char *gpbl2_fields[] = {
   "location",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *gpbc_fields[] = {
+static char *gpbc2_fields[] = {
   "contact",
   "name", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *aprn_fields[] = {
+static char *gprn_fields[] = {
+  "name",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp", 
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner", 
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbd_fields[] = {
+  "duplexname",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbe_fields[] = {
+  "hwaddr",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbh_fields[] = {
+  "hostname",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbr_fields[] = {
+  "rm",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbl_fields[] = {
+  "location",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+
+};
+
+static char *gpbc_fields[] = {
+  "contact",
+  "name", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list",  "banner",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *aprn2_fields[] = {
   "printer", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact",
 };
 
-static struct valobj aprn_valobj[] = {
+static struct valobj aprn2_valobj[] = {
   {V_CHAR, 0, PRINTERS_TABLE, "name"},
   {V_TYPE, 1, 0, "printertype", 0, MR_TYPE},
   {V_TYPE, 2, 0, "printerhwtype", 0, MR_TYPE},
@@ -3416,8 +3623,8 @@ static struct valobj aprn_valobj[] = {
   {V_CHAR, 15, PRINTERS_TABLE, "contact"},
 };
 
-static struct validate aprn_validate = {
-  aprn_valobj,
+static struct validate aprn2_validate = {
+  aprn2_valobj,
   16,
   "name",
   "name = '%s'",
@@ -3428,14 +3635,56 @@ static struct validate aprn_validate = {
   set_modtime,
 };
 
-static char *uprn_fields[] = {
+static char *aprn_fields[] = {
+  "printer", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list", "banner",
+  "location", "contact",
+};
+
+static struct valobj aprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_TYPE, 1, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 3, PRINTERS_TABLE, "duplexname"},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_ID, 7, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 8, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 10, PRINTERS_TABLE, "rp"},
+  {V_ID, 11, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 12},
+  {V_NUM, 13},
+  {V_ID, 14, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 15, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 16, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_NUM, 17},
+  {V_CHAR, 18, PRINTERS_TABLE, "location"},
+  {V_CHAR, 19, PRINTERS_TABLE, "contact"},
+};
+
+static struct validate aprn_validate = {
+  aprn_valobj,
+  20,
+  "name",
+  "name = '%s'",
+  1,
+  0,
+  access_printer,
+  setup_aprn,
+  set_modtime,
+};
+
+static char *uprn2_fields[] = {
   "printer",
   "printer", "type", "hwtype", "duplexname", "hostname",
   "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
   "banner", "location", "contact",
 };
 
-static struct valobj uprn_valobj[] = {
+static struct valobj uprn2_valobj[] = {
   {V_CHAR, 0, PRINTERS_TABLE, "name"},
   {V_CHAR, 1, PRINTERS_TABLE, "name"},
   {V_TYPE, 2, 0, "printertype", 0, MR_TYPE},
@@ -3455,9 +3704,53 @@ static struct valobj uprn_valobj[] = {
   {V_CHAR, 16, PRINTERS_TABLE, "contact"},
 };
 
+static struct validate uprn2_validate = {
+  uprn2_valobj,
+  16,
+  "name",
+  "name = '%s'",
+  1,
+  0,
+  access_printer,
+  setup_aprn,
+  set_modtime,
+};
+
+static char *uprn_fields[] = {
+  "printer",
+  "printer", "type", "hwtype", "duplexname", "duplexdefault",
+  "holddefault", "status", "hostname", "loghost", "rm", "rp",
+  "rq", "ka", "pc", "ac", "lpc_acl", "report_list", "banner",
+  "location", "contact",
+};
+
+static struct valobj uprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_CHAR, 1, PRINTERS_TABLE, "name"},
+  {V_TYPE, 2, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 3, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 4, PRINTERS_TABLE, "duplexname"},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_ID, 8, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 10, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 11, PRINTERS_TABLE, "rp"},
+  {V_ID, 12, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 13},
+  {V_NUM, 14},
+  {V_ID, 15, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 16, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 17, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_NUM, 18},
+  {V_CHAR, 19, PRINTERS_TABLE, "location"},
+  {V_CHAR, 20, PRINTERS_TABLE, "contact"},
+};
+
 static struct validate uprn_validate = {
   uprn_valobj,
-  16,
+  20,
   "name",
   "name = '%s'",
   1,
@@ -4081,8 +4374,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    gual_fields,
+    gual12_fields,
     23,
+    "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubl_validate,
+  },
+
+  {
+    /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN, v14 */
+    "get_user_account_by_login",
+    "gual",
+    14,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    gual_fields,
+    25,
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4132,7 +4442,7 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guau3_fields,
+    guau11_fields,
     20,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
@@ -4149,13 +4459,30 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guau_fields,
+    guau12_fields,
     23,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
     &gubu_validate,
   }, 
+
+  {
+    /* Q_GUAU - GET_USER_ACCOUNT_BY_UID, v14 */
+    "get_user_account_by_uid",
+    "guau",
+    14,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guau_fields,
+    25,
+    "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubu_validate,
+  },
 
   {
     /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v2 */
@@ -4217,8 +4544,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guan_fields,
+    guan12_fields,
     23,
+    "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
+    2,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v14 */
+    "get_user_account_by_name",
+    "guan",
+    14,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guan_fields,
+    25,
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     "u.login",
@@ -4285,8 +4629,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guac_fields,
+    guac12_fields,
     23,
+    "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  { 
+    /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS, v14 */
+    "get_user_account_by_class",
+    "guac",
+    14,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guac_fields,
+    25,
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4353,8 +4714,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guam_fields,
+    guam12_fields,
     23,
+    "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID, v14 */
+    "get_user_account_by_id",
+    "guai",
+    14,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guam_fields,
+    25,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4620,8 +4998,28 @@ struct query Queries[] = {
      * but using up one argv element.
      */
     "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), %s, SYSDATE, %s)",
-    auac_fields,
+    auac12_fields,
     18,
+    NULL,
+    0,
+    NULL,
+    &auac12_validate,
+  },
+
+  {
+    /* Q_AUAC - ADD_USER_ACCOUNT, v14 */  /* uses prefetch_value() for users_id */
+    "add_user_account",
+    "auac",
+    14,
+    MR_Q_APPEND,
+    "u",
+    USERS_TABLE,
+    /* We set signature to "NVL(CHR(0), '%s')", which is to say, "CHR(0)",
+     * but using up one argv element.
+     */
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, SYSDATE, %s)",
+    auac_fields,
+    20,
     NULL,
     0,
     NULL,
@@ -4688,8 +5086,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), %s, SYSDATE, %s)",
-    auac_fields,
+    auac12_fields,
     15,
+    0,
+    0,
+    NULL,
+    &ausr12_validate,
+  },
+
+  {
+    /* Q_AUSR - ADD_USER, v14 */  /* uses prefetch_value() for users_id */
+    "add_user",
+    "ausr",
+    14,
+    MR_Q_APPEND,
+    "u",
+    USERS_TABLE,
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, SYSDATE, %s)",
+    auac_fields,
+    17,
     0,
     0,
     NULL,
@@ -4777,8 +5192,26 @@ struct query Queries[] = {
     USERS_TABLE,
     /* See comment in auac about signature. */
     "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s, winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0))",
-    uuac_fields,
+    uuac12_fields,
     18,
+    "users_id = %d",
+    1,
+    NULL,
+    &uuac12_validate,
+  },
+
+  {
+    /* Q_UUAC - UPDATE_USER_ACCOUNT, v14 */
+    "update_user_account",
+    "uuac",
+    14,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    /* See comment in auac about signature. */
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s, winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0))",
+    uuac_fields,
+    20,
     "users_id = %d",
     1,
     NULL,
@@ -4845,8 +5278,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s', winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)) ",
-    uuac_fields,
+    uuac12_fields,
     15,
+    "users_id = %d",
+    1,
+    NULL,
+    &uusr12_validate,
+  },
+
+  {
+    /* Q_UUSR - UPDATE_USER, v14 */
+    "update_user",
+    "uusr",
+    14,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s', winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0)) ",
+    uuac_fields,
+    17,
     "users_id = %d",
     1,
     NULL,
@@ -7302,7 +7752,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPRN - GET_PRINTER */
+    /* Q_GPRN - GET_PRINTER, v2 */
     "get_printer",
     "gprn",
     2,
@@ -7310,7 +7760,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gprn_fields,
+    gprn2_fields,
     19,
     "pr.name LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7319,7 +7769,25 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME */
+    /* Q_GPRN - GET_PRINTER, v13 */
+    "get_printer",
+    "gprn",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gprn_fields,
+    23,
+    "pr.name LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+
+  {
+    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME, v2 */
     "get_printer_by_duplexname",
     "gpbd",
     2,
@@ -7327,7 +7795,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbd_fields,
+    gpbd2_fields,
     19,
     "pr.duplexname LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7336,7 +7804,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBE - GET_PRINTER_BY_ETHERNET */
+    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME, v13 */
+    "get_printer_by_duplexname",
+    "gpbd",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gpbd_fields,
+   23,
+    "pr.duplexname LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBE - GET_PRINTER_BY_ETHERNET, v2 */
     "get_printer_by_ethernet",
     "gpbe",
     2,
@@ -7344,7 +7829,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbd_fields,
+    gpbd2_fields,
     19,
     "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7353,7 +7838,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME */
+    /* Q_GPBE - GET_PRINTER_BY_ETHERNET, v13 */
+    "get_printer_by_ethernet",
+    "gpbe",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
+    gpbd_fields,
+    23,
+    "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME, v2 */
     "get_printer_by_hostname",
     "gpbh",
     2,
@@ -7361,7 +7863,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbh_fields,
+    gpbh2_fields,
     19,
     "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7369,8 +7871,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME, v13 */
+    "get_printer_by_hostname",
+    "gpbh",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbh_fields,
+    23,
+    "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBR - GET_PRINTER_BY_RM */
+    /* Q_GPBR - GET_PRINTER_BY_RM, v2 */
     "get_printer_by_rm",
     "gpbr",
     2,
@@ -7378,7 +7897,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbr_fields,
+    gpbr2_fields,
     19,
     "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7386,8 +7905,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBR - GET_PRINTER_BY_RM, v13 */
+    "get_printer_by_rm",
+    "gpbr",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbr_fields,
+    23,
+    "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBL - GET_PRINTER_BY_LOCATION */
+    /* Q_GPBL - GET_PRINTER_BY_LOCATION, v2 */
     "get_printer_by_location",
     "gpbl",
     2,
@@ -7395,7 +7931,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbl_fields,
+    gpbl2_fields,
     19,
     "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7403,8 +7939,25 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
+  { 
+    /* Q_GPBL - GET_PRINTER_BY_LOCATION, v13 */
+    "get_printer_by_location",
+    "gpbl",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbl_fields,
+    23,
+    "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
   {
-    /* Q_GPBC - GET_PRINTER_BY_CONTACT */
+    /* Q_GPBC - GET_PRINTER_BY_CONTACT, v2 */
     "get_printer_by_contact",
     "gpbc",
     2,
@@ -7412,7 +7965,7 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
-    gpbc_fields,
+    gpbc2_fields,
     19,
     "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
@@ -7421,7 +7974,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_APRN - ADD_PRINTER */
+    /* Q_GPBC - GET_PRINTER_BY_CONTACT, v13 */
+    "get_printer_by_contact",
+    "gpbc",
+    13,
+    MR_Q_RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    gpbc_fields,
+    23,
+    "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_APRN - ADD_PRINTER, v2 */
     "add_printer",
     "aprn",
     2,
@@ -7429,8 +7999,25 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "INTO printers (name, type, hwtype, duplexname, mach_id, loghost, rm, rp, rq, ka, pc, ac, lpc_acl, banner, location, contact) VALUES ('%s', '%s', '%s', NVL('%s', CHR(0)), %d, %d, %d, NVL('%s', CHR(0)), %d, %s, %s, %d, %d, %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)))",
-    aprn_fields,
+    aprn2_fields,
     16,
+    0,
+    0,
+    NULL,
+    &aprn2_validate,
+  },
+
+  {
+    /* Q_APRN - ADD_PRINTER, v13 */
+    "add_printer",
+    "aprn",
+    13,
+    MR_Q_APPEND,
+    "pr",
+    PRINTERS_TABLE,
+    "INTO printers (name, type, hwtype, duplexname, duplexdefault, holddefault, status, mach_id, loghost, rm, rp, rq, ka, pc, ac, lpc_acl, report_list, banner, location, contact) VALUES ('%s', '%s', '%s', NVL('%s', CHR(0)), %s, %s, %s, %d, %d, %d, NVL('%s', CHR(0)), %d, %s, %s, %d, %d, %d, %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)))",
+    aprn_fields,
+    20,
     0,
     0,
     NULL,
@@ -7438,7 +8025,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_UPRN - UPDATE_PRINTER */
+    /* Q_UPRN - UPDATE_PRINTER, v2 */
     "update_printer",
     "uprn",
     2,
@@ -7446,8 +8033,25 @@ struct query Queries[] = {
     "pr",
     PRINTERS_TABLE,
     "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %s, pc = %s, ac = %d, lpc_acl = %d, banner = %s, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
-    uprn_fields,
+    uprn2_fields,
     16,
+    "name = '%s'",
+    1,
+    NULL,
+    &uprn2_validate,
+  },
+
+  { 
+    /* Q_UPRN - UPDATE_PRINTER, v13 */
+    "update_printer",
+    "uprn",
+    13,
+    MR_Q_UPDATE,
+    "pr",
+    PRINTERS_TABLE,
+    "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), duplexdefault = %s, holddefault = %s, status = %s, mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %s, pc = %s, ac = %d, lpc_acl = %d, report_list = %d, banner = %s, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
+    uprn_fields,
+    20,
     "name = '%s'",
     1,
     NULL,

@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.51 2007-11-29 21:09:02 zacheiss Exp $
+/* $Id: moira_site.h 3979 2010-02-16 20:26:57Z zacheiss $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -206,26 +206,30 @@
 
 /* Printer queries */
 
-#define PRN_NAME	0
-#define PRN_TYPE	1
-#define PRN_HWTYPE	2
-#define PRN_DUPLEXNAME	3
-#define PRN_HOSTNAME	4
-#define PRN_LOGHOST	5
-#define PRN_RM		6
-#define PRN_RP		7
-#define PRN_RQ		8
-#define PRN_KA		9
-#define PRN_PC		10
-#define PRN_AC		11
-#define PRN_LPC_ACL	12
-#define PRN_BANNER	13
-#define PRN_LOCATION	14
-#define PRN_CONTACT	15
-#define PRN_MODTIME	16
-#define PRN_MODBY	17
-#define PRN_MODWITH	18
-#define PRN_END		19
+#define PRN_NAME		0
+#define PRN_TYPE		1
+#define PRN_HWTYPE		2
+#define PRN_DUPLEXNAME		3
+#define PRN_DUPLEXDEFAULT 	4
+#define PRN_HOLDDEFAULT 	5
+#define PRN_STATUS      	6
+#define PRN_HOSTNAME		7
+#define PRN_LOGHOST		8
+#define PRN_RM			9
+#define PRN_RP			10
+#define PRN_RQ			11
+#define PRN_KA			12
+#define PRN_PC			13
+#define PRN_AC			14
+#define PRN_LPC_ACL		15
+#define PRN_REPORT_LIST		16
+#define PRN_BANNER		17
+#define PRN_LOCATION		18
+#define PRN_CONTACT		19
+#define PRN_MODTIME		20
+#define PRN_MODBY		21
+#define PRN_MODWITH		22
+#define PRN_END			23
 
 #define PRN_BANNER_NONE  0
 #define PRN_BANNER_FIRST 1
@@ -377,12 +381,14 @@
 #define U_SPONSOR_TYPE 15
 #define U_SPONSOR_NAME 16
 #define U_EXPIRATION 17
-#define U_MODTIME 18
-#define U_MODBY   19
-#define U_MODWITH 20
-#define U_CREATED 21
-#define U_CREATOR 22
-#define U_END     23
+#define U_ALT_EMAIL 18
+#define U_ALT_PHONE 19
+#define U_MODTIME 20
+#define U_MODBY   21
+#define U_MODWITH 22
+#define U_CREATED 23
+#define U_CREATOR 24
+#define U_END     25
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

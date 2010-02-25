@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.22 2009-12-29 17:29:29 zacheiss Exp $
+/* $Id: mailhub.pc 3976 2010-02-09 19:30:24Z zacheiss $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.22 2009-12-29 17:29:29 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/mailhub.pc $ $Id: mailhub.pc 3976 2010-02-09 19:30:24Z zacheiss $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -34,8 +34,6 @@ char *divide = "##############################################################";
 
 #define FALSE 0
 #define TRUE (!FALSE)
-
-FILE *out;
 
 struct hash *users, *machines, *strings, *lists;
 struct user {
@@ -50,7 +48,6 @@ struct member {
 struct list {
   char *name;
   char maillist;
-  char *description;
   char acl_t;
   int acl_id;
   char mailman;
@@ -59,11 +56,10 @@ struct list {
 };
 
 void get_info(void);
-void save_mlist(int id, void *list, void *force);
 int check_string(char *s);
 void output_login(int dummy, void *names, void *out);
-void output_mlist(int id, struct list *l);
-void put_fill(FILE *aliases, char *string);
+void output_mlist(int id, void *list, void *out);
+void output_membership(struct list *l, FILE *out);
 void do_people(void);
 
 int incount = 0;
@@ -72,9 +68,11 @@ int main(int argc, char **argv)
 {
   time_t tm = time(NULL);
   char filename[MAXPATHLEN], *targetfile;
+  FILE *out;
 
   out = stdout;
 
+  srand(tm);
   EXEC SQL CONNECT :db;
 
   if (argc == 2)
@@ -103,7 +101,7 @@ int main(int argc, char **argv)
 
   incount = 0;
   fprintf(out, "\n%s\n# Mailing lists\n%s\n\n", divide, divide);
-  hash_step(lists, save_mlist, FALSE);
+  hash_step(lists, output_mlist, out);
   fprintf(stderr, "Output %d lists\n", incount);
 
   incount = 0;
@@ -130,8 +128,8 @@ void get_info(void)
   int id, pid, iid, bid, eid, cnt, maillistp, acl, mid, mailman;
   char mname[MACHINE_NAME_SIZE], str[STRINGS_STRING_SIZE];
   char login[USERS_LOGIN_SIZE], potype[USERS_POTYPE_SIZE];
-  char lname[LIST_NAME_SIZE], desc[LIST_DESCRIPTION_SIZE];
-  char type[LIST_ACL_TYPE_SIZE], mailman_server[MACHINE_NAME_SIZE];
+  char lname[LIST_NAME_SIZE], type[LIST_ACL_TYPE_SIZE];
+  char mailman_server[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   char *s;
   struct user *u;
@@ -150,10 +148,10 @@ void get_info(void)
   EXEC SQL DECLARE m_cursor CURSOR FOR
     SELECT mach_id, name
     FROM machine
-    WHERE status = 1
+    WHERE (status = 1 OR status = 2)
     AND ( mach_id IN ( SELECT UNIQUE pop_id FROM users ) OR
 	  mach_id IN ( SELECT UNIQUE mach_id FROM filesys
-		       WHERE type = 'IMAP' ) )    
+		       WHERE type = 'IMAP' ) )
     ORDER BY mach_id;
   EXEC SQL OPEN m_cursor;
   while (1)
@@ -180,7 +178,7 @@ void get_info(void)
   EXEC SQL DECLARE e_cursor CURSOR FOR
     SELECT mach_id, name
     FROM machine
-    WHERE status = 1
+    WHERE (status = 1 OR status = 2)
     AND mach_id in (SELECT UNIQUE exchange_id FROM users)
     ORDER BY mach_id;
   EXEC SQL OPEN e_cursor;
@@ -198,7 +196,7 @@ void get_info(void)
       cnt++;
     }
   EXEC SQL CLOSE e_cursor;
-	
+  
   fprintf(stderr, "Loaded %d machines\n", cnt);
 
   cnt = 0;
@@ -238,8 +236,7 @@ void get_info(void)
     {
       char *saddr = NULL, *paddr = NULL;
 
-      EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :iid, :bid,
-	:eid;
+      EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :iid, :bid, :eid;
       if (sqlca.sqlcode)
 	break;
       u = malloc(sizeof(struct user));
@@ -303,7 +300,7 @@ void get_info(void)
   lists = create_hash(15000);
 
   EXEC SQL DECLARE l_cursor CURSOR FOR
-    SELECT l.list_id, l.name, l.maillist, l.description, l.acl_type, l.acl_id,
+    SELECT l.list_id, l.name, l.maillist, l.acl_type, l.acl_id,
     l.mailman, m.name
     FROM list l, machine m
     WHERE active != 0 AND l.mailman_id = m.mach_id
@@ -311,14 +308,13 @@ void get_info(void)
   EXEC SQL OPEN l_cursor;
   while (1)
     {
-      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :desc, :type, :acl,
+      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :type, :acl,
 	:mailman, :mailman_server;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
       l->name = strdup(strtrim(lname));
       l->maillist = maillistp;
-      l->description = strdup(strtrim(desc));
       l->acl_t = type[0];
       l->acl_id = acl;
       l->mailman = mailman;
@@ -339,7 +335,6 @@ void get_info(void)
   EXEC SQL DECLARE m_cursor2 CURSOR FOR
     SELECT list_id, member_type, member_id
     FROM imembers
-    WHERE direct = 1
     ORDER BY list_id;
   EXEC SQL OPEN m_cursor2;
   while (1)
@@ -355,13 +350,6 @@ void get_info(void)
 	    {
 	      m->list_id = 0;
 	      m->name = u->login;
-	      m->next = l->m;
-	      l->m = m;
-	    }
-	  else if (type[0] == 'L' && (memberlist = hash_lookup(lists, mid)))
-	    {
-	      m->list_id = mid;
-	      m->name = memberlist->name;
 	      m->next = l->m;
 	      l->m = m;
 	    }
@@ -385,34 +373,6 @@ sqlerr:
 }
 
 
-void save_mlist(int id, void *list, void *force)
-{
-  struct member *m;
-  struct list *l = list, *l1;
-
-  if (l->maillist > 1 || (l->maillist == 0 && !force) ||
-      !check_string(l->name))
-    return;
-
-  /* If user group appears on list, replace with user. */
-  if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
-    {
-      l->maillist = 3;
-      return;
-    }
-  l->maillist = 2;
-  output_mlist(id, l);
-
-  if (l->acl_t == 'L' && (l1 = hash_lookup(lists, l->acl_id)))
-    save_mlist(0, l1, (void *)TRUE);
-
-  for (m = l->m; m; m = m->next)
-    {
-      if (m->list_id && (l1 = hash_lookup(lists, m->list_id)))
-	save_mlist(0, l1, (void *)TRUE);
-    }
-}
-
 void output_login(int dummy, void *user, void *out)
 {
   struct user *u = user;
@@ -422,45 +382,54 @@ void output_login(int dummy, void *user, void *out)
     fprintf(out, "%s: %s\n", u->login, u->pobox);
 }
 
+int line_width, alias_width;
 static const char *mailman_suffixes[] = { "-admin", "-owner", "-request",
- 					  "-bounces", "-confirm", "-join",
- 					  "-leave", "-subscribe",
- 					  "-unsubscribe", NULL };
+					  "-bounces", "-confirm", "-join",
+					  "-leave", "-subscribe",
+					  "-unsubscribe", NULL };
 
-void output_mlist(int id, struct list *l)
+void output_mlist(int id, void *list, void *out)
 {
-  struct list *l1;
-  struct member *m;
+  struct list *l = list, *l1;
   struct user *u;
-  int line_width, alias_width, word_width, beginning;
-  static int cont = 1;
-  char str[8];
-  int i;
+  int len = strlen(l->name), i;
 
-  put_fill(out, l->description);
+  if (!l->maillist || !check_string(l->name))
+    return;
+
+  /* If standard user group appears on a list, substitute in the user. */
+  if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
+    return;
 
   if (l->mailman && strcmp(l->mailman_server, "[NONE]"))
     {
       for (i = 0; mailman_suffixes[i]; i++)
 	fprintf(out, "%s%s: %s%s@%s\n", l->name, mailman_suffixes[i], l->name,
 		mailman_suffixes[i], l->mailman_server);
-      fprintf(out, "owner-%s: %s-owner@%s\n%s: ", l->name, l->name,
-	      l->mailman_server, l->name);
+      fprintf(out, "owner-%s: %s-owner@%s\n", l->name, l->name,
+	      l->mailman_server);
     }
-  else if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
-    fprintf(out, "owner-%s: %s\n%s: ", l->name, l1->name, l->name);
-  else if (l->acl_t ==  'U' && (u = hash_lookup(users, l->acl_id)))
-    fprintf(out, "owner-%s: %s\n%s: ", l->name, u->login, l->name);
-  else
-    fprintf(out, "%s: ", l->name);
 
-  alias_width = line_width = strlen(l->name) + 2;
-  beginning = 1;
+  fprintf(out, "%s: ", l->name);
+  alias_width = line_width = len + 2;
+  output_membership(l, out);
+  fprintf(out, "\n\n");
+  incount++;
+}
+
+void output_membership(struct list *l, FILE *out)
+{
+  struct member *m;
+  struct list *l1;
+  int word_width, linestart = 1;
+  static int cont = 1;
+  char str[8];
+
   for (m = l->m; m; m = m->next)
     {
       word_width = strlen(m->name);
 
-      if (!beginning && alias_width + word_width + 2 > MAX_ALIAS_WIDTH)
+      if (!linestart && alias_width + word_width + 2 > MAX_ALIAS_WIDTH)
 	{
 	  /* Make a continuation. */
 	  sprintf(str, "%c%c%c%c%c%c", rand() % 26 + 97, rand() % 26 + 97,
@@ -469,20 +438,18 @@ void output_mlist(int id, struct list *l)
 	  fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
 	  cont++;
 	  alias_width = line_width = 17 + word_width;
-	  fputs(m->name, out);
 	}
-      else if (beginning)
+      else if (linestart)
 	{
-	  /* Beginning of alias, so don't wrap. */
+	  /* First word on line, so we can't wrap. */
 	  line_width += word_width;
 	  alias_width = line_width;
-	  fputs(m->name, out);
-	  beginning = 0;
+	  linestart = 0;
 	}
       else if (line_width + word_width + 2 > MAX_LINE_WIDTH)
 	{
 	  /* Wrap. */
-	  fprintf(out, ",\n\t%s", m->name);
+	  fputs(",\n\t", out);
 	  alias_width += line_width + word_width + 2;
 	  line_width = word_width + 8;
 	}
@@ -490,70 +457,19 @@ void output_mlist(int id, struct list *l)
 	{
 	  /* Continue line. */
 	  line_width += word_width + 2;
-	  fprintf(out, ", %s", m->name);
+	  fputs(", ", out);
 	}
+
+      if (m->list_id && (l1 = hash_lookup(lists, m->list_id)) && !l1->maillist)
+	output_membership(l1, out);
+      else
+	fputs(m->name, out);
     }
   if (!l->m)
     fprintf(out, "/dev/null");
-  fprintf(out, "\n\n");
-  incount++;
 }
 
-/* Write a word-wrapped list description to the aliases file as a
- * comment. */
-void put_fill(FILE *aliases, char *string)
-{
-  char *c;
-  int line_width;
-  int word_width;
-
-  if (!string || !*string)
-    return;
-  fputs("#  ", aliases);
-  line_width = 3;
-
-  while (1)
-    {
-      while (*string == ' ')
-	string++;
-      c = strchr(string, ' ');
-      if (!c)
-	word_width = strlen(string);
-      else
-	{
-	  word_width = c - string;
-	  *c = '\0';
-	}
-
-      if (line_width + word_width > MAX_LINE_WIDTH)
-	{
-	  fputs("\n#  ", aliases);
-	  line_width = 3;
-	  fputs(string, aliases);
-	}
-      else
-	fputs(string, aliases);
-
-      if (!c)
-	break;
-      /* add a space after the word */
-      fputc(' ', aliases);
-      word_width++;
-      line_width += word_width;
-      string += word_width;
-      /* add another if after a period */
-      if (*--c == '.')
-	{
-	  fputc(' ', aliases);
-	  line_width++;
-	}
-    }
-
-  fputc('\n', aliases);
-}
-
-
-/* Illegal chars: this no longer corresponds to the array
+/* Illegal chars: this no longer corresponds to the array 
  * in setup_alis.  '+' is a valid character in a string on 
  * a list, but is not a valid character in a listname.
  */

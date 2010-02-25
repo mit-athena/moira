@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.23 2009-12-29 17:29:33 zacheiss Exp $
+/* $Id: increment.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Deal with incremental updates
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.23 2009-12-29 17:29:33 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];

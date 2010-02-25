@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.69 2008-04-22 17:44:37 zacheiss Exp $
+/* $Id: cluster.c 3968 2010-01-27 23:00:11Z zacheiss $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,6 +40,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 3968 2010-01-27 23:00:11Z zacheiss $");
+
 void PrintAliases(char **info);
 static void PrintMachine(char **info);
 struct mqelem *GetMCInfo(int type, char *name1, char *name2);
@@ -79,7 +81,7 @@ static void RealRemoveMachineFromContainer(char **info, Bool one_contmap);
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Local (2)",
   "Deleted (3)"
 };
 

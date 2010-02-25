@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.13 2003-04-18 22:06:03 jweiss Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/mailhub.sh $ $Id: mailhub.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

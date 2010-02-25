@@ -1,4 +1,4 @@
-// $Id: SHA1.java,v 1.1 1998-08-01 18:25:30 danw Exp $
+// $Id: SHA1.java 3956 2010-01-05 20:56:56Z zacheiss $
 
 /*
  * Copyright (c) 1995-1997 Systemics Ltd

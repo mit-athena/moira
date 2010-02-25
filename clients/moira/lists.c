@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.54 2004-11-22 19:24:18 zacheiss Exp $
+/* $Id: lists.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.54 2004-11-22 19:24:18 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/lists.c $ $Id: lists.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);

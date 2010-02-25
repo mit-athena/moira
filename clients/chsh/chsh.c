@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $
+/* $Id: chsh.c 3981 2010-02-16 21:13:05Z zacheiss $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -23,10 +23,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/param.h>
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.5 2008-03-04 20:36:30 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 3981 2010-02-16 21:13:05Z zacheiss $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);
@@ -47,10 +48,9 @@ int main(int argc, char *argv[])
   char *q_argv[U_END];          /* argv for mr_query */
   char *motd;                   /* determine Moira server status */
   int got_one = 0;              /* Have we got a shell yet? */
-  char shell[BUFSIZ];           /* Our new shell */
   int windowsflg = 0, unixflg = 0;  
   char **arg = argv;
-  char *server = NULL;
+  char *server = NULL, *shell = NULL;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -66,6 +66,16 @@ int main(int argc, char *argv[])
 	    windowsflg++;
 	  else if (argis("u", "unixshell"))
 	    unixflg++;
+	  else if (argis("s", "shell"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  shell = *arg;
+		}
+	      else
+		usage();
+	    }
 	  else if (argis("db", "database"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -96,7 +106,7 @@ int main(int argc, char *argv[])
   if (unixflg && windowsflg)
     usage();
   
-  if (mrcl_connect(server, "chsh", 12, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "chsh", 14, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check */
@@ -133,18 +143,25 @@ int main(int argc, char *argv[])
 	  com_err(whoami, status, "while getting user information.");
 	  exit(2);
 	}
-      
-      /* Ask for new shell */
-      while (!got_one)
+
+
+      if (!shell)
 	{
-	  printf("New shell: ");
-	  if (!fgets(shell, sizeof(shell), stdin))
-	    exit(0);
-	  got_one = (strlen(shell) > 1);
+	  /* Ask for new shell */
+	  while (!got_one)
+	    {
+	      shell = malloc(MAXPATHLEN);
+	      if (!shell)
+		exit(1);
+	      printf("New shell: ");
+	      if (!fgets(shell, MAXPATHLEN, stdin))
+		exit(0);
+	      got_one = (strlen(shell) > 1);
+	    }
+
+	  shell[strlen(shell) - 1] = 0; /* trim newline */
 	}
-      
-      shell[strlen(shell) - 1] = 0;	/* strip off newline */
-      
+
       /* Make sure we have a valid shell.  This routine could exit */
       check_shell(shell);
       
@@ -171,17 +188,23 @@ int main(int argc, char *argv[])
 	  com_err(whoami, status, "while getting user information.");
 	  exit(2);
 	}
-      
-      /* Ask for new Windows shell */
-      while(!got_one)
+
+      if (!shell)
 	{
-	  printf("New Windows shell: ");
-	  if (!fgets(shell, sizeof(shell), stdin))
-	    exit(0);
-	  got_one = (strlen(shell) > 1);
-	}
+	  /* Ask for new Windows shell */
+	  while(!got_one)
+	    {
+	      shell = malloc(MAXPATHLEN);
+	      if (!shell)
+		exit(1);
+	      printf("New Windows shell: ");
+	      if (!fgets(shell, MAXPATHLEN, stdin))
+		exit(0);
+	      got_one = (strlen(shell) > 1);
+	    }
       
-      shell[strlen(shell) - 1] = 0; /* strip off newline */
+	  shell[strlen(shell) - 1] = 0; /* strip off newline */
+	}
 
       /* Change shell */
       
@@ -300,7 +323,7 @@ void check_shell(char *shell)
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [-w|-u] [user]\n", whoami);
+  fprintf(stderr, "Usage: %s [-w|-u] [-s shell] [user]\n", whoami);
   exit(1);
 }
 

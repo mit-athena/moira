@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.39 2008-09-10 13:48:40 zacheiss Exp $
+/* $Id: pobox.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.39 2008-09-10 13:48:40 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/pobox.c $ $Id: pobox.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.

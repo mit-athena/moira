@@ -100,7 +100,7 @@ extern krb5_error_code decode_krb5_error
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.10 2009-12-29 17:29:31 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c 3956 2010-01-05 20:56:56Z zacheiss $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 

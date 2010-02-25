@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.59 2000-03-16 22:23:49 zacheiss Exp $
+/* $Id: menu.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Generic menu system module.
  *
@@ -34,7 +34,7 @@
 #define getpid _getpid
 #endif /* _WIN32 */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.59 2000-03-16 22:23:49 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 #ifdef MAX
 #undef MAX

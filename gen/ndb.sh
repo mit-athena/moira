@@ -23,4 +23,4 @@ fi
 rm -f $0
 exit 0 
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.sh,v 1.2 2000-05-08 18:30:30 zacheiss Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/ndb.sh $ $Id: ndb.sh 3956 2010-01-05 20:56:56Z zacheiss $

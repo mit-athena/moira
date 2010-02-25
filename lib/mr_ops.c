@@ -1,4 +1,4 @@
-/* $Id: mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $
+/* $Id: mr_ops.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * This routine is part of the client library.  It handles
  * the protocol operations: invoking an update and getting the
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_ops.c $ $Id: mr_ops.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /* Invoke a DCM update. */
 

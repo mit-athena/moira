@@ -1,4 +1,4 @@
-@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Doc/internal.mss,v 1.1 1996-07-02 02:01:45 danw Exp $)
+@Comment($HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/Doc/internal.mss $ $Id: internal.mss 3956 2010-01-05 20:56:56Z zacheiss $)
 @Make(Manual)
 @Device(PostScript)
 @PageFooting(center "Draft of @value(date)")

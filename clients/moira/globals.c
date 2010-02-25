@@ -1,4 +1,4 @@
-/* $Id: globals.c,v 1.11 1998-03-10 21:09:36 danw Exp $
+/* $Id: globals.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *	This is the file globals.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -16,7 +16,7 @@
 #include <moira.h>
 #include "defs.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.11 1998-03-10 21:09:36 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/globals.c $ $Id: globals.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 Bool verbose;			/* TRUE if verbose mode is active (default). */
 Bool found_some;		/* used by lists.c for determining if there

@@ -1,4 +1,4 @@
-/* $Id: student.pc,v 1.6 2009-06-17 15:43:06 zacheiss Exp $
+/* $Id: student.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/student.pc,v 1.6 2009-06-17 15:43:06 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /* File format is:
 

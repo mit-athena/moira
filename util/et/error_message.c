@@ -1,7 +1,4 @@
-/*
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v 1.2 1998-02-05 22:13:07 danw Exp $
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_message.c,v $
- * $Locker:  $
+/* $Id: error_message.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Copyright 1987 by the Student Information Processing Board
  * of the Massachusetts Institute of Technology
@@ -14,7 +11,7 @@
 #include "error_table.h"
 #include "mit-sipb-copyright.h"
 
-static const char rcsid[] = "$Id: error_message.c,v 1.2 1998-02-05 22:13:07 danw Exp $";
+static const char rcsid[] = "$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/util/et/error_message.c $ $Id: error_message.c 3956 2010-01-05 20:56:56Z zacheiss $";
 static const char copyright[] =
     "Copyright 1986, 1987, 1988 by the Student Information Processing Board\nand the department of Information Systems\nof the Massachusetts Institute of Technology";
 

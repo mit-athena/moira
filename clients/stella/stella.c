@@ -1,4 +1,5 @@
-/*
+/* $Id: stella.c 3968 2010-01-27 23:00:11Z zacheiss $
+ *
  * Command line oriented Moira host tool.
  *
  * kolya@MIT.EDU, January 2000
@@ -31,7 +32,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.21 2009-09-21 16:08:19 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stella/stella.c $ $Id: stella.c 3968 2010-01-27 23:00:11Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -827,7 +828,7 @@ int show_alias_info_unformatted(int argc, char **argv, void *hint)
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Local (2)",
   "Deleted (3)"
 };
 

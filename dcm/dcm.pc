@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.19 2009-12-29 17:29:28 zacheiss Exp $
+/* $Id: dcm.pc 3970 2010-01-31 05:52:04Z zacheiss $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.19 2009-12-29 17:29:28 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dcm/dcm.pc $ $Id: dcm.pc 3970 2010-01-31 05:52:04Z zacheiss $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -276,7 +276,7 @@ int generate_service(char *name, int force)
 	  errmsg = error_message(status);
 	  EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg,
 	    inprogress = 0 WHERE name = UPPER(:name);
-	  critical_alert("DCM", "DCM building config files for %s: %s",
+	  critical_alert(whoami, "DCM", "DCM building config files for %s: %s",
 			 name, errmsg);
 	}
     }
@@ -383,7 +383,7 @@ void do_hosts(char *service)
 	    {
 	      EXEC SQL UPDATE serverhosts SET hosterror = :status
 		WHERE service = UPPER(:service) AND mach_id = :mid;
-	      critical_alert("DCM", "DCM updating %s:%s: %s",
+	      critical_alert(whoami, "DCM", "DCM updating %s:%s: %s",
 			     service, name, errmsg);
 	    }
 	  EXEC SQL COMMIT;
@@ -430,7 +430,7 @@ void do_hosts(char *service)
 		{
 		  EXEC SQL UPDATE serverhosts SET hosterror = :status
 		    WHERE service = UPPER(:service) AND mach_id = :mid;
-		  critical_alert("DCM", "DCM updating %s:%s: %s",
+		  critical_alert(whoami, "DCM", "DCM updating %s:%s: %s",
 				 service, name, errmsg);
 		}
 

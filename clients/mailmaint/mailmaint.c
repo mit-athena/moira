@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.48 2009-05-04 20:49:10 zacheiss Exp $
+/* $Id: mailmaint.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -52,7 +52,7 @@ static void DELETE_A_CHAR(void)
 #define DELETE_A_CHAR() printf("\b \b");
 #endif /* !_WIN32 */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.48 2009-05-04 20:49:10 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mailmaint/mailmaint.c $ $Id: mailmaint.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 #define STARTCOL 0
 #define STARTROW 3

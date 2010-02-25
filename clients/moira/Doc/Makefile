@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Doc/Makefile,v 1.1 1996-07-02 02:01:45 danw Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/Doc/Makefile $ $Id: Makefile 3956 2010-01-05 20:56:56Z zacheiss $
 
 all: internal.PS
 

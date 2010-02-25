@@ -1,7 +1,7 @@
 #!/bin/sh 
 # This script performs postoffice updates.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.sh,v 1.4 2009-12-21 16:35:38 zacheiss Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/postoffice.sh $ $Id: postoffice.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

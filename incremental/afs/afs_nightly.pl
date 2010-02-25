@@ -1,4 +1,4 @@
-#!/afs/athena/contrib/perl/perl
+#!/usr/bin/perl
 
 require "/moira/bin/afs_utils.pl";
 

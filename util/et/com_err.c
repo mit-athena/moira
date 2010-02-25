@@ -11,7 +11,7 @@
 #include "error_table.h"
 #include "com_err.h"
 
-static const char rcsid[] = "$Id: com_err.c,v 1.2 1998-02-05 22:13:01 danw Exp $";
+static const char rcsid[] = "$Id: com_err.c 3956 2010-01-05 20:56:56Z zacheiss $";
 
 static void default_com_err_proc(const char *progname, long code,
 				 const char *fmt, va_list args);

@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc,v 1.14 2009-12-07 20:28:34 zacheiss Exp $
+/* $Id: cups-print.pc 3963 2010-01-07 07:09:01Z zacheiss $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/cups-print.pc,v 1.14 2009-12-07 20:28:34 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-print.pc $ $Id: cups-print.pc 3963 2010-01-07 07:09:01Z zacheiss $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -102,7 +102,7 @@ void printer_user_list(FILE *out, char *type, int id, char *str, int striprealm)
   sq = get_acl(type, id, NULL);
   while (sq_remove_data(sq, &m))
     {
-      if (m->type != 'S' && m->type != NULL) {
+      if (m->type != 'S' && m->type != 0) {
 	/* CUPS wants mmanley/root, not mmanley.root@ATHENA.MIT.EDU */
         canon_krb(m, krbvers, kbuf, sizeof(kbuf));
 
@@ -133,7 +133,7 @@ void do_host(char *host)
   char service[SERVERHOSTS_SERVICE_SIZE];
   char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
   char *lhost;
-  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm;
+  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm, svrlist_id;
   EXEC SQL END DECLARE SECTION;
   TARFILE *tf;
   FILE *out;
@@ -531,6 +531,10 @@ void do_host(char *host)
     FROM printservers ps, machine m
     WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
 
+  /* svrlist */
+  EXEC SQL SELECT list_id INTO :svrlist_id
+    FROM list l WHERE l.name = :svrlist;
+
   /* first, what's our defaults? */
       fprintf (out, "<Policy default>\n");
       fprintf (out, "%s\n", alterjob);
@@ -598,7 +602,7 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
-      printer_user_list(out, "LIST", svrlist, "Require user", 1);
+      printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -617,7 +621,7 @@ void do_host(char *host)
       /* Access-control list. */
       if (ac) {
         printer_user_list(out, "LIST", ac, "Require user", 1);
-        printer_user_list(out, "LIST", svrlist, "Require user", 1);
+        printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
       }
       else if (ka)
         fprintf (out, "Require valid-user\n");

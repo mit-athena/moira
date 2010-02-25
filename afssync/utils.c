@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.8 2009-12-29 17:29:27 zacheiss Exp $";
+static char rcsid[] = "$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/afssync/utils.c $ $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $";
 #endif
 
 /*	

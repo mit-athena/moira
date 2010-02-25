@@ -1,4 +1,4 @@
-/* $Id: vis.h,v 1.1 2001-10-23 19:35:56 zacheiss Exp $
+/* $Id: vis.h 3956 2010-01-05 20:56:56Z zacheiss $
  * vis functions - visually encode characters
  * Originally from OpenBSD
  */

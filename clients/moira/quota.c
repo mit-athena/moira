@@ -1,4 +1,4 @@
-/* $Id: quota.c,v 1.31 2003-09-22 20:44:16 zacheiss Exp $
+/* $Id: quota.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/quota.c $ $Id: quota.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 int afsfilsyshelper(int argc, char **argv, void *hint);
 int afsfilesys(char *name);

@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.29 2009-11-05 22:13:44 zacheiss Exp $
+/* $Id: printer.c 3977 2010-02-12 21:12:04Z zacheiss $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.29 2009-11-05 22:13:44 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/printer.c $ $Id: printer.c 3977 2010-02-12 21:12:04Z zacheiss $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -44,6 +44,25 @@ static char **AskPrintSrvInfo(char **info);
 
 #define DEFAULT_LOGHOST "WSLOGGER.MIT.EDU"
 
+static char *states[] = {
+  "Reserved (0)",
+  "Active (1)",
+  "None (2)",
+  "Deleted (3)"
+};
+
+static char *PrnState(int state)
+{
+  static char buf[BUFSIZ];
+
+  if (state < 0 || state > 3)
+    {
+      sprintf(buf, "Unknown (%d)", state);
+      return buf;
+    }
+  return states[state];
+}
+
 int StoreHWAddr(int argc, char **argv, void *retval)
 {
   char **p = retval;
@@ -63,6 +82,9 @@ static char **SetDefaults(char **info, char *name)
   info[PRN_TYPE] = strdup("PRIVATE");
   info[PRN_HWTYPE] = strdup("HP");
   info[PRN_DUPLEXNAME] = strdup("");
+  info[PRN_DUPLEXDEFAULT] = strdup("0");
+  info[PRN_HOLDDEFAULT] = strdup("0");
+  info[PRN_STATUS] = strdup("1");
   info[PRN_HOSTNAME] = strdup(name);
   info[PRN_LOGHOST] = strdup(DEFAULT_LOGHOST);
   info[PRN_RM] = strdup("[ANY]");
@@ -72,6 +94,7 @@ static char **SetDefaults(char **info, char *name)
   info[PRN_PC] = strdup("10");
   info[PRN_AC] = strdup("[none]");
   info[PRN_LPC_ACL] = strdup("[none]");
+  info[PRN_REPORT_LIST] = strdup("[none]");
   info[PRN_BANNER] = strdup("1");
   info[PRN_LOCATION] = strdup("");
   info[PRN_CONTACT] = strdup("");
@@ -157,6 +180,12 @@ static char *PrintPrnInfo(char **info)
   sprintf(buf, "Printer: %-18s Duplex queue: %-18s", info[PRN_NAME],
 	  *info[PRN_DUPLEXNAME] ? info[PRN_DUPLEXNAME] : "[none]");
   Put_message(buf);
+  sprintf(buf, "Status: %-10s", PrnState(atoi(info[PRN_STATUS])));
+  Put_message(buf);
+  sprintf(buf, "Duplex by Default: %-8s Hold by Default: %-18s", 
+	  atoi(info[PRN_DUPLEXDEFAULT]) ? "yes" : "no",
+	  atoi(info[PRN_HOLDDEFAULT]) ? "yes" : "no");
+  Put_message(buf);
   sprintf(buf, "Type: %-10s Hardware type: %-10s Hardware address: ",
 	  info[PRN_TYPE], info[PRN_HWTYPE]);
   status = do_mr_query("get_host_hwaddr", 1, &info[PRN_HOSTNAME],
@@ -183,6 +212,8 @@ static char *PrintPrnInfo(char **info)
   Put_message(buf);
   sprintf(buf, "Restrict list: %-23s  LPC ACL: %-23s",
 	  info[PRN_AC], info[PRN_LPC_ACL]);
+  Put_message(buf);
+  sprintf(buf, "Report list: %-23s", info[PRN_REPORT_LIST]);
   Put_message(buf);
   sprintf(buf, "Location: %s", info[PRN_LOCATION]);
   Put_message(buf);
@@ -235,6 +266,24 @@ static char **AskPrnInfo(char **info, Bool name)
   if (GetValueFromUser("Duplex spool name", &info[PRN_DUPLEXNAME]) ==
       SUB_ERROR)
     return NULL;
+  if (GetYesNoValueFromUser("Print duplex by default", &info[PRN_DUPLEXDEFAULT]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Hold jobs by default", &info[PRN_HOLDDEFAULT]) ==
+      SUB_ERROR)
+    return NULL;
+  while (1)
+    {
+      int i;
+      if (GetValueFromUser("Printer's status (? for help)",
+			   &info[PRN_STATUS]) == SUB_ERROR)
+	return NULL;
+      if (isdigit(info[PRN_STATUS][0]))
+	break;
+      Put_message("Valid status numbers:");
+      for (i = 0; i < 4; i++)
+	Put_message(states[i]);
+    }
   if (GetValueFromUser("Printer hostname (or [none])", &info[PRN_HOSTNAME]) ==
       SUB_ERROR)
     return NULL;
@@ -267,6 +316,8 @@ static char **AskPrnInfo(char **info, Bool name)
       info[PRN_LPC_ACL] = lpc_acl;
     }
   if (GetValueFromUser("LPC ACL", &info[PRN_LPC_ACL]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Report list", &info[PRN_REPORT_LIST]) == SUB_ERROR)
     return NULL;
   if (GetYesNoValueFromUser("Banner page", &info[PRN_BANNER]) == SUB_ERROR)
     return NULL;

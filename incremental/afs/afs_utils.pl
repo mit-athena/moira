@@ -1,14 +1,18 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.5 2004-06-11 21:07:44 zacheiss Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs_utils.pl $ $Id: afs_utils.pl 3964 2010-01-07 20:54:34Z zacheiss $
 
 use Fcntl;
 
-system("/bin/athena/aklog");
+$aklog="/bin/athena/aklog";
+if ( ! -x $aklog ) { $aklog="/usr/bin/aklog"; }
+
+system("$aklog");
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
 $pts="$afsbin/pts";
 $fs="$afsbin/fs";
 $zwrite="/usr/athena/bin/zwrite";
+if ( ! -x $zwrite ) { $zwrite="/usr/local/bin/zwrite"; }
 
 $afs_data="/moira/afs/afs_data";
 $afs_save="$afs_data.tmp";

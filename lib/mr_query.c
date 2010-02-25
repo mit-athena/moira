@@ -1,4 +1,4 @@
-/* $Id: mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $
+/* $Id: mr_query.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Perform a Moira query
  *
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_query.c $ $Id: mr_query.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /*
  * This routine is the primary external interface to the mr library.

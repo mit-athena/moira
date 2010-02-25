@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of the web server.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.sh,v 1.3 2000-05-24 04:29:03 danw Exp $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/www.sh $ $Id: www.sh 3956 2010-01-05 20:56:56Z zacheiss $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

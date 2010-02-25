@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $
+/* $Id: member.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Shared routines for playing with list membership.
  *
@@ -19,7 +19,7 @@
 
 #include <krb5.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.7 2009-08-11 18:29:47 zacheiss Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/lib/member.c $ $Id: member.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 int mrcl_validate_string_member(char *str)
 {

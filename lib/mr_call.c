@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $
+/* $Id: mr_call.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -22,7 +22,7 @@
 #include <unistd.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_call.c $ $Id: mr_call.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 /* Moira RPC format:
 

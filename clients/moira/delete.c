@@ -1,4 +1,4 @@
-/* $Id: delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $
+/* $Id: delete.c 3956 2010-01-05 20:56:56Z zacheiss $
  *
  *	This is the file delete.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/delete.c $ $Id: delete.c 3956 2010-01-05 20:56:56Z zacheiss $");
 
 int CheckListForDeletion(char *name, Bool verbose);
 void CheckAce(char *type, char *name, Bool verbose);

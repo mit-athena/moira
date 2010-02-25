@@ -1,8 +1,9 @@
 debathena-moira (4.0.0+svn20100223-0debathena1) unstable; urgency=low
 
   * New SVN snapshot.
+  * Drop patch install-headers, which was incorporated upstream.
 
- -- Evan Broder <broder@mit.edu>  Thu, 25 Feb 2010 02:01:42 -0500
+ -- Evan Broder <broder@mit.edu>  Thu, 25 Feb 2010 02:13:44 -0500
 
 debathena-moira (4.0.0+svn20100104-0debathena1) unstable; urgency=low
 

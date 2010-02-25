@@ -1,4 +1,4 @@
-/* $Id: addusr.c 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: addusr.c 3987 2010-02-25 19:53:43Z zacheiss $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/addusr/addusr.c $ $Id: addusr.c 3979 2010-02-16 20:26:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/addusr/addusr.c $ $Id: addusr.c 3987 2010-02-25 19:53:43Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -347,13 +347,13 @@ int main(int argc, char **argv)
 		case M_ANY:
 		case M_USER:
 		  qargv[U_SPONSOR_TYPE] = "USER";
-		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 20, qargv, NULL, NULL);
 		  if (sponsor->type != M_ANY || status != MR_USER)
 		    break;
 		  
 		case M_LIST:
 		  qargv[U_SPONSOR_TYPE] = "LIST";
-		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 20, qargv, NULL, NULL);
 		  break;
 		  
 		case M_KERBEROS:
@@ -364,12 +364,12 @@ int main(int argc, char **argv)
 		    mrcl_com_err(whoami);
 		  if (status == MRCL_REJECT)
 		exit(1);
-		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 20, qargv, NULL, NULL);
 		  break;
 		  
 		case M_NONE:
 		  qargv[U_SPONSOR_TYPE] = "NONE";
-		  status = mr_query("add_user_account", 18, qargv, NULL, NULL);
+		  status = mr_query("add_user_account", 20, qargv, NULL, NULL);
 		  break;
 		}
 	    }
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 	      qargv[U_SPONSOR_TYPE] = "NONE";
 	      qargv[U_SPONSOR_NAME] = "NONE";
 	  
-	      status = mr_query("add_user_account", 18, qargv, NULL, NULL);
+	      status = mr_query("add_user_account", 20, qargv, NULL, NULL);
 	    }
 	  
 	  if (status)

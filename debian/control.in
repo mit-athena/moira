@@ -30,7 +30,7 @@ Description: Athena update_server
  servers that automatically receive information dumps from moira.
 
 Package: debathena-libmoira0
-Section: debathena/lib
+Section: debathena/libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: The Moira library
@@ -68,7 +68,7 @@ Description: Development files for Moira library
  This package contains headers and static libraries for development.
 
 Package: debathena-libmrclient0
-Section: debathena/lib
+Section: debathena/libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: The Moira client library

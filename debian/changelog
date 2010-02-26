@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+svn20100225-0debathena2) UNRELEASED; urgency=low
+
+  * There is no "lib" section - it's "libs".
+
+ -- Evan Broder <broder@mit.edu>  Fri, 26 Feb 2010 12:50:19 -0500
+
 debathena-moira (4.0.0+svn20100225-0debathena1) unstable; urgency=low
 
   * New SVN snapshot.

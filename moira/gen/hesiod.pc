@@ -879,8 +879,9 @@ int do_printcap(void)
 
   EXEC SQL DECLARE p_cursor2 CURSOR FOR
     SELECT p.name, p.duplexname, p.type, p.rp, p.rm, p.ka, p.mc, ps.kind
-    FROM printers p, printservers ps
-    WHERE p.rm = ps.mach_id;
+    FROM printers p, printservers ps, machine m
+    WHERE p.rm = ps.mach_id AND p.status = 1 AND p.mach_id = m.mach_id
+    AND m.status != 3;
   EXEC SQL OPEN p_cursor2;
   while (1)
     {

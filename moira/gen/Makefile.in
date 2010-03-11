@@ -51,7 +51,7 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
 	ndb.sh nfs.sh null.sh postoffice.sh print.sh rt.sh sapprint.gen \
-	sapprint.sh spwatch.gen tsm.gen tsm.sh warehouse.gen warehouse.sh \
+	sapprint.sh spwatch.gen tsm.gen tsm.sh ua-elect.gen warehouse.gen warehouse.sh \
 	winstats.gen winstats.sh www.sh zephyr.sh install_dirs \
 	install_quotas zero_quotas
 

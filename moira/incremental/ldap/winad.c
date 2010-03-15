@@ -4133,6 +4133,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *loginshell_v[] = {NULL, NULL};
   char *principal_v[] = {NULL, NULL};
   char *address_book_v[] = {NULL, NULL, NULL, NULL, NULL};
+  char *homeMDB_v[] = {NULL, NULL};
+  char *homeServerName_v[] = {NULL, NULL};
+  char *query_base_dn_v[] = {NULL, NULL};
+  char *mail_nickname_v[] = {NULL, NULL};
+  char *mdbUseDefaults_v[] = {NULL, NULL};
   char userAccountControlStr[80];
   int  n;
   int  rc;
@@ -4153,6 +4158,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char alt_recipient[256];
   char principal[256];
   char status[256];
+  char query_base_dn[256];
   char acBERBuf[N_SD_BER_BYTES];
   LDAPControl sControl = {"1.2.840.113556.1.4.801",
                           { N_SD_BER_BYTES, acBERBuf },
@@ -4185,10 +4191,17 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     }
   
   memset(contact_mail, '\0', sizeof(contact_mail));
+
   if(Exchange) 
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
   else
     sprintf(contact_mail, "%s@mit.edu", user_name);    
+
+  sprintf(query_base_dn, "%s%s", ADDRESS_LIST_PREFIX, dn_path);
+  query_base_dn_v[0] = query_base_dn;
+
+  mail_nickname_v[0] = user_name;
+
   memset(mail, '\0', sizeof(mail));
   sprintf(mail, "%s@%s", user_name, lowercase(ldap_domain));
   memset(alt_recipient, '\0', sizeof(alt_recipient));
@@ -4203,6 +4216,69 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       if(contact_create(ldap_handle, dn_path, contact_mail, contact_ou))
 	{
 	  com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
+	}
+
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED))
+        {
+          group_count = 0;
+          group_base = NULL;
+
+          sprintf(filter,
+                  "(&(objectClass=user)(homeMDB=*)(sAMAccountName=%s))",
+                  user_name);
+
+          attr_array[0] = "homeMDB";
+          attr_array[1] = NULL;
+
+          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+                                   &group_base, &group_count,
+                                   LDAP_SCOPE_SUBTREE)) != 0)
+            {
+              com_err(whoami, 0, "Unable to process user %s : %s",
+                      user_name, ldap_err2string(rc));
+              return(rc);
+            }
+
+	  if(group_count == 0) 
+	    {
+	      if(find_homeMDB(ldap_handle, dn_path, &homeMDB, &homeServerName))
+		{
+		  com_err(whoami, 0,
+			  "Unable to locate homeMDB and homeServerName");
+		  return(1);
+		}
+
+	      com_err(whoami, 0, "homeMDB:%s", homeMDB);
+	      com_err(whoami, 0, "homeServerName:%s", homeServerName);
+
+	      homeMDB_v[0] = homeMDB;
+	      homeServerName_v[0] = homeServerName;
+
+	      n = 0;
+	      hide_address_lists_v[0] = "FALSE";
+	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
+		       LDAP_MOD_ADD);
+	      ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+	      ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
+	      mdbUseDefaults_v[0] = "TRUE";
+	      ADD_ATTR("mdbUseDefaults", mdbUseDefaults_v, LDAP_MOD_ADD);
+	      ADD_ATTR("msExchHomeServerName", homeServerName_v, LDAP_MOD_ADD);
+
+	      mods[n] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+
+	      if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+		rc = LDAP_SUCCESS;
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to set the exchange attributes for %s : %s",
+			  user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
 	}
     }
 
@@ -4582,27 +4658,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       if (Exchange)
 	{
 	  hide_address_lists_v[0] = NULL;
-	  address_book_v[0] = address_book;
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		   LDAP_MOD_REPLACE);
-
-	  /*
-	  sprintf(address_book, "%s%s", GLOBAL_ADDRESS_LIST_PREFIX, dn_path);
-	  address_book_v[0] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", ADDRESS_LIST_PREFIX, dn_path);
-	  address_book_v[1] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", EMAIL_ADDRESS_LIST_PREFIX, dn_path);
-	  address_book_v[2] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  sprintf(address_book, "%s%s", ALL_ADDRESS_LIST_PREFIX, dn_path);
-	  address_book_v[3] = strdup(address_book);
-	  memset(address_book, '\0', sizeof(address_book));
-	  
-	  ADD_ATTR("showInAddressBook", address_book_v,
-		   LDAP_MOD_REPLACE);
-	  */
 	}
     }
 

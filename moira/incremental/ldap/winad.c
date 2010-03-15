@@ -4211,6 +4211,67 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   memset(filesys_name, '\0', sizeof(filesys_name));
   sprintf(filesys_name, "%s.po", user_name);
 
+  group_count = 0;
+  group_base = NULL;
+
+  memset(displayName, '\0', sizeof(displayName));
+
+  if (strlen(MoiraId) != 0)
+    {
+      if(ActiveDirectory)
+	{
+	  sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
+	}
+      else
+	{
+	  sprintf(filter, 
+		  "(&(objectClass=mitPerson)(mitMoiraId=%s))", MoiraId);
+	}
+
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                               &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0)
+        {
+          com_err(whoami, 0, "Unable to process user %s : %s",
+                  user_name, ldap_err2string(rc));
+          return(rc);
+        }
+    }
+
+  if (group_count != 1)
+    {
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+      sprintf(filter, "(sAMAccountName=%s)", user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      sprintf(temp, "%s,%s", user_ou, dn_path);
+      if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
+                               &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0)
+        {
+          com_err(whoami, 0, "Unable to process user %s : %s",
+                  user_name, ldap_err2string(rc));
+          return(rc);
+        }
+    }
+
+  if (group_count != 1)
+    {
+      com_err(whoami, 0, "Unable to find user %s in directory",
+              user_name);
+      linklist_free(group_base);
+      return(AD_NO_USER_FOUND);
+    }
+
+  strcpy(distinguished_name, group_base->dn);
+
+  linklist_free(group_base);
+  group_count = 0;
+
   if (Exchange)
     {
       if(contact_create(ldap_handle, dn_path, contact_mail, contact_ou))
@@ -4279,69 +4340,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		  return(rc);
 		}
 	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
 	}
     }
-
-  group_count = 0;
-  group_base = NULL;
-
-  memset(displayName, '\0', sizeof(displayName));
-
-  if (strlen(MoiraId) != 0)
-    {
-      if(ActiveDirectory)
-	{
-	  sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
-	}
-      else
-	{
-	  sprintf(filter, 
-		  "(&(objectClass=mitPerson)(mitMoiraId=%s))", MoiraId);
-	}
-
-      attr_array[0] = "cn";
-      attr_array[1] = NULL;
-      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count, 
-			       LDAP_SCOPE_SUBTREE)) != 0)
-        {
-          com_err(whoami, 0, "Unable to process user %s : %s",
-                  user_name, ldap_err2string(rc));
-          return(rc);
-        }
-    }
-
-  if (group_count != 1)
-    {
-      linklist_free(group_base);
-      group_base = NULL;
-      group_count = 0;
-      sprintf(filter, "(sAMAccountName=%s)", user_name);
-      attr_array[0] = "cn";
-      attr_array[1] = NULL;
-      sprintf(temp, "%s,%s", user_ou, dn_path);
-      if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
-                               &group_base, &group_count, 
-			       LDAP_SCOPE_SUBTREE)) != 0)
-        {
-          com_err(whoami, 0, "Unable to process user %s : %s",
-                  user_name, ldap_err2string(rc));
-          return(rc);
-        }
-    }
-
-  if (group_count != 1)
-    {
-      com_err(whoami, 0, "Unable to find user %s in directory",
-              user_name);
-      linklist_free(group_base);
-      return(AD_NO_USER_FOUND);
-    }
-
-  strcpy(distinguished_name, group_base->dn);
-
-  linklist_free(group_base);
-  group_count = 0;
 
   if(!ActiveDirectory) 
     {

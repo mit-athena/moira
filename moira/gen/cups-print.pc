@@ -53,7 +53,6 @@ const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
 const char *canceljob = "<Limit Cancel-Job>";
 const char *catchall = "<Limit All>";
 const char *phost = "printers.MIT.EDU";
-const char *svrlist = "cups-servers";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -183,16 +182,14 @@ void do_host(char *host)
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:%s\n", rp, hwtype);
-      /* Note the use of "beh" to keep the CUPS from disabling print queues
-       * should they not respond versus discarding the job.  
-       * See the "beh" page for details.  
-       * The 1/0/60 says "don't disable/try 20 times/try every 60s */
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:%s\n", name, hwtype);
       if (!strncmp(hwtype, "HP", 2)) 
-	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s:9100\n", hostname);
+	  fprintf(out, "DeviceURI accsnmp://socket://%s:9100\n", hostname);
+      else if (!strncmp(hwtype, "LPR", 3)) 
+	  fprintf(out, "DeviceURI lpd://%s/%s\n", hostname, rp);
       else
-	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s\n", hostname);
+	  fprintf(out, "DeviceURI accsnmp://socket://%s\n", hostname);
       fprintf(out, "State Idle\n");	// Always with the Idle
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       fprintf(out, "Accepting Yes\n");
@@ -267,9 +264,9 @@ void do_host(char *host)
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:%s\n", rp, hwtype);
-      fprintf(out, "DeviceURI ipp://%s:631/printers/%s\n", cupshosts, rp);
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:%s\n", name, hwtype);
+      fprintf(out, "DeviceURI ipp://%s:631/printers/%s?waitprinter=false&waitjob=false\n", cupshosts, rp);
       fprintf(out, "State Idle\n");	// Always with the Idle
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       fprintf(out, "Accepting Yes\n");
@@ -344,8 +341,8 @@ void do_host(char *host)
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:LPRng Queue on %s\n", rp, cupshosts);
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:LPRng Queue on %s\n", name, cupshosts);
       fprintf(out, "DeviceURI lpd://%s/%s\n", cupshosts, rp);
       fprintf(out, "State Idle\n");	// Always with the Idle
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
@@ -480,7 +477,7 @@ void do_host(char *host)
   out = tarfile_start(tf, "/etc/cups/cupsd.conf", 0755, 1, 1,
 		      "root", "lp", now);
 
-  fprintf(out, "LogLevel info\n");
+  fprintf(out, "LogLevel error\n");
   fprintf(out, "SystemGroup sys root ops-group\n");
   fprintf(out, "Port 631\n");
   fprintf(out, "SSLPort 443\n");
@@ -534,10 +531,6 @@ void do_host(char *host)
   EXEC SQL SELECT ps.lpc_acl INTO :top_lpc_acl
     FROM printservers ps, machine m
     WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
-
-  /* svrlist */
-  EXEC SQL SELECT list_id INTO :svrlist_id
-    FROM list l WHERE l.name = :svrlist;
 
   /* first, what's our defaults? */
       fprintf (out, "<Policy default>\n");
@@ -608,7 +601,6 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
-      printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -625,10 +617,8 @@ void do_host(char *host)
       else
         fprintf (out, "AuthType None\n");
       /* Access-control list. */
-      if (ac) {
+      if (ac) 
         printer_user_list(out, "LIST", ac, "Require user", 1);
-        printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
-      }
       else if (ka)
         fprintf (out, "Require valid-user\n");
       fprintf (out, "Order deny,allow\n");

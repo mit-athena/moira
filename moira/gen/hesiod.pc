@@ -895,8 +895,21 @@ int do_printcap(void)
       if (!valid(name))
 	continue;
       strtrim(rp);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
-	      name, HCLASS, HTYPE, name, rp, rmname, ka, mc);
+
+      strtrim(type);
+
+      /* Build Hesiod pcap entries based on type.  Aliases should
+       * go to their "real" printer names while pass-through
+       * queues on the CUPS servers need to have their real names.
+       * It's not ideal, since it's overriding the 'rp' field, but
+       * life is hard.
+      */
+      if (!strcmp(type,"ALIAS"))
+        fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
+	        name, HCLASS, HTYPE, name, rp, rmname, ka, mc);
+      else
+        fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
+	        name, HCLASS, HTYPE, name, name, rmname, ka, mc);
 
       strtrim(pskind);
       if (!strcmp(pskind, "BSD"))

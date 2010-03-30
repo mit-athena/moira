@@ -277,7 +277,7 @@ void do_host(char *host)
 
       fprintf(out, "<Printer %s>\n",name);
       fprintf(out, "Info %s:%s\n", name, hwtype);
-      fprintf(out, "DeviceURI ipp://%s:631/printers/%s?waitprinter=false&waitjob=false\n", cupshosts, rp);
+      fprintf(out, "DeviceURI ipp://%s:631/printers/%s?waitprinter=false&waitjob=false\n", cupshosts, name);
       fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       fprintf(out, "Accepting Yes\n");

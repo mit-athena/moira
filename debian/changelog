@@ -3,8 +3,9 @@ debathena-moira (4.0.0+svn20100405-0debathena1) unstable; urgency=low
   * New SVN snapshot.
   * Bump debhelper compatibility. (No changes required)
   * Bump debian standards version. (No changes required)
+  * Punt some directories that were retconned away in the svn conversion.
 
- -- Evan Broder <broder@mit.edu>  Mon, 05 Apr 2010 15:21:26 -0400
+ -- Evan Broder <broder@mit.edu>  Mon, 05 Apr 2010 15:25:18 -0400
 
 debathena-moira (4.0.0+svn20100225-0debathena2) UNRELEASED; urgency=low
 

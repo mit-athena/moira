@@ -1,4 +1,4 @@
-/* $Id: boot.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: boot.pc 3988 2010-02-27 06:24:35Z zacheiss $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/boot.pc $ $Id: boot.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/boot.pc $ $Id: boot.pc 3988 2010-02-27 06:24:35Z zacheiss $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -89,9 +89,10 @@ int main(int argc, char **argv)
   EXEC SQL DECLARE csr_boot CURSOR FOR
     SELECT LOWER(m.name), m.hwaddr, m.address, m2.address,
     pr.location, pr.contact, pr.hwtype
-    FROM printers pr, machine m, machine m2
+    FROM printers pr, machine m, machine m2, machine m3
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
+    AND pr.status = 1 and pr.mach_id = m3.mach_id AND m3.status !=3
     ORDER BY m.hwaddr;
   EXEC SQL OPEN csr_boot;
   while (1)
@@ -146,8 +147,8 @@ int main(int argc, char **argv)
     pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt)
     FROM printers pr, machine m, machine m2, machine m3
     WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
-    AND pr.mach_id = m.mach_id AND pr.rm = m2.mach_id
-    AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS';
+    AND pr.mach_id = m.mach_id AND m.status !=3 AND pr.rm = m2.mach_id
+    AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS' AND pr.status = 1;
   EXEC SQL OPEN csr_boot2;
   while (1)
     {

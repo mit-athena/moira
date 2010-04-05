@@ -21,4 +21,7 @@ char *partial_canonicalize_hostname(char *s);
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret);
 
+char *mrcl_get_message(void);
+void mrcl_com_err(char *whoami);
+
 #endif /* _mrclient_h_ */

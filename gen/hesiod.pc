@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 3972 2010-02-01 21:29:13Z zacheiss $
+/* $Id: hesiod.pc 3994 2010-03-24 04:20:51Z zacheiss $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 3972 2010-02-01 21:29:13Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 3994 2010-03-24 04:20:51Z zacheiss $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -879,8 +879,9 @@ int do_printcap(void)
 
   EXEC SQL DECLARE p_cursor2 CURSOR FOR
     SELECT p.name, p.duplexname, p.type, p.rp, p.rm, p.ka, p.mc, ps.kind
-    FROM printers p, printservers ps
-    WHERE p.rm = ps.mach_id;
+    FROM printers p, printservers ps, machine m
+    WHERE p.rm = ps.mach_id AND p.status = 1 AND p.mach_id = m.mach_id
+    AND m.status != 3;
   EXEC SQL OPEN p_cursor2;
   while (1)
     {
@@ -894,8 +895,21 @@ int do_printcap(void)
       if (!valid(name))
 	continue;
       strtrim(rp);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
-	      name, HCLASS, HTYPE, name, rp, rmname, ka, mc);
+
+      strtrim(type);
+
+      /* Build Hesiod pcap entries based on type.  Aliases should
+       * go to their "real" printer names while pass-through
+       * queues on the CUPS servers need to have their real names.
+       * It's not ideal, since it's overriding the 'rp' field, but
+       * life is hard.
+      */
+      if (!strcmp(type,"ALIAS"))
+        fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
+	        name, HCLASS, HTYPE, name, rp, rmname, ka, mc);
+      else
+        fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
+	        name, HCLASS, HTYPE, name, name, rmname, ka, mc);
 
       strtrim(pskind);
       if (!strcmp(pskind, "BSD"))

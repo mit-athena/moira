@@ -1,4 +1,4 @@
-/* $Id: mrclient.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mrclient.h 3998 2010-04-05 19:11:46Z zacheiss $
  *
  * Copyright (C) 1999 by the Massachusetts Institute of Technology
  *
@@ -20,5 +20,8 @@ char *mrcl_krb_user(void);
 char *partial_canonicalize_hostname(char *s);
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret);
+
+char *mrcl_get_message(void);
+void mrcl_com_err(char *whoami);
 
 #endif /* _mrclient_h_ */

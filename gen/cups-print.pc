@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc 3963 2010-01-07 07:09:01Z zacheiss $
+/* $Id: cups-print.pc 3996 2010-03-30 15:40:58Z zacheiss $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-print.pc $ $Id: cups-print.pc 3963 2010-01-07 07:09:01Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-print.pc $ $Id: cups-print.pc 3996 2010-03-30 15:40:58Z zacheiss $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -53,7 +53,6 @@ const char *lpcpntr = "<Limit Pause-Printer Resume-Printer Enable-Printer\
 const char *canceljob = "<Limit Cancel-Job>";
 const char *catchall = "<Limit All>";
 const char *phost = "printers.MIT.EDU";
-const char *svrlist = "cups-servers";
 
 void do_host(char *host);
 void sqlerr(void);
@@ -133,7 +132,7 @@ void do_host(char *host)
   char service[SERVERHOSTS_SERVICE_SIZE];
   char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
   char *lhost;
-  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm, svrlist_id;
+  int ka, pc, ac, lpc_acl, top_lpc_acl, banner, rm, svrlist_id, duplexdefault, holddefault;
   EXEC SQL END DECLARE SECTION;
   TARFILE *tf;
   FILE *out;
@@ -157,15 +156,17 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
-    pr.ac, pr.lpc_acl
+    pr.ac, pr.lpc_acl, pr.duplexdefault, pr.holddefault
     FROM printers pr, machine m
     WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
+    AND pr.status = 1 AND m.status !=3
     AND pr.type != 'ALIAS';
   EXEC SQL OPEN csr_printers;
   while (1)
     {
       EXEC SQL FETCH csr_printers INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl,
+  	:duplexdefault, :holddefault;
       if (sqlca.sqlcode)
 	break;
 
@@ -181,25 +182,30 @@ void do_host(char *host)
 	*p = tolower(*p);
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
+      for (p = name; *p; p++)
+	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:%s\n", rp, hwtype);
-      /* Note the use of "beh" to keep the CUPS from disabling print queues
-       * should they not respond versus discarding the job.  
-       * See the "beh" page for details.  
-       * The 1/0/60 says "don't disable/try 20 times/try every 60s */
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:%s\n", name, hwtype);
       if (!strncmp(hwtype, "HP", 2)) 
-	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s:9100\n", hostname);
+	  fprintf(out, "DeviceURI accsnmp://socket://%s:9100\n", hostname);
+      else if (!strncmp(hwtype, "LPR", 3)) 
+	  fprintf(out, "DeviceURI lpd://%s/%s\n", hostname, rp);
       else
-	  fprintf(out, "DeviceURI beh:/1/20/60/socket://%s\n", hostname);
-      fprintf(out, "State Idle\n");	// Always with the Idle
+	  fprintf(out, "DeviceURI accsnmp://socket://%s\n", hostname);
+      fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
+      if (holddefault)
+      	  fprintf(out, "Reason hold-new-jobs\n");
       fprintf(out, "Accepting Yes\n");
       fprintf(out, "Shared Yes\n");
       fprintf(out, "QuotaPeriod 0\n");
       fprintf(out, "PageLimit 0\n");
       fprintf(out, "Klimit 0\n");
-      fprintf(out, "Option sides one-sided\n");
+      if (duplexdefault)
+      	  fprintf(out, "Option sides two-sided-long-edge\n");
+      else
+      	  fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
       fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
@@ -236,9 +242,10 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_remote_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
-    pr.ac, pr.lpc_acl, m.name as cupshosts
-    FROM printers pr, machine m, serverhosts sh
+    pr.ac, pr.lpc_acl, m.name as cupshosts, pr.duplexdefault
+    FROM printers pr, machine m, machine m2, serverhosts sh
     WHERE pr.rm = m.mach_id 
+    AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status !=3
     AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
     m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER')
     AND sh.enable = 1 AND m.mach_id = sh.mach_id;
@@ -247,7 +254,8 @@ void do_host(char *host)
   while (1)
     {
       EXEC SQL FETCH csr_remote_printers INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, 
+	:lpc_acl, :cupshosts, :duplexdefault;
       if (sqlca.sqlcode)
 	break;
 
@@ -264,18 +272,23 @@ void do_host(char *host)
 	*p = tolower(*p);
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
+      for (p = name; *p; p++)
+	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:%s\n", rp, hwtype);
-      fprintf(out, "DeviceURI ipp://%s:631/printers/%s\n", cupshosts, rp);
-      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:%s\n", name, hwtype);
+      fprintf(out, "DeviceURI ipp://%s:631/printers/%s?waitprinter=false&waitjob=false\n", cupshosts, name);
+      fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       fprintf(out, "Accepting Yes\n");
       fprintf(out, "Shared Yes\n");
       fprintf(out, "QuotaPeriod 0\n");
       fprintf(out, "PageLimit 0\n");
       fprintf(out, "Klimit 0\n");
-      fprintf(out, "Option sides one-sided\n");
+      if (duplexdefault)
+      	  fprintf(out, "Option sides two-sided-long-edge\n");
+      else
+      	  fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
       fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
@@ -312,9 +325,10 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_lprng_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
-    pr.ac, pr.lpc_acl, m.name as cupshosts
-    FROM printers pr, machine m, serverhosts sh
+    pr.ac, pr.lpc_acl, m.name, pr.duplexdefault as cupshosts
+    FROM printers pr, machine m, machine m2, serverhosts sh
     WHERE pr.rm = m.mach_id 
+    AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status != 3
     AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
     m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND 
     sh.enable = 1;
@@ -323,7 +337,8 @@ void do_host(char *host)
   while (1)
     {
       EXEC SQL FETCH csr_lprng_printers INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, :lpc_acl, :cupshosts;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, :ac, 
+	:lpc_acl, :cupshosts, :duplexdefault;
       if (sqlca.sqlcode)
 	break;
 
@@ -340,18 +355,23 @@ void do_host(char *host)
 	*p = tolower(*p);
       for (p = lowerhwtype; *p; p++)
 	*p = tolower(*p);
+      for (p = name; *p; p++)
+	*p = tolower(*p);
 
-      fprintf(out, "<Printer %s>\n",rp);
-      fprintf(out, "Info %s:LPRng Queue on %s\n", rp, cupshosts);
+      fprintf(out, "<Printer %s>\n",name);
+      fprintf(out, "Info %s:LPRng Queue on %s\n", name, cupshosts);
       fprintf(out, "DeviceURI lpd://%s/%s\n", cupshosts, rp);
-      fprintf(out, "State Idle\n");	// Always with the Idle
+      fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       fprintf(out, "Accepting Yes\n");
       fprintf(out, "Shared Yes\n");
       fprintf(out, "QuotaPeriod 0\n");
       fprintf(out, "PageLimit 0\n");
       fprintf(out, "Klimit 0\n");
-      fprintf(out, "Option sides one-sided\n");
+      if (duplexdefault)
+      	  fprintf(out, "Option sides two-sided-long-edge\n");
+      else
+      	  fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
       fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
@@ -375,16 +395,18 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_duplexqs CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka, 
-    pr.type as prtype, pr.ac, sh.service
-    FROM printers pr, machine m, serverhosts sh
+    pr.type as prtype, pr.ac, sh.service, pr.duplexdefault
+    FROM printers pr, machine m, machine m2, serverhosts sh
     WHERE pr.rm = m.mach_id 
+    AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status !=3
     AND m.mach_id = sh.mach_id AND sh.enable = 1 
     AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT' OR sh.service = 'CUPS-CLUSTER');
   EXEC SQL OPEN csr_duplexqs;
   while (1)
     {
       EXEC SQL FETCH csr_duplexqs INTO :rp, :name, :duplexname,
-	:hwtype, :hostname, :banner, :location, :contact, :ka, :prtype, :ac, :service;
+	:hwtype, :hostname, :banner, :location, :contact, :ka, 
+	:prtype, :ac, :service, :duplexdefault;
       if (sqlca.sqlcode)
 	break;
 
@@ -405,8 +427,11 @@ void do_host(char *host)
           fprintf(out, "<Class %s>\n",name);
           fprintf(out, "Info Alias Queue to %s:%s\n", rp, hwtype);
           fprintf(out, "Printer %s\n", rp);
-          fprintf(out, "Option sides one-sided\n");
-          fprintf(out, "State Idle\n");     // Always with the Idle
+      	  if (duplexdefault)
+      	    fprintf(out, "Option sides two-sided-long-edge\n");
+      	  else
+      	    fprintf(out, "Option sides one-sided\n");
+          fprintf(out, "State Idle\n");	/* Always with the Idle */
           fprintf(out, "StateTime %ld\n", (long)time(NULL));
           fprintf(out, "Accepting Yes\n");
           fprintf(out, "Shared Yes\n");
@@ -435,7 +460,7 @@ void do_host(char *host)
        * accounting reasons.  Annoyingly, classes don't always inherit
        * their printer definitions.
       */
-      if (*duplexname)
+      if (*duplexname && !duplexdefault)
 	{
           strtrim(duplexname);
           fprintf(out, "<Class %s>\n",duplexname);
@@ -445,7 +470,7 @@ void do_host(char *host)
             fprintf(out, "Info Duplex Queue for %s:%s\n", rp, hwtype);
 	  fprintf(out, "Option sides two-sided-long-edge\n");	// duplex
           fprintf(out, "Printer %s\n", rp);
-          fprintf(out, "State Idle\n");     // Always with the Idle
+          fprintf(out, "State Idle\n");	/* Always with the Idle */
           fprintf(out, "StateTime %ld\n", (long)time(NULL));
           fprintf(out, "Accepting Yes\n");
           fprintf(out, "Shared Yes\n");
@@ -476,7 +501,7 @@ void do_host(char *host)
   out = tarfile_start(tf, "/etc/cups/cupsd.conf", 0755, 1, 1,
 		      "root", "lp", now);
 
-  fprintf(out, "LogLevel info\n");
+  fprintf(out, "LogLevel error\n");
   fprintf(out, "SystemGroup sys root ops-group\n");
   fprintf(out, "Port 631\n");
   fprintf(out, "SSLPort 443\n");
@@ -531,61 +556,59 @@ void do_host(char *host)
     FROM printservers ps, machine m
     WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
 
-  /* svrlist */
-  EXEC SQL SELECT list_id INTO :svrlist_id
-    FROM list l WHERE l.name = :svrlist;
-
   /* first, what's our defaults? */
-      fprintf (out, "<Policy default>\n");
-      fprintf (out, "%s\n", alterjob);
-      fprintf (out, "AuthType Default\n");
-      fprintf (out, "Require user @OWNER @SYSTEM\n");
+  fprintf (out, "<Policy default>\n");
+  fprintf (out, "%s\n", alterjob);
+  fprintf (out, "AuthType Default\n");
+  fprintf (out, "Require user @OWNER @SYSTEM\n");
   printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
   fprintf (out, "Order deny,allow\n");
   fprintf (out, "</Limit>\n");
   fprintf (out, "<Limit Send-Document CUPS-Get-Document>\n");
   fprintf (out, "AuthType None\n");
   fprintf (out, "Require user @OWNER @SYSTEM\n");
-      fprintf (out, "Order deny,allow\n");
+  fprintf (out, "Order deny,allow\n");
   fprintf (out, "Allow from all\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "%s\n", submitjob);
-      fprintf (out, "AuthType None\n");
-      fprintf (out, "Order deny,allow\n");
-      fprintf (out, "Allow from all\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "%s\n", alterpntr);
-      fprintf (out, "AuthType Default\n");
-      fprintf (out, "Require user @SYSTEM\n");
-      fprintf (out, "Order deny,allow\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "%s\n", lpcpntr);
-      fprintf (out, "AuthType Default\n");
-      fprintf (out, "Require user @SYSTEM\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "%s\n", submitjob);
+  fprintf (out, "AuthType None\n");
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "Allow from all\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "%s\n", alterpntr);
+  fprintf (out, "AuthType Default\n");
+  fprintf (out, "Require user @SYSTEM\n");
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "%s\n", lpcpntr);
+  fprintf (out, "AuthType Default\n");
+  fprintf (out, "Require user @SYSTEM\n");
   printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
-      fprintf (out, "Order deny,allow\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "%s\n", canceljob);
-      fprintf (out, "AuthType Default\n");
-      fprintf (out, "Require user @OWNER @SYSTEM\n");
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "%s\n", canceljob);
+  fprintf (out, "AuthType Default\n");
+  fprintf (out, "Require user @OWNER @SYSTEM\n");
   printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
-      fprintf (out, "Order deny,allow\n");
-      fprintf (out, "Allow from all\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "%s\n", catchall);
-      fprintf (out, "AuthType None\n");
-      fprintf (out, "Order deny,allow\n");
-      fprintf (out, "Allow from all\n");
-      fprintf (out, "</Limit>\n");
-      fprintf (out, "</Policy>\n");
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "Allow from all\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "%s\n", catchall);
+  fprintf (out, "AuthType None\n");
+  fprintf (out, "Order deny,allow\n");
+  fprintf (out, "Allow from all\n");
+  fprintf (out, "</Limit>\n");
+  fprintf (out, "</Policy>\n");
 
   /* restrict lists and lpcaccess policies.  Sadly, we have to put the
      top level for each new policy since CUPS doesn't have a way of 
      doing it otherwise (well, Unix groups, but not moira) */
   EXEC SQL DECLARE csr_lpc CURSOR FOR
-    SELECT UNIQUE rp, ka, ac, lpc_acl
-    FROM printers
-    WHERE (ac != 0 OR lpc_acl != 0) AND rm in (SELECT m.mach_id FROM machine m, serverhosts sh
+    SELECT UNIQUE pr.rp, pr.ka, pr.ac, pr.lpc_acl
+    FROM printers pr, machine m
+    WHERE (pr.ac != 0 OR pr.lpc_acl != 0) 
+    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3
+    AND pr.rm in (SELECT m.mach_id FROM machine m, serverhosts sh
     WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER')
     AND sh.enable = 1);
   EXEC SQL OPEN csr_lpc;
@@ -602,7 +625,6 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
-      printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");
@@ -619,10 +641,8 @@ void do_host(char *host)
       else
         fprintf (out, "AuthType None\n");
       /* Access-control list. */
-      if (ac) {
+      if (ac) 
         printer_user_list(out, "LIST", ac, "Require user", 1);
-        printer_user_list(out, "LIST", svrlist_id, "Require user", 1);
-      }
       else if (ka)
         fprintf (out, "Require valid-user\n");
       fprintf (out, "Order deny,allow\n");

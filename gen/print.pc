@@ -1,4 +1,4 @@
-/* $Id: print.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: print.pc 3988 2010-02-27 06:24:35Z zacheiss $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/print.pc $ $Id: print.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/print.pc $ $Id: print.pc 3988 2010-02-27 06:24:35Z zacheiss $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -94,6 +94,7 @@ void do_host(char *host)
     m.name, pr.banner, pr.location, pr.contact
     FROM printers pr, machine m
     WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
+    AND pr.status = 1 AND m.status != 3
     AND pr.type != 'ALIAS'
     AND ( pr.hwtype LIKE 'HP%' OR pr.hwtype LIKE 'LPR%' );
   EXEC SQL OPEN csr_printcap;
@@ -174,8 +175,9 @@ void do_host(char *host)
 
   fprintf(out, "# Printer-specific LPC ACLs\n");
   EXEC SQL DECLARE csr_lpc CURSOR FOR
-    SELECT rp, duplexname FROM printers
-    WHERE rm = :rm AND lpc_acl != 0;
+    SELECT pr.rp, pr.duplexname FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.lpc_acl != 0
+    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3;
   EXEC SQL OPEN csr_lpc;
   while (1)
     {
@@ -194,8 +196,9 @@ void do_host(char *host)
 
   fprintf(out, "# Reject jobs from unauthorized users to restricted queues\n");
   EXEC SQL DECLARE csr_ac CURSOR FOR
-    SELECT rp, duplexname, ka FROM printers
-    WHERE rm = :rm AND ac != 0;
+    SELECT pr.rp, pr.duplexname, pr.ka FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.ac != 0
+    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3;
   EXEC SQL OPEN csr_ac;
   while (1)
     {
@@ -239,8 +242,9 @@ void do_host(char *host)
   out = tarfile_start(tf, "/var/spool/printer/queues.secure", 0755, 1, 1,
 		     "daemon", "daemon", now);
   EXEC SQL DECLARE csr_kq CURSOR FOR
-    SELECT rp, duplexname FROM printers
-    WHERE rm = :rm AND ka = 1;
+    SELECT pr.rp, pr.duplexname FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.ka = 1
+    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3;
   EXEC SQL OPEN csr_kq;
   while (1)
     {
@@ -258,9 +262,10 @@ void do_host(char *host)
 
   /* restrict lists and lpcaccess files */
   EXEC SQL DECLARE csr_spool CURSOR FOR
-    SELECT UNIQUE rp, ka, ac, lpc_acl
-    FROM printers
-    WHERE rm = :rm AND ( ac != 0 OR lpc_acl != 0);
+    SELECT UNIQUE pr.rp, pr.ka, pr.ac, pr.lpc_acl
+    FROM printers pr, machine m
+    WHERE pr.rm = :rm AND ( pr.ac != 0 OR pr.lpc_acl != 0)
+    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3;
   EXEC SQL OPEN csr_spool;
   while (1)
     {

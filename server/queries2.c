@@ -1,4 +1,4 @@
-/* $Id: queries2.c 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: queries2.c 3989 2010-03-10 18:18:16Z zacheiss $
  *
  * This file defines the query dispatch table
  *
@@ -13,7 +13,7 @@
 
 #include "mr_et.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 3979 2010-02-16 20:26:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 3989 2010-03-10 18:18:16Z zacheiss $");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -7879,7 +7879,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "pr",
     PRINTERS_TABLE,
-    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
     gpbh_fields,
     23,
     "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
@@ -7913,7 +7913,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "pr",
     PRINTERS_TABLE,
-    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
     gpbr_fields,
     23,
     "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
@@ -7947,7 +7947,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "pr",
     PRINTERS_TABLE,
-    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
     gpbl_fields,
     23,
     "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
@@ -7981,7 +7981,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "pr",
     PRINTERS_TABLE,
-    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machinem3, machine m4, list l1, list l2, list l3",
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
     gpbc_fields,
     23,
     "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",

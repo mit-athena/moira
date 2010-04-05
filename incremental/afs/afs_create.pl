@@ -161,9 +161,10 @@ sub athena_proc
 	chmod(0755, $path);
 	mkdir("$path/Public",0755) && mkdir("$path/www",0755) &&
 	    mkdir("$path/Private",0700) && mkdir("$path/Mail", 0700) &&
-		chown($uid,0,"$path/Public","$path/www",
-		      "$path/Private","$path/Mail") ||
-			  die "Unable to create subdirectories\n";
+	    mkdir("$path/Desktop",0755) &&
+	    chown($uid,0,"$path/Public","$path/www",
+		  "$path/Private","$path/Mail","$path/Desktop") ||
+		  die "Unable to create subdirectories\n";
 	system("$fs sa -dir $path/Public $path/www -acl @acl system:anyuser rl -clear") &&
 	    die "Unable to set acl on Public directory";
 	system("$fs sa -dir $path/Private $path/Mail -acl @acl -clear") &&
@@ -183,6 +184,25 @@ sub athena_proc
 	    close(IN);
 	    chown($uid,0,"$path/$i");
 	}
+
+	opendir(DIR,"$protodir/Desktop") || die "Unable to open prototype Desktop directory\n";
+	@files = readdir(DIR);
+	closedir(DIR);
+
+	for $i (@files) {
+	    next if ($i eq "." || $i eq "..");
+	    next unless -f "$protodir/Desktop/$i";
+	    open(IN,"<$protodir/Desktop/$i") || die "Unable to open $protodir/Desktop/$i\n";
+            open(OUT,">$path/Desktop/$i") || die "Unable to create Desktop/$i\n";
+            while ($_=<IN>) { print OUT $_; };
+            close(OUT);
+            close(IN);
+            chown($uid,0,"$path/Desktop/$i");
+        }
+
+	system("$fs sa -dir $path/Desktop -acl @acl system:anyuser l -clear") &&
+	    die "Unable to set acl on Desktop directory";
+	
 	system("$fs sa $path @acl system:anyuser l -clear") &&
 	    die "Unable to set acl on top-level directory\n";
 	return;

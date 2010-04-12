@@ -217,19 +217,27 @@ static char **SetSubnetDefaults(char **info, char *name)
 
 /* -------------------- General Functions -------------------- */
 
-static char aliasbuf[BUFSIZ * 2];
+char *aliases = NULL;
 
 void PrintAliases(char **info)
 {
-  if (strlen(aliasbuf) == 0)
-    sprintf(aliasbuf, "Aliases:  %s", info[0]);
+  if (aliases == NULL)
+    {
+      aliases = malloc((strlen("Aliases:  ") + strlen(info[0]) + 1));
+      if (!aliases)
+        {
+          com_err(program_name, 0, "Out of memory allocating host aliases");
+          exit(1);
+        }
+      sprintf(aliases, "Aliases:  %s", info[0]);
+    }
   else
     {
-      strcat(aliasbuf, ", ");
-      strcat(aliasbuf, info[0]);
+      aliases = realloc(aliases, strlen(aliases) + strlen(info[0]) + 3);
+      strcat(aliases, ", ");
+      strcat(aliases, info[0]);
     }
 }
-
 
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in
@@ -257,10 +265,11 @@ static char *PrintMachInfo(char **info)
     }
   else
     {
-      aliasbuf[0] = 0;
       Loop(QueueTop(elem), (void (*)(char **)) PrintAliases);
       FreeQueue(elem);
-      Put_message(aliasbuf);
+      Put_message(aliases);
+      free(aliases);
+      aliases = NULL;
     }
   sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
 	  strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");

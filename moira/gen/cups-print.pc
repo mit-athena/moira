@@ -326,12 +326,10 @@ void do_host(char *host)
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
     pr.ac, pr.lpc_acl, m.name, pr.duplexdefault as cupshosts
-    FROM printers pr, machine m, machine m2, serverhosts sh
-    WHERE pr.rm = m.mach_id 
+    FROM printers pr, machine m, machine m2
+    WHERE pr.rm = m.mach_id
     AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status != 3
-    AND pr.type != 'ALIAS' AND m.name <> :spoolhost AND
-    m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND 
-    sh.enable = 1;
+    AND pr.type != 'ALIAS';
 
   EXEC SQL OPEN csr_lprng_printers;
   while (1)

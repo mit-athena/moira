@@ -20,7 +20,7 @@
 
 #include "util.h"
 
-#define MACHINE_CHWADDR_SIZE 18
+#define HWADDRMAP_CHWADDR_SIZE 18
 
 EXEC SQL INCLUDE sqlca;
 
@@ -36,9 +36,9 @@ void sqlerr(void);
 int main(int argc, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[MACHINE_NAME_SIZE], hwaddr[MACHINE_HWADDR_SIZE];
-  char chwaddr[MACHINE_CHWADDR_SIZE];
-  char ohwaddr[MACHINE_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
+  char name[MACHINE_NAME_SIZE];
+  char hwaddr[HWADDRMAP_HWADDR_SIZE], chwaddr[HWADDRMAP_CHWADDR_SIZE];
+  char ohwaddr[HWADDRMAP_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
   char addr[MACHINE_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
   char contact[PRINTERS_CONTACT_SIZE], logaddr[MACHINE_ADDRESS_SIZE];
   char modtime[PRINTERS_MODTIME_SIZE], type[PRINTERS_TYPE_SIZE];
@@ -100,13 +100,13 @@ int main(int argc, char **argv)
 		      "root", "root", now);
   ohwaddr[0] = '\0';
   EXEC SQL DECLARE csr_boot CURSOR FOR
-    SELECT LOWER(m.name), m.hwaddr, m.address, m2.address,
+    SELECT LOWER(m.name), hw.hwaddr, m.address, m2.address,
     pr.location, pr.contact, pr.hwtype
-    FROM printers pr, machine m, machine m2, machine m3
+    FROM printers pr, machine m, machine m2, hwaddrmap hw
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
-    AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
-    AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3
-    ORDER BY m.hwaddr;
+    AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
+    AND pr.loghost = m2.mach_id AND pr.status = 1
+    ORDER BY hw.hwaddr, m.name;
   EXEC SQL OPEN csr_boot;
   while (1)
     {
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
       fprintf(out, "# %s: %s\n# contact: %s\nhost %s {\n\t"
 	      "hardware ethernet %s;\n\tfixed-address %s;\n",
-	      shortname, location, contact, name, chwaddr, addr);
+	      shortname, location, contact, hwaddr, chwaddr, addr);
       
       if (strlen(logaddr) != 0)
 	      fprintf(out, "\toption log-servers %s;\n", logaddr);
@@ -161,12 +161,13 @@ int main(int argc, char **argv)
 
   /* Now generate /var/boot/hp/ files */
   EXEC SQL DECLARE csr_boot2 CURSOR FOR
-    SELECT LOWER(m.name), m.hwaddr, m2.address, m3.address, pr.type,
+    SELECT LOWER(m.name), hw.hwaddr, m2.address, m3.address, pr.type,
     pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt)
-    FROM printers pr, machine m, machine m2, machine m3
+    FROM printers pr, machine m, machine m2, machine m3, hwaddrmap hw
     WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
-    AND pr.mach_id = m.mach_id AND m.status != 3 AND pr.rm = m2.mach_id
-    AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS' AND pr.status = 1;
+    AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
+    AND pr.rm = m2.mach_id AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS'
+    AND pr.status = 1;
   EXEC SQL OPEN csr_boot2;
   while (1)
     {

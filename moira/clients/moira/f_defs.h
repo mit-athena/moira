@@ -89,6 +89,10 @@ int RemoveMachineFromContainer(int argc, char **argv);
 int GetMachinesOfContainer(int argc, char **argv);
 int GetTopLevelCont(int argc, char **argv);
 
+int ShowHWAddrs(int argc, char **argv);
+int AddHWAddr(int argc, char **argv);
+int DeleteHWAddr(int argc, char **argv);
+
 /* delete.c */
 
 int DeleteList(int argc, char **argv);
@@ -178,7 +182,6 @@ int GetPrnByContact(int argc, char **argv);
 int DeletePrn(int argc, char **argv);
 int AddPrn(int argc, char **argv);
 int ChngPrn(int argc, char **argv);
-int UpdateHWAddr(int argc, char **argv);
 int GetPrintSrv(int argc, char **argv);
 int AddPrintSrv(int argc, char **argv);
 int DelPrintSrv(int argc, char **argv);

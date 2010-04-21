@@ -63,10 +63,12 @@ struct string_list {
 int info_flag, update_flag, create_flag, delete_flag, list_map_flag;
 int update_alias_flag, update_map_flag, verbose, noauth;
 int list_container_flag, update_container_flag, unformatted_flag;
+int list_hwaddr_flag, update_hwaddr_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
 struct string_list *container_add_queue, *container_remove_queue;
+struct string_list *hwaddr_add_queue, *hwaddr_remove_queue;
 
 char *hostname, *whoami;
 
@@ -83,6 +85,7 @@ void show_host_info(char **argv);
 void show_host_info_unformatted(char **argv);
 int show_machine_in_cluster(int argc, char **argv, void *hint);
 int show_machine_in_container(int argc, char **argv, void *hint);
+int show_host_hwaddrs(int argc, char **argv, void *hint);
 struct owner_type *parse_member(char *s);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
@@ -99,6 +102,7 @@ int main(int argc, char **argv)
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
   update_alias_flag = verbose = noauth = 0;
   list_container_flag = update_container_flag = 0;
+  list_hwaddr_flag = update_hwaddr_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = account_number = adm_cmt = NULL;
   op_cmt = NULL;
@@ -106,6 +110,7 @@ int main(int argc, char **argv)
   alias_add_queue = alias_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
   container_add_queue = container_remove_queue = NULL;
+  hwaddr_add_queue = hwaddr_remove_queue = NULL;
   whoami = argv[0];
 
   success = 1;
@@ -298,6 +303,24 @@ int main(int argc, char **argv)
 	  }
 	  else if (argis("lcn", "listcontainer"))
 	    list_container_flag++;
+	  else if (argis("ahw", "addhwaddr")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      hwaddr_add_queue = add_to_string_list(hwaddr_add_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_hwaddr_flag++;
+	  }
+	  else if (argis("dhw", "delhwaddr")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      hwaddr_remove_queue = add_to_string_list(hwaddr_remove_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_hwaddr_flag++;
+	  }
+	  else if (argis("lhw", "listhwaddr"))
+	    list_hwaddr_flag++;
 	  else if (argis("u", "unformatted"))
 	    unformatted_flag++;
 	  else if (argis("n", "noauth"))
@@ -329,7 +352,8 @@ int main(int argc, char **argv)
   if(!(info_flag   || update_flag   || create_flag     || \
        delete_flag || list_map_flag || update_map_flag || \
        update_alias_flag || update_container_flag || \
-       list_container_flag)) {
+       list_container_flag || update_hwaddr_flag || \
+       list_hwaddr_flag)) {
     info_flag++;
   }
 
@@ -678,6 +702,50 @@ int main(int argc, char **argv)
     }
   }
 
+  /* add hwaddrs */
+  if (hwaddr_add_queue) {
+    struct string_list *q = hwaddr_add_queue;
+
+    while (q) {
+      char *hwaddr = q->string;
+      char *args[2];
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = hwaddr;
+      status = wrap_mr_query("add_host_hwaddr", 2, args,
+			     NULL, NULL);
+
+      if (status) {
+	com_err(whoami, status, "while adding host hardware address");
+	exit(1);
+      }
+
+      q = q->next;
+    }
+  }
+
+  /* delete hwaddrs */
+  if (hwaddr_remove_queue) {
+    struct string_list *q = hwaddr_remove_queue;
+   
+    while (q) {
+      char *hwaddr = q->string;
+      char *args[2];
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = hwaddr;
+      status = wrap_mr_query("delete_host_hwaddr", 2, args,
+			     NULL, NULL);
+
+      if (status) {
+	com_err(whoami, status, "while deleting host hardware address");
+	exit(1);
+      }
+
+      q = q->next;
+    }
+  }
+
   /* display list info if requested to */
   if (info_flag) {
     struct mqelem *elem = NULL;
@@ -749,6 +817,21 @@ int main(int argc, char **argv)
       }
   }
 
+  /* list hwaddr mappings if needed */
+  if (list_hwaddr_flag) {
+    char *argv[1];
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    status = wrap_mr_query("get_host_hwaddr_mapping", 1, argv,
+			   show_host_hwaddrs, NULL);
+
+    if (status)
+      if (status != MR_NO_MATCH) {
+	com_err(whoami, status, "while getting host hardware addresses");
+	exit(1);
+      }
+  }
+
   if (delete_flag) {
     char *argv[1];
 
@@ -797,7 +880,10 @@ void usage(char **argv)
 	  "-u   | -unformatted");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "-n   | -noauth");
-  fprintf(stderr, "  %-39s\n" , "-db  | -database host[:port]");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ahw | -addhwaddr hwaddr",
+	  "-dhw | -delhwaddr hwaddr");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lhw | -listhwaddr",
+	  "-db  | -database host[:port]");
   exit(1);
 }
 
@@ -949,6 +1035,13 @@ int show_machine_in_cluster(int argc, char **argv, void *hint)
 int show_machine_in_container(int argc, char **argv, void *hint)
 {
   printf("Machine: %-30s Container: %-25s\n", argv[0], argv[1]); 
+
+  return MR_CONT;
+}
+
+int show_host_hwaddrs(int argc, char **argv, void *hint)
+{
+  printf("Machine: %-30s Hardware Address: %-25s\n", argv[0], argv[1]);
 
   return MR_CONT;
 }

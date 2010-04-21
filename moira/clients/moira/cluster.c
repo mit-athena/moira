@@ -1296,7 +1296,6 @@ int DeleteMachine(int argc, char **argv)
   return DM_NORMAL;
 }
 
-
 /*	Function Name: ShowCname
  *	Description: This function shows machine aliases
  *	Arguments: argc, argv - the alias argv[1], the real name in argv[2]
@@ -2611,5 +2610,69 @@ int GetTopLevelCont(int argc, char **argv)
     }
   Loop(QueueTop(elem), (void(*)(char **)) PrintContainer);
   FreeQueue(elem);
+  return DM_NORMAL;
+}
+
+void PrintHWAddr(char **info)
+{
+  char buf[BUFSIZ];
+
+  sprintf(buf, "Machine: %-30s Hardware Address: %-20s",
+          info[0], info[1]);
+  Put_message(buf);
+}
+
+/*	Function Name: ShowHWAddrs
+ *	Description: This function shows machine hardware addresses
+ *	Arguments: argc, argv - the hostname in argv[1]
+ *	Returns: DM_NORMAL.
+ */
+
+int ShowHWAddrs(int argc, char **argv)
+{
+  char *args[1];
+  int stat;
+  struct mqelem *elem = NULL;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  if ((stat = do_mr_query("get_host_hwaddr_mapping", 1, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in get_host_hwaddr_mapping.");
+      return DM_NORMAL;
+    }
+
+  Put_message("");
+  Loop(QueueTop(elem), (void (*)(char **)) PrintHWAddr);
+  FreeQueue(elem);
+  return DM_NORMAL;
+}
+  
+int AddHWAddr(int argc, char **argv)
+{
+  int stat;
+  char *args[2];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = argv[2];
+
+  stat = do_mr_query("add_host_hwaddr", 2, args, NULL, NULL);
+  if (stat != MR_SUCCESS)
+    com_err(program_name, stat, " in add_host_hwaddr");
+
+  return DM_NORMAL;
+}
+
+int DeleteHWAddr(int argc, char **argv)
+{
+  int stat;
+  char *args[2];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = argv[2];
+
+  stat = do_mr_query("delete_host_hwaddr", 2, args, NULL, NULL);
+  if (stat != MR_SUCCESS)
+    com_err(program_name, stat, " in delete_host_hwaddr");
+ 
   return DM_NORMAL;
 }

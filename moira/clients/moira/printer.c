@@ -29,8 +29,8 @@ void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
 void ChangePrintSrvLoop(char **info, Bool one);
 extern int GetAliasValue(int argc, char **argv, void *retval);
-int StoreHWAddr(int argc, char **argv, void *retval);
 
+void PrintHWAddrs(char **info);
 static char *PrintPrintSrvInfo(char **info);
 static char **SetPrintSrvDefaults(char **info, char *name);
 static char **AskPrintSrvInfo(char **info);
@@ -61,13 +61,6 @@ static char *PrnState(int state)
       return buf;
     }
   return states[state];
-}
-
-int StoreHWAddr(int argc, char **argv, void *retval)
-{
-  char **p = retval;
-  *p = strdup(argv[0]);
-  return MR_CONT;
 }
 
 /*	Function Name: SetDefaults
@@ -160,6 +153,19 @@ static struct mqelem *GetPrnInfo(char *name, int how)
   return QueueTop(elem);
 }
 
+static char hwaddrbuf[BUFSIZ * 2];
+
+void PrintHWAddrs(char **info)
+{
+  if (strlen(hwaddrbuf) == 0)
+    sprintf(hwaddrbuf, "Hardware Addresses: %s", info[1]);
+  else
+    {
+      strcat(hwaddrbuf, ", ");
+      strcat(hwaddrbuf, info[1]);
+    }
+}
+
 /*	Function Name: PrintPrnInfo
  *	Description: Yet another specialized print function.
  *	Arguments: info - all info about this Printer.
@@ -168,8 +174,9 @@ static struct mqelem *GetPrnInfo(char *name, int how)
 
 static char *PrintPrnInfo(char **info)
 {
-  char buf[BUFSIZ], *hwaddr;
+  char buf[BUFSIZ];
   int status, banner = atoi(info[PRN_BANNER]);
+  struct mqelem *elem = NULL;
 
   if (!info)		/* If no informaion */
     {
@@ -177,29 +184,37 @@ static char *PrintPrnInfo(char **info)
       return NULL;
     }
   Put_message("");
-  sprintf(buf, "Printer: %-18s Duplex queue: %-18s", info[PRN_NAME],
-	  *info[PRN_DUPLEXNAME] ? info[PRN_DUPLEXNAME] : "[none]");
-  Put_message(buf);
-  sprintf(buf, "Status: %-10s", PrnState(atoi(info[PRN_STATUS])));
+  sprintf(buf, "Printer: %-18s Duplex queue: %-17s Status: %-10s",
+	  info[PRN_NAME], *info[PRN_DUPLEXNAME] ? info[PRN_DUPLEXNAME] : "[none]",
+	  PrnState(atoi(info[PRN_STATUS])));
   Put_message(buf);
   sprintf(buf, "Duplex by Default: %-8s Hold by Default: %-18s", 
 	  atoi(info[PRN_DUPLEXDEFAULT]) ? "yes" : "no",
 	  atoi(info[PRN_HOLDDEFAULT]) ? "yes" : "no");
   Put_message(buf);
-  sprintf(buf, "Type: %-10s Hardware type: %-10s Hardware address: ",
+  sprintf(buf, "Type: %-10s Hardware type: %-10s",
 	  info[PRN_TYPE], info[PRN_HWTYPE]);
-  status = do_mr_query("get_host_hwaddr", 1, &info[PRN_HOSTNAME],
-		       StoreHWAddr, &hwaddr);
-  if (status == MR_SUCCESS)
-    {
-      strcat(buf, hwaddr);
-      free(hwaddr);
-    }
-  else
-    strcat(buf, "none");
   Put_message(buf);
   sprintf(buf, "Printer hostname: %s", info[PRN_HOSTNAME]);
   Put_message(buf);
+
+  status = do_mr_query("get_host_hwaddr_mapping", 1, &info[PRN_HOSTNAME],
+		       StoreInfo, &elem);
+  if (status)
+    {
+      if (status != MR_NO_MATCH)
+	com_err(program_name, status, " looking up hardware addresses");
+      else
+	Put_message("Hardware Addresses: none");
+    }
+  else 
+    {
+      hwaddrbuf[0] = 0;
+      Loop(QueueTop(elem), (void (*)(char **)) PrintHWAddrs);
+      FreeQueue(elem);
+      Put_message(hwaddrbuf);
+    }
+
   sprintf(buf, "Printer log host: %s", info[PRN_LOGHOST]);
   Put_message(buf);
   sprintf(buf, "Spool host: %s", info[PRN_RM]);
@@ -476,8 +491,29 @@ int AddPrn(int argc, char **argv)
     com_err(program_name, stat, " in AddPrn");
 
   if (stat == MR_SUCCESS && strcasecmp(info[PRN_HOSTNAME], "[NONE]"))
-    UpdateHWAddr(2, &info[PRN_HOSTNAME - 1]);
+    {
+      char *hwargv[2], *hwaddr, *s, *d;
 
+      hwaddr = strdup("");
+      if (GetValueFromUser("Hardware ethernet address", &hwaddr) == SUB_ERROR)
+	return DM_NORMAL;
+
+      s = d = hwaddr;
+      do
+	{
+	  if (*s != ':')
+	    *d++ = *s;
+	}
+      while (*s++);
+
+      hwargv[0] = info[PRN_HOSTNAME];
+      hwargv[1] = hwaddr;
+
+      stat = do_mr_query("add_host_hwaddr", 2, hwargv, NULL, NULL);
+      if (stat != MR_SUCCESS)
+	com_err(program_name, stat, " in add_host_hwaddr");
+    }
+  
   FreeInfo(info);
   return DM_NORMAL;
 }
@@ -518,46 +554,6 @@ int ChngPrn(int argc, char **argv)
   FreeQueue(elem);
   return DM_NORMAL;
 }
-
-
-int UpdateHWAddr(int argc, char **argv)
-{
-  int stat;
-  char *name, *hwaddr, *s, *d, *uargv[2];
-
-  name = canonicalize_hostname(strdup(argv[1]));
-  stat = do_mr_query("get_host_hwaddr", 1, &name, StoreHWAddr, &hwaddr);
-  if (stat != MR_SUCCESS)
-    {
-      free(name);
-      com_err(program_name, stat, " checking host ethernet address");
-      return DM_NORMAL;
-    }
-
-  if (GetValueFromUser("Hardware ethernet address", &hwaddr) == SUB_ERROR)
-    {
-      free(name);
-      return DM_NORMAL;
-    }
-
-  s = d = hwaddr;
-  do
-    {
-      if (*s != ':')
-	*d++ = *s;
-    }
-  while (*s++);
-
-  uargv[0] = name;
-  uargv[1] = hwaddr;
-  if ((stat = do_mr_query("update_host_hwaddr", 2, uargv, NULL, NULL)))
-    com_err(program_name, stat, " updating ethernet address.");
-
-  free(name);
-  free(hwaddr);
-  return DM_NORMAL;
-}
-
 
 int GetPrintSrv(int argc, char **argv)
 {

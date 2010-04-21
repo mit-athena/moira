@@ -1290,16 +1290,19 @@ int setup_ahal(struct query *q, char **argv, client *cl)
   return MR_SUCCESS;
 }
 
-/* setup_uhha(): Check characters in hwaddr, and make sure it's not
+/* setup_ahha(): Check characters in hwaddr, and make sure it's not
  * a duplicate.
  */
-int setup_uhha(struct query *q, char **argv, client *cl)
+int setup_ahha(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *hwaddr = argv[1];
   int count;
   EXEC SQL END DECLARE SECTION;
   char *p;
+
+  if (strlen(hwaddr) == 0)
+    return MR_BAD_CHAR;
 
   if (*hwaddr && strcasecmp(hwaddr, "unknown"))
     {
@@ -1314,7 +1317,7 @@ int setup_uhha(struct query *q, char **argv, client *cl)
 	return MR_ADDRESS;
 
       EXEC SQL SELECT COUNT(hwaddr) INTO :count
-	FROM machine WHERE hwaddr = :hwaddr;
+	FROM hwaddrmap WHERE hwaddr = :hwaddr;
       if (count)
 	return MR_NOT_UNIQUE;
     }

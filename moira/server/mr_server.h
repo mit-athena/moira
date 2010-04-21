@@ -252,7 +252,7 @@ int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ghst(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
-int setup_uhha(struct query *q, char *argv[], client *cl);
+int setup_ahha(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
 int setup_dpsv(struct query *q, char *argv[], client *cl);
 int setup_dcon(struct query *q, char *argv[], client *cl);

@@ -76,6 +76,12 @@ define service{
 	use			public-service
 	}
 
+define service{
+	host_name		$name
+	contact_groups		noone
+	use			update-service
+	}
+
 END
 }
 

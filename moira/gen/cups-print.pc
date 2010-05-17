@@ -196,7 +196,7 @@ void do_host(char *host)
       fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       if (holddefault)
-      	  fprintf(out, "Reason hold-new-jobs\n");
+      	  fprintf(out, "Option job-hold-until indefinite\n");
       fprintf(out, "Accepting Yes\n");
       fprintf(out, "Shared Yes\n");
       fprintf(out, "QuotaPeriod 0\n");

@@ -241,7 +241,7 @@ void do_host(char *host)
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
     pr.ac, pr.lpc_acl, m.name as cupshosts
     FROM printers pr, machine m, machine m2, serverhosts sh
-    WHERE pr.rm = m.mach_id 
+    WHERE pr.rm = m.mach_id AND pr.rm <> :rm
     AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status !=3
     AND (pr.type = 'CLUSTER' or pr.type = 'DORM') AND m.name <> :spoolhost AND
     m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER') AND 

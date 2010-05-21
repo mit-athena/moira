@@ -620,6 +620,7 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");

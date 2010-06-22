@@ -4,7 +4,7 @@ SHELL=/bin/sh
 @SET_MAKE@
 
 CC=@CC@
-CPPFLAGS=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@ -DSHELLS_LIST=\"$(sysconfdir)/shells.moira\"
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
@@ -23,6 +23,7 @@ BUILDTOP=../..
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
+sysconfdir=@sysconfdir@
 
 TARGET=chsh
 
@@ -45,6 +46,7 @@ depend:
 
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(TARGET) $(DESTDIR)$(bindir)
+	$(INSTALL) shells.moira $(DESTDIR)$(sysconfdir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $@.o $(LIBS)

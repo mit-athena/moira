@@ -343,7 +343,9 @@ char *getusershell(void)
 
   if (!shells)
     {
-      shells = fopen("/etc/shells", "r");
+      shells = fopen(SHELLS_LIST, "r");
+      if (!shells && errno == ENOENT)
+	shells = fopen("/etc/shells", "r");
       if (!shells)
 	{
 	  fprintf(stderr, "%s: Can't open /etc/shells. Unable to determine if "

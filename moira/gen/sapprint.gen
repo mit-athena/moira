@@ -16,7 +16,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 $sth = $dbh->prepare("SELECT p.name, p.hwtype, p.location, p.duplexname, p.rp, m.name ".
 		     "FROM printers p, machine m ".
-		     "WHERE p.rm=m.mach_id AND p.type='SAP'")
+		     "WHERE p.rm=m.mach_id AND p.type='SAP' AND m.status !=3 AND p.status = 1")
   || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;

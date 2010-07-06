@@ -1399,10 +1399,8 @@ int setup_aprn(struct query *q, char **argv, client *cl)
   mid = *(int *)argv[6 + row + idx];
   if (mid == -1)
     {
-      if (!strcasecmp(argv[PRN_TYPE + row], "SAP"))
-	service = "PRINT";
-      else if (!strcasecmp(argv[PRN_TYPE + row], "DORM") ||
-	       !strcasecmp(argv[PRN_TYPE + row], "CLUSTER"))
+      if (!strcasecmp(argv[PRN_TYPE + row], "DORM") ||
+	  !strcasecmp(argv[PRN_TYPE + row], "CLUSTER"))
 	service = "CUPS-CLUSTER";
       else
 	service = "CUPS-PRINT";

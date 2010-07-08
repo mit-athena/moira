@@ -308,10 +308,8 @@ void do_host(char *host)
           printer_user_list(out, "LIST", ac, "AllowUser", 0);
         }
 
-      if (banner == PRN_BANNER_NONE)
-	fprintf(out, "JobSheets none none\n");
-      else 
-	fprintf(out, "JobSheets athena none\n");
+      /* Never try to prepend a banner */
+      fprintf(out, "JobSheets none none\n");
       fprintf(out, "</Printer>\n");
 
     }

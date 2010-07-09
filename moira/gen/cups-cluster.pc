@@ -204,7 +204,6 @@ void do_host(char *host)
       else
         fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
-      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
@@ -286,7 +285,6 @@ void do_host(char *host)
       else
         fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
-      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");
@@ -366,7 +364,6 @@ void do_host(char *host)
       else
         fprintf(out, "Option sides one-sided\n");
       fprintf(out, "Filter application/vnd.cups-raw 0 -\n");
-      fprintf(out, "Filter application/vnd.cups-postscript 100 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-pdf 0 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.apple-pdf 25 foomatic-rip\n");
       fprintf(out, "Filter application/vnd.cups-command 0 commandtops\n");

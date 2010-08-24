@@ -2570,6 +2570,10 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
 
+  if(!ActiveDirectory) {
+    ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
+  }
+
   if (Exchange)
     {
       if(atoi(maillist) && !MailDisabled && email_isvalid(mail)) 
@@ -5162,6 +5166,7 @@ int user_create(int ac, char **av, void *ptr)
   sprintf(userAccountControlStr, "%ld", userAccountControl);
   userAccountControl_v[0] = userAccountControlStr;
   userPrincipalName_v[0] = upn;
+  sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
   
   if(ActiveDirectory)
     cn_v[0] = user_name;
@@ -5195,7 +5200,6 @@ int user_create(int ac, char **av, void *ptr)
   else
     sprintf(new_dn, "uid=%s,%s,%s", user_name, user_ou, call_args[1]);
 
-  sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
   if(Exchange)
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
   else
@@ -5359,7 +5363,7 @@ int user_create(int ac, char **av, void *ptr)
     {
       mitMoiraId_v[0] = call_args[2];
       ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD); 
-    }
+  }
 
   ADD_ATTR("altSecurityIdentities", altSecurityIdentities_v, LDAP_MOD_ADD);
 
@@ -9202,7 +9206,8 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
       while(gPtr) {
 	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "Recover")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL))
+	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;
 	    continue;

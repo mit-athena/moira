@@ -824,8 +824,7 @@ int get_ace_internal(char *atype, int aid,
   rargv[0] = "LIST";
   EXEC SQL DECLARE csr113 CURSOR FOR
     SELECT name FROM list
-    WHERE (acl_type = :type AND acl_id = :id)
-    OR (memacl_type = :type AND memacl_id = :id);
+    WHERE (acl_type = :type AND acl_id = :id);
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr113;

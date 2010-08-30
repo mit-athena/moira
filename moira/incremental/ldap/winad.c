@@ -4398,7 +4398,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	} else if(rc==MR_NO_MATCH) {
 	  
 	  n = 0;
-	  ADD_ATTR("mitMoiraIMAPServer", mit_moira_imap_address_v, 
+	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_REPLACE);
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);

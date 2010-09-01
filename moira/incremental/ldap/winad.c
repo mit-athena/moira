@@ -9172,7 +9172,7 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   int      rc;
   int      i;
   int      mdbbl_count;
-  int      rangeStep = 1500;
+  int      rangeStep = 100;
   int      rangeLow = 0;
   int      rangeHigh = rangeLow + (rangeStep - 1);
   int      isLast = 0;

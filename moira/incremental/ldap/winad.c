@@ -4399,7 +4399,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
-		   LDAP_MOD_REPLACE);
+		 LDAP_MOD_REPLACE);
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
 	  
@@ -4411,8 +4411,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		    "Unable to set the mitMoiraIMAPAddress for %s : %s",
 		    user_name, ldap_err2string(rc));
 
-	}
-    
+      }
+
       argv[0] = user_name;
 	  
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
@@ -9172,7 +9172,7 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   int      rc;
   int      i;
   int      mdbbl_count;
-  int      rangeStep = 100;
+  int      rangeStep = 1500;
   int      rangeLow = 0;
   int      rangeHigh = rangeLow + (rangeStep - 1);
   int      isLast = 0;
@@ -9522,6 +9522,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
   ULONG       rc;
   int         Max_wait_time = 1000;
   int         Max_size_limit = LDAP_NO_LIMIT;
+  sasl_ssf_t  max_ssf = 0;
   LDAPControl **ctrls = NULL;
 
   if (strlen(ldap_domain) == 0)
@@ -9556,6 +9557,8 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                                (void *)&Max_size_limit);
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS,
                                LDAP_OPT_OFF);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_X_SASL_SSF_MAX,
+                               &max_ssf);
 
 	  rc = ldap_sasl_interactive_bind_ext_s((*ldap_handle), "", sasl_mech,
 						 NULL, NULL, sasl_flags,

@@ -42,36 +42,37 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
 	$name = lc($name);
 	push(@allwshhosts, $name);
 	print OUT <<END;
+
 define host{
 	host_name		$name
 	alias			$name
 	address			$name
-	contact_groups          wsh
+	contact_groups		wsh
 	use			generic-host
 	}
 
 define service{
-  	host_name		$name
+	host_name		$name
 	contact_groups		wsh
 	use			ping-service
 	}
 
 define hostescalation{
-        host_name               $name
-        contact_groups          wsh,wsh-mail
-        first_notification      2
-        last_notification       0
-        notification_interval   0
-        }
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	first_notification	2
+	last_notification	0
+	notification_interval	0
+	}
 
 define serviceescalation{
-        host_name               $name
-        contact_groups          wsh,wsh-mail
-        service_description     PING
-        first_notification      2
-        last_notification       0
-        notification_interval   0
-        }
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	service_description	PING
+	first_notification	2
+	last_notification	0
+	notification_interval	0
+	}
 
 END
 

@@ -12,7 +12,6 @@ $outdir = '/moira/dcm/nagios3-wsh';
 		     'WINDOWS-DISK-C', 'WINDOWS-DISK-C',
 		     'WINDOWS-MEMORY', 'WINDOWS-MEMORY',
 		     'WINDOWS-UPTIME', 'WINDOWS-UPTIME');
-my (%defaults) = %default_services;
 
 use DBI;
 
@@ -38,6 +37,7 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     $sth->execute;
 
     while (($name, $tag) = $sth->fetchrow_array) {
+	my (%defaults) = %default_services;
 	next if $name eq "[NONE]";
 	$name = lc($name);
 	push(@allwshhosts, $name);

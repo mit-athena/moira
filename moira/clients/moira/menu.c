@@ -802,13 +802,16 @@ static char *get_tmp_dir(void)
 int toggle_logging(int argc, char *argv[])
 {
   char buf[BUFSIZ];
+  mode_t oldmask;
 
   if (!log_file)
     {
       sprintf(buf, "%s/%s-log.%d", get_tmp_dir(), whoami, getpid());
 
       /* open the file */
+      oldmask = umask(077);
       log_file = fopen(buf, "a");
+      umask(oldmask);
 
       if (!log_file)
 	Put_message("Open of log file failed.  Logging is not on.");

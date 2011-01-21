@@ -13,7 +13,7 @@ MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
 
-PATH=/usr/local/samba/bin:/bin; export PATH
+PATH=/usr/local/samba/bin:/usr/bin:/bin; export PATH
 TARFILE=/var/tmp/cups-print.out
 CUPSLOCAL=/etc/cups
 SAMBAPASSWD=`cat /etc/cups/sambapasswd`

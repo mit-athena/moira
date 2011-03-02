@@ -21,12 +21,16 @@ NAME=debathena-moira-update-server
 DAEMON=/usr/sbin/update_server
 DAEMON_ARGS=""
 SCRIPTNAME=/etc/init.d/$NAME
+ENABLED=false
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Exit if the daemon has not been enabled
+[ "$ENABLED" = true ] || exit 0
 
 # Load the VERBOSE setting and other rcS variables
 [ -f /etc/default/rcS ] && . /etc/default/rcS

@@ -1,0 +1,8 @@
+# Defaults for debathena-moira-update-server
+
+# Arguments for /usr/sbin/update_server
+DAEMON_ARGS=""
+
+# Enabled by default?
+# Values: false, true
+ENABLED=false

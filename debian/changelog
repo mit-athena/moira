@@ -1,3 +1,10 @@
+debathena-moira (4.0.0+svn20100405-0debathena2) unstable; urgency=low
+
+  * Add debathena-moira-update-server.default file
+  * Do not start daemon unless enabled in aforementioned file
+
+ -- Jonathan Reed <jdreed@mit.edu>  Wed, 02 Mar 2011 16:56:27 -0500
+
 debathena-moira (4.0.0+svn20100405-0debathena1) unstable; urgency=low
 
   * New SVN snapshot.

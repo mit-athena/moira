@@ -82,6 +82,12 @@ define service{
 	use			update-service
 	}
 
+define service{
+	host_name		$name
+	contact_groups		noone
+	use			modules-service
+	}
+
 END
 }
 

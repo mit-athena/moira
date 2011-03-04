@@ -44,7 +44,7 @@ int main(int argc, char **argv)
   char modtime[PRINTERS_MODTIME_SIZE], type[PRINTERS_TYPE_SIZE];
   char *unixtime_fmt = UNIXTIME_FMT;
   char host[MACHINE_ADDRESS_SIZE], types[SERVERHOSTS_VALUE3_SIZE];
-  int mid, alcount;
+  int mid, alcount, status;
   EXEC SQL END DECLARE SECTION;
   char shortname[MACHINE_NAME_SIZE], net[MACHINE_ADDRESS_SIZE];
   char filename[MAXPATHLEN];
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     FROM printers pr, machine m, machine m2, hwaddrmap hw
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
-    AND pr.loghost = m2.mach_id AND pr.status = 1
+    AND pr.loghost = m2.mach_id AND (pr.status = 1 OR pr.status = 2)
     ORDER BY hw.hwaddr, m.name;
   EXEC SQL OPEN csr_boot;
   while (1)
@@ -162,17 +162,17 @@ int main(int argc, char **argv)
   /* Now generate /var/boot/hp/ files */
   EXEC SQL DECLARE csr_boot2 CURSOR FOR
     SELECT LOWER(m.name), hw.hwaddr, m2.address, m3.address, pr.type,
-    pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt)
+    pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt), pr.status
     FROM printers pr, machine m, machine m2, machine m3, hwaddrmap hw
     WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
     AND pr.rm = m2.mach_id AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS'
-    AND pr.status = 1;
+    AND (pr.status = 1 OR pr.status = 2);
   EXEC SQL OPEN csr_boot2;
   while (1)
     {
       EXEC SQL FETCH csr_boot2 INTO :name, :hwaddr, :addr, :logaddr,
-	:type, :location, :contact, :modtime;
+	:type, :location, :contact, :modtime, :status;
       if (sqlca.sqlcode)
 	break;
 
@@ -200,34 +200,44 @@ int main(int argc, char **argv)
       fprintf(out, "name: %s\nlocation: %s\ncontact: %s\n\n", shortname,
 	      *location ? location : "unknown",
 	      *contact ? contact : "unknown");
+
+
       if (*logaddr)
-	fprintf(out, "trap-dest: %s\nallow: %s\n", logaddr, logaddr);
-      fprintf(out, "allow: %s\n", addr);
-      typelen = strlen(type);
-      for (i = allows = 0; i < alcount && allows < 9; i++)
+	fprintf(out, "trap-dest: %s\n", logaddr);
+
+      /* Don't output any allow: lines for status 2 printers; they should be unrestricted. */
+      if (status == 1)
 	{
-	  char *p;
-
-	  /* Don't list the spoolhost twice. */
-	  if (!strcmp(allowlist[i].host, addr))
-	    continue;
-
-	  p = strstr(allowlist[i].types, type);
-	  if (!p)
-	    continue;
-
-	  /* Make sure the match was real, and not just because one type
-	   * is a substring of another type.
-	   */
-	  if (p != allowlist[i].types && *(p - 1) != ',' && *(p - 1) != ' ')
-	    continue;
-	  p += typelen;
-	  if (*p && *p != ',' && *p != ' ')
-	    continue;
-
-	  fprintf(out, "allow: %s\n", allowlist[i].host);
-	  allows++;
+	  if (*logaddr)
+	    fprintf(out, "allow: %s\n", logaddr);
+	  fprintf(out, "allow: %s\n", addr);
+	  typelen = strlen(type);
+	  for (i = allows = 0; i < alcount && allows < 9; i++)
+	    {
+	      char *p;
+	      
+	      /* Don't list the spoolhost twice. */
+	      if (!strcmp(allowlist[i].host, addr))
+		continue;
+	      
+	      p = strstr(allowlist[i].types, type);
+	      if (!p)
+		continue;
+	      
+	      /* Make sure the match was real, and not just because one type
+	       * is a substring of another type.
+	       */
+	      if (p != allowlist[i].types && *(p - 1) != ',' && *(p - 1) != ' ')
+		continue;
+	      p += typelen;
+	      if (*p && *p != ',' && *p != ' ')
+		continue;
+	      
+	      fprintf(out, "allow: %s\n", allowlist[i].host);
+	      allows++;
+	    }
 	}
+	 
       /* Rest of data is same for all printers and is appended from a
        * a file on the boot server.
        */
@@ -245,7 +255,7 @@ void hwcolonify(char *from, char *to)
   int f = 0, t = 0;
   int mod = 2;
 
-  for (f = 0 ; f < MACHINE_HWADDR_SIZE - 1 ; )
+  for (f = 0 ; f < HWADDRMAP_HWADDR_SIZE - 1 ; )
     {
       to[t++] = from[f++];
       if (f % mod == 0)

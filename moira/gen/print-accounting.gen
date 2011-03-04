@@ -15,7 +15,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 
 $sth = $dbh->prepare("SELECT p.name, l.name FROM list l, printers p " .
-		     "WHERE p.status = 1 AND p.report_list = l.list_id AND l.maillist = 1 AND l.active = 1 " .
+		     "WHERE (p.status = 1 OR p.status = 2) AND p.report_list = l.list_id AND l.maillist = 1 AND l.active = 1 " .
 		     "ORDER BY p.name")
     || exit $MR_DBMS_ERR;
 

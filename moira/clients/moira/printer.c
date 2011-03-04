@@ -47,7 +47,7 @@ static char **AskPrintSrvInfo(char **info);
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Active, No IP ACL (2)",
   "Deleted (3)"
 };
 

@@ -68,7 +68,7 @@ struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Active, No IP ACL (2)",
   "Deleted (3)"
 };
 

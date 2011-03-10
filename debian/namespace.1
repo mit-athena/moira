@@ -1,0 +1,32 @@
+.TH namespace 1 "March 2011" "Debathena" debathena-moira-clients
+.SH NAME
+namespace \- manipulate the campus namespace
+.SH SYNOPSIS
+.B namespace [options]
+.SH DESCRIPTION
+.I namespace
+is a tool for manipulating the campus namespace.  Really, it's just a subset of the functions available in 
+.B moira
+, including the Mail Forwarding (pobox) menu, the list menu, and
+account information.
+
+This manpage only exists because Debian Policy says it should, not
+because you're actually expected to use this command.
+.SH OPTIONS
+.IP \fB-nomenu\fR
+Don't use the curses-based interface.
+.IP \fB-menu\fR
+Do use the curses-based interface (default).
+.IP \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  
+
+.SH AUTHORS
+Garry Zacheiss, MIT Information Systems.
+
+Manual page by Jonathan Reed, MIT IS&T.
+.SH SEE ALSO
+moira(1)
+
+

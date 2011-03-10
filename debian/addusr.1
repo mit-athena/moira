@@ -1,0 +1,49 @@
+.TH ADDUSR 1 "March 2011" "Debathena" debathena-moira-clients
+.SH NAME
+addusr \- bulk-register new users in Moira
+.SH SYNOPSIS
+.B addusr [options]
+.SH DESCRIPTION
+.I addusr
+is a tool for registering large numbers of users in Moira, pulling
+data from a file.
+.SH OPTIONS
+.IP \fB-file\ \fRor\ \fB-f\fR
+Comma-separated file to use (default: STDIN)
+.IP \fB-class\ \fIclass\ \fRor\ \fB-c\ \fIclass\fR
+Class to assign users (default: TEMP)
+.IP \fB-comment\ \fIcomment\ \fRor\ \fB-C\ \fIcomment\fR
+Set the comment for the users to \fIcomment\fR.
+.IP \fB-status\ \fIstatus\ \fRor\ \fB-S\ \fIstatus\fR
+Set the status field for the users to \fIstatus\fR. (Default: 0)
+.IP \fB-shell\ \fIshell\ \fRor\ \fB-s\ \fIshell\fR
+Set the shell for the users to \fIshell\fR. (Default: /bin/bash)
+.IP \fB-winshell\ \fIwinshell\ \fRor\ \fB-w\ \fIwinshell\fR
+Set the Windows shell for the users to \fIwinshell\fR. (Default: cmd)
+.IP \fB-sponsor\ \fIsponsor\ \fRor\ \fB-sp\ \fIsponsor\fR
+Set the sponsor of the users to \fIsponsor\fR.  (Default: NONE)
+.IP \fB-expiration\ \fIdate\ \fRor\ \fB-e\ \fIdate\fR
+Set the expiration date for the users to \fIdate\fR.  (Default: "")
+.IP \fB-reg_only\ \fRor\ \fB-r\fR
+Bulk-register users who are already in Moira.
+.IP \fB-register\ \fRor\ \fB-R\fR
+Register users and add to database.
+.IP \fB-verbose\ \fRor\ \fB-v\fR
+Be verbose.
+.IP \fB-nodupcheck\ \fRor\ \fB-d\fR
+Don't check for duplicate names.
+.IP \fB-nocaps\ \fRor\ \fB-n\fR
+Don't fix capitalization of names.
+.IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  
+
+.SH AUTHORS
+Garry Zacheiss, MIT Information Systems.
+
+Manual page by Jonathan Reed, MIT IS&T.
+.SH SEE ALSO
+moira(1)
+
+

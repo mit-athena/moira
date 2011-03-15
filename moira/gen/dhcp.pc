@@ -201,7 +201,6 @@ int main(int argc, char **argv)
 	      *location ? location : "unknown",
 	      *contact ? contact : "unknown");
 
-
       if (*logaddr)
 	fprintf(out, "trap-dest: %s\n", logaddr);
 

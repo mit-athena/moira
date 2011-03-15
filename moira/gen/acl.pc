@@ -266,7 +266,7 @@ void dump_passwd_file(FILE *out, int lid)
   struct imember *m;
   EXEC SQL BEGIN DECLARE SECTION;
   char shell[USERS_SHELL_SIZE], fullname[USERS_FULLNAME_SIZE];
-  char nickname[USERS_NICKNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
+  char oa[USERS_OFFICE_ADDR_SIZE];
   char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
   int uid, i = 0;
   char *name, *n, *lasts = NULL;
@@ -279,9 +279,9 @@ void dump_passwd_file(FILE *out, int lid)
 	case 'U':
 	  name = m->name;
 
-	  EXEC SQL SELECT unix_uid, shell, fullname, nickname,
+	  EXEC SQL SELECT unix_uid, shell, fullname,
 	    office_addr, office_phone, home_phone
-	    INTO :uid, :shell, :fullname, :nickname, :oa, :op, :hp
+	    INTO :uid, :shell, :fullname, :oa, :op, :hp
 	    FROM users
 	    WHERE login = :name AND status != 3;
 	  if (sqlca.sqlcode)
@@ -289,13 +289,12 @@ void dump_passwd_file(FILE *out, int lid)
 
 	  strtrim(shell);
 	  strtrim(fullname);
-	  strtrim(nickname);
 	  strtrim(op);
 	  strtrim(oa);
 	  strtrim(hp);
 
-	  fprintf(out, "%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\n",
-		  name, uid, fullname, nickname, oa, op, hp, name, shell);
+	  fprintf(out, "%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\n",
+		  name, uid, fullname, oa, op, hp, name, shell);
 	  break;
 
 	case 'K':
@@ -305,9 +304,9 @@ void dump_passwd_file(FILE *out, int lid)
 	    login = :name and status != 3;
 	  if (i == 1)
 	    {
-	      EXEC SQL SELECT unix_uid, shell, fullname, nickname,
+	      EXEC SQL SELECT unix_uid, shell, fullname,
 		office_addr, office_phone, home_phone 
-		INTO :uid, :shell, :fullname, :nickname, :oa, :op, :hp 
+		INTO :uid, :shell, :fullname, :oa, :op, :hp 
 		FROM users 
 		WHERE login = :name AND status != 3;	      
 	      if (sqlca.sqlcode)
@@ -315,13 +314,12 @@ void dump_passwd_file(FILE *out, int lid)
 	      
 	      strtrim(shell);
 	      strtrim(fullname);
-	      strtrim(nickname);
 	      strtrim(op);
 	      strtrim(oa);
 	      strtrim(hp);
 	      
-	      fprintf(out, "%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\n",
-		      name, uid, fullname, nickname, oa, op, hp, name, shell);
+	      fprintf(out, "%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\n",
+		      name, uid, fullname, oa, op, hp, name, shell);
 	    }
 	  break;
 	}

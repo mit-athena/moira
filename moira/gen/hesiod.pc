@@ -203,7 +203,7 @@ int do_passwd(void)
   char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
   char fullname[USERS_FULLNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
   char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
-  char nn[USERS_NICKNAME_SIZE], potype[USERS_POTYPE_SIZE];
+  char potype[USERS_POTYPE_SIZE];
   int uid, id, pid, iid, eid, mid, status;
   EXEC SQL END DECLARE SECTION;
 
@@ -238,7 +238,7 @@ int do_passwd(void)
 
   users = create_hash(12001);
   EXEC SQL DECLARE u_cursor CURSOR FOR
-    SELECT login, unix_uid, shell, fullname, nickname, office_addr,
+    SELECT login, unix_uid, shell, fullname, office_addr,
     office_phone, home_phone, users_id, potype, pop_id, imap_id, exchange_id,
     status
     FROM users
@@ -247,13 +247,12 @@ int do_passwd(void)
   EXEC SQL OPEN u_cursor;
   while (1)
     {
-      EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname, :nn,
+      EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname,
 	:oa, :op, :hp, :id, :potype, :pid, :iid, :eid, :status;
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
       dequote(fullname);
-      dequote(nn);
       dequote(oa);
       dequote(op);
       dequote(hp);
@@ -265,8 +264,8 @@ int do_passwd(void)
       hash_store(users, id, u);
       if (status == 1 || status == 2)
 	{
-	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
-		  login, HCLASS, HTYPE, login, uid, fullname, nn, oa,
+	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
+		  login, HCLASS, HTYPE, login, uid, fullname, oa,
 		  op, hp, login, shell);
 	  fprintf(uout, "%d.uid\t%s CNAME %s.passwd\n", uid, HCLASS, login);
 	}

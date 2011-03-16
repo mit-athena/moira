@@ -1,8 +1,9 @@
 debathena-moira (4.0.0+svn20100405-0debathena3) unstable; urgency=low
 
   * Add manpages for addusr and namespace (Trac: 268)
+  * Use a .pid file in the initscript
 
- -- Jonathan Reed <jdreed@mit.edu>  Thu, 10 Mar 2011 14:23:20 -0500
+ -- Jonathan Reed <jdreed@mit.edu>  Tue, 15 Mar 2011 22:59:55 -0400
 
 debathena-moira (4.0.0+svn20100405-0debathena2) unstable; urgency=low
 

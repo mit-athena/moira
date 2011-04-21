@@ -68,7 +68,7 @@ while (<DATA>) {
     }
 
     # Create list if it doesn't exist.
-    &check_list($stellargroup, "stellar-group-admin", 0, "Automatically imported from Stellar");
+    &check_list($stellargroup, "stellar-group-admin", 1, "Automatically imported from Stellar");
 
     # Now fill in lists.
     %mrmembers = ();

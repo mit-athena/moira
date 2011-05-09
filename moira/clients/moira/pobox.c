@@ -480,7 +480,7 @@ int SetUserPOBox(int argc, char **argv)
 	    {
 	      free(type);
 	      type = "EXCHANGE";
-	      box = "EXCHANGE.MIT.EDU";
+	      box = strdup("EXCHANGE.MIT.EDU");
 	    }
 	  else
 	    {

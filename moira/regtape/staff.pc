@@ -184,6 +184,9 @@ struct entry *get_next_entry(FILE *in)
   e.id = id;
   e.haddr = e.hphone = "";
 
+  /* Not used for employees. */
+  e.school_code = "";
+
   /* The following is really gross, but it happens to successfully convert
    * new-style Warehouse office descriptions into (more-readable) old-style
    * Personnel Office office descriptions.

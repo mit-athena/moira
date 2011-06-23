@@ -22,6 +22,9 @@ struct entry {
   char *xaddress;
   char *xphone1;
   char *xphone2;
+
+  /* Only used by student load */
+  char *school_code;
 };
 
 void fixphone(char *phone);

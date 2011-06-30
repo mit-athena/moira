@@ -27,6 +27,19 @@ Importing a new Moira snapshot:
 
    svn status | awk '/^?/ { print $2; }' | xargs svn add
 
+   Also, you'll need to delete any files that no longer exist.  One
+   way to do this (probably not the best way) is to go back to your
+   moira working copy, and to a reverse merge of the previous imported
+   revision.  For example, if the last snapshot was from moira r3987,
+   and the current one is r4042:
+
+   ~/scratch/moira$ svn merge -r4042:3987 .
+
+   Then run "svn status" and looked for _added_ files (it's a reverse
+   merge), and those are the files to delete.  Or, comb the moirac
+   discuss meeting and look for "Removed:" in the commit messages.  Or
+   do something else.
+
 7) Run "svn diff" and skim the changes to make sure they look reasonable.
 
 8) Edit debian/changelog, and bump the version number, including the

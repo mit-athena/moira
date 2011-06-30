@@ -1,4 +1,4 @@
-# $Id: Makefile.in 3990 2010-03-11 16:44:43Z zacheiss $
+# $Id: Makefile.in 4040 2011-06-15 21:51:11Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,25 +32,25 @@ LIB_OBJS=util.o tar.o genacl.o
 LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
-OBJS=	acl.lo boot.lo confluence.lo cups-print.lo cups-cluster.lo dhcp.lo directory.lo events.lo \
+OBJS=	acl.lo confluence.lo cups-print.lo cups-cluster.lo dhcp.lo directory.lo events.lo \
 	hesiod.lo hosts.lo mailhub.lo ndb.lo network.lo nfs.lo pobox.lo \
 	postoffice.lo print.lo warehouse-lists.lo winad.lo www.lo zephyr.lo
 
-CFILES= acl.c boot.c confluence.c cups-print.c cups-cluster.c dhcp.c directory.c events.c \
+CFILES= acl.c confluence.c cups-print.c cups-cluster.c dhcp.c directory.c events.c \
 	hesiod.c hosts.c mailhub.c ndb.c network.c nfs.c pobox.c \
 	postoffice.c print.c warehouse-lists.c winad.c www.c zephyr.c
 
-TARGET=	acl.gen boot.gen confluence.gen cups-print.gen cups-cluster.gen dhcp.gen directory.gen \
+TARGET=	acl.gen confluence.gen cups-print.gen cups-cluster.gen dhcp.gen directory.gen \
 	events.gen hesiod.gen hosts.gen mailhub.gen ndb.gen \
 	network.gen nfs.gen pobox.gen postoffice.gen print.gen \
 	warehouse-lists.gen winad.gen www.gen zephyr.gen
 
-SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen \
+SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	cups-print.sh cups-cluster.sh dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen mailhosts.gen mailhub.sh mailman.gen mailman.sh \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
-	ndb.sh nfs.sh null.sh postoffice.sh print.sh rt.sh sapprint.gen \
+	ndb.sh nfs.sh null.sh postoffice.sh print.sh print-accounting.gen sapprint.gen \
 	sapprint.sh spwatch.gen tsm.gen tsm.sh ua-elect.gen warehouse.gen warehouse.sh \
 	winstats.gen winstats.sh www.sh zephyr.sh install_dirs \
 	install_quotas zero_quotas
@@ -119,12 +119,6 @@ warehouse.gen: warehouse.lo libdcm.a $(MR_LIBDEP)
 
 print.gen: print.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) print.lo libdcm.a $(SQL_LIBS) $(LIBS)
-
-printng.gen: printng.lo libdcm.a $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) printng.lo libdcm.a $(SQL_LIBS) $(LIBS)
-
-boot.gen: boot.lo libdcm.a $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) boot.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
 acl.gen: acl.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) acl.lo libdcm.a $(SQL_LIBS) $(LIBS)

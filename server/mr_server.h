@@ -1,4 +1,4 @@
-/* $Id: mr_server.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mr_server.h 4001 2010-04-21 20:38:45Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -252,7 +252,7 @@ int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ghst(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
-int setup_uhha(struct query *q, char *argv[], client *cl);
+int setup_ahha(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
 int setup_dpsv(struct query *q, char *argv[], client *cl);
 int setup_dcon(struct query *q, char *argv[], client *cl);

@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: stellar.pl 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: stellar.pl 4037 2011-04-21 16:18:33Z zacheiss $
 
 $db = "";
 $mrtest = "mrtest";
@@ -68,7 +68,7 @@ while (<DATA>) {
     }
 
     # Create list if it doesn't exist.
-    &check_list($stellargroup, "stellar-group-admin", 0, "Automatically imported from Stellar");
+    &check_list($stellargroup, "stellar-group-admin", 1, "Automatically imported from Stellar");
 
     # Now fill in lists.
     %mrmembers = ();

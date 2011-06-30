@@ -1,3 +1,10 @@
+debathena-moira (4.0.0+svn20110628-r4042-0debathena1) unstable; urgency=low
+
+  * Snapshot moira@r4042 (6/28/11)
+  * Update version number to include moira revision number
+
+ -- Jonathan Reed <jdreed@mit.edu>  Thu, 30 Jun 2011 12:04:02 -0400
+
 debathena-moira (4.0.0+svn20100405-0debathena4) unstable; urgency=low
 
   * Don't turn off the daemon on workstations that previously had enabled it

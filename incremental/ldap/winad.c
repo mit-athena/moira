@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 3992 2010-03-15 02:52:24Z zacheiss $ */
+/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 4020 2010-09-02 13:46:09Z zacheiss $ */
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -2570,6 +2570,10 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
 
+  if(!ActiveDirectory) {
+    ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
+  }
+
   if (Exchange)
     {
       if(atoi(maillist) && !MailDisabled && email_isvalid(mail)) 
@@ -4394,8 +4398,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	} else if(rc==MR_NO_MATCH) {
 	  
 	  n = 0;
-	  ADD_ATTR("mitMoiraIMAPServer", mit_moira_imap_address_v, 
-		   LDAP_MOD_REPLACE);
+	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
+		 LDAP_MOD_REPLACE);
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
 	  
@@ -4407,8 +4411,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		    "Unable to set the mitMoiraIMAPAddress for %s : %s",
 		    user_name, ldap_err2string(rc));
 
-	}
-    
+      }
+
       argv[0] = user_name;
 	  
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
@@ -5162,6 +5166,7 @@ int user_create(int ac, char **av, void *ptr)
   sprintf(userAccountControlStr, "%ld", userAccountControl);
   userAccountControl_v[0] = userAccountControlStr;
   userPrincipalName_v[0] = upn;
+  sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
   
   if(ActiveDirectory)
     cn_v[0] = user_name;
@@ -5195,7 +5200,6 @@ int user_create(int ac, char **av, void *ptr)
   else
     sprintf(new_dn, "uid=%s,%s,%s", user_name, user_ou, call_args[1]);
 
-  sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
   if(Exchange)
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
   else
@@ -5359,7 +5363,7 @@ int user_create(int ac, char **av, void *ptr)
     {
       mitMoiraId_v[0] = call_args[2];
       ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD); 
-    }
+  }
 
   ADD_ATTR("altSecurityIdentities", altSecurityIdentities_v, LDAP_MOD_ADD);
 
@@ -9202,7 +9206,8 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
       while(gPtr) {
 	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "Recover")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL))
+	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;
 	    continue;
@@ -9517,6 +9522,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
   ULONG       rc;
   int         Max_wait_time = 1000;
   int         Max_size_limit = LDAP_NO_LIMIT;
+  sasl_ssf_t  max_ssf = 0;
   LDAPControl **ctrls = NULL;
 
   if (strlen(ldap_domain) == 0)
@@ -9551,6 +9557,8 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                                (void *)&Max_size_limit);
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS,
                                LDAP_OPT_OFF);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_X_SASL_SSF_MAX,
+                               &max_ssf);
 
 	  rc = ldap_sasl_interactive_bind_ext_s((*ldap_handle), "", sasl_mech,
 						 NULL, NULL, sasl_flags,

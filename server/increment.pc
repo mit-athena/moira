@@ -1,4 +1,4 @@
-/* $Id: increment.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: increment.pc 4021 2010-09-02 15:07:00Z zacheiss $
  *
  * Deal with incremental updates
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4021 2010-09-02 15:07:00Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -103,10 +103,45 @@ void incremental_before(enum tables table, char *qual, char **argv)
       beforec = 14;
       break;
     case MACHINE_TABLE:
-      sprintf(stmt_buf, "SELECT m.name, m.vendor, m.mach_id FROM machine m "
+      sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
+	      "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
+	      "m.owner_type, m.owner_id, m.acomment, m.ocomment FROM machine m "
 	      "WHERE %s", qual);
       dosql(before);
-      beforec = 3;
+      beforec = 15;
+      name = xmalloc(0);
+      id = atoi(before[12]);
+      if (!strncmp(before[11], "USER", 4))
+	{
+	  id_to_name(id, USERS_TABLE, &name);
+	  strcpy(before[12], name);
+	}
+      else if (!strncmp(before[11], "LIST", 4))
+	{
+	  id_to_name(id, LIST_TABLE, &name);
+	  strcpy(before[12], name);
+	}
+      else if (!strncmp(before[11], "KERBEROS", 8))
+	{
+	  id_to_name(id, STRINGS_TABLE, &name);
+	  strcpy(before[12], name);
+	}
+      id = atoi(before[13]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(before[13], name);
+      id = atoi(before[14]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(before[14], name);
+      break;
+    case HOSTALIAS_TABLE:
+      strcpy(before[0], argv[0]);
+      strcpy(before[1], argv[1]);
+      beforec = 2;
+      break;
+    case HWADDRMAP_TABLE:
+      strcpy(before[0], argv[0]);
+      strcpy(before[1], argv[1]);
+      beforec = 2;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "
@@ -287,10 +322,45 @@ void incremental_after(enum tables table, char *qual, char **argv)
       afterc = 14;
       break;
     case MACHINE_TABLE:
-      sprintf(stmt_buf, "SELECT m.name, m.vendor, m.mach_id FROM machine m "
-	      "WHERE %s", qual);
+      sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
+              "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
+              "m.owner_type, m.owner_id, m.acomment, m.ocomment FROM machine m "
+              "WHERE %s", qual);
       dosql(after);
-      afterc = 3;
+      afterc = 15;
+      name = xmalloc(0);
+      id = atoi(after[12]);
+      if (!strncmp(after[11], "USER", 4))
+        { 
+          id_to_name(id, USERS_TABLE, &name);
+          strcpy(after[12], name);
+        }
+      else if (!strncmp(after[11], "LIST", 4))
+        {
+          id_to_name(id, LIST_TABLE, &name);
+          strcpy(after[12], name);
+        }
+      else if (!strncmp(after[11], "KERBEROS", 8))
+        {
+          id_to_name(id, STRINGS_TABLE, &name);
+          strcpy(after[12], name);
+        }
+      id = atoi(after[13]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(after[13], name);
+      id = atoi(after[14]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(after[14], name);
+      break;
+    case HOSTALIAS_TABLE:
+      strcpy(after[0], argv[0]);
+      strcpy(after[1], argv[1]);
+      afterc = 2;
+      break;
+    case HWADDRMAP_TABLE:
+      strcpy(after[0], argv[0]);
+      strcpy(after[1], argv[1]);
+      afterc = 2;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "
@@ -552,7 +622,7 @@ void next_incremental(void)
     return;
 
   if (inc_running)
-    com_err(whoami, 0, "incremental timeout on pid %d", inc_pid);
+    critical_alert(whoami, "moirad", "incremental timeout on pid %d", inc_pid);
 
   sq_remove_data(incremental_exec, &iu);
   argv[1] = iu->table;
@@ -579,7 +649,7 @@ void next_incremental(void)
       execv(prog, argv);
       _exit(1);
     case -1:
-      com_err(whoami, 0, "Failed to start incremental update");
+      critical_alert(whoami, "moirad", "Failed to start incremental update %s", prog);
       break;
     default:
       inc_running = 1;

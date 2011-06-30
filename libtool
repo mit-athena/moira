@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # libtoolT - Provide generalized library-building support services.
 # Generated automatically by  (GNU  )
@@ -30,10 +30,10 @@
 # the same distribution terms that you use for the rest of that program.
 
 # A sed program that does not truncate output.
-SED="/bin/sed"
+SED="/usr/athena/bin/sed"
 
 # Sed that helps us avoid accidentally triggering echo(1) options like -n.
-Xsed="/bin/sed -e s/^X//"
+Xsed="/usr/athena/bin/sed -e s/^X//"
 
 # The HP-UX ksh and POSIX shell print the target directory to stdout
 # if CDPATH is set.
@@ -44,10 +44,10 @@ available_tags=" CXX F77"
 
 # ### BEGIN LIBTOOL CONFIG
 
-# Libtool was configured on host red-herring.mit.edu:
+# Libtool was configured on host brad-majors.mit.edu:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/sh"
+SHELL="/bin/bash"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -56,17 +56,17 @@ build_libtool_libs=yes
 build_old_libs=yes
 
 # Whether or not to add -lc for building shared libraries.
-build_libtool_need_lc=no
+build_libtool_need_lc=yes
 
 # Whether or not to disallow shared libs when runtime libs are static
 allow_libtool_libs_with_static_runtimes=no
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=i686-redhat-linux-gnu
+host=sparc-sun-solaris2.10
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -85,16 +85,16 @@ CC="gcc"
 with_gcc=yes
 
 # An ERE matcher.
-EGREP="grep -E"
+EGREP="egrep"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/ccs/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
 
 # A BSD-compatible nm program.
-NM="/usr/bin/nm -B"
+NM="/usr/ccs/bin/nm -p"
 
 # A symbol stripping program
 STRIP="strip"
@@ -138,7 +138,7 @@ pic_flag=" -fPIC -DPIC"
 pic_mode=default
 
 # What is the maximum length of a command?
-max_cmd_len=32768
+max_cmd_len=262144
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
@@ -168,10 +168,10 @@ link_static_flag="-static"
 no_builtin_flag=" -fno-builtin"
 
 # Compiler flag to allow reflexive dlopens.
-export_dynamic_flag_spec="\${wl}--export-dynamic"
+export_dynamic_flag_spec=""
 
 # Compiler flag to generate shared objects directly from archives.
-whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+whole_archive_flag_spec="-z allextract\$convenience -z defaultextract"
 
 # Compiler flag to generate thread-safe objects.
 thread_safe_flag_spec=""
@@ -202,12 +202,10 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$output_objdir/\$libname.ver~
-cat \$export_symbols | sed -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$output_objdir/\$libname.ver~
-\$echo \\\"local: *; };\\\" >> \$output_objdir/\$libname.ver~
-        \$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-version-script \${wl}\$output_objdir/\$libname.ver -o \$lib"
-postinstall_cmds=""
+archive_cmds="\$CC -shared \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags"
+archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$lib.exp~cat \$export_symbols | \$SED -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$lib.exp~\$echo \\\"local: *; };\\\" >> \$lib.exp~
+	  \$CC -shared \${wl}-M \${wl}\$lib.exp \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags~\$rm \$lib.exp"
+postinstall_cmds="chmod +x \$lib"
 postuninstall_cmds=""
 
 # Commands used to build a loadable module (assumed same as above if empty)
@@ -215,8 +213,8 @@ module_cmds=""
 module_expsym_cmds=""
 
 # Commands to strip libraries.
-old_striplib="strip --strip-debug"
-striplib="strip --strip-unneeded"
+old_striplib=""
+striplib=""
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
@@ -248,16 +246,16 @@ file_magic_cmd="\$MAGIC_CMD"
 allow_undefined_flag=""
 
 # Flag that forces no undefined symbols.
-no_undefined_flag=""
+no_undefined_flag=" -z text"
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([BDRT][BDRT]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -266,13 +264,13 @@ global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
 global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
 
 # This is the shared library runtime path variable.
-runpath_var=LD_RUN_PATH
+runpath_var=
 
 # This is the shared library path variable.
 shlibpath_var=LD_LIBRARY_PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
@@ -282,7 +280,7 @@ hardcode_into_libs=yes
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist.
-hardcode_libdir_flag_spec="\${wl}--rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="-R\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into
 # a binary during linking. This must work even if $libdir does
@@ -302,7 +300,7 @@ hardcode_minus_L=no
 
 # Set to yes if using SHLIBPATH_VAR=DIR during linking hardcodes DIR into
 # the resulting binary.
-hardcode_shlibpath_var=unsupported
+hardcode_shlibpath_var=no
 
 # Set to yes if building a shared library automatically hardcodes DIR into the library
 # and all subsequent libraries and executables linked against it.
@@ -310,16 +308,16 @@ hardcode_automatic=no
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at relink time.
-variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH   GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=unknown
+link_all_deplibs=yes
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=" /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../ /lib/i386-redhat-linux/3.4.6/ /lib/ /usr/lib/i386-redhat-linux/3.4.6/ /usr/lib/"
+sys_lib_search_path_spec=" /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/ /usr/lib/gcc/sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../../sparc-sun-solaris2.10/lib/sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../../sparc-sun-solaris2.10/lib/ /usr/ccs/lib/sparc-sun-solaris2.10/3.4.3/ /usr/ccs/lib/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../ /lib/sparc-sun-solaris2.10/3.4.3/ /lib/ /usr/lib/sparc-sun-solaris2.10/3.4.3/ /usr/lib/"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib include ld.so.conf.d/*.conf /usr/i486-linux-libc5/lib /usr/athena/lib "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -6769,10 +6767,10 @@ build_old_libs=`case $build_libtool_libs in yes) $echo no;; *) $echo yes;; esac`
 # End:
 # ### BEGIN LIBTOOL TAG CONFIG: CXX
 
-# Libtool was configured on host red-herring.mit.edu:
+# Libtool was configured on host brad-majors.mit.edu:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/sh"
+SHELL="/bin/bash"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -6787,11 +6785,11 @@ build_libtool_need_lc=no
 allow_libtool_libs_with_static_runtimes=no
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=i686-redhat-linux-gnu
+host=sparc-sun-solaris2.10
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -6810,16 +6808,16 @@ CC="g++"
 with_gcc=yes
 
 # An ERE matcher.
-EGREP="grep -E"
+EGREP="egrep"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/ccs/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
 
 # A BSD-compatible nm program.
-NM="/usr/bin/nm -B"
+NM="/usr/ccs/bin/nm -p"
 
 # A symbol stripping program
 STRIP="strip"
@@ -6863,7 +6861,7 @@ pic_flag=" -fPIC -DPIC"
 pic_mode=default
 
 # What is the maximum length of a command?
-max_cmd_len=32768
+max_cmd_len=262144
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
@@ -6893,10 +6891,10 @@ link_static_flag="-static"
 no_builtin_flag=" -fno-builtin"
 
 # Compiler flag to allow reflexive dlopens.
-export_dynamic_flag_spec="\${wl}--export-dynamic"
+export_dynamic_flag_spec=""
 
 # Compiler flag to generate shared objects directly from archives.
-whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+whole_archive_flag_spec=""
 
 # Compiler flag to generate thread-safe objects.
 thread_safe_flag_spec=""
@@ -6927,9 +6925,10 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-retain-symbols-file \$wl\$export_symbols -o \$lib"
-postinstall_cmds=""
+archive_cmds="\$CC -shared -nostdlib \$LDFLAGS \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags \${wl}-h \$wl\$soname -o \$lib"
+archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$lib.exp~cat \$export_symbols | \$SED -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$lib.exp~\$echo \\\"local: *; };\\\" >> \$lib.exp~
+		\$CC -shared -nostdlib \${wl}-M \$wl\$lib.exp -o \$lib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags~\$rm \$lib.exp"
+postinstall_cmds="chmod +x \$lib"
 postuninstall_cmds=""
 
 # Commands used to build a loadable module (assumed same as above if empty)
@@ -6937,16 +6936,16 @@ module_cmds=""
 module_expsym_cmds=""
 
 # Commands to strip libraries.
-old_striplib="strip --strip-debug"
-striplib="strip --strip-unneeded"
+old_striplib=""
+striplib=""
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
-predep_objects="/usr/lib/gcc/i386-redhat-linux/3.4.6/../../../crti.o /usr/lib/gcc/i386-redhat-linux/3.4.6/crtbeginS.o"
+predep_objects="/usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/crti.o /usr/ccs/lib/values-Xa.o /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/crtbegin.o"
 
 # Dependencies to place after the objects being linked to create a
 # shared library.
-postdep_objects="/usr/lib/gcc/i386-redhat-linux/3.4.6/crtendS.o /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../crtn.o"
+postdep_objects="/usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/crtend.o /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/crtn.o"
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
@@ -6954,11 +6953,11 @@ predeps=""
 
 # Dependencies to place after the objects being linked to create a
 # shared library.
-postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
+postdeps="-lstdc++ -lm -R/usr/sfw/lib -lgcc_s -R/usr/sfw/lib -lgcc_s"
 
 # The library search path used internally by the compiler when linking
 # a shared library.
-compiler_lib_search_path="-L/usr/lib/gcc/i386-redhat-linux/3.4.6 -L/usr/lib/gcc/i386-redhat-linux/3.4.6 -L/usr/lib/gcc/i386-redhat-linux/3.4.6/../../.."
+compiler_lib_search_path="-R/usr/sfw/lib -L/usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3 -L/usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../../sparc-sun-solaris2.10/lib -L/usr/ccs/lib -L/usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../.."
 
 # Method to check whether dependent libraries are shared objects.
 deplibs_check_method="pass_all"
@@ -6970,16 +6969,16 @@ file_magic_cmd="\$MAGIC_CMD"
 allow_undefined_flag=""
 
 # Flag that forces no undefined symbols.
-no_undefined_flag=""
+no_undefined_flag=" \${wl}-z \${wl}defs"
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([BDRT][BDRT]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -6988,13 +6987,13 @@ global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
 global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
 
 # This is the shared library runtime path variable.
-runpath_var=LD_RUN_PATH
+runpath_var=
 
 # This is the shared library path variable.
 shlibpath_var=LD_LIBRARY_PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
@@ -7004,7 +7003,7 @@ hardcode_into_libs=yes
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist.
-hardcode_libdir_flag_spec="\${wl}--rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="\${wl}-R \$wl\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into
 # a binary during linking. This must work even if $libdir does
@@ -7032,16 +7031,16 @@ hardcode_automatic=no
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at relink time.
-variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH LD_LIBRARY_PATH  GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Whether libtool must link a program against all its dependency libraries.
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=" /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../ /lib/i386-redhat-linux/3.4.6/ /lib/ /usr/lib/i386-redhat-linux/3.4.6/ /usr/lib/"
+sys_lib_search_path_spec=" /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/ /usr/lib/gcc/sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../../sparc-sun-solaris2.10/lib/sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../../sparc-sun-solaris2.10/lib/ /usr/ccs/lib/sparc-sun-solaris2.10/3.4.3/ /usr/ccs/lib/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../sparc-sun-solaris2.10/3.4.3/ /usr/sfw/lib/gcc/sparc-sun-solaris2.10/3.4.3/../../../ /lib/sparc-sun-solaris2.10/3.4.3/ /lib/ /usr/lib/sparc-sun-solaris2.10/3.4.3/ /usr/lib/"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib include ld.so.conf.d/*.conf /usr/i486-linux-libc5/lib /usr/athena/lib "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -7065,10 +7064,10 @@ include_expsyms=""
 
 # ### BEGIN LIBTOOL TAG CONFIG: F77
 
-# Libtool was configured on host red-herring.mit.edu:
+# Libtool was configured on host brad-majors.mit.edu:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/sh"
+SHELL="/bin/bash"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -7083,11 +7082,11 @@ build_libtool_need_lc=no
 allow_libtool_libs_with_static_runtimes=no
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=i686-redhat-linux-gnu
+host=sparc-sun-solaris2.10
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -7100,22 +7099,22 @@ AR_FLAGS="cru"
 LTCC="gcc"
 
 # A language-specific compiler.
-CC="g77"
+CC="f77"
 
 # Is the compiler the GNU C compiler?
-with_gcc=yes
+with_gcc=
 
 # An ERE matcher.
-EGREP="grep -E"
+EGREP="egrep"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/ccs/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
 
 # A BSD-compatible nm program.
-NM="/usr/bin/nm -B"
+NM="/usr/ccs/bin/nm -p"
 
 # A symbol stripping program
 STRIP="strip"
@@ -7155,14 +7154,14 @@ shrext_cmds='.so'
 exeext=""
 
 # Additional compiler flags for building library objects.
-pic_flag=" -fPIC"
+pic_flag=""
 pic_mode=default
 
 # What is the maximum length of a command?
-max_cmd_len=32768
+max_cmd_len=262144
 
 # Does compiler simultaneously support -c and -o options?
-compiler_c_o="yes"
+compiler_c_o="no"
 
 # Must we lock files when doing compilation ?
 need_locks="no"
@@ -7189,10 +7188,10 @@ link_static_flag="-static"
 no_builtin_flag=""
 
 # Compiler flag to allow reflexive dlopens.
-export_dynamic_flag_spec="\${wl}--export-dynamic"
+export_dynamic_flag_spec=""
 
 # Compiler flag to generate shared objects directly from archives.
-whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+whole_archive_flag_spec="-z allextract\$convenience -z defaultextract"
 
 # Compiler flag to generate thread-safe objects.
 thread_safe_flag_spec=""
@@ -7223,12 +7222,10 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$output_objdir/\$libname.ver~
-cat \$export_symbols | sed -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$output_objdir/\$libname.ver~
-\$echo \\\"local: *; };\\\" >> \$output_objdir/\$libname.ver~
-        \$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-version-script \${wl}\$output_objdir/\$libname.ver -o \$lib"
-postinstall_cmds=""
+archive_cmds="\$CC -shared \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags"
+archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$lib.exp~cat \$export_symbols | \$SED -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$lib.exp~\$echo \\\"local: *; };\\\" >> \$lib.exp~
+	  \$CC -shared \${wl}-M \${wl}\$lib.exp \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags~\$rm \$lib.exp"
+postinstall_cmds="chmod +x \$lib"
 postuninstall_cmds=""
 
 # Commands used to build a loadable module (assumed same as above if empty)
@@ -7236,8 +7233,8 @@ module_cmds=""
 module_expsym_cmds=""
 
 # Commands to strip libraries.
-old_striplib="strip --strip-debug"
-striplib="strip --strip-unneeded"
+old_striplib=""
+striplib=""
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
@@ -7269,16 +7266,16 @@ file_magic_cmd="\$MAGIC_CMD"
 allow_undefined_flag=""
 
 # Flag that forces no undefined symbols.
-no_undefined_flag=""
+no_undefined_flag=" -z text"
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([BDRT][BDRT]*\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -7287,13 +7284,13 @@ global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
 global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
 
 # This is the shared library runtime path variable.
-runpath_var=LD_RUN_PATH
+runpath_var=
 
 # This is the shared library path variable.
 shlibpath_var=LD_LIBRARY_PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
@@ -7303,7 +7300,7 @@ hardcode_into_libs=yes
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist.
-hardcode_libdir_flag_spec="\${wl}--rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="-R\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into
 # a binary during linking. This must work even if $libdir does
@@ -7323,7 +7320,7 @@ hardcode_minus_L=no
 
 # Set to yes if using SHLIBPATH_VAR=DIR during linking hardcodes DIR into
 # the resulting binary.
-hardcode_shlibpath_var=unsupported
+hardcode_shlibpath_var=no
 
 # Set to yes if building a shared library automatically hardcodes DIR into the library
 # and all subsequent libraries and executables linked against it.
@@ -7331,16 +7328,16 @@ hardcode_automatic=no
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at relink time.
-variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH LD_LIBRARY_PATH  GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=unknown
+link_all_deplibs=yes
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=" /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../../i386-redhat-linux/lib/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../i386-redhat-linux/3.4.6/ /usr/lib/gcc/i386-redhat-linux/3.4.6/../../../ /lib/i386-redhat-linux/3.4.6/ /lib/ /usr/lib/i386-redhat-linux/3.4.6/ /usr/lib/"
+sys_lib_search_path_spec=""
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib include ld.so.conf.d/*.conf /usr/i486-linux-libc5/lib /usr/athena/lib "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""

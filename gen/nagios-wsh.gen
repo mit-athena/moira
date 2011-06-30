@@ -1,12 +1,17 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-wsh.gen 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: nagios-wsh.gen 4023 2010-09-22 21:12:18Z jweiss $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
 $MR_OCONFIG = 47836460;
 
-$outdir = '/moira/dcm/nagios-wsh';
+$outdir = '/moira/dcm/nagios3-wsh';
+
+%default_services = ('WINDOWS-CPU', 'WINDOWS-CPU',
+		     'WINDOWS-DISK-C', 'WINDOWS-DISK-C',
+		     'WINDOWS-MEMORY', 'WINDOWS-MEMORY',
+		     'WINDOWS-UPTIME', 'WINDOWS-UPTIME');
 
 use DBI;
 
@@ -16,7 +21,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 $sth0 = $dbh->prepare("SELECT l.list_id, m.name " .
                       "FROM list l, machine m, serverhosts sh " .
                       "WHERE sh.value3 = l.name AND sh.service = " .
-		      "'NAGIOS-WSH' AND m.mach_id = sh.mach_id")
+		      "'NAGIOS3-WSH' AND m.mach_id = sh.mach_id")
     || exit $MR_DBMS_ERR;
 $sth0->execute;
 
@@ -32,40 +37,42 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     $sth->execute;
 
     while (($name, $tag) = $sth->fetchrow_array) {
+	my (%defaults) = %default_services;
 	next if $name eq "[NONE]";
 	$name = lc($name);
 	push(@allwshhosts, $name);
 	print OUT <<END;
+
 define host{
 	host_name		$name
 	alias			$name
 	address			$name
-	contact_groups          wsh
+	contact_groups		wsh
 	use			generic-host
 	}
 
 define service{
-  	host_name		$name
+	host_name		$name
 	contact_groups		wsh
 	use			ping-service
 	}
 
 define hostescalation{
-        host_name               $name
-        contact_groups          wsh,wsh-mail
-        first_notification      2
-        last_notification       0
-        notification_interval   0
-        }
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	first_notification	2
+	last_notification	0
+	notification_interval	0
+	}
 
 define serviceescalation{
-        host_name               $name
-        contact_groups          wsh,wsh-mail
-        service_description     PING
-        first_notification      2
-        last_notification       0
-        notification_interval   0
-        }
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	service_description	PING
+	first_notification	2
+	last_notification	0
+	notification_interval	0
+	}
 
 END
 
@@ -81,7 +88,11 @@ END
 	while (<@tags>) {
 	    my $service = $_;
 	    chomp $service;
-	    if ($service =~ /^(FTP|NFS|HTTP|HTTPS|SMTP|SSHD|TELNET|TNS|WINDOWS-UPTIME)$/i) {
+	    if ($service =~ /^-DEFAULTS$/) {
+		%defaults = ();
+	    } elsif ($service =~ /^WINDOWS-UPTIME$/i) {
+		next; # this is now a default service
+	    } elsif ($service =~ /^(FTP|NFS|HTTP|HTTPS|SMTP|SSHD|TELNET|TNS|WINDOWS-DISK-\w)$/i) {
 		my $ucservice = $service;
 		$ucservice =~ tr/a-z/A-Z/;
 		my $lcservice = $service;
@@ -199,6 +210,32 @@ define servicedependency{
 	service_description		HTTPS
 	execution_failure_criteria	n
 	notification_failure_criteria	w,u,c
+	}
+
+END
+	}
+	# add default services
+	for (keys %defaults) {
+	    chomp;
+	    my $service = $_;
+	    my $ucservice = $service;
+	    $ucservice =~ tr/a-z/A-Z/;
+	    my $lcservice = $service;
+	    $lcservice =~ tr/A-Z/a-z/;
+	    print OUT <<END;
+define service{
+	host_name		$name
+	contact_groups		wsh
+	use			$lcservice-service
+	}
+
+define serviceescalation{
+	host_name		$name
+	contact_groups		wsh,wsh-mail
+	service_description	$ucservice
+	first_notification	2
+	last_notification	0
+	notification_interval	0
 	}
 
 END

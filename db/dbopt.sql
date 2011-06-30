@@ -94,3 +94,6 @@ create unique index i_containers_cname on containers (name);
 
 create unique index i_mcntmap_machid on mcntmap (mach_id);
 create index i_mcntmap_cntid on mcntmap (cnt_id);
+
+create index i_hwaddrmap_machid on hwaddrmap (mach_id);
+create index i_hwaddrmap_hwaddr on hwaddrmap (hwaddr);

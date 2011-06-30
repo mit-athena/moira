@@ -1,4 +1,4 @@
-/* $Id: common.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: common.h 4041 2011-06-23 22:09:46Z zacheiss $
  *
  * Copyright (C) 1987-1999 by the Massachusetts Institute of Technology
  *
@@ -22,6 +22,9 @@ struct entry {
   char *xaddress;
   char *xphone1;
   char *xphone2;
+
+  /* Only used by student load */
+  char *school_code;
 };
 
 void fixphone(char *phone);

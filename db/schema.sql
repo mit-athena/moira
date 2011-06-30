@@ -487,3 +487,9 @@ create table userhistory
 	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
 	purged		DATE		DEFAULT SYSDATE NOT NULL
 );
+
+create table hwaddrmap
+(
+	mach_id		INTEGER		DEFAULT 0	NOT NULL,
+	hwaddr		VARCHAR(12)	DEFAULT CHR(0)	NOT NULL
+);

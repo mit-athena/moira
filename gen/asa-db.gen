@@ -1,0 +1,33 @@
+#!/moira/bin/perl -Tw
+# $Id: ua-elect.gen 3990 2010-03-11 16:44:43Z zacheiss $
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$outfile = '/moira/dcm/asa-db.out';
+
+umask 022;
+open(OUT, ">$outfile") || exit $MR_OCONFIG;
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+$sth = $dbh->prepare("SELECT login, clearid, first, last, type FROM users WHERE status = 1 ORDER BY login")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($login, $clearid, $first, $last, $type) = $sth->fetchrow_array) {
+    $row = "$login\t$clearid\t$first\t$last\t$type\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+
+close(OUT);
+$dbh->disconnect;
+
+exit 0;

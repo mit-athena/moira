@@ -1,4 +1,4 @@
-/* $Id: menus.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: menus.c 4001 2010-04-21 20:38:45Z zacheiss $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menus.c $ $Id: menus.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menus.c $ $Id: menus.c 4001 2010-04-21 20:38:45Z zacheiss $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -502,6 +502,30 @@ Menu cname_menu = {
   }
 };
 
+Menu hwaddr_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Hardware Address Menu",
+  4,
+  {
+    { ShowHWAddrs, NULLMENU, 2, {
+      {"show", "Get Host hardware address information"},
+      {"name", "Machine's Name: "},
+    } },
+    { AddHWAddr, NULLMENU, 3, {
+      {"add", "Add Host hardware address"},
+      {"name", "Machine's Name: "},
+      {"hwaddr", "Hardware Address: "},
+    } },
+    { DeleteHWAddr, NULLMENU, 3, {
+      {"delete", "Delete Host hardware address"},
+      {"name", "Machine's Name: "},
+      {"hwaddr", "Hardware Address: "},
+    } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
+  }
+};
+  
 /*
  * Machine Menu
  */
@@ -510,7 +534,7 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  9,
+  10,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show", "Get machine information"},
@@ -540,6 +564,7 @@ Menu machine_menu = {
     } },
     SUBMENU("cnames", "Alias names for machines", &cname_menu),
     SUBMENU("mappings", "Machine To Cluster Mappings Menu", &mappings_menu),
+    SUBMENU("hwaddrs", "Hardware Addresses for machines", &hwaddr_menu),
   }
 };
 
@@ -776,10 +801,7 @@ Menu printer_menu = {
       {"delete", "Delete Printer"},
       {"name", "Printer Name: "}
     } },
-    { UpdateHWAddr, NULLMENU, 2, {
-      {"hwaddr", "Update Printer Hardware Address"},
-      {"name", "Printer hostname: "}
-    } },
+    SUBMENU("hwaddrs", "Hardware Addresses for machines", &hwaddr_menu),
     SUBMENU("server", "Print Servers Menu", &printserver_menu),
   }
 };

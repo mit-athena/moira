@@ -1,4 +1,4 @@
-/* $Id: cluster.c 3968 2010-01-27 23:00:11Z zacheiss $
+/* $Id: cluster.c 4001 2010-04-21 20:38:45Z zacheiss $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 3968 2010-01-27 23:00:11Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4001 2010-04-21 20:38:45Z zacheiss $");
 
 void PrintAliases(char **info);
 static void PrintMachine(char **info);
@@ -217,19 +217,27 @@ static char **SetSubnetDefaults(char **info, char *name)
 
 /* -------------------- General Functions -------------------- */
 
-static char aliasbuf[BUFSIZ * 2];
+char *aliases = NULL;
 
 void PrintAliases(char **info)
 {
-  if (strlen(aliasbuf) == 0)
-    sprintf(aliasbuf, "Aliases:  %s", info[0]);
+  if (aliases == NULL)
+    {
+      aliases = malloc((strlen("Aliases:  ") + strlen(info[0]) + 1));
+      if (!aliases)
+        {
+          com_err(program_name, 0, "Out of memory allocating host aliases");
+          exit(1);
+        }
+      sprintf(aliases, "Aliases:  %s", info[0]);
+    }
   else
     {
-      strcat(aliasbuf, ", ");
-      strcat(aliasbuf, info[0]);
+      aliases = realloc(aliases, strlen(aliases) + strlen(info[0]) + 3);
+      strcat(aliases, ", ");
+      strcat(aliases, info[0]);
     }
 }
-
 
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in
@@ -257,10 +265,11 @@ static char *PrintMachInfo(char **info)
     }
   else
     {
-      aliasbuf[0] = 0;
       Loop(QueueTop(elem), (void (*)(char **)) PrintAliases);
       FreeQueue(elem);
-      Put_message(aliasbuf);
+      Put_message(aliases);
+      free(aliases);
+      aliases = NULL;
     }
   sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
 	  strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
@@ -1286,7 +1295,6 @@ int DeleteMachine(int argc, char **argv)
   free(tmpname);
   return DM_NORMAL;
 }
-
 
 /*	Function Name: ShowCname
  *	Description: This function shows machine aliases
@@ -2602,5 +2610,69 @@ int GetTopLevelCont(int argc, char **argv)
     }
   Loop(QueueTop(elem), (void(*)(char **)) PrintContainer);
   FreeQueue(elem);
+  return DM_NORMAL;
+}
+
+void PrintHWAddr(char **info)
+{
+  char buf[BUFSIZ];
+
+  sprintf(buf, "Machine: %-30s Hardware Address: %-20s",
+          info[0], info[1]);
+  Put_message(buf);
+}
+
+/*	Function Name: ShowHWAddrs
+ *	Description: This function shows machine hardware addresses
+ *	Arguments: argc, argv - the hostname in argv[1]
+ *	Returns: DM_NORMAL.
+ */
+
+int ShowHWAddrs(int argc, char **argv)
+{
+  char *args[1];
+  int stat;
+  struct mqelem *elem = NULL;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  if ((stat = do_mr_query("get_host_hwaddr_mapping", 1, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in get_host_hwaddr_mapping.");
+      return DM_NORMAL;
+    }
+
+  Put_message("");
+  Loop(QueueTop(elem), (void (*)(char **)) PrintHWAddr);
+  FreeQueue(elem);
+  return DM_NORMAL;
+}
+  
+int AddHWAddr(int argc, char **argv)
+{
+  int stat;
+  char *args[2];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = argv[2];
+
+  stat = do_mr_query("add_host_hwaddr", 2, args, NULL, NULL);
+  if (stat != MR_SUCCESS)
+    com_err(program_name, stat, " in add_host_hwaddr");
+
+  return DM_NORMAL;
+}
+
+int DeleteHWAddr(int argc, char **argv)
+{
+  int stat;
+  char *args[2];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = argv[2];
+
+  stat = do_mr_query("delete_host_hwaddr", 2, args, NULL, NULL);
+  if (stat != MR_SUCCESS)
+    com_err(program_name, stat, " in delete_host_hwaddr");
+ 
   return DM_NORMAL;
 }

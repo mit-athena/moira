@@ -1,4 +1,4 @@
-/* $Id: queries2.c 3989 2010-03-10 18:18:16Z zacheiss $
+/* $Id: queries2.c 4001 2010-04-21 20:38:45Z zacheiss $
  *
  * This file defines the query dispatch table
  *
@@ -13,7 +13,7 @@
 
 #include "mr_et.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 3989 2010-03-10 18:18:16Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4001 2010-04-21 20:38:45Z zacheiss $");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -1351,6 +1351,11 @@ static char *ghha_fields[] = {
   "hwaddr",
 };
 
+static char *ghhm_fields[] = {
+  "name",
+  "name", "hwaddr",
+};
+
 static char *ahst2_fields[] = {
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "subnet", "address", "ace_type", "ace_name",
@@ -1570,26 +1575,46 @@ static struct validate uhst_validate = {
   set_modtime_by_id,
 };
 
-static char *uhha_fields[] = {
-  "name",
-  "hwaddr"
+static char *ahha_fields[] = {
+  "name", "hwaddr",
 };
 
-static struct valobj uhha_valobj[] = {
+static struct valobj ahha_valobj[] = {
   {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
-  {V_CHAR, 1, MACHINE_TABLE, "hwaddr"},
+  {V_CHAR, 1, HWADDRMAP_TABLE, "hwaddr"},
 };
 
-static struct validate uhha_validate = {
-  uhha_valobj,
+static struct validate ahha_validate = {
+  ahha_valobj,
   2,
   0,
   0,
   0,
   "mach_id",
   0,
-  setup_uhha,
-  set_modtime_by_id,
+  setup_ahha,
+  set_mach_modtime_by_id,
+};
+
+static char *dhha_fields[] = {
+  "name", "hwaddr",
+};
+
+static struct valobj dhha_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 1, HWADDRMAP_TABLE, "hwaddr"},
+};
+
+static struct validate dhha_validate = {
+  dhha_valobj,
+  2,
+  0,
+  0,
+  0,
+  "mach_id",
+  0,
+  0,
+  set_mach_modtime_by_id,
 };
 
 static char *dhst_fields[] = {
@@ -5719,10 +5744,10 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "m",
     MACHINE_TABLE,
-    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s, hwaddrmap hw",
     ghbh2_fields,
     21,
-    "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    "hw.hwaddr LIKE LOWER('%s') AND hw.mach_id = m.mach_id AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     1,
     "m.name",
     &ghst_validate,
@@ -5736,10 +5761,10 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "m",
     MACHINE_TABLE,
-    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s, hwaddrmap hw",
     ghbh6_fields,
     22,
-    "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    "hw.hwaddr LIKE LOWER('%s') AND hw.mach_id = m.mach_id AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     1,
     "m.name",
     &ghst_validate,
@@ -5753,10 +5778,10 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "m",
     MACHINE_TABLE,
-    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.account_number, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.account_number, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s, hwaddrmap hw",
     ghbh_fields,
     23,
-    "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    "hw.hwaddr LIKE LOWER('%s') AND hw.mach_id = m.mach_id AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     1,
     "m.name",
     &ghst_validate,
@@ -5785,18 +5810,35 @@ struct query Queries[] = {
     "ghha",
     2,
     MR_Q_RETRIEVE,
-    "m",
-    MACHINE_TABLE,
-    "m.hwaddr FROM machine m",
+    "hw",
+    HWADDRMAP_TABLE,
+    "hw.hwaddr FROM machine m, hwaddrmap hw",
     ghha_fields,
     1,
-    "m.name LIKE UPPER('%s')",
+    "m.name LIKE UPPER('%s') AND m.mach_id = hw.mach_id AND rownum < 2",
     1,
-    NULL,
+    "hw.hwaddr",
     NULL,
   },
 
   {
+    /* Q_GHHM - GET_HOST_HWADDR_MAPPING */
+    "get_host_hwaddr_mapping",
+    "ghhm",
+    2,
+    MR_Q_RETRIEVE,
+    "hw",
+    HWADDRMAP_TABLE,
+    "m.name, hw.hwaddr FROM machine m, hwaddrmap hw",
+    ghhm_fields,
+    2,
+    "m.name LIKE UPPER('%s') AND m.mach_id = hw.mach_id",
+    1,
+    "m.name",
+    NULL,
+  },
+    
+  {  
     /* Q_AHST - ADD_HOST, v2 */ /* uses prefetch_value() for mach_id */
     "add_host",
     "ahst",
@@ -5903,16 +5945,50 @@ struct query Queries[] = {
     "update_host_hwaddr",
     "uhha",
     2,
-    MR_Q_UPDATE,
-    "m",
-    MACHINE_TABLE,
-    "machine SET hwaddr = NVL('%s', CHR(0))",
-    uhha_fields,
-    1,
-    "mach_id = %d",
-    1,
+    MR_Q_APPEND,
+    "hw",
+    HWADDRMAP_TABLE,
+    "INTO hwaddrmap (mach_id, hwaddr) VALUES (%d, NVL('%s', CHR(0)))",
+    ahha_fields,
+    2,
+    0,
+    0,
     NULL,
-    &uhha_validate,
+    &ahha_validate,
+  },
+
+  {
+    /* Q_AHHA - ADD_HOST_HWADDR */ 
+    "add_host_hwaddr",
+    "ahha",
+    2,
+    MR_Q_APPEND,
+    "hw",
+    HWADDRMAP_TABLE,
+    "INTO hwaddrmap (mach_id, hwaddr) VALUES (%d, NVL('%s', CHR(0)))",
+    ahha_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &ahha_validate,
+  },
+
+  {
+    /* Q_DHHA - DELETE_HOST_HWADDR */
+    "delete_host_hwaddr",
+    "dhha",
+    2,
+    MR_Q_DELETE,
+    "hw",
+    HWADDRMAP_TABLE,
+    0,
+    dhha_fields,
+    0,
+    "mach_id = %d AND hwaddr = LOWER('%s')",
+    2,
+    NULL,
+    &dhha_validate,
   },
 
   {
@@ -7785,7 +7861,6 @@ struct query Queries[] = {
     &VDfix_modby,
   },
 
-
   {
     /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME, v2 */
     "get_printer_by_duplexname",
@@ -7828,10 +7903,10 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "pr",
     PRINTERS_TABLE,
-    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, hwaddrmap hw",
     gpbd2_fields,
     19,
-    "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    "hw.hwaddr LIKE LOWER('%s') AND hw.mach_id = m1.mach_id AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
     "pr.name",
     &VDfix_modby,
@@ -7848,7 +7923,7 @@ struct query Queries[] = {
     "pr.name, pr.type, pr.hwtype, pr.duplexname, pr.duplexdefault, pr.holddefault, pr.status, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, l3.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2, list l3",
     gpbd_fields,
     23,
-    "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
+    "hw.hwaddr LIKE LOWER('%s') AND hw.mach_id = m1.mach_id AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
     1,
     "pr.name",
     &VDfix_modby,

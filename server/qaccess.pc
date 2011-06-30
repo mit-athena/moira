@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: qaccess.pc 4016 2010-08-26 02:49:36Z zacheiss $
  *
  * Check access to queries
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 3979 2010-02-16 20:26:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 4016 2010-08-26 02:49:36Z zacheiss $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -101,7 +101,7 @@ int access_update_user(struct query *q, char *argv[], client *cl)
   if (q->version >= 12)
     {
       if (strcmp(argv[16], strtrim(sponsor_type)) ||
-	  (sponsor_id != atoi(argv[17])) ||
+	  (sponsor_id != *(int *)argv[17]) ||
 	  strcmp(argv[18], strtrim(expiration)))
 	return MR_PERM;
     }

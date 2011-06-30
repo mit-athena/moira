@@ -1,5 +1,5 @@
-.TH STELLA 1 "10 Feb 2000" "MIT Athena"
-\" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/stella.1 $ $Id: stella.1 3956 2010-01-05 20:56:56Z zacheiss $
+.TH STELLA 1 "17 Mar 2010" "MIT Athena"
+\" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/stella.1 $ $Id: stella.1 4001 2010-04-21 20:38:45Z zacheiss $
 .SH NAME
 stella \- examine and modify information about hosts in Moira
 .SH SYNOPSIS
@@ -44,6 +44,16 @@ single container.
 This will add the specified host to \fIcontainer\fR.
 .IP \fB-deletecontainer\ \fIcontainer\fRor \ \fB-dcn\ \fIcontainer\fR
 This will delete the specified host from \fIcontainer\fR. 
+
+.IP \fB-listhwaddr\ \fRor\ \fB-lhw\fR
+This will list the Ethernet hardware addresses associated with the
+specified host.
+.IP \fB-addhwaddr\ \fIhwaddr\ \fRor\ \fB-ahw\ \fIhwaddr\fR
+This will associated the hardware address \fIhwaddr\fR with the
+specified host.
+.IP \fB-delhwaddr\ \fIhwaddr\fRor \ \fB-dhw\ \fIhwaddr\fR
+This will disassociate the hardware address \fIhwaddr\fR from the
+specified host.
 
 .IP \fB-vendor\ \fIvendor\ \fRor\ \fB-V\ \fIvendor\fR
 Update the vendor field for the specified host to \fIvendor\fR.

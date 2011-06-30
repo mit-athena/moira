@@ -1,4 +1,4 @@
-.TH MITCH 1 "6 Jan 2010" "MIT Athena"
+.TH EUNICE 1 "17 Mar 2010" "MIT Athena"
 \" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/mitch.1 $ $Id: mitch.1 3956 2010-01-05 20:56:56Z zacheiss $
 .SH NAME
 eunice \- examine and modify informtion about printers in Moira
@@ -62,6 +62,13 @@ Set the LPC acl for the specified printer to \fIlist\fR.
 
 .IP \fB-lpracl\ \fIlist\ \fRor\ \fB-ac\ \fIlist\fR
 Set the restrict list for the specified printer to \fIlist\fR.
+
+.IP \fB-addhwaddr\ \fIhwaddr\ \fRor\ \fB-ahw\ \fIhwaddr\fR
+This will associated the hardware address \fIhwaddr\fR with the
+host record for the specified printer.
+.IP \fB-delhwaddr\ \fIhwaddr\fRor \ \fB-dhw\ \fIhwaddr\fR
+This will disassociate the hardware address \fIhwaddr\fR from the
+host record for the specified printer.
 
 .IP \fB-verbose\ \fRor\ \fB-v\fR
 Give more information.  With this flag, mitch will display the

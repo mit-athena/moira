@@ -1,4 +1,4 @@
-/* $Id: chsh.c 3981 2010-02-16 21:13:05Z zacheiss $
+/* $Id: chsh.c 4009 2010-06-22 05:50:47Z zacheiss $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -27,7 +27,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 3981 2010-02-16 21:13:05Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 4009 2010-06-22 05:50:47Z zacheiss $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);
@@ -343,7 +343,9 @@ char *getusershell(void)
 
   if (!shells)
     {
-      shells = fopen("/etc/shells", "r");
+      shells = fopen(SHELLS_LIST, "r");
+      if (!shells && errno == ENOENT)
+	shells = fopen("/etc/shells", "r");
       if (!shells)
 	{
 	  fprintf(stderr, "%s: Can't open /etc/shells. Unable to determine if "

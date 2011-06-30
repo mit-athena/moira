@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: cups-print.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: cups-print.sh 4027 2011-01-21 03:45:40Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -13,9 +13,10 @@ MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
 
-PATH=/bin
+PATH=/usr/local/samba/bin:/usr/bin:/bin; export PATH
 TARFILE=/var/tmp/cups-print.out
 CUPSLOCAL=/etc/cups
+SAMBAPASSWD=`cat /etc/cups/sambapasswd`
 
 # Alert if the tar file or other needed files do not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
@@ -27,8 +28,6 @@ test -d $CUPSLOCAL || exit $MR_MISSINGFILE
 
 /etc/cups/bin/check-disabled.pl 2>/dev/null
 
-# Unpack the tar file, getting only files that are newer than the
-# on-disk copies (-u).
 cd /
 tar xf $TARFILE || exit $MR_TARERR
 
@@ -52,6 +51,34 @@ fi
 if [ -x /etc/init.d/smb ]; then
        /etc/init.d/smb restart
 fi
+
+test -r /etc/cups/all-queues || exit $MR_MISSINGFILE
+
+# Generate list of all queues.
+rm -f /etc/cups/all-queues.new
+rm -f /etc/cups/all-queues.tmp
+grep "<Printer" /etc/cups/printers.conf | awk '{print $2}' | sed -e 's/>//' > /etc/cups/all-queues.tmp
+grep '^Printer' /etc/cups/classes.conf | awk '{print $2}' >> /etc/cups/all-queues.tmp
+sort -u /etc/cups/all-queues.tmp > /etc/cups/all-queues.new
+
+# Sanity check that the file isn't empty.
+test -s /etc/cups/all-queues.new || exit $MR_MKCRED
+
+rm -f /etc/cups/all-queues.tmp
+mv /etc/cups/all-queues /etc/cups/all-queues.old && mv /etc/cups/all-queues.new /etc/cups/all-queues
+
+# Generate list of new queues since the last time we ran.
+newqueues=`comm -13 /etc/cups/all-queues.old /etc/cups/all-queues`
+for queue in $newqueues; do
+    # If PPD file doesn't exist, cupsaddsmb will bomb out.
+    if [ -f /etc/cups/ppd/$queue.ppd ]; then
+        # Add this queue to SMB service advertisements.
+	/usr/sbin/cupsaddsmb -v -U root%$SAMBAPASSWD -W PRINTERS $queue
+	if [ $? != 0 ]; then
+	    echo "Failed to configure $queue for SMB printing."
+	fi
+    fi
+done
 
 # cleanup
 test -f $TARFILE && rm -f $TARFILE

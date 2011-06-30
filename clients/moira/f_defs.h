@@ -1,4 +1,4 @@
-/* $Id: f_defs.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: f_defs.h 4001 2010-04-21 20:38:45Z zacheiss $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -89,6 +89,10 @@ int RemoveMachineFromContainer(int argc, char **argv);
 int GetMachinesOfContainer(int argc, char **argv);
 int GetTopLevelCont(int argc, char **argv);
 
+int ShowHWAddrs(int argc, char **argv);
+int AddHWAddr(int argc, char **argv);
+int DeleteHWAddr(int argc, char **argv);
+
 /* delete.c */
 
 int DeleteList(int argc, char **argv);
@@ -178,7 +182,6 @@ int GetPrnByContact(int argc, char **argv);
 int DeletePrn(int argc, char **argv);
 int AddPrn(int argc, char **argv);
 int ChngPrn(int argc, char **argv);
-int UpdateHWAddr(int argc, char **argv);
 int GetPrintSrv(int argc, char **argv);
 int AddPrintSrv(int argc, char **argv);
 int DelPrintSrv(int argc, char **argv);

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: qsupport.pc 4017 2010-08-26 19:09:55Z zacheiss $
  *
  * Special query routines
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 4017 2010-08-26 19:09:55Z zacheiss $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -824,8 +824,7 @@ int get_ace_internal(char *atype, int aid,
   rargv[0] = "LIST";
   EXEC SQL DECLARE csr113 CURSOR FOR
     SELECT name FROM list
-    WHERE (acl_type = :type AND acl_id = :id)
-    OR (memacl_type = :type AND memacl_id = :id);
+    WHERE (acl_type = :type AND acl_id = :id);
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr113;

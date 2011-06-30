@@ -1,4 +1,4 @@
-/* $Id: student.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $id: student.pc 3956 2010-01-05 20:56:56Z zacheiss $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4041 2011-06-23 22:09:46Z zacheiss $");
 
 /* File format is:
 
@@ -67,6 +67,8 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $I
 #define LEN_OADDR 30
 #define LOC_OPHONE (LOC_OADDR + LEN_OADDR)
 #define LEN_OPHONE 20
+#define LOC_SCHOOL_CODE (LOC_OPHONE + LEN_OPHONE)
+#define LEN_SCHOOL_CODE 2
 
 EXEC SQL BEGIN DECLARE SECTION;
 int who;
@@ -136,7 +138,11 @@ int main(int argc, char **argv)
 
   while ((e = get_next_entry(in)))
     {
-      process_entry(e, 1);
+      /* Don't require secure registration for cross-registered students. */
+      if (!strcmp(e->school_code, "Z"))
+	process_entry(e, 0);
+      else
+	process_entry(e, 1);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
 	{
@@ -168,6 +174,7 @@ struct entry *get_next_entry(FILE *in)
   static char state[LEN_STATE + 1], phone[LEN_PHONE + 1];
   static char ophone[LEN_OPHONE + 1], title[128];
   static char zip[LEN_ZIP + 1], oaddr[LEN_OADDR + 1];
+  static char school_code[LEN_SCHOOL_CODE + 1];
   static int nyear = 0;
   int ends_jr, ends_iii, ends_iv, ends_sr, ends_ii, ends_v;
   char *p;
@@ -213,6 +220,8 @@ struct entry *get_next_entry(FILE *in)
   strtrim(oaddr);
   strlcpy(ophone, &buf[LOC_OPHONE], LEN_OPHONE + 1);
   strtrim(ophone);
+  strlcpy(school_code, &buf[LOC_SCHOOL_CODE], LEN_SCHOOL_CODE + 1);
+  strtrim(school_code);
 
   e.first = first;
   e.last = last;
@@ -244,6 +253,9 @@ struct entry *get_next_entry(FILE *in)
     }
 
   e.dept = course;
+
+  /* Used to detect cross-registered students. */
+  e.school_code = school_code;
 
   e.oaddr = oaddr;
   fixaddress(e.oaddr);

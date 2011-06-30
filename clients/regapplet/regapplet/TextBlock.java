@@ -11,6 +11,7 @@ public class TextBlock extends Canvas {
     super();
     width = x;
     height = y;
+    text = "<undefined>";
   }
   public Dimension minimumSize() {
     System.err.println("TextBlock: minimumSize called " + width + " " + height);

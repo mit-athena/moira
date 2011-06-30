@@ -1,4 +1,4 @@
-/* $Id: menu.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: menu.c 4024 2010-11-29 20:20:25Z zacheiss $
  *
  * Generic menu system module.
  *
@@ -34,7 +34,7 @@
 #define getpid _getpid
 #endif /* _WIN32 */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 4024 2010-11-29 20:20:25Z zacheiss $");
 
 #ifdef MAX
 #undef MAX
@@ -802,13 +802,16 @@ static char *get_tmp_dir(void)
 int toggle_logging(int argc, char *argv[])
 {
   char buf[BUFSIZ];
+  mode_t oldmask;
 
   if (!log_file)
     {
       sprintf(buf, "%s/%s-log.%d", get_tmp_dir(), whoami, getpid());
 
       /* open the file */
+      oldmask = umask(077);
       log_file = fopen(buf, "a");
+      umask(oldmask);
 
       if (!log_file)
 	Put_message("Open of log file failed.  Logging is not on.");

@@ -1,4 +1,4 @@
-/* $Id: cups-cluster.pc 3996 2010-03-30 15:40:58Z zacheiss $
+/* $Id: cups-cluster.pc 4033 2011-03-15 16:33:20Z zacheiss $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-cluster.pc $ $Id: cups-cluster.pc 3996 2010-03-30 15:40:58Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-cluster.pc $ $Id: cups-cluster.pc 4033 2011-03-15 16:33:20Z zacheiss $");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";
@@ -156,7 +156,7 @@ void do_host(char *host)
     pr.ac, pr.lpc_acl, pr.duplexdefault, pr.holddefault
     FROM printers pr, machine m
     WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
-    AND pr.status = 1 AND m.status != 3
+    AND (pr.status = 1 OR pr.status = 2) AND m.status != 3
     AND (pr.type = 'DORM' or pr.type = 'CLUSTER');
   EXEC SQL OPEN csr_printers;
   while (1)
@@ -193,7 +193,7 @@ void do_host(char *host)
       fprintf(out, "State Idle\n");	/* Always with the Idle */
       fprintf(out, "StateTime %ld\n", (long)time(NULL));
       if (holddefault)
-          fprintf(out, "Reason hold-new-jobs\n");
+          fprintf(out, "Option job-hold-until indefinite\n");
       fprintf(out, "Accepting Yes\n");
       fprintf(out, "Shared Yes\n");
       fprintf(out, "QuotaPeriod 0\n");
@@ -241,8 +241,8 @@ void do_host(char *host)
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
     pr.ac, pr.lpc_acl, m.name as cupshosts
     FROM printers pr, machine m, machine m2, serverhosts sh
-    WHERE pr.rm = m.mach_id 
-    AND pr.status = 1 AND pr.mach_id = m2.mach_id AND m2.status !=3
+    WHERE pr.rm = m.mach_id AND pr.rm <> :rm
+    AND (pr.status = 1 OR pr.status = 2) AND pr.mach_id = m2.mach_id AND m2.status !=3
     AND (pr.type = 'CLUSTER' or pr.type = 'DORM') AND m.name <> :spoolhost AND
     m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' OR sh.service = 'CUPS-CLUSTER') AND 
     sh.enable = 1 AND m.mach_id = sh.mach_id;
@@ -308,10 +308,8 @@ void do_host(char *host)
           printer_user_list(out, "LIST", ac, "AllowUser", 0);
         }
 
-      if (banner == PRN_BANNER_NONE)
-	fprintf(out, "JobSheets none none\n");
-      else 
-	fprintf(out, "JobSheets athena none\n");
+      /* Never try to prepend a banner */
+      fprintf(out, "JobSheets none none\n");
       fprintf(out, "</Printer>\n");
 
     }
@@ -321,13 +319,12 @@ void do_host(char *host)
   EXEC SQL DECLARE csr_lprng_printers CURSOR FOR
     SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
     m.name, pr.banner, pr.location, pr.contact, pr.ka,
-    pr.ac, pr.lpc_acl, m.name as cupshosts, pr.duplexdefault 
+    pr.ac, pr.lpc_acl, m.name, pr.duplexdefault as cupshosts
     FROM printers pr, machine m, machine m2, serverhosts sh
-    WHERE pr.rm = m.mach_id 
-    AND pr.status = 1 and pr.mach_id = m2.mach_id AND m2.status !=3
-    AND (pr.type = 'DORM' or pr.type = 'CLUSTER') AND m.name <> :spoolhost AND
-    m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND 
-    sh.enable = 1;
+    WHERE pr.rm = m.mach_id
+    AND (pr.status = 1 OR pr.status = 2) AND pr.mach_id = m2.mach_id AND m2.status != 3
+    AND sh.service = 'PRINT' AND m.mach_id = sh.mach_id
+    AND (pr.type = 'DORM' or pr.type = 'CLUSTER');
 
   EXEC SQL OPEN csr_lprng_printers;
   while (1)
@@ -394,7 +391,7 @@ void do_host(char *host)
     pr.type as prtype, pr.ac, sh.service, pr.duplexdefault
     FROM printers pr, machine m, machine m2, serverhosts sh
     WHERE pr.rm = m.mach_id 
-    AND pr.status = 1 and pr.mach_id = m2.mach_id AND m2.status !=3
+    AND (pr.status = 1 OR pr.status = 2) and pr.mach_id = m2.mach_id AND m2.status !=3
     AND m.mach_id = sh.mach_id AND sh.enable = 1
     AND (pr.type = 'DORM' or pr.type = 'CLUSTER')
     AND (sh.service = 'CUPS-PRINT' OR sh.service = 'PRINT' OR sh.service = 'CUPS-CLUSTER');
@@ -603,7 +600,7 @@ void do_host(char *host)
     SELECT UNIQUE pr.rp, pr.ka, pr.ac, pr.lpc_acl
      FROM printers pr, machine m
      WHERE (pr.ac != 0 OR pr.lpc_acl != 0) 
-     AND pr.status = 1 and pr.mach_id = m.mach_id AND m.status !=3
+     AND (pr.status = 1 OR pr.status = 2) and pr.mach_id = m.mach_id AND m.status !=3
      AND pr.rm in (SELECT m.mach_id FROM machine m, serverhosts sh
      WHERE m.mach_id = sh.mach_id AND (sh.service = 'CUPS-PRINT' or sh.service = 'CUPS-CLUSTER')
      AND sh.enable = 1 and m.status != 3);
@@ -621,6 +618,7 @@ void do_host(char *host)
       fprintf (out, "AuthType Default\n");
       fprintf (out, "Require user @OWNER @SYSTEM\n");
       printer_user_list(out, "LIST", lpc_acl, "Require user", 1);
+      printer_user_list(out, "LIST", top_lpc_acl, "Require user", 1);
       fprintf (out, "Order deny,allow\n");
       fprintf (out, "Allow from all\n");
       fprintf (out, "</Limit>\n");

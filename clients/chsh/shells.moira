@@ -1,0 +1,4 @@
+# /etc/shells.moira: valid Athena shells
+/bin/sh
+/bin/athena/bash
+/bin/athena/tcsh

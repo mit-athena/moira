@@ -1,4 +1,4 @@
-/* $Id: eunice.c 3977 2010-02-12 21:12:04Z zacheiss $
+/* $Id: eunice.c 4030 2011-03-04 21:01:14Z zacheiss $
  *
  * Command line oriented Moira print queue tool.
  *
@@ -21,11 +21,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/eunice/eunice.c $ $Id: eunice.c 3977 2010-02-12 21:12:04Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/eunice/eunice.c $ $Id: eunice.c 4030 2011-03-04 21:01:14Z zacheiss $");
 
 struct member {
   int type;
   char *name, *tag;
+};
+
+struct string_list {
+  char *string;
+  struct string_list *next;
 };
 
 const char *deflogserver = "WSLOGGER.MIT.EDU";
@@ -39,28 +44,31 @@ const char *pageprice = "10";
 
 /* flags from command line */
 int info_flag, verbose, noauth, duplex_default, hold_default;
-int create_flag, setmac, delete_flag, rename_flag, ka, banner, update_flag;
+int create_flag, delete_flag, rename_flag, ka, banner, update_flag, update_hwaddr_flag;
 char *lpracl, *lpcacl, *report_list;
 char *contact, *newname, *printserver, *type, *hwtype, *mac, *hostname, *queuename;
 char *duplexname, *logserver, *location, *realname, *pr_status;
 
 char *queuename, *whoami, *testqueue;
 
+struct string_list *hwaddr_add_queue, *hwaddr_remove_queue;
+
 void usage(char **argv);
 int show_printer_info(char *queuename);
 int save_printer_info(int argc, char **argv, void *hint);
-int save_hwaddr(int argc, char **argv, void *hint);
+int show_hwaddrs(int argc, char **argv, void *hint);
 void recursive_display_list_members(void);
 char *get_username(void);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
 void print_query(char *query_name, int argc, char **argv);
 int CountArgs(char **info);
+struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 
 static char *states[] = {
   "Reserved (0)",
   "Active (1)",
-  "None (2)",
+  "Active, No IP ACL (2)",
   "Deleted (3)"
 };
 
@@ -89,13 +97,13 @@ int main(int argc, char **argv)
 
   /* clear all flags & lists */
   i = info_flag = verbose = noauth = 0;
-  setmac = create_flag = delete_flag = update_flag = 0;
+  create_flag = delete_flag = update_flag = update_hwaddr_flag = 0;
   ka = duplex_default = hold_default = banner = -1;
   location = lpracl = lpcacl = report_list = pr_status = NULL;
   logserver = duplexname = realname = newname = printserver = type = hwtype = mac = hostname = NULL;
-
-
+  hwaddr_add_queue = hwaddr_remove_queue = NULL;
   contact = NULL;
+
   whoami = argv[0];
 
   success = 1;
@@ -285,16 +293,27 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
-	  else if (argis("m", "mac"))
+	  else if (argis("ahw", "addhwaddr"))
 	    {
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  setmac++;
-		  mac = *arg;
+		  hwaddr_add_queue=add_to_string_list(hwaddr_add_queue, *arg);
 		}
 	      else
 		usage(argv);
+	      update_hwaddr_flag++;
+	    }
+	  else if (argis("dhw", "delhwaddr"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  hwaddr_remove_queue=add_to_string_list(hwaddr_remove_queue, *arg);
+		}
+	      else
+		usage(argv);
+	      update_hwaddr_flag++;
 	    }
 	  else if (argis("b", "banner"))
 	    {
@@ -352,7 +371,7 @@ int main(int argc, char **argv)
     usage(argv);
 
 
-  if (!update_flag && !rename_flag && !delete_flag && !create_flag && !setmac)
+  if (!update_flag && !rename_flag && !delete_flag && !create_flag && !update_hwaddr_flag)
     info_flag++;
 
   /* fire up Moira */
@@ -582,25 +601,68 @@ int main(int argc, char **argv)
   if (info_flag)
     show_printer_info(queuename);
 
-  if (setmac)
-    {
-      status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
+  /* add hwaddrs if necessary */
+  if (hwaddr_add_queue) {
+    struct string_list *q = hwaddr_add_queue;
+
+    status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
+    if (status)
+      { 
+	com_err(whoami, status, "while getting printer information");
+	exit(1);
+      }
+
+    if (hostname == NULL)
+      uargv[0] = pargv[PRN_HOSTNAME + 1];
+    else
+      uargv[0] = hostname;
+
+    while(q) {
+
+      uargv[1] = q->string;
+
+      status = wrap_mr_query("add_host_hwaddr", 2, uargv, NULL, NULL);
       if (status)
 	{
-	  com_err(whoami, status, "while getting printer information");
+	  com_err(whoami, status, "while adding host hardware address");
 	  exit(1);
 	}
 
-      if (hostname == NULL)
-	uargv[0] = (char *) strdup (pargv[PRN_HOSTNAME + 1]);
-      else
-        uargv[0] = (char *) strdup (hostname);
-      uargv[1] = (char *) strdup (mac);
-      if ((status = wrap_mr_query("update_host_hwaddr", 2, uargv, NULL, NULL)))
-        com_err(whoami, status, "updating ethernet address.");
+      q = q->next;
     }
+  }
 
+  /* delete hwaddrs if necessary */
+  if (hwaddr_remove_queue) {
+    struct string_list *q = hwaddr_remove_queue;
 
+    status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
+    if (status)
+      {
+        com_err(whoami, status, "while getting printer information");
+        exit(1);
+      }
+
+    if (hostname == NULL)
+      uargv[0] = pargv[PRN_HOSTNAME + 1];
+    else
+      uargv[0] = hostname;
+
+    while(q) {
+
+      uargv[1] = q->string;
+
+      status = wrap_mr_query("delete_host_hwaddr", 2, uargv, NULL, NULL);
+      if (status)
+        {
+          com_err(whoami, status, "while deleting host hardware address");
+          exit(1);
+        }
+
+      q = q->next;
+    }
+  }
+  
   if (delete_flag)
     {
       status = wrap_mr_query("delete_printer", 1, &queuename,
@@ -624,47 +686,58 @@ void usage(char **argv)
 #define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s queue [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v  | -verbose",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "-C   | -create");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D  | -delete",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D   | -delete",
 	  "-R   | -rename newname");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i  | -info",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i   | -info",
 	  "-L   | -location location");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-H  | -hostname host",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-H   | -hostname host",
 	  "-c   | -contact contact");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r  | -remotename name",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r   | -remotename name",
 	  "-T   | -type printer_type");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-M  | -model model",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-M   | -model model",
 	  "-s   | -printserver print_server");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-K  | -kerbauth",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-K   | -kerbauth",
 	  "-b   | -banner");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-NK | -nokerbauth",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-NK  | -nokerbauth",
 	  "-nb  | -nobanner");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-DD | -duplexdefault",
-	  "-HD | -holddefault");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ND | -noduplexdefault",
-	  "-NH | -noholddefault");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-S | -status status",
-	  "-rl | -reportlist list");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l  | -lpcacl list",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-DD  | -duplexdefault",
+	  "-HD  | -holddefault");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ND  | -noduplexdefault",
+	  "-NH  | -noholddefault");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-S   | -status status",
+	  "-rl  | -reportlist list");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l   | -lpcacl list",
 	  "-ac  | -lpracl list");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d  | -duplex name",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d   | -duplex name",
 	  "-n   | -noauth");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-m  | -mac hwaddr", 
-	  "-db  | -database host[:port]");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ahw | -addhwaddr hwaddr", 
+	  "-dhw | -delhwaddr hwaddr");
+  fprintf(stderr, "  %-39s\n" , "-db  | -database host[:port]");
   exit(1);
+}
+
+static int show_has_hwaddrs;
+
+int show_hwaddrs(int argc, char **argv, void *hint)
+{
+  if(!show_has_hwaddrs++)
+    printf("Hardware Addresses:  %s", argv[1]);
+  else
+    printf(", %s", argv[1]);
+
+  return MR_CONT;
 }
 
 int show_printer_info(char *queuename)
 {
-  char hwaddr[20];
   char *pargv[PRN_END + 1];
   int status, banner, i;
+  struct mqelem *elem = NULL;
 
   for (i = 0; i < PRN_END + 1; i++)
     pargv[i] = NULL;
-
-  memset (hwaddr,'\0',sizeof(hwaddr));
 
   status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
   if (status)
@@ -673,23 +746,30 @@ int show_printer_info(char *queuename)
       exit (1);
     }
 
-  status = wrap_mr_query("get_host_hwaddr", 1, &pargv[PRN_HOSTNAME + 1], 
-    save_hwaddr, &hwaddr);
-
-  if (status)
-    sprintf (hwaddr,"none");
-
   banner = atoi(pargv[PRN_BANNER + 1]);
 
-  printf("Printer: %-18s Duplex queue: %-18s\n", pargv[PRN_NAME + 1],
-          *pargv[PRN_DUPLEXNAME + 1] ? pargv[PRN_DUPLEXNAME + 1] : "[none]");
-  printf("Status: %-10s\n", PrnState(atoi(pargv[PRN_STATUS + 1])));
+  printf("Printer: %-18s Duplex queue: %-17s Status: %-10s\n", pargv[PRN_NAME + 1],
+	 *pargv[PRN_DUPLEXNAME + 1] ? pargv[PRN_DUPLEXNAME + 1] : "[none]",
+	 PrnState(atoi(pargv[PRN_STATUS + 1])));
   printf("Duplex by Default: %-8s Hold by Default: %-18s\n",
 	 atoi(pargv[PRN_DUPLEXDEFAULT + 1]) ? "yes" : "no",
 	 atoi(pargv[PRN_HOLDDEFAULT + 1]) ? "yes" : "no");
-  printf("Type: %-10s Hardware type: %-10s Hardware address: %s\n",
-          pargv[PRN_TYPE + 1], pargv[PRN_HWTYPE + 1], hwaddr);
+  printf("Type: %-10s Hardware type: %-10s\n",
+          pargv[PRN_TYPE + 1], pargv[PRN_HWTYPE + 1]);
   printf("Printer hostname: %s\n", pargv[PRN_HOSTNAME + 1]);
+
+  show_has_hwaddrs = 0;
+  status = wrap_mr_query("get_host_hwaddr_mapping", 1, &pargv[PRN_HOSTNAME + 1], show_hwaddrs, &elem);
+  if (status)
+    {
+      if (status != MR_NO_MATCH)
+	com_err(whoami, status, "while getting hardware addresses");
+      else
+	printf("Hardware Addresses: none\n");
+    }
+  else
+    printf("\n");
+  
   printf("Printer log host: %s\n", pargv[PRN_LOGHOST + 1]);
   printf("Spool host: %s\n", pargv[PRN_RM + 1]);
   printf("Remote Printer Name: %-10s Banner page: %s\n", pargv[PRN_RP + 1],
@@ -716,13 +796,6 @@ int save_printer_info(int argc, char **argv, void *hint)
 
   for (argc = 0; argc < PRN_END; argc++)
     nargv[argc + 1] = strdup(argv[argc]);
-  return MR_CONT;
-}
-
-int save_hwaddr(int argc, char **argv, void *hint)
-{
-  char *p = hint;
-  strcpy(p,argv[0]);
   return MR_CONT;
 }
 
@@ -784,4 +857,14 @@ int CountArgs(char **info)
     }
 
   return number;
+}
+
+struct string_list *add_to_string_list(struct string_list *old_list, char *s) {
+  struct string_list *new_list;
+
+  new_list = (struct string_list *)malloc(sizeof(struct string_list *));
+  new_list->next = old_list;
+  new_list->string = s;
+
+  return new_list;
 }

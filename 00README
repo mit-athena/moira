@@ -29,7 +29,7 @@ Importing a new Moira snapshot:
 
    Also, you'll need to delete any files that no longer exist.  One
    way to do this (probably not the best way) is to go back to your
-   moira working copy, and to a reverse merge of the previous imported
+   moira working copy, and do a reverse merge of the previous imported
    revision.  For example, if the last snapshot was from moira r3987,
    and the current one is r4042:
 

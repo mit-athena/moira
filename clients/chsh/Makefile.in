@@ -1,4 +1,4 @@
-# $Id: Makefile.in 4009 2010-06-22 05:50:47Z zacheiss $
+# $Id: Makefile.in 4045 2011-07-28 20:01:59Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -46,6 +46,7 @@ depend:
 
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(TARGET) $(DESTDIR)$(bindir)
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(sysconfdir)
 	$(INSTALL) shells.moira $(DESTDIR)$(sysconfdir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)

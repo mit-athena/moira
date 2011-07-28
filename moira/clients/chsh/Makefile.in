@@ -46,6 +46,7 @@ depend:
 
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(TARGET) $(DESTDIR)$(bindir)
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(sysconfdir)
 	$(INSTALL) shells.moira $(DESTDIR)$(sysconfdir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)

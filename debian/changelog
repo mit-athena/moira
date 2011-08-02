@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+svn20110728-r4045-0debathena2) unstable; urgency=low
+
+  * Install new upstream file /etc/shells.moira
+
+ -- Geoffrey Thomas <geofft@mit.edu>  Tue, 02 Aug 2011 02:12:09 -0400
+
 debathena-moira (4.0.0+svn20110728-r4045-0debathena1) unstable; urgency=low
 
   * Snapshot moira@r4045 (7/28/11)

@@ -1,3 +1,9 @@
+debathena-moira (4.0.0+svn20110728-r4045-0debathena3) UNRELEASED; urgency=low
+
+  * Conflict with the stella package.
+
+ -- Geoffrey Thomas <geofft@mit.edu>  Wed, 10 Aug 2011 10:17:48 -0400
+
 debathena-moira (4.0.0+svn20110728-r4045-0debathena2) unstable; urgency=low
 
   * Install new upstream file /etc/shells.moira

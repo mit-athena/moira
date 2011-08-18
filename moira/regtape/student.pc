@@ -67,8 +67,8 @@ RCSID("$HeadURL$ $Id$");
 #define LEN_OADDR 30
 #define LOC_OPHONE (LOC_OADDR + LEN_OADDR)
 #define LEN_OPHONE 20
-#define LOC_SCHOOL_CODE (LOC_OPHONE + LEN_OPHONE)
-#define LEN_SCHOOL_CODE 2
+#define LOC_REG_TYPE (LOC_OPHONE + LEN_OPHONE)
+#define LEN_REG_TYPE 50
 
 EXEC SQL BEGIN DECLARE SECTION;
 int who;
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
   while ((e = get_next_entry(in)))
     {
       /* Don't require secure registration for cross-registered students. */
-      if (!strcmp(e->school_code, "Z"))
+      if (!strcmp(e->reg_type, "Cross-Registered"))
 	process_entry(e, 0);
       else
 	process_entry(e, 1);
@@ -174,7 +174,7 @@ struct entry *get_next_entry(FILE *in)
   static char state[LEN_STATE + 1], phone[LEN_PHONE + 1];
   static char ophone[LEN_OPHONE + 1], title[128];
   static char zip[LEN_ZIP + 1], oaddr[LEN_OADDR + 1];
-  static char school_code[LEN_SCHOOL_CODE + 1];
+  static char reg_type[LEN_REG_TYPE + 1];
   static int nyear = 0;
   int ends_jr, ends_iii, ends_iv, ends_sr, ends_ii, ends_v;
   char *p;
@@ -220,8 +220,8 @@ struct entry *get_next_entry(FILE *in)
   strtrim(oaddr);
   strlcpy(ophone, &buf[LOC_OPHONE], LEN_OPHONE + 1);
   strtrim(ophone);
-  strlcpy(school_code, &buf[LOC_SCHOOL_CODE], LEN_SCHOOL_CODE + 1);
-  strtrim(school_code);
+  strlcpy(reg_type, &buf[LOC_REG_TYPE], LEN_REG_TYPE + 1);
+  strtrim(reg_type);
 
   e.first = first;
   e.last = last;
@@ -255,7 +255,7 @@ struct entry *get_next_entry(FILE *in)
   e.dept = course;
 
   /* Used to detect cross-registered students. */
-  e.school_code = school_code;
+  e.reg_type = reg_type;
 
   e.oaddr = oaddr;
   fixaddress(e.oaddr);

@@ -88,6 +88,12 @@ define service{
 	use			modules-service
 	}
 
+define service{
+	host_name		$name
+	contact_groups		noone
+	use			usbhid-service
+	}
+
 END
 }
 

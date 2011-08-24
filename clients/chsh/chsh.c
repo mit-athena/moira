@@ -1,4 +1,4 @@
-/* $Id: chsh.c 4009 2010-06-22 05:50:47Z zacheiss $
+/* $Id: chsh.c 4048 2011-08-24 18:07:26Z zacheiss $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -24,19 +24,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/param.h>
+#include <errno.h>
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 4009 2010-06-22 05:50:47Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 4048 2011-08-24 18:07:26Z zacheiss $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);
 int get_winshell(int argc, char **argv, void *username);
 int get_fmodtime(int argc, char **argv, void *username);
 void check_shell(char *shell);
-#ifndef HAVE_GETUSERSHELL
-char *getusershell(void);
-#endif
+char *mr_getusershell(void);
 
 char *whoami;
 char *username;
@@ -283,7 +282,7 @@ void check_shell(char *shell)
   char *valid_shell;
   int ok = 0;
 
-  while ((valid_shell = (char *)getusershell()))
+  while ((valid_shell = (char *)mr_getusershell()))
     {
       if (!strcmp(shell, valid_shell))
 	{
@@ -327,10 +326,7 @@ void usage(void)
   exit(1);
 }
 
-#ifndef HAVE_GETUSERSHELL
-#include <sys/param.h>
-
-char *getusershell(void)
+char *mr_getusershell(void)
 {
   static FILE *shells = NULL;
 
@@ -373,4 +369,3 @@ char *getusershell(void)
       return buf;
     }
 }
-#endif

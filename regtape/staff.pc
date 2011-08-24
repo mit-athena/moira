@@ -1,4 +1,4 @@
-/* $Id: staff.pc 4041 2011-06-23 22:09:46Z zacheiss $
+/* $Id: staff.pc 4046 2011-08-18 18:46:48Z zacheiss $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4041 2011-06-23 22:09:46Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4046 2011-08-18 18:46:48Z zacheiss $");
 
 /* File format is:
  *
@@ -185,7 +185,7 @@ struct entry *get_next_entry(FILE *in)
   e.haddr = e.hphone = "";
 
   /* Not used for employees. */
-  e.school_code = "";
+  e.reg_type = "";
 
   /* The following is really gross, but it happens to successfully convert
    * new-style Warehouse office descriptions into (more-readable) old-style

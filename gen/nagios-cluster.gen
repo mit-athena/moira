@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-cluster.gen 4031 2011-03-04 21:09:08Z jweiss $
+# $Id: nagios-cluster.gen 4047 2011-08-22 21:04:03Z jweiss $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -86,6 +86,12 @@ define service{
 	host_name		$name
 	contact_groups		noone
 	use			modules-service
+	}
+
+define service{
+	host_name		$name
+	contact_groups		noone
+	use			usbhid-service
 	}
 
 END

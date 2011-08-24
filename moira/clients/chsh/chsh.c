@@ -24,6 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/param.h>
+#include <errno.h>
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
@@ -34,9 +35,7 @@ int get_shell(int argc, char **argv, void *username);
 int get_winshell(int argc, char **argv, void *username);
 int get_fmodtime(int argc, char **argv, void *username);
 void check_shell(char *shell);
-#ifndef HAVE_GETUSERSHELL
-char *getusershell(void);
-#endif
+char *mr_getusershell(void);
 
 char *whoami;
 char *username;
@@ -283,7 +282,7 @@ void check_shell(char *shell)
   char *valid_shell;
   int ok = 0;
 
-  while ((valid_shell = (char *)getusershell()))
+  while ((valid_shell = (char *)mr_getusershell()))
     {
       if (!strcmp(shell, valid_shell))
 	{
@@ -327,10 +326,7 @@ void usage(void)
   exit(1);
 }
 
-#ifndef HAVE_GETUSERSHELL
-#include <sys/param.h>
-
-char *getusershell(void)
+char *mr_getusershell(void)
 {
   static FILE *shells = NULL;
 
@@ -373,4 +369,3 @@ char *getusershell(void)
       return buf;
     }
 }
-#endif

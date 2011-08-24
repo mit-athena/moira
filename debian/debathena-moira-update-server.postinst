@@ -37,7 +37,7 @@ case "$1" in
 	    # If that empties out /etc/athena, then delete it
 	    rmdir --ignore-fail-on-non-empty /etc/athena
 	fi
-	if dpkg --compare-versions "$2" lt 4.0.0+svn20100405-0debathena2~; then
+	if dpkg --compare-versions "$2" lt-nl 4.0.0+svn20100405-0debathena2~; then
 	    # If they're upgrading from a version that pre-dates
 	    # the defaults file, then they probably had it installed for
 	    # a reason, so we should turn it on (if it's not a cluster machine)

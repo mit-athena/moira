@@ -1,8 +1,13 @@
-debathena-moira (4.0.0+svn20110728-r4045-0debathena3) UNRELEASED; urgency=low
+debathena-moira (4.0.0+svn20110728-r4045-0debathena3) unstable; urgency=low
 
+  [ Geoffrey Thomas ]
   * Conflict with the stella package.
 
- -- Geoffrey Thomas <geofft@mit.edu>  Wed, 10 Aug 2011 10:17:48 -0400
+  [ Jonathan Reed ]
+  * Use correct lt-nl comparison in moira-update-server postinst to avoid
+    enabling update_server everywhere.
+
+ -- Jonathan Reed <jdreed@mit.edu>  Wed, 24 Aug 2011 11:13:27 -0400
 
 debathena-moira (4.0.0+svn20110728-r4045-0debathena2) unstable; urgency=low
 

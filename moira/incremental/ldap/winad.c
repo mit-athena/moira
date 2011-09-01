@@ -360,12 +360,16 @@ CN=All Address Lists,CN=Address Lists Container,\
 CN=Massachusetts Institute of Technology,CN=Microsoft Exchange,\
 CN=Services,CN=Configuration,"
 
-#define ALL_ADDRESS_LIST_PREFIX "CN=All Users,CN=All Address Lists,\
+#define ALL_USERS_ADDRESS_LIST_PREFIX "CN=All Users,CN=All Address Lists,\
 CN=Address Lists Container,CN=Massachusetts Institute of Technology,\
 CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 
 #define X500_PREFIX "X500:/o=Massachusetts Institute of Technology/\
 ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients"
+
+#define RBAC_POLICY_PREFIX "CN=Default Role Assignment Policy,\
+CN=Policies,CN=RBAC,CN=Massachusetts Institute of Technology,\
+CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 
 #define ADD_ATTR(t, v, o) 		\
   mods[n] = malloc(sizeof(LDAPMod));	\
@@ -3339,7 +3343,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 		   LDAP_MOD_REPLACE);
 	  ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
 	} else {
-	  hide_address_lists_v[0] = NULL;
+	  hide_address_lists_v[0] = "FALSE";
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v, 
 		   LDAP_MOD_REPLACE);
 	}
@@ -4140,6 +4144,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *homeMDB_v[] = {NULL, NULL};
   char *homeServerName_v[] = {NULL, NULL};
   char *query_base_dn_v[] = {NULL, NULL};
+  char *rbac_policy_link_v[] = {NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
   char *mdbUseDefaults_v[] = {NULL, NULL};
   char userAccountControlStr[80];
@@ -4163,6 +4168,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char principal[256];
   char status[256];
   char query_base_dn[256];
+  char rbac_policy_link[256];
+  char mit_address_list[256];
+  char global_address_list[256];
+  char email_address_list[256];
+  char all_users_address_list[256];
   char acBERBuf[N_SD_BER_BYTES];
   LDAPControl sControl = {"1.2.840.113556.1.4.801",
                           { N_SD_BER_BYTES, acBERBuf },
@@ -4203,6 +4213,19 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   sprintf(query_base_dn, "%s%s", ADDRESS_LIST_PREFIX, dn_path);
   query_base_dn_v[0] = query_base_dn;
+
+  sprintf(rbac_policy_link, "%s%s", RBAC_POLICY_PREFIX, dn_path);
+  rbac_policy_link_v[0] = rbac_policy_link;
+
+  sprintf(mit_address_list, "%s%s", ADDRESS_LIST_PREFIX, dn_path);
+  address_book_v[0] = mit_address_list;
+  sprintf(global_address_list, "%s%s", GLOBAL_ADDRESS_LIST_PREFIX, dn_path);
+  address_book_v[1] = global_address_list;
+  sprintf(email_address_list, "%s%s", EMAIL_ADDRESS_LIST_PREFIX, dn_path);
+  address_book_v[2] = email_address_list;
+  sprintf(all_users_address_list, "%s%s", ALL_USERS_ADDRESS_LIST_PREFIX, 
+	  dn_path);
+  address_book_v[3] = all_users_address_list;
 
   mail_nickname_v[0] = user_name;
 
@@ -4320,10 +4343,13 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	      homeServerName_v[0] = homeServerName;
 
 	      n = 0;
-	      hide_address_lists_v[0] = "FALSE";
+              hide_address_lists_v[0] = "FALSE";
 	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		       LDAP_MOD_ADD);
 	      ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, 
+		       LDAP_MOD_REPLACE);
+	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
 	      ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
 	      mdbUseDefaults_v[0] = "TRUE";
@@ -4664,7 +4690,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       if (Exchange)
 	{
-	  hide_address_lists_v[0] = NULL;
+	  hide_address_lists_v[0] = "FALSE";
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		   LDAP_MOD_REPLACE);
 	}
@@ -5020,6 +5046,11 @@ int user_create(int ac, char **av, void *ptr)
   char proxy_address[256];
   char mail_nickname[256];
   char query_base_dn[256];
+  char rbac_policy_link[256];
+  char mit_address_list[256];
+  char global_address_list[256];
+  char email_address_list[256];
+  char all_users_address_list[256];
   char displayName[256];
   char address_book[1024];
   char alt_recipient[256];
@@ -5059,6 +5090,7 @@ int user_create(int ac, char **av, void *ptr)
   char *proxy_address_v[] = {NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
   char *query_base_dn_v[] = {NULL, NULL};
+  char *rbac_policy_link_v[] = {NULL, NULL};
   char *address_book_v[] = {NULL, NULL, NULL, NULL, NULL};
   char *homeMDB_v[] = {NULL, NULL};
   char *homeServerName_v[] = {NULL, NULL};
@@ -5129,6 +5161,11 @@ int user_create(int ac, char **av, void *ptr)
   memset(WinProfileDir, '\0', sizeof(WinProfileDir));
   memset(displayName, '\0', sizeof(displayName));
   memset(query_base_dn, '\0', sizeof(query_base_dn));
+  memset(rbac_policy_link, '\0', sizeof(rbac_policy_link));
+  memset(mit_address_list, '\0', sizeof(mit_address_list));
+  memset(global_address_list, '\0', sizeof(global_address_list));
+  memset(email_address_list, '\0', sizeof(email_address_list));
+  memset(all_users_address_list, '\0', sizeof(all_users_address_list));
   memset(filesys_name, '\0', sizeof(filesys_name));
   strcpy(WinHomeDir, av[U_WINHOMEDIR]);
   strcpy(WinProfileDir, av[U_WINPROFILEDIR]);
@@ -5206,6 +5243,18 @@ int user_create(int ac, char **av, void *ptr)
     sprintf(contact_mail, "%s@mit.edu", user_name);    
   sprintf(query_base_dn, "%s%s", ADDRESS_LIST_PREFIX, call_args[1]);
   query_base_dn_v[0] = query_base_dn;
+  sprintf(rbac_policy_link, "%s%s", RBAC_POLICY_PREFIX, call_args[1]);
+  rbac_policy_link_v[0] = rbac_policy_link;
+  sprintf(mit_address_list, "%s%s", ADDRESS_LIST_PREFIX, call_args[1]);
+  address_book_v[0] = mit_address_list;
+  sprintf(global_address_list, "%s%s", GLOBAL_ADDRESS_LIST_PREFIX, 
+	  call_args[1]);
+  address_book_v[1] = global_address_list;
+  sprintf(email_address_list, "%s%s", EMAIL_ADDRESS_LIST_PREFIX, call_args[1]);
+  address_book_v[2] = email_address_list;
+  sprintf(all_users_address_list, "%s%s", ALL_USERS_ADDRESS_LIST_PREFIX, 
+	  call_args[1]);
+  address_book_v[3] = all_users_address_list;
   sprintf(alt_recipient, "cn=%s@exchange-forwarding.mit.edu,%s,%s", user_name,
 	  contact_ou, call_args[1]);
   sprintf(search_string, "@%s", uppercase(ldap_domain));
@@ -5269,6 +5318,8 @@ int user_create(int ac, char **av, void *ptr)
 	}
 
       ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_ADD);
+      ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, LDAP_MOD_ADD);
+      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_ADD);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
       ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
       mdbUseDefaults_v[0] = "TRUE";
@@ -5936,7 +5987,7 @@ void free_values(char **modvalues)
 static int illegalchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, /* SPACE - / */
+  1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, /* 0 - ? */
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* P - _ */
@@ -9166,6 +9217,9 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   char     sub_filter[1024];
   char     search_path[1024];
   char     range[1024];
+  char     *owningServerName;
+  char     *legacyExchangeDN;
+  char     temp[1024];
   char     *attr_array[3];
   char     *s;
   int      homeMDB_count = -1;
@@ -9205,9 +9259,13 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
       
       while(gPtr) {
 	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "public")) != (char *) NULL) || 
 	    ((s = strstr(gPtr->dn, "Recover")) != (char *) NULL) || 
+	    ((s = strstr(gPtr->dn, "recover")) != (char *) NULL) || 
 	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL))
+	    ((s = strstr(gPtr->dn, "reserve")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "pf")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;
 	    continue;
@@ -9309,13 +9367,51 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   
   if(group_count) 
     {
-      *homeServerName = strdup(group_base->value);
-      if((s = strrchr(*homeServerName, '/')) != (char *) NULL) 
+      legacyExchangeDN = strdup(group_base->value);
+      if((s = strrchr(legacyExchangeDN, '/')) != (char *) NULL) 
+	{
+	  *s = '\0';
+	}
+
+      if((s = strrchr(legacyExchangeDN, '/')) != (char *) NULL) 
 	{
 	  *s = '\0';
 	}
     } 
 
+  linklist_free(group_base);
+  
+  /* Ok now we need to lookup the owning server as in Exchange 2010 as this
+     is now handled differently.
+  */
+
+  attr_array[0] = "msExchOwningServer";
+  attr_array[1] = NULL;	
+  
+  group_count = 0;
+  group_base = NULL;
+  
+  if ((rc = linklist_build(ldap_handle, *homeMDB, filter, 
+			   attr_array, &group_base, 
+			   &group_count, 
+			   LDAP_SCOPE_SUBTREE)) != 0) 
+    {
+      com_err(whoami, 0, "Unable to find msExchHomeServerName %s",
+	      ldap_err2string(rc));
+      return(rc);
+    }  
+  
+  if(group_count) 
+    {
+      owningServerName = strdup(group_base->value);
+      if((s = strchr(owningServerName, ',')) != (char *) NULL) 
+	{
+	  *s = '\0';
+	}
+    } 
+
+  sprintf(temp, "%s/%s", legacyExchangeDN, owningServerName);
+  *homeServerName = strdup(temp);
   linklist_free(group_base);
   
   return(rc);
@@ -9352,10 +9448,6 @@ char *escape_string(char *s)
   char temp[1024];
   int i = 0;
   int spaces = 0;
-
-  if(ActiveDirectory) {
-    return strdup(s);
-  }
 
   memset(string, '\0', sizeof(string));
 

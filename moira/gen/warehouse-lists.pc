@@ -95,16 +95,20 @@ void output_list(int id, void *list, void *out)
   int lid = id;
   char acl_type[LIST_ACL_TYPE_SIZE], modtime[LIST_MODTIME_SIZE];
   char acl_name[STRINGS_STRING_SIZE], login[USERS_LOGIN_SIZE];
-  char principal[STRINGS_STRING_SIZE];
-  int acl_id;
+  char principal[STRINGS_STRING_SIZE], description[LIST_DESCRIPTION_SIZE];
+  int acl_id, active, maillist, grouplist, nfsgroup, publicflg, hidden;
   EXEC SQL END DECLARE SECTION;
   char *maybecomma = "";
 
-  EXEC SQL SELECT acl_type, acl_id, modtime INTO :acl_type, :acl_id, :modtime
+  EXEC SQL SELECT acl_type, acl_id, modtime, active, maillist,
+    grouplist, nfsgroup, publicflg, hidden, description INTO :acl_type,
+    :acl_id, :modtime, :active, :maillist, :grouplist, :nfsgroup,
+    :publicflg, :hidden, :description	    
     FROM list WHERE list_id = :lid;
-
+  
   strtrim(acl_type);
   strtrim(modtime);
+  strtrim(description);
   
   strcpy(acl_name, "NONE");
   if (strcmp(acl_type, "LIST") == 0)
@@ -115,7 +119,8 @@ void output_list(int id, void *list, void *out)
     EXEC SQL SELECT string into :acl_name FROM strings WHERE string_id = :acl_id;
   strtrim(acl_name);
 
-  fprintf(out, "%s|%s|%s|", list, acl_type, acl_name);
+  fprintf(out, "%s|%s|%s|%d|%d|%d|%d|%d|%d|%s|", list, acl_type,
+	  acl_name, active, maillist, grouplist, nfsgroup, publicflg, hidden, description);
 
   EXEC SQL DECLARE u_cursor CURSOR FOR
     SELECT UNIQUE u.login FROM users u, imembers i, list l

@@ -1,3 +1,11 @@
+debathena-moira (4.0.0-r4048-0debathena2) unstable; urgency=low
+
+  * Revert eunice.c to Moira r3998 / Debathena r24319 because the
+    corresponding functionality on the server is not yet available, per
+    zacheiss
+
+ -- Jonathan Reed <jdreed@mit.edu>  Tue, 06 Sep 2011 10:42:55 -0400
+
 debathena-moira (4.0.0-r4048-0debathena1) unstable; urgency=low
 
   [ Geoffrey Thomas ]

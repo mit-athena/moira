@@ -69,14 +69,15 @@ static char *states[] = {
   "Reserved (0)",
   "Active (1)",
   "Active, No IP ACL (2)",
-  "Deleted (3)"
+  "Deleted (3)",
+  "Active, BOOTP only (4)"
 };
 
 static char *PrnState(int state)
 {
   static char buf[BUFSIZ];
   
-  if (state < 0 || state > 3)
+  if (state < 0 || state > 4)
     {
       sprintf(buf, "Unknown (%d)", state);
       return buf;

@@ -92,7 +92,7 @@ void output_list(int id, void *list, void *out)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *l = list;
-  int lid = id;
+  int lid = id, count;
   char acl_type[LIST_ACL_TYPE_SIZE], modtime[LIST_MODTIME_SIZE];
   char acl_name[STRINGS_STRING_SIZE], login[USERS_LOGIN_SIZE];
   char principal[STRINGS_STRING_SIZE], description[LIST_DESCRIPTION_SIZE];
@@ -109,7 +109,13 @@ void output_list(int id, void *list, void *out)
   strtrim(acl_type);
   strtrim(modtime);
   strtrim(description);
-  
+
+  for (count = 0; count < strlen(description); count++)
+    {
+      if (description[count] == '|')
+	description[count] = '-';
+    }
+
   strcpy(acl_name, "NONE");
   if (strcmp(acl_type, "LIST") == 0)
     EXEC SQL SELECT name into :acl_name FROM list WHERE list_id = :acl_id;

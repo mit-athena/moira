@@ -20,6 +20,7 @@ BOOTHEAD=/var/boot/dhcpd.conf.head
 BOOTFOOT=/var/boot/dhcpd.conf.foot
 BOOTFILE=/var/boot/dhcpd.conf
 PSWDFILE=/var/boot/hp.add
+ACLFILE=/var/boot/ip-acl.add
 
 # Alert if the tar file or other needed files do not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
@@ -32,6 +33,10 @@ tar xf $TARFILE || exit $MR_TARERR
 
 # Append passwords, etc., to the new files
 for f in `find /var/boot/hp -name \*.new -print`; do
+    grep '^allow:' $f >/dev/null 2>&1
+    if [ $? = 0 ]; then
+        cat $ACLFILE >> $f
+    fi
     cat $PSWDFILE >> $f
     mv $f /var/boot/hp/`basename $f .new`
 done

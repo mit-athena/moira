@@ -49,7 +49,6 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	cups-print.sh  dhcp.sh events.sh hesiod.sh ip-billing.gen \
 	ip-billing.sh ldap.gen mailhosts.gen mailhub.sh mailman.gen mailman.sh \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
-	nagios-printers.gen nagios-printers.sh nagios-wsh.gen nagios-wsh.sh \
 	ndb.sh nfs.sh null.sh postoffice.sh print.sh print-accounting.gen printer-list.gen \
         sapprint.gen sapprint.sh spwatch.gen tsm.gen tsm.sh ua-elect.gen warehouse.gen \
         warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh install_dirs \

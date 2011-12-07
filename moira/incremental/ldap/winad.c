@@ -395,6 +395,7 @@ CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 #define SET_PASSWORD "SET_PASSWORD:"
 #define EXCHANGE "EXCHANGE:"
 #define REALM "REALM:"
+#define UPDATE_NAME_INFO "UPDATE_NAME_INFO:"
 #define ACTIVE_DIRECTORY "ACTIVE_DIRECTORY:"
 #define PORT "PORT:"
 #define PROCESS_MACHINE_CONTAINER "PROCESS_MACHINE_CONTAINER:"
@@ -445,6 +446,7 @@ int  fsgCount;
 int  GroupPopulateDelete = 0;
 int  group_members = 0;
 int  max_group_members = 0;
+int  update_name_info = 1;
 
 struct sockaddr_in  kdc_server;
 int                 kdc_socket;
@@ -4586,12 +4588,15 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     strcat(displayName, last);
   }
 
-  if(strlen(displayName))
-    rc = attribute_update(ldap_handle, distinguished_name, displayName, 
-			  "displayName", user_name);
-  else
-    rc = attribute_update(ldap_handle, distinguished_name, user_name,
-			  "displayName", user_name);
+  if(update_name_info) 
+    {
+      if(strlen(displayName))
+	rc = attribute_update(ldap_handle, distinguished_name, displayName, 
+			      "displayName", user_name);
+      else
+	rc = attribute_update(ldap_handle, distinguished_name, user_name,
+			      "displayName", user_name);
+    }
 
   if(!ActiveDirectory)
     {
@@ -4609,27 +4614,30 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 			    "eduPersonNickname", user_name);
     }
 
-  if(strlen(first))
-    rc = attribute_update(ldap_handle, distinguished_name, first, 
-			  "givenName", user_name);
-  else
-    rc = attribute_update(ldap_handle, distinguished_name, "",
-			  "givenName", user_name);
-
-  if(strlen(middle) == 1) 
-    rc = attribute_update(ldap_handle, distinguished_name, middle,
-			  "initials", user_name);
-  else 
-    rc = attribute_update(ldap_handle, distinguished_name, "",
-			  "initials", user_name);
+  if(update_name_info) 
+    {
+      if(strlen(first))
+	rc = attribute_update(ldap_handle, distinguished_name, first, 
+			      "givenName", user_name);
+      else
+	rc = attribute_update(ldap_handle, distinguished_name, "",
+			      "givenName", user_name);
+      
+      if(strlen(middle) == 1) 
+	rc = attribute_update(ldap_handle, distinguished_name, middle,
+			      "initials", user_name);
+      else 
+	rc = attribute_update(ldap_handle, distinguished_name, "",
+			      "initials", user_name);
+      
+      if(strlen(last))
+	rc = attribute_update(ldap_handle, distinguished_name, last,
+			      "sn", user_name);
+      else 
+	rc = attribute_update(ldap_handle, distinguished_name, "",
+			      "sn", user_name);
+    }
   
-  if(strlen(last))
-    rc = attribute_update(ldap_handle, distinguished_name, last,
-			  "sn", user_name);
-  else 
-    rc = attribute_update(ldap_handle, distinguished_name, "",
-			  "sn", user_name);
-
   if(ActiveDirectory)
     {
       rc = attribute_update(ldap_handle, distinguished_name, Uid, "uid", 
@@ -9053,6 +9061,17 @@ int ReadConfigFile(char *DomainName)
                     max_group_members = atoi(temp1);
                   }
               }
+	    else if(!strncmp(temp, UPDATE_NAME_INFO, 
+			     strlen(UPDATE_NAME_INFO))) 
+	      {
+		if(strlen(temp) > (strlen(UPDATE_NAME_INFO))) 
+		  {
+		    strcpy(temp1, &temp[strlen(UPDATE_NAME_INFO)]);
+		    StringTrim(temp1);
+		    if (!strcasecmp(temp1, "NO"))
+		      update_name_info = 0;
+		  }
+	      }
             else
 	      {
                 if (strlen(ldap_domain) != 0)

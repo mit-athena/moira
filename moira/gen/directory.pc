@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     home_addr, home_phone, clearid, type 
     FROM users WHERE status = 1 AND type != 'SYSTEM' AND type != 'STAFF'
     AND type != 'TEST' AND type != 'REGTEST' AND type != 'SHARED'
-    AND type != 'MGMT' AND type NOT LIKE 'GUES%';
+    AND type != 'MGMT' AND type != 'DOOMED' AND type NOT LIKE 'GUES%';
   EXEC SQL OPEN x;
   while (1)
     {

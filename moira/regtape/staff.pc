@@ -246,7 +246,7 @@ struct entry *get_next_entry(FILE *in)
        !strstr(uppercase(e.xtitle), "PROFESSION")) ||
       strstr(uppercase(e.xtitle), "LECTURE"))
     e.type = "FACULTY";
-  if (!strcmp(e.dept, "LINCOLN LAB"))
+  if (strstr(uppercase(e.dept), "LINCOLN LAB"))
     e.type = "LINCOLN";
 
   FixCase(e.dept);

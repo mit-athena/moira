@@ -51,8 +51,7 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	ndb.sh null.sh postoffice.sh print.sh print-accounting.gen printer-list.gen \
         sapprint.gen sapprint.sh spwatch.gen tsm.gen tsm.sh ua-elect.gen warehouse.gen \
-        warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh install_dirs \
-	install_quotas zero_quotas
+        warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh
 
 .SUFFIXES: .pc .gen .lo
 

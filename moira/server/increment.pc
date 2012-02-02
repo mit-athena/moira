@@ -31,7 +31,7 @@ int inc_pid = 0;
 int inc_running = 0;
 time_t inc_started;
 
-#define MAXARGC 16
+#define MAXARGC 20
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 

@@ -656,7 +656,10 @@ void LOGN(reg_client *rc, int argc, char **argv)
   if (status == MR_SUCCESS)
     {
       if (rc->user_status == US_NO_LOGIN_YET_KERBEROS_ONLY)
-	EXEC SQL UPDATE users SET login = :login WHERE unix_uid = :rc->uid;
+	{
+	  EXEC SQL UPDATE users SET login = :login WHERE unix_uid = :rc->uid;
+	  EXEC SQL COMMIT WORK;
+	}
       else
 	status = register_user(rc->uid, login);
     }

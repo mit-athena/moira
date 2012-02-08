@@ -5440,7 +5440,7 @@ struct query Queries[] = {
     USERS_TABLE,
     0,
     gurv_fields,
-    2,
+    1,
     0,
     1,
     NULL,

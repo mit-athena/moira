@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   else
     whoami++;
 
-  if (argc > 5)
+  if (argc > 7)
     usage();
 
   while (++arg - argv < argc)

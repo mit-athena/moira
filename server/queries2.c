@@ -1,4 +1,4 @@
-/* $Id: queries2.c 4001 2010-04-21 20:38:45Z zacheiss $
+/* $Id: queries2.c 4072 2012-02-08 19:57:50Z zacheiss $
  *
  * This file defines the query dispatch table
  *
@@ -13,7 +13,7 @@
 
 #include "mr_et.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4001 2010-04-21 20:38:45Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4072 2012-02-08 19:57:50Z zacheiss $");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -5440,7 +5440,7 @@ struct query Queries[] = {
     USERS_TABLE,
     0,
     gurv_fields,
-    2,
+    1,
     0,
     1,
     NULL,

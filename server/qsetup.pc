@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc 4011 2010-07-06 15:55:47Z zacheiss $
+/* $Id: qsetup.pc 4063 2012-01-04 17:37:23Z zacheiss $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsetup.pc $ $Id: qsetup.pc 4011 2010-07-06 15:55:47Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsetup.pc $ $Id: qsetup.pc 4063 2012-01-04 17:37:23Z zacheiss $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -380,7 +380,7 @@ int setup_dclu(struct query *q, char *argv[], client *cl)
 static int badlistchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, /* SPACE - / */
+  1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, /* 0 - ? */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* P - _ */

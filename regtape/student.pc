@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4046 2011-08-18 18:46:48Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4060 2011-12-01 19:50:15Z zacheiss $");
 
 /* File format is:
 
@@ -138,9 +138,12 @@ int main(int argc, char **argv)
 
   while ((e = get_next_entry(in)))
     {
-      /* Don't require secure registration for cross-registered students. */
-      if (!strcmp(e->reg_type, "Cross-Registered"))
-	process_entry(e, 0);
+      /* Don't require secure registration for cross-registered or
+       * special students.
+       */
+      if (!strcmp(e->reg_type, "Cross-Registered") ||
+          !strcmp(e->reg_type, "Special"))
+	process_entry(e, 0);   
       else
 	process_entry(e, 1);
       EXEC SQL COMMIT WORK;

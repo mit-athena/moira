@@ -1,3 +1,10 @@
+debathena-moira (4.0.0-r4073-0debathena1) unstable; urgency=low
+
+  * Re-snapshot moira at r4073 to pick up new changes to clients; the
+    eunice issue described in the previous entry is no longer relevant
+
+ -- Jonathan Reed <jdreed@mit.edu>  Wed, 29 Feb 2012 15:24:32 -0500
+
 debathena-moira (4.0.0-r4048-0debathena2) unstable; urgency=low
 
   * Revert eunice.c to Moira r3998 / Debathena r24319 because the

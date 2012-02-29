@@ -1,4 +1,4 @@
-/* $Id: printer.c 4030 2011-03-04 21:01:14Z zacheiss $
+/* $Id: printer.c 4051 2011-09-08 18:46:37Z zacheiss $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/printer.c $ $Id: printer.c 4030 2011-03-04 21:01:14Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/printer.c $ $Id: printer.c 4051 2011-09-08 18:46:37Z zacheiss $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -48,14 +48,15 @@ static char *states[] = {
   "Reserved (0)",
   "Active (1)",
   "Active, No IP ACL (2)",
-  "Deleted (3)"
+  "Deleted (3)",
+  "Active, BOOTP only (4)"
 };
 
 static char *PrnState(int state)
 {
   static char buf[BUFSIZ];
 
-  if (state < 0 || state > 3)
+  if (state < 0 || state > 4)
     {
       sprintf(buf, "Unknown (%d)", state);
       return buf;

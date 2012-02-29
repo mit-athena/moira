@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: dhcp.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: dhcp.sh 4058 2011-11-16 21:32:41Z zacheiss $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -20,6 +20,7 @@ BOOTHEAD=/var/boot/dhcpd.conf.head
 BOOTFOOT=/var/boot/dhcpd.conf.foot
 BOOTFILE=/var/boot/dhcpd.conf
 PSWDFILE=/var/boot/hp.add
+ACLFILE=/var/boot/ip-acl.add
 
 # Alert if the tar file or other needed files do not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
@@ -32,6 +33,10 @@ tar xf $TARFILE || exit $MR_TARERR
 
 # Append passwords, etc., to the new files
 for f in `find /var/boot/hp -name \*.new -print`; do
+    grep '^allow:' $f >/dev/null 2>&1
+    if [ $? = 0 ]; then
+        cat $ACLFILE >> $f
+    fi
     cat $PSWDFILE >> $f
     mv $f /var/boot/hp/`basename $f .new`
 done

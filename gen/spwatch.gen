@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: spwatch.gen 4030 2011-03-04 21:01:14Z zacheiss $
+# $Id: spwatch.gen 4051 2011-09-08 18:46:37Z zacheiss $
 #
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -15,7 +15,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 $sth = $dbh->prepare("SELECT m.name FROM printers p, ".
 		     "machine m WHERE p.type = 'SAP' AND p.mach_id = ".
-		     "m.mach_id AND (p.status = 1 OR p.status = 2) AND m.status != 3 " .
+		     "m.mach_id AND (p.status = 1 OR p.status = 2 OR p.status = 4) AND m.status != 3 " .
 		     "ORDER BY m.name") || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;

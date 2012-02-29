@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-cluster.gen 4047 2011-08-22 21:04:03Z jweiss $
+# $Id: nagios-cluster.gen 4054 2011-10-02 15:55:43Z zacheiss $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -116,8 +116,9 @@ END
 print OUT "\n### Printers\n\n";
 
 $sth0 = $dbh->prepare("SELECT UNIQUE m.name FROM machine m, printers p " .
-		     "WHERE (p.type = 'DORM' OR p.type ='CLUSTER') " .
-		     "AND p.mach_id = m.mach_id AND m.status=1")
+		      "WHERE (p.type = 'DORM' OR p.type ='CLUSTER') " .
+		      "AND p.mach_id = m.mach_id AND m.status=1 " .
+		      "AND (p.status = 1 OR p.status = 4)")
     || exit $MR_DBMS_ERR;
 
 $sth0->execute || exit $MR_DBMS_ERR;
@@ -145,6 +146,12 @@ define service{
 	host_name		$name
 	contact_groups		noone
 	use			hpjd-service
+	}
+
+define service{
+	host_name		$name
+	contact_groups		noone
+	use			ipacl-service
 	}
 
 END

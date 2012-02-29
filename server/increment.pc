@@ -1,4 +1,4 @@
-/* $Id: increment.pc 4021 2010-09-02 15:07:00Z zacheiss $
+/* $Id: increment.pc 4068 2012-02-02 21:31:10Z zacheiss $
  *
  * Deal with incremental updates
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4021 2010-09-02 15:07:00Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4068 2012-02-02 21:31:10Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -31,7 +31,7 @@ int inc_pid = 0;
 int inc_running = 0;
 time_t inc_started;
 
-#define MAXARGC 16
+#define MAXARGC 20
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -105,10 +105,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
 	      "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
-	      "m.owner_type, m.owner_id, m.acomment, m.ocomment FROM machine m "
+	      "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id FROM machine m "
 	      "WHERE %s", qual);
       dosql(before);
-      beforec = 15;
+      beforec = 16;
       name = xmalloc(0);
       id = atoi(before[12]);
       if (!strncmp(before[11], "USER", 4))
@@ -132,6 +132,9 @@ void incremental_before(enum tables table, char *qual, char **argv)
       id = atoi(before[14]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(before[14], name);
+      id = atoi(before[15]);
+      id_to_name(id, SUBNET_TABLE, &name);
+      strcpy(before[15], name);
       break;
     case HOSTALIAS_TABLE:
       strcpy(before[0], argv[0]);
@@ -324,10 +327,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
               "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
-              "m.owner_type, m.owner_id, m.acomment, m.ocomment FROM machine m "
+              "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id FROM machine m "
               "WHERE %s", qual);
       dosql(after);
-      afterc = 15;
+      afterc = 16;
       name = xmalloc(0);
       id = atoi(after[12]);
       if (!strncmp(after[11], "USER", 4))
@@ -351,6 +354,9 @@ void incremental_after(enum tables table, char *qual, char **argv)
       id = atoi(after[14]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(after[14], name);
+      id = atoi(after[15]);
+      id_to_name(id, SUBNET_TABLE, &name);
+      strcpy(after[15], name);
       break;
     case HOSTALIAS_TABLE:
       strcpy(after[0], argv[0]);

@@ -3,14 +3,14 @@ An internal error has occurred, and the registration applet is unable
 to continue. The error is: "%s".
 
 Please try again later. If this problem persists, contact the Athena
-User Accounts Office in N42-105A, x3-1325.
+User Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 2 PROTOCOL_ERROR
 A protocol error has occurred, and the registration applet is unable
 to continue. This may indicate that you are using an out-of-date
 version of the registration applet.
 
 If you are unable to fix this problem, contact the Athena User
-Accounts Office in N42-105A, x3-1325.
+Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 3 DATABASE_CLOSED
 Sorry, it appears that the Moira database (which is needed for account
 registration) is currently closed. Please try again later.
@@ -20,7 +20,7 @@ registration applet. This probably means that you are using an
 out-of-date version of the registration applet.
 
 If you are unable to fix this problem, contact the Athena User
-Accounts Office in N42-105A, x3-1325.
+Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 5 NOT_FOUND_IN_DATABASE
 The registration server was unable to locate you in the accounts
 database. Please make sure you typed in your name and MIT ID number
@@ -28,23 +28,23 @@ correctly.
 
 If you are a new staff member, this may mean that you have not been
 entered into the database yet. Try again tomorrow. If this problem
-persists, contact the Athena User Accounts Office in N42-105A,
-x3-1325.
+persists, contact the Athena User Accounts Office at 617-253-1325 or 
+accounts@mit.edu.
 # 6 ALREADY_REGISTERED
 You have already registered for an account. The username you selected
 is "%s".
 
 If you don't remember your password, or you do not think that this is
-your account, contact the Athena User Accounts Office in N42-105A,
-x3-1325.
+your account, contact the Athena User Accounts Office at 617-253-1325 or
+accounts@mit.edu.
 # 7 ACCOUNT_DELETED
 Your account, "%s", has been deactivated, and you are not listed as
 eligible for another account. If you have any questions, contact
-the Athena User Accounts Office in N42-105A, x3-1325.
+the Athena User Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 8 NOT_ELIGIBLE
 You were found in the database, but are listed as ineligible for an
 account. If you have any questions, contact the Athena User Accounts
-Office in N42-105A, x3-1325.
+Office at 617-253-1325 or accounts@mit.edu.
 # 9 FOUND
 OK. I've found you in the database: %s, account class %s.
 # 10 FORCED_USERNAME
@@ -57,7 +57,7 @@ sure you typed in all six of the words correctly and in order.
 
 If you have lost your Athena Account Coupon, you will need to
 get a new one, by going to either the Student Services Center in
-Building 11, or the Athena User Accounts Office in N42-105A, x3-1325.
+Building 11, or the Athena User Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 12 BAD_USERNAME
 "%s" is not a valid username. Your username must be between %d and %d
 characters long, must start with a lowercase letter, and must consist
@@ -69,7 +69,7 @@ Sorry, that username is already taken. Please select another.
 Oops. Your account was reserved with the username "%s", but that
 username is already taken. You will not be able to register your
 account until this problem is resolved. Please contact the Athena User
-Accounts Office in N42-105A, x3-1325.
+Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 15 USERNAME_OK
 OK. I've reserved the username "%s" for you.
 # 16 PASSWORD_SHORT
@@ -85,12 +85,15 @@ An unexpected error occurred while trying to register your username
 and password with the Kerberos server. The error was: "%s".
 
 Please try again later. If this problem persists, contact the Athena
-User Accounts Office in N42-105A, x3-1325.
+User Accounts Office at 617-253-1325 or accounts@mit.edu.
 # 20 DONE
 Your account has been registered and will become active later tonight.
 
 You should be able to log in by tomorrow morning using your Kerberos
 username (%s) and the password you chose.
+
+SAPweb Self-Service access (including employee benefits enrollment) will
+be available after 48 hours.
 
 MIT's central email service is in transition.
 

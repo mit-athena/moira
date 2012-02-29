@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc 4032 2011-03-15 16:32:48Z zacheiss $
+/* $Id: dhcp.pc 4051 2011-09-08 18:46:37Z zacheiss $
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/dhcp.pc $ $Id: dhcp.pc 4032 2011-03-15 16:32:48Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/dhcp.pc $ $Id: dhcp.pc 4051 2011-09-08 18:46:37Z zacheiss $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     FROM printers pr, machine m, machine m2, hwaddrmap hw
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
-    AND pr.loghost = m2.mach_id AND (pr.status = 1 OR pr.status = 2)
+    AND pr.loghost = m2.mach_id AND (pr.status = 1 OR pr.status = 2 OR pr.status = 4)
     ORDER BY hw.hwaddr, m.name;
   EXEC SQL OPEN csr_boot;
   while (1)
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
     WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
     AND pr.rm = m2.mach_id AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS'
-    AND (pr.status = 1 OR pr.status = 2);
+    AND (pr.status = 1 OR pr.status = 2 OR pr.status = 4);
   EXEC SQL OPEN csr_boot2;
   while (1)
     {
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 	fprintf(out, "trap-dest: %s\n", logaddr);
 
       /* Don't output any allow: lines for status 2 printers; they should be unrestricted. */
-      if (status == 1)
+      if (status == 1 || status == 4)
 	{
 	  if (*logaddr)
 	    fprintf(out, "allow: %s\n", logaddr);

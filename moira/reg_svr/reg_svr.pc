@@ -50,6 +50,7 @@ int register_user(int uid, char *username);
 int update_user_status(char *username, int account_status);
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
 void sigshut(int);
+char *remove_char(char *str, int ch);
 
 reg_client *cl = NULL;
 enum { RS_RUNNING, RS_SLEEPING, RS_EXITING } state = RS_RUNNING;
@@ -317,8 +318,9 @@ void RIFO(reg_client *rc, int argc, char **argv)
   ufirst = argv[0];
   umiddle = argv[1];
   ulast = argv[2];
-  id = argv[3];
-
+  /* Remove dashes from MIT ID */
+  id = remove_char(argv[3], '-');
+  
   EXEC SQL SELECT count(login) INTO :count FROM users WHERE clearid = :id;
 
   /* "ORDER BY status" so that if there's both a matching state 0 entry
@@ -1102,4 +1104,21 @@ void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
 void sigshut(int sig)
 {
   state = RS_EXITING;
+}
+
+char *remove_char(char *str, int ch)
+{
+  char *dst = strchr(str, ch);
+
+  if (dst != NULL)
+    {
+      const char *src = dst;
+      while (*dst != '\0')
+	{
+	  while (*src == ch)
+	    src++;
+	  *dst++ = *src++;
+	}
+    }
+  return str;
 }

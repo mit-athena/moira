@@ -373,7 +373,7 @@ void test_script(int argc, char *argv[])
   if (!inp)
     {
       sprintf(input, "Cannot open input file %s", argv[1]);
-      com_err("moira (script)", 0, input);
+      com_err("moira (script)", 0, "%s", input);
       return;
     }
 
@@ -390,7 +390,7 @@ void test_script(int argc, char *argv[])
 	  dup2(oldstdout, 1);
 	  argc = 2;
 	  sprintf(input, "Unable to redirect output to %s\n", argv[2]);
-	  com_err("moira (script)", errno, input);
+	  com_err("moira (script)", errno, "%s", input);
 	}
       else
 	{

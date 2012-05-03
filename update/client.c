@@ -169,6 +169,6 @@ void mr_send_quit(int conn)
 
 void fail(int conn, int err, char *msg)
 {
-  com_err(whoami, err, msg);
+  com_err(whoami, err, "%s", msg);
   return;
 }

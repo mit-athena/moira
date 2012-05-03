@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	if (status == MR_USER_AUTH)
 	  {
 	    char buf[BUFSIZ];
-	    com_err(program_name, status, "\nPress [RETURN] to continue");
+	    com_err(program_name, status, "%s", "\nPress [RETURN] to continue");
 	    fgets(buf, BUFSIZ, stdin);
 	  }
 	else
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 
 static void ErrorExit(char *buf, int status)
 {
-  com_err(program_name, status, buf);
+  com_err(program_name, status, "%s", buf);
   mr_disconnect();
   exit(1);
 }

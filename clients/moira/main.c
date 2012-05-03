@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	if (status == MR_USER_AUTH)
 	  {
 	    char buf[BUFSIZ];
-	    com_err(program_name, status, "%s", "\nPress [RETURN] to continue");
+	    com_err(program_name, status, "\nPress [RETURN] to continue");
 	    fgets(buf, BUFSIZ, stdin);
 	  }
 	else

@@ -227,7 +227,7 @@ void quit(int conn, char *str)
 
 void fail(int conn, int err, char *msg)
 {
-  com_err(whoami, err, msg);
+  com_err(whoami, err, "%s", msg);
   close(conn);
   exit(1);
 }

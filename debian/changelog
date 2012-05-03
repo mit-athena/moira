@@ -1,3 +1,9 @@
+debathena-moira (4.0.0-r4073-0debathena2) unstable; urgency=low
+
+  * Make -Werror=format-security happy
+
+ -- Jonathan Reed <jdreed@mit.edu>  Thu, 03 May 2012 15:37:54 -0400
+
 debathena-moira (4.0.0-r4073-0debathena1) unstable; urgency=low
 
   * Re-snapshot moira at r4073 to pick up new changes to clients; the

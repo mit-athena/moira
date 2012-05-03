@@ -188,7 +188,7 @@ static char labelbuf[256];
 
 static char *GetFSLabel(char **info)
 {
-  snprintf(labelbuf, sizeof(labelbuf), info[ALIAS_TRANS]);
+  snprintf(labelbuf, sizeof(labelbuf), "%s", info[ALIAS_TRANS]);
 }
 
 static int fsgCount = 1;

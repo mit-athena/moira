@@ -1,3 +1,11 @@
+debathena-moira (4.0.0-r4077-0debathena1) unstable; urgency=low
+
+  * Re-snapshot moira at r4077, which incorporates the
+    -Werror=format-security fixes from 4.0.0-r4073-0debathena2, except
+    from upstream instead of from us.  
+
+ -- Jonathan Reed <jdreed@mit.edu>  Mon, 07 May 2012 14:31:58 -0400
+
 debathena-moira (4.0.0-r4073-0debathena2) unstable; urgency=low
 
   * Make -Werror=format-security happy

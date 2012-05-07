@@ -1,4 +1,4 @@
-/* $Id: main.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: main.c 4077 2012-05-07 16:53:10Z zacheiss $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/main.c $ $Id: main.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/main.c $ $Id: main.c 4077 2012-05-07 16:53:10Z zacheiss $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);

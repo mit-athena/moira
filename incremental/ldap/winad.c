@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 4062 2011-12-07 21:07:25Z zacheiss $ */
+/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 4074 2012-03-28 13:24:31Z zacheiss $ */
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -9284,7 +9284,9 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
 	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "reserve")) != (char *) NULL) ||
 	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "pf")) != (char *) NULL))
+	    ((s = strstr(gPtr->dn, "pf")) != (char *) NULL) || 
+	    ((s = strstr(gPtr->dn, "TSM")) != (char *) NULL) ||
+	    ((s = strstr(gPtr->dn, "tsm")) != (char *) NULL))
 	  {
 	    gPtr = gPtr->next;
 	    continue;

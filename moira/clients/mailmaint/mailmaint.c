@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
   exit(0);
 
 punt:
-  com_err(whoami, status, buf);
+  com_err(whoami, status, "%s", buf);
   exit(1);
 }
 

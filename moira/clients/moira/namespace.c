@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 
 static void ErrorExit(char *buf, int status)
 {
-  com_err(program_name, status, buf);
+  com_err(program_name, status, "%s", buf);
   mr_disconnect();
   exit(1);
 }

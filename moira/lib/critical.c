@@ -73,7 +73,7 @@ void critical_alert(char *whoami, char *instance, char *msg, ...)
 	  va_end(ap);
 
 	  send_zgram(instance, buf);
-	  com_err(whoami, 0, buf);
+	  com_err(whoami, 0, "%s", buf);
 
 	  free(buf);
 	}

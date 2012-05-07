@@ -1,4 +1,4 @@
-/* $Id: update_server.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: update_server.c 4077 2012-05-07 16:53:10Z zacheiss $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -30,7 +30,7 @@
 #endif
 #include "update.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/update_server.c $ $Id: update_server.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/update_server.c $ $Id: update_server.c 4077 2012-05-07 16:53:10Z zacheiss $");
 
 char *whoami, *hostname;
 

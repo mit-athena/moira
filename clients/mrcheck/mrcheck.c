@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mrcheck.c 4077 2012-05-07 16:53:10Z zacheiss $
  *
  * Verify that all Moira updates are successful
  *
@@ -19,7 +19,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mrcheck/mrcheck.c $ $Id: mrcheck.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mrcheck/mrcheck.c $ $Id: mrcheck.c 4077 2012-05-07 16:53:10Z zacheiss $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);

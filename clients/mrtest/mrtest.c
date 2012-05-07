@@ -1,4 +1,4 @@
-/* $Id: mrtest.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mrtest.c 4077 2012-05-07 16:53:10Z zacheiss $
  *
  * Bare-bones Moira client
  *
@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mrtest/mrtest.c $ $Id: mrtest.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mrtest/mrtest.c $ $Id: mrtest.c 4077 2012-05-07 16:53:10Z zacheiss $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -388,7 +388,7 @@ void test_script(int argc, char *argv[])
 	  close(status);
 	  dup2(oldstdout, 1);
 	  argc = 2;
-	  com_err("moira (script)", errno, "Unable to redirect output to %s\n", argv[2]);
+	  com_err("moira (script)", errno, "Unable to redirect output to %s", argv[2]);
 	}
       else
 	{

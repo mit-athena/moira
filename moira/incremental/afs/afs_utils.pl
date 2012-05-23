@@ -28,6 +28,7 @@ $afs_save="$afs_data.tmp";
      "ORG", "org",
      "PROJECT", "project",
      "REF", "ref",
+     "SITE", "site",
      "SW", "sw",
      "SYSTEM", "system",
      "UROP", "urop",

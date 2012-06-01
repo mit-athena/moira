@@ -107,6 +107,7 @@ sub athena_proc
     # ORG	<user> all <group> all system:cwisfac all system:anyuser rl
     # PROJECT   <user> all <group> all
     # REF       <user> all system:anyuser rl
+    # SITE	system:sites-admin all system:sites-servers write
     # SW        <user> all system:swmaint all system:authuser rl
     # SYSTEM    system:administrators all system:anyuser rl
     # UROP	<user> all <group> all system:facdev all system:authuser rl
@@ -115,6 +116,8 @@ sub athena_proc
     # 1. All directories also have "system:expunge ld".
 
     @acl=("system:expunge ld");
+    push(@acl,"system:sites-admin all") if ($type =~ /^(SITE)/);
+    push(@acl,"system:sites-servers write") if ($type =~ /^(SITE)/);
     push(@acl,"system:facdev all") if ($type =~ /^(COURSE|UROP)/);
     push(@acl,"system:swmaint all") if ($type =~ /^(SW)/);
     push(@acl,"system:cwisfac all") if ($type =~ /^(ORG)/);
@@ -131,8 +134,10 @@ sub athena_proc
 
     if ($type !~ /^(AREF|ORG|SYSTEM)/) {
 	system("$vos backup $vname >/dev/null");
-	system("$fs mkm $path/OldFiles $vname.backup");
-	warn "$locker: Unable to create OldFiles mountpoint\n" if ($?);
+	if ($type !~ /^(SITE)/) {
+	    system("$fs mkm $path/OldFiles $vname.backup");
+	    warn "$locker: Unable to create OldFiles mountpoint\n" if ($?);
+	}
     }
 
     if ($type =~ /ACTIVITY|APROJ|PROJECT/) {

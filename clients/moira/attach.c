@@ -1,4 +1,4 @@
-/* $Id: attach.c 4077 2012-05-07 16:53:10Z zacheiss $
+/* $Id: attach.c 4081 2012-06-01 14:33:35Z jweiss $
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/attach.c $ $Id: attach.c 4077 2012-05-07 16:53:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/attach.c $ $Id: attach.c 4081 2012-06-01 14:33:35Z jweiss $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);
@@ -386,7 +386,7 @@ static char **AskFSInfo(char **info, Bool name)
       if (!strcasecmp(info[FS_TYPE], "AFS"))
 	{
 	  char *path, *args[3], *p;
-	  int status, depth;
+	  int status, depth, fsltypelen, fsnamelen;
 	  if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
 			      &info[FS_L_TYPE]) == SUB_ERROR)
 	    return NULL;
@@ -457,7 +457,19 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
+	      /* If the lockername ends in ".lockertype" strip that.
+	       * eg.  the SITE locker "foo.site" becomes just "foo"
+	       */
+	      fsltypelen = strlen(info[FS_L_TYPE]);
+	      fsnamelen = strlen(temp_buf);
+	      p = (temp_buf + fsnamelen - fsltypelen);
+	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+		*(p-1) = '\0';
 	      info[FS_PACK] = strdup(temp_buf);
+	      fsnamelen = strlen(info[FS_M_POINT]);
+	      p = (info[FS_M_POINT] + fsnamelen - fsltypelen);
+	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+		*(p-1) = '\0';
 	    }
 	}
       if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==

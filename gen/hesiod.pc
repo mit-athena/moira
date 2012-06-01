@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 4034 2011-03-15 16:34:23Z zacheiss $
+/* $Id: hesiod.pc 4080 2012-05-30 16:30:24Z jweiss $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4034 2011-03-15 16:34:23Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4080 2012-05-30 16:30:24Z jweiss $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -497,7 +497,7 @@ int do_filsys(void)
   char name[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
   char loc[FILESYS_NAME_SIZE], access[FILESYS_RWACCESS_SIZE];
   char mount[FILESYS_MOUNT_SIZE], comments[FILESYS_COMMENTS_SIZE];
-  char key[FSGROUP_KEY_SIZE];
+  char key[FSGROUP_KEY_SIZE], ltype[FILESYS_LOCKERTYPE_SIZE];
   char aname[ALIAS_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
   int flag, id, fid;
   EXEC SQL END DECLARE SECTION;
@@ -518,18 +518,22 @@ int do_filsys(void)
   sq2 = sq_create();
 
   EXEC SQL DECLARE f_cursor CURSOR FOR
-    SELECT label, type, name, mach_id, rwaccess, mount, comments, filsys_id
+    SELECT label, type, name, mach_id, rwaccess, mount, comments, filsys_id,
+    lockertype
     FROM filesys
     ORDER BY filsys_id;
   EXEC SQL OPEN f_cursor;
   while (1)
     {
       EXEC SQL FETCH f_cursor INTO :name, :type, :loc, :id, :access,
-	:mount, :comments, :fid;
+	:mount, :comments, :fid, :ltype;
       if (sqlca.sqlcode)
 	break;
       strtrim(name);
       if (!valid(name))
+	continue;
+      strtrim(ltype);
+      if (!strcmp(ltype, "SITE"))
 	continue;
       strtrim(type);
       if (!strcmp(type, "NFS") || !strcmp(type, "RVD"))

@@ -1,4 +1,4 @@
-/* $Id: afs.c 3973 2010-02-02 19:15:44Z zacheiss $
+/* $Id: afs.c 4079 2012-05-23 22:42:25Z jweiss $
  *
  * Do AFS incremental updates
  *
@@ -41,7 +41,7 @@
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 3973 2010-02-02 19:15:44Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4079 2012-05-23 22:42:25Z jweiss $");
 
 char *whoami;
 
@@ -426,7 +426,8 @@ void do_member(char **before, int beforec, char **after, int afterc)
 void do_filesys(char **before, int beforec, char **after, int afterc)
 {
   char cmd[1024];
-  int acreate, atype, bcreate, btype;
+  int acreate, atype, bcreate, btype, fsltypelen, fsnamelen;
+  char *tmp;
 
   if (afterc < FS_CREATE)
     atype = acreate = 0;
@@ -434,6 +435,14 @@ void do_filesys(char **before, int beforec, char **after, int afterc)
     {
       atype = !strcmp(after[FS_TYPE], "AFS");
       acreate = atoi(after[FS_CREATE]);
+      /* If the lockername ends in ".lockertype" strip that.
+       * eg.  the SITE locker "foo.site" becomes just "foo"
+       */
+      fsltypelen = strlen(after[FS_L_TYPE]);
+      fsnamelen = strlen(after[FS_NAME]);
+      tmp = (after[FS_NAME] + fsnamelen - fsltypelen);
+      if (!strcasecmp(tmp, after[FS_L_TYPE]) && *(tmp-1) == '.')
+	*(tmp-1) = '\0';
     }
 
   if (beforec < FS_CREATE)
@@ -448,6 +457,17 @@ void do_filesys(char **before, int beforec, char **after, int afterc)
 	      after[FS_PACK], after[FS_OWNER], after[FS_OWNERS]);
       run_cmd(cmd);
       return;
+    }
+  else
+    {
+      /* If the lockername ends in ".lockertype" strip that.
+       * eg.  the SITE locker "foo.site" becomes just "foo"
+       */
+      fsltypelen = strlen(before[FS_L_TYPE]);
+      fsnamelen = strlen(before[FS_NAME]);
+      tmp = (before[FS_NAME] + fsnamelen - fsltypelen);
+      if (!strcasecmp(tmp, before[FS_L_TYPE]) && *(tmp-1) == '.')
+	*(tmp-1) = '\0';
     }
 
   btype = !strcmp(before[FS_TYPE], "AFS");

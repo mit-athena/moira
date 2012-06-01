@@ -1,3 +1,10 @@
+debathena-moira (4.0.0-r4081-0debathena1) unstable; urgency=low
+
+  * Re-snapshot moira at r4081, to pick up client changes for lockers of
+    type 'SITE'
+
+ -- Jonathan Reed <jdreed@mit.edu>  Fri, 01 Jun 2012 12:01:20 -0400
+
 debathena-moira (4.0.0-r4077-0debathena1) unstable; urgency=low
 
   * Re-snapshot moira at r4077, which incorporates the

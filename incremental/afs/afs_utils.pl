@@ -1,4 +1,4 @@
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs_utils.pl $ $Id: afs_utils.pl 3964 2010-01-07 20:54:34Z zacheiss $
+# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs_utils.pl $ $Id: afs_utils.pl 4079 2012-05-23 22:42:25Z jweiss $
 
 use Fcntl;
 
@@ -28,6 +28,7 @@ $afs_save="$afs_data.tmp";
      "ORG", "org",
      "PROJECT", "project",
      "REF", "ref",
+     "SITE", "site",
      "SW", "sw",
      "SYSTEM", "system",
      "UROP", "urop",

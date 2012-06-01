@@ -386,7 +386,7 @@ static char **AskFSInfo(char **info, Bool name)
       if (!strcasecmp(info[FS_TYPE], "AFS"))
 	{
 	  char *path, *args[3], *p;
-	  int status, depth;
+	  int status, depth, fsltypelen, fsnamelen;
 	  if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
 			      &info[FS_L_TYPE]) == SUB_ERROR)
 	    return NULL;
@@ -457,7 +457,19 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
+	      /* If the lockername ends in ".lockertype" strip that.
+	       * eg.  the SITE locker "foo.site" becomes just "foo"
+	       */
+	      fsltypelen = strlen(info[FS_L_TYPE]);
+	      fsnamelen = strlen(temp_buf);
+	      p = (temp_buf + fsnamelen - fsltypelen);
+	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+		*(p-1) = '\0';
 	      info[FS_PACK] = strdup(temp_buf);
+	      fsnamelen = strlen(info[FS_M_POINT]);
+	      p = (info[FS_M_POINT] + fsnamelen - fsltypelen);
+	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+		*(p-1) = '\0';
 	    }
 	}
       if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==

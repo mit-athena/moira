@@ -1,4 +1,4 @@
-.TH BLANCHE 1 "14 Sep 1988" "Project Athena"
+.TH BLANCHE 1 "31 Jul 2012" "Project Athena"
 \" RCSID: $HeadURL$ $Id$
 .SH NAME
 blanche \- examine and modify memberships in Moira lists
@@ -139,6 +139,22 @@ characteristics. The membership acl is specified like a list member,
 except that it can never be a string.
 To return a list to having default membership access control
 conditions, set the membership acl to "NONE".
+.IP \fB-tags\ \fRor\ \fB-t\fR
+Display 'tags' in parentheses next to each entry, where applicable.
+Tags are used when converting lists to Athena 9 access files or Discuss
+meeting ACLs.
+.IP \fB-addtagged\ \fImember\ tag\ \fRor\ \fB-at\ \fImember\ tag\fR
+This will add the specified member to the target list with the
+specified tag.  
+.IP \fB-changetag\ \fImember\ tag\ \fRor\ \fB-ct\ \fImember\ tag\fR
+This will change the specified member's tag to the specified tag.  You
+may specify an empty string to clear an existing tag.
+.IP \fB-mailman\ \fR(\fB-mm\fR)\ \fRor\ \fB-notmailman\ \fR(\fB-nmm\fR)
+Toggle whether or not the list is a Mailman list.  Mailman lists cannot
+also be used as groups or NFS groups.
+.IP \fB-mailman_server\ \fIserver\ \fRor\ \fB-ms\ \fIserver\fR
+Use the specified server instead of the default when making a list a
+mailman list.
 
 .SH AUTHORS
 Mark Rosenstein and Jay Berkenbilt.

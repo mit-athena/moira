@@ -153,7 +153,8 @@ long register_kerberos(char *username, char *password)
       (void) kadm5_free_policy_ent(kadm_server_handle, &defpol);
     } 
 
-  mask |= KADM5_PRINCIPAL;
+  mask |= KADM5_PRINCIPAL | KADM5_ATTRIBUTES;
+  princ.attributes |= KRB5_KDB_REQUIRES_PRE_AUTH | KRB5_KDB_DISALLOW_SVR;
   status = kadm5_create_principal(kadm_server_handle, &princ, mask, password);
 
 cleanup:

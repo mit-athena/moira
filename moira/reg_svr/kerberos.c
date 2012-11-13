@@ -58,55 +58,48 @@ long init_kerberos(void)
 /* Check the kerberos database to see if a principal exists */
 long check_kerberos(char *username)
 {
-  krb5_error_code code;
-  krb5_creds creds;
-  krb5_data *realm;
-  krb5_timestamp now;
+  void *kadm_server_handle = NULL;
+  kadm5_ret_t status;
+  krb5_principal princ;
+  kadm5_principal_ent_rec dprinc;
+  kadm5_config_params realm_params;
+  char admin_princ[256];
 #ifdef KERBEROS_TEST_REALM
   char ubuf[256];
 
   sprintf(ubuf, "%s@%s", username, KERBEROS_TEST_REALM);
   username = ubuf;
+#else
+  strcpy(admin_princ, REG_SVR_PRINCIPAL);
+  realm_params.mask = 0;
 #endif
 
-  memset(&creds, 0, sizeof(creds));
-  code = krb5_parse_name(context, username, &creds.client);
-  if (code)
+  memset(&princ, 0, sizeof(princ));
+  memset(&dprinc, 0, sizeof(dprinc));
+
+  status = krb5_parse_name(context, username, &princ);
+  if (status)
+    return status;
+
+  status = kadm5_init_with_skey(admin_princ, NULL, KADM5_ADMIN_SERVICE,
+                                &realm_params, KADM5_STRUCT_VERSION,
+                                KADM5_API_VERSION_2, NULL, &kadm_server_handle);
+  if (status)
     goto cleanup;
 
-  realm = krb5_princ_realm(context, creds.client);
-  code = krb5_build_principal_ext(context, &creds.server,
-				  realm->length, realm->data,
-				  KRB5_TGS_NAME_SIZE, KRB5_TGS_NAME,
-				  realm->length, realm->data, 0);
-  if (code)
-    goto cleanup;
+  status =  kadm5_get_principal(kadm_server_handle, princ, &dprinc, KADM5_PRINCIPAL_NORMAL_MASK);
 
-  code = krb5_timeofday(context, &now);
-  if (code)
-    goto cleanup;
+ cleanup:
+  krb5_free_principal(context, princ);
+  if (kadm_server_handle)
+    kadm5_destroy(kadm_server_handle);
 
-  creds.times.starttime = 0;
-  creds.times.endtime = now + 60;
-
-  code = krb5_get_in_tkt_with_password(context,
-				       0    /* options */,
-				       NULL /* addrs */,
-				       NULL /* ktypes */,
-				       NULL /* pre_auth_types */,
-				       "x"  /* password */,
-				       NULL /* ccache */,
-				       &creds,
-				       NULL /* ret_as_reply */);
-
-cleanup:
-  krb5_free_principal(context, creds.client);
-  krb5_free_principal(context, creds.server);
-
-  if (code == KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN)
+  if (status == KADM5_OK)
+    return MR_IN_USE;
+  else if (status == KADM5_UNK_PRINC)
     return MR_SUCCESS;
   else
-    return MR_IN_USE;
+    return MR_INTERNAL;
 }
 
 /* Create a new principal in Kerberos */

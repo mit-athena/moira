@@ -80,10 +80,10 @@ int main(int argc, char **argv)
   check_krb();
 
   /* Reactivating a principal */
-  if ((bstate == 3) && ((astate == 1) || (astate == 6) || (astate == 9)))
+  if ((astate == 1) || (astate == 6) || (astate == 9))
     activate = 1;
   /* Deactivating a principal */
-  else if ((astate == 3) && ((bstate == 1) || (bstate == 6) || (bstate == 9)))
+  else if (astate == 3)
     activate = 0;
   /* Can ignore other changes */
   else
@@ -96,6 +96,9 @@ int main(int argc, char **argv)
       critical_alert(whoami, "incremental", "Couldn't %s Kerberos principal for user %s",
 		     activate ? "enable" : "disable", after[U_NAME]);
     }
+  else
+    com_err(whoami, 0, "Successfully %sd Kerberos principal for user %s",
+	    activate ? "enable" : "disable", after[U_NAME]);
 
   exit(0);
 }

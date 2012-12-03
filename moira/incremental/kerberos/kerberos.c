@@ -126,7 +126,8 @@ long modify_kerberos(char *username, int activate)
   void *kadm_server_handle = NULL;
   krb5_context context = NULL;
   kadm5_ret_t status;
-  kadm5_principal_ent_rec princ;
+  krb5_principal princ;
+  kadm5_principal_ent_rec dprinc;
   kadm5_policy_ent_rec defpol;
   kadm5_config_params realm_params;
   char admin_princ[256];
@@ -149,8 +150,9 @@ long modify_kerberos(char *username, int activate)
     return status;
 
   memset(&princ, 0, sizeof(princ));
+  memset(&dprinc, 0, sizeof(dprinc));
 
-  status = krb5_parse_name(context, username, &(princ.principal));
+  status = krb5_parse_name(context, username, &princ);
   if (status)
     return status;
 
@@ -161,22 +163,27 @@ long modify_kerberos(char *username, int activate)
   if (status)
     goto cleanup;
 
+  status = kadm5_get_principal(kadm_server_handle, princ, &dprinc, KADM5_PRINCIPAL_NORMAL_MASK);
+  if (status)
+    goto cleanup;
+
   mask |= KADM5_ATTRIBUTES;
   if (activate)
     {
       /* Enable principal */
-      princ.attributes &= ~KRB5_KDB_DISALLOW_ALL_TIX;
+      dprinc.attributes &= ~KRB5_KDB_DISALLOW_ALL_TIX;
     }
   else
     {
       /* Disable principal */
-      princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
+      dprinc.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
     }
 
-  status = kadm5_modify_principal(kadm_server_handle, &princ, mask);
+  status = kadm5_modify_principal(kadm_server_handle, &dprinc, mask);
 
  cleanup:
-  krb5_free_principal(context, princ.principal);
+  krb5_free_principal(context, princ);
+  kadm5_free_principal_ent(kadm_server_handle, &dprinc);
   if (kadm_server_handle)
     kadm5_destroy(kadm_server_handle);
 

@@ -129,7 +129,7 @@ void dump_zacl(FILE *out, char *type, int id)
   if (!strcmp(type, "ALL"))
     fprintf(out, "*.*@*\n");
   else if (strcmp(type, "NONE") != 0)
-    dump_krb_acl(out, type, id, 4);
+    dump_krb_acl(out, type, id, 5);
 }
 
 void sqlerr(void)

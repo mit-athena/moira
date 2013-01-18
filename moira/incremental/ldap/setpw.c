@@ -46,7 +46,6 @@ Abstract:
 
 #define NEED_SOCKETS
 #include <krb5.h>
-#include <krb.h>
 #include <stdio.h>
 /* #include "changepasswd.h" */
 #include <sys/timeb.h>

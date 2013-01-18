@@ -23,6 +23,8 @@
 #include <com_err.h>
 #ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#include <mr_krb.h>
 #endif
 #include <krb5.h>
 
@@ -581,6 +583,9 @@ void edit_group(int op, char *group, char *type, char *member)
   static char *local_realm = NULL;
   struct member *m;
   krb5_context context = NULL;
+  krb5_principal client = NULL;
+  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+  char canon_member[MAX_K_NAME_SZ];
 
   /* The following KERBEROS code allows for the use of entities
    * user@foreign_cell.
@@ -598,6 +603,18 @@ void edit_group(int op, char *group, char *type, char *member)
 
   if (!strcmp(type, "KERBEROS"))
     {
+      /* AFS still uses a v4-style namespace, so convert. */
+      code = krb5_parse_name(context, member, &client);
+      if (code)
+	goto out;
+
+      code = krb5_524_conv_principal(context, client, name, inst, realm);
+      if (code)
+	goto out;
+
+      strcpy(canon_member, mr_kname_unparse(name, inst, realm));
+      member = canon_member;
+
       p = strchr(member, '@');
       if (p && !strcasecmp(p+1, local_realm))
 	*p = 0;
@@ -669,6 +686,8 @@ void edit_group(int op, char *group, char *type, char *member)
 	}
 
     out:
+      if (client)
+	krb5_free_principal(context, client);
       if (context)
 	krb5_free_context(context);
       if (local_realm)

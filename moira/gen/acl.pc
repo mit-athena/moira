@@ -106,9 +106,7 @@ int main(int argc, char **argv)
 	       */
 	      out = tarfile_start(tf, target, 0644, 0, 0, "root", "root", now);
 
-	      if (!strcasecmp(kind, "kerberos4"))
-		dump_krb_acl(out, "LIST", lid, 4);
-	      else if (!strcasecmp(kind, "kerberos5"))
+	      if (!strcasecmp(kind, "kerberos5"))
 		dump_krb_acl(out, "LIST", lid, 5);
 	      else if (!strcasecmp(kind, "access"))
 		dump_access_file(out, lid);

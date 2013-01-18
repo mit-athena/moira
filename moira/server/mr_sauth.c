@@ -196,7 +196,7 @@ void do_krb5_auth(client *cl)
   krb5_auth_context auth_con = NULL;
   krb5_principal server = NULL, client = NULL;
   krb5_ticket *ticket;
-  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+  char *pname = NULL, *name = NULL, *instance = NULL, *realm = NULL;
   int status;
 
   ticket = NULL;
@@ -238,17 +238,34 @@ void do_krb5_auth(client *cl)
       goto out;
     }
 
-  /* Always convert to krb4 style principal name for now. */
-  status = krb5_524_conv_principal(context, client, name, inst, realm);
+  status = krb5_unparse_name(context, client, &pname);
   if (status)
     {
       client_reply(cl, status);
-      com_err(whoami, status, " (krb5_524_conv_principal failed)");
+      com_err(whoami, status, " (krb5_unparse_name failed)");
       goto out;
     }
-  status = set_client(cl, mr_kname_unparse(name, inst, realm), name, inst,
-		      realm);
 
+  name = xmalloc(krb5_princ_component(context, client, 0)->length + 1);
+  strncpy(name, krb5_princ_component(context, client, 0)->data,
+	  krb5_princ_component(context, client, 0)->length);
+  name[krb5_princ_component(context, client, 0)->length] = '\0';
+
+  if (krb5_princ_size(context, client) > 1)
+    {
+      instance = xmalloc(krb5_princ_component(context, client, 1)->length + 1);
+      strncpy(instance, krb5_princ_component(context, client, 1)->data,
+	      krb5_princ_component(context, client, 1)->length);
+      instance[krb5_princ_component(context, client, 1)->length] = '\0';
+    }
+
+  realm = xmalloc(krb5_princ_realm(context, client)->length + 1);
+  strncpy(realm, krb5_princ_realm(context, client)->data,
+          krb5_princ_realm(context, client)->length);
+  realm[krb5_princ_realm(context, client)->length] = '\0';
+
+  status = set_client(cl, pname, name, instance, realm);
+  
   strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
   cl->entity[sizeof(cl->entity) - 1] = 0;
 
@@ -261,6 +278,14 @@ void do_krb5_auth(client *cl)
     client_reply(cl, MR_USER_AUTH);
 
  out:
+  if (realm)
+    free(realm);
+  if (instance)
+    free(instance);
+  if (name)
+    free(name);
+  if (pname)
+    krb5_free_unparsed_name(context, pname);
   if (client)
     krb5_free_principal(context, client);
   if (server)

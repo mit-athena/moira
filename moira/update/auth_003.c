@@ -43,12 +43,11 @@ void auth_003(int conn, char *str)
   krb5_context context = NULL;
   krb5_auth_context auth_con = NULL;
   krb5_data auth;
-  krb5_principal server = NULL, client = NULL;
+  krb5_principal server = NULL, client = NULL, allowed = NULL;
   krb5_ticket *ticket;
-  char *p, *first, *data;
+  char *p, *first, *data, *pname = NULL, *mname = NULL, *lrealm = NULL;
   char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
   char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
-  char *lrealm = NULL;
   size_t size;
   long code;
   struct utsname uts;
@@ -118,14 +117,6 @@ void auth_003(int conn, char *str)
       goto out;
     }
 
-  code = krb5_524_conv_principal(context, client, name, inst, realm);
-  if (code)
-    {
-      com_err(whoami, code, "(krb5_524_conv_principal_failed)");
-      send_int(conn, code);
-      goto out;
-    }
-
   /* If there is an auth record in the config file matching the
    * authenticator we received, then accept it.  If there's no
    * auth record, assume [master]@[local realm].
@@ -134,11 +125,18 @@ void auth_003(int conn, char *str)
     {
       do
 	{
-	  kname_parse(aname, ainst, arealm, p);
-	  if (strcmp(aname, name) ||
-	      strcmp(ainst, inst) ||
-	      strcmp(arealm, realm))
-	    p = config_lookup("auth");
+	  code = krb5_parse_name(context, p, &allowed);
+	  if (code)
+	    {
+	      com_err(whoami, code, "(krb5_parse_name failed)");
+	      send_int(conn, code);
+	      goto out;
+	    }
+	  if (!krb5_principal_compare(context, client, allowed))
+	    {
+	      krb5_free_principal(context, allowed);
+	      p = config_lookup("auth");
+	    }
 	  else
 	    p = first;
 	}
@@ -146,30 +144,58 @@ void auth_003(int conn, char *str)
     }
   else 
     {
-      strcpy(aname, master);
-      strcpy(ainst, "");
+      mname = malloc(strlen(master) + 1);
+      if (!mname)
+	goto out;
+
+      strcpy(mname, master);
+
       if (!krb5_get_default_realm(context, &lrealm))
-        {
-          strcpy(arealm, lrealm);
-        }
+	{
+	  mname = realloc(mname, strlen(master) + strlen(lrealm) + 2);
+	  if (!mname)
+	    goto out;
+	  strncat(mname, "@", 1);
+	  strncat(mname, lrealm, strlen(lrealm));
+	}
       else
-	strcpy(arealm, KRB_REALM);
+	{
+	  mname = realloc(mname, strlen(master) + strlen(KRB_REALM) + 2);
+	  if (!mname)
+	    goto out;
+	  strncat(mname, "@", 1);
+	  strncat(mname, KRB_REALM, strlen(KRB_REALM));
+	}
+
+      code = krb5_parse_name(context, mname, &allowed);
+      free(mname);
+
+      if (code)
+	{
+	  com_err(whoami, code, "(krb5_parse_name failed)");
+	  send_int(conn, code);
+	  goto out;
+	}
     }
+
   code = EPERM;
-  if (strcmp(aname, name) ||
-      strcmp(ainst, inst) ||
-      strcmp(arealm, realm))
+  if (!krb5_principal_compare(context, client, allowed))
     {
-      com_err(whoami, code, "auth for %s.%s@%s failed", name, inst, realm);
+      krb5_unparse_name(context, client, &pname);
+      com_err(whoami, code, "auth for %s failed", pname);
       send_int(conn, code);
       goto out;
     }
   send_ok(conn);
   have_authorization = 1;
-
+  
  out:
+  if (pname)
+    krb5_free_unparsed_name(context, pname);
   if (lrealm)
     free(lrealm);
+  if (allowed)
+    krb5_free_principal(context, allowed);
   if (client)
     krb5_free_principal(context, client);
   if (server)

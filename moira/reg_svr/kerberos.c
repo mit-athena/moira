@@ -51,7 +51,6 @@ long init_kerberos(void)
   code = krb5_init_context(&context);
   if (code)
     return code;
-  krb_set_tkt_string("/tmp/tkt_ureg");
   return 0;
 }
 

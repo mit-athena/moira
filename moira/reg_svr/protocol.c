@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #include <com_err.h>
-#include <des.h>
+#include <openssl/des.h>
 
 /* RSARef includes */
 #include "global.h"

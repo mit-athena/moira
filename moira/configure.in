@@ -177,6 +177,24 @@ if test "$KRB5_LIBS" != "" ; then
     darwin*) KRB5_LIBS="$KRB5_LIBS -framework Kerberos"
     esac
 fi
+
+AC_MSG_CHECKING(for OpenSSL)
+AC_ARG_WITH(openssl,
+    [  --with-openssl=PREFIX	Specify location of openssl],
+    [openssl="$withval"], [openssl=no])
+AC_MSG_RESULT($openssl)
+if test "$openssl" != no; then
+   if test "$openssl" != yes; then
+      REG_SVR_INCLUDES=-I$openssl/include
+      REG_SVR_LIBS=-L$openssl/lib
+      MR_EXTEND(PRO_C_INCLUDES, -I$openssl/include)
+   else
+      REG_SVR_INCLUDES=-I/usr/include/openssl
+      MR_EXTEND(PRO_C_INCLUDES, INCLUDE=/usr/include/openssl)
+   fi
+   REG_SVR_LIBS="$REG_SVR_LIBS -lssl -lcrypto"
+fi
+
 AC_SUBST(REG_SVR_DEFS)
 AC_SUBST(REG_SVR_INCLUDES)
 AC_SUBST(REG_SVR_LIBS)

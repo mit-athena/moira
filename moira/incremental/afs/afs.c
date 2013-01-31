@@ -738,7 +738,7 @@ int pr_try(int (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
       else if (code == PRPERM)
 	system("/usr/bin/aklog");
       else
-	sleep(15);
+	sleep(1);
 
       /* Re-initialize the prdb connection */
       code = pr_Initialize(0, AFSCONF_CLIENTNAME, 0);

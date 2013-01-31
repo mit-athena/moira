@@ -203,7 +203,7 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
  * how many different ancestors a member is allowed to have.
  */
 
-#define MAXLISTDEPTH	3072
+#define MAXLISTDEPTH	4096
 
 int add_member_to_list(struct query *q, char **argv, client *cl)
 {

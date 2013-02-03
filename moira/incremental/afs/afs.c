@@ -587,18 +587,45 @@ void edit_group(int op, char *group, char *type, char *member)
   char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
   char canon_member[MAX_K_NAME_SZ];
 
+  memset(name, 0, sizeof(name));
+  memset(inst, 0, sizeof(inst));
+  memset(realm, 0, sizeof(realm));
+
+  code = krb5_init_context(&context);
+  if (code)
+    goto out;
+
   /* The following KERBEROS code allows for the use of entities
    * user@foreign_cell.
    */
   if (!local_realm)
     {
-      code = krb5_init_context(&context);
-      if (code)
-	goto out;
-
       code = krb5_get_default_realm(context, &local_realm);
       if (code)
 	goto out;
+    }
+
+  /* Cannot risk doing another query during a callback */
+
+  /* We could do this simply for type USER, but eventually this may
+   * also dynamically add KERBEROS types to the prdb, and we will need
+   * to do a query to look up the uid of the null-instance user */
+
+  if (mr_connections)
+    {
+      m = malloc(sizeof(struct member));
+      if (!m)
+        {
+          critical_alert(whoami, "incremental", "Out of memory");
+          exit(1);
+        }
+      m->op = op;
+      strcpy(m->list, group);
+      strcpy(m->type, type);
+      strcpy(m->member, member);
+      m->next = member_head;
+      member_head = m;
+      return;
     }
 
   if (!strcmp(type, "KERBEROS"))
@@ -621,27 +648,6 @@ void edit_group(int op, char *group, char *type, char *member)
     }
   else if (strcmp(type, "USER"))
     return;					/* invalid type */
-
-  /* Cannot risk doing another query during a callback */
-  /* We could do this simply for type USER, but eventually this may also
-   * dynamically add KERBEROS types to the prdb, and we will need to do
-   * a query to look up the uid of the null-instance user */
-  if (mr_connections)
-    {
-      m = malloc(sizeof(struct member));
-      if (!m)
-	{
-	  critical_alert(whoami, "incremental", "Out of memory");
-	  exit(1);
-	}
-      m->op = op;
-      strcpy(m->list, group);
-      strcpy(m->type, type);
-      strcpy(m->member, member);
-      m->next = member_head;
-      member_head = m;
-      return;
-    }
 
   strcpy(buf, "system:");
   strcat(buf, group);

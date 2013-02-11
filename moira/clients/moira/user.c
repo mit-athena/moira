@@ -66,7 +66,8 @@ static char *states[] = {
   "Enrolled/Not Registerable (6)",
   "Half Enrolled (7)",
   "Registerable, Kerberos only (8)",
-  "Active, Kerberos only (9)"
+  "Active, Kerberos only (9)",
+  "Suspended (10)"
 };
 
 static char *UserState(int state)

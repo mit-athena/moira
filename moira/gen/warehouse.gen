@@ -13,7 +13,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira") || exit $MR_DBMS_ERR;
 
 $sth = $dbh->prepare("SELECT login, clearid, first, last, middle " .
 		     "FROM users WHERE (status = 1 OR status = 2 OR " .
-		     "status = 5 OR status = 6 OR status = 7 OR status = 9)");
+		     "status = 5 OR status = 6 OR status = 7 OR status = 9 OR status = 10)");
 
 $sth->execute || exit $MR_DBMS_ERR;
 

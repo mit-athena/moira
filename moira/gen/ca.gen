@@ -28,7 +28,8 @@ while (($id, $dir, $machname) = $sth->fetchrow_array) {
     next if ($id == 0);
     $foo = $dbh->prepare("SELECT u.login, u.fullname ".
 			 "FROM users u, filesys f ".
-			 "WHERE f.label = u.login AND u.status = 1 ".
+			 "WHERE f.label = u.login AND ".
+			 "(u.status = 1 OR u.status = 10) ".
 			 "AND f.phys_id = " . $dbh->quote($id));
     $first = 1;
     $foo->execute || exit $MR_DBMS_ERR;
@@ -48,7 +49,8 @@ while (($id, $dir, $machname) = $sth->fetchrow_array) {
 #Now, let's do all the AFS homedirs.  This will take a while longer.
 $sth = $dbh->prepare("SELECT UNIQUE u.login, u.fullname, f.name ".
 		     "FROM users u, filesys f ".
-		     "WHERE f.label = u.login AND u.status = 1 ".
+		     "WHERE f.label = u.login AND ".
+		     "(u.status = 1 OR u.status = 10) ".
 		     "AND f.type = 'AFS' ".
 		     "ORDER BY u.login") || exit $MR_DBMS_ERR;
 

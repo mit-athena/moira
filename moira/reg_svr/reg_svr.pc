@@ -385,6 +385,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
     case US_ENROLLED:
     case US_ENROLL_NOT_ALLOWED:
     case US_REGISTERED_KERBEROS_ONLY:
+    case US_SUSPENDED:
       reply(rc, ALREADY_REGISTERED, "INIT", "c", NULL, login);
       return;
 

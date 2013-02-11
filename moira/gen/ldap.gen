@@ -20,7 +20,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 $sth0 = $dbh->prepare("SELECT u.login, u.first, u.middle, u.last, " .
 		      "u.clearid, u.unix_uid, u.shell FROM users u " .
-		      "WHERE (u.status = 1 OR u.status = 9)") 
+		      "WHERE (u.status = 1 OR u.status = 9 OR u.status = 10)") 
     || exit $MR_DBMS_ERR;
 
 
@@ -104,7 +104,7 @@ while (($name) = $sth0->fetchrow_array) {
 			 "list l WHERE l.name = " . $dbh->quote($name) .
 			 "AND l.list_id = i.list_id " .
 			 "AND i.member_type = 'USER' " .
-			 "AND (u.status = 1 OR u.status = 9) " .
+			 "AND (u.status = 1 OR u.status = 9 OR u.status = 10) " .
 			 "AND i.member_id = u.users_id") || exit $MR_DBMS_ERR;
     $sth->execute;
 

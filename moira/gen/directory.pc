@@ -63,7 +63,7 @@ int main(int argc, char **argv)
   EXEC SQL DECLARE x CURSOR FOR SELECT 
     login, last, first, middle, office_addr, office_phone, 
     home_addr, home_phone, clearid, type 
-    FROM users WHERE status = 1 AND type != 'SYSTEM' AND type != 'STAFF'
+    FROM users WHERE (status = 1 OR status = 10) AND type != 'SYSTEM' AND type != 'STAFF'
     AND type != 'TEST' AND type != 'REGTEST' AND type != 'SHARED'
     AND type != 'MGMT' AND type != 'DOOMED' AND type NOT LIKE 'GUES%';
   EXEC SQL OPEN x;

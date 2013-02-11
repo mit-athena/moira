@@ -242,7 +242,7 @@ int do_passwd(void)
     office_phone, home_phone, users_id, potype, pop_id, imap_id, exchange_id,
     status
     FROM users
-    WHERE status = 1 OR status = 2 OR status = 5 OR status = 6
+    WHERE status = 1 OR status = 2 OR status = 5 OR status = 6 OR status = 10
     ORDER BY users_id;
   EXEC SQL OPEN u_cursor;
   while (1)

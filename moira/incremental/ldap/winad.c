@@ -4308,7 +4308,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
 	}
 
-      if ((State == US_NO_PASSWD) || (State == US_REGISTERED))
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) || (State == US_SUSPENDED))
         {
           group_count = 0;
           group_base = NULL;
@@ -4686,11 +4686,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
 
-      if (Exchange)
+      if (State != US_SUSPENDED) 
 	{
-	  hide_address_lists_v[0] = "TRUE";
-	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
-		   LDAP_MOD_REPLACE);
+	  if (Exchange)
+	    {
+	      hide_address_lists_v[0] = "TRUE";
+	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
+		       LDAP_MOD_REPLACE);
+	    }
 	}
     }
   else
@@ -4742,7 +4745,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
               if(!strcmp(save_argv[1], "SPLIT") || 
 		 !strcmp(save_argv[1], "SMTP")) {
 
-		if ((State != US_NO_PASSWD) && (State != US_REGISTERED)) {
+		if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
 		  deliver_and_redirect_v[0] = "FALSE";
 		  alt_recipient_v[0] = NULL;
 		} 
@@ -4758,7 +4761,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	    }
 	  else 
 	    {
-	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED)) {
+	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
 		deliver_and_redirect_v[0] = "FALSE";
 		alt_recipient_v[0] = NULL;
 	      } else {
@@ -4786,7 +4789,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	}
       else
 	{
-	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED)) {
+	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
 	    deliver_and_redirect_v[0] = "FALSE";
 	    alt_recipient_v[0] = NULL;
 	  } else {
@@ -5329,7 +5332,8 @@ int user_create(int ac, char **av, void *ptr)
   if (Exchange)
     {
       if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
-	  (atoi(av[U_STATE]) != US_REGISTERED))
+	  (atoi(av[U_STATE]) != US_REGISTERED) &&
+	  (atoi(av[U_STATE]) != US_SUSPENDED))
 	{
 	  hide_address_lists_v[0] = "TRUE";
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -5373,7 +5377,8 @@ int user_create(int ac, char **av, void *ptr)
 		 !strcmp(save_argv[1], "SMTP")) {
 		
 		if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
-		    (atoi(av[U_STATE]) == US_REGISTERED)) {
+		    (atoi(av[U_STATE]) == US_REGISTERED) ||
+		    (atoi(av[U_STATE]) == US_SUSPENDED)) {
 		  
 		  deliver_and_redirect_v[0] = "TRUE";
 		  alt_recipient_v[0] = alt_recipient;
@@ -5387,7 +5392,8 @@ int user_create(int ac, char **av, void *ptr)
 	  else 
 	    {
 	      if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
-		  (atoi(av[U_STATE]) == US_REGISTERED)) {
+		  (atoi(av[U_STATE]) == US_REGISTERED) ||
+		  (atoi(av[U_STATE]) == US_SUSPENDED)) {
 		
 		alt_recipient_v[0] = alt_recipient;
 		ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
@@ -5397,7 +5403,8 @@ int user_create(int ac, char **av, void *ptr)
       else
 	{
 	  if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
-	      (atoi(av[U_STATE]) == US_REGISTERED)) {
+	      (atoi(av[U_STATE]) == US_REGISTERED) ||
+	      (atoi(av[U_STATE]) == US_SUSPENDED)) {
 
 	    alt_recipient_v[0] = alt_recipient;
 	    ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);

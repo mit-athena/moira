@@ -402,7 +402,8 @@
 #define US_HALF_ENROLLED              7
 #define US_NO_LOGIN_YET_KERBEROS_ONLY 8
 #define US_REGISTERED_KERBEROS_ONLY   9
-#define US_END                       10
+#define US_SUSPENDED                 10
+#define US_END                       11
 
 /* User shell queries */
 

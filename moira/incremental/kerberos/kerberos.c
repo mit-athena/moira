@@ -83,7 +83,7 @@ int main(int argc, char **argv)
   if ((astate == 1) || (astate == 6) || (astate == 9))
     activate = 1;
   /* Deactivating a principal */
-  else if (astate == 3)
+  else if ((astate == 3) || astate == 10)
     activate = 0;
   /* Can ignore other changes */
   else

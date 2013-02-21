@@ -95,9 +95,14 @@ username (%s) and the password you chose.
 SAPweb Self-Service access (including employee benefits enrollment) will
 be available after 48 hours.
 
-MIT's central email service is in transition.
+Please take a moment to configure your wireless computers and devices for
+the MIT SECURE N or SECURE wireless network.  The MIT and MIT N wireless
+networks will be retired in 2013.  For instructions, please see: 
 
-Please note: To access your email account via a web browser (Firefox, 
+http://kb.mit.edu/confluence/x/6oN2
+
+Please note: MIT's central email service is in transition.
+To access your email account via a web browser (Firefox, 
 Internet Explorer, Safari), please use:
 
 %s

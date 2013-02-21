@@ -1,4 +1,4 @@
-/* $Id: kerberos.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: kerberos.c 4091 2013-01-18 15:35:41Z zacheiss $
  *
  * Kerberos routines for registration server
  *
@@ -38,7 +38,7 @@
 krb5_context context;
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/kerberos.c $ $Id: kerberos.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/kerberos.c $ $Id: kerberos.c 4091 2013-01-18 15:35:41Z zacheiss $");
 
 extern char *hostname, *shorthostname;
 
@@ -51,62 +51,54 @@ long init_kerberos(void)
   code = krb5_init_context(&context);
   if (code)
     return code;
-  krb_set_tkt_string("/tmp/tkt_ureg");
   return 0;
 }
 
 /* Check the kerberos database to see if a principal exists */
 long check_kerberos(char *username)
 {
-  krb5_error_code code;
-  krb5_creds creds;
-  krb5_data *realm;
-  krb5_timestamp now;
+  void *kadm_server_handle = NULL;
+  kadm5_ret_t status;
+  krb5_principal princ;
+  kadm5_principal_ent_rec dprinc;
+  kadm5_config_params realm_params;
+  char admin_princ[256];
 #ifdef KERBEROS_TEST_REALM
   char ubuf[256];
 
   sprintf(ubuf, "%s@%s", username, KERBEROS_TEST_REALM);
   username = ubuf;
+#else
+  strcpy(admin_princ, REG_SVR_PRINCIPAL);
+  realm_params.mask = 0;
 #endif
 
-  memset(&creds, 0, sizeof(creds));
-  code = krb5_parse_name(context, username, &creds.client);
-  if (code)
+  memset(&princ, 0, sizeof(princ));
+  memset(&dprinc, 0, sizeof(dprinc));
+
+  status = krb5_parse_name(context, username, &princ);
+  if (status)
+    return status;
+
+  status = kadm5_init_with_skey(admin_princ, NULL, KADM5_ADMIN_SERVICE,
+                                &realm_params, KADM5_STRUCT_VERSION,
+                                KADM5_API_VERSION_2, NULL, &kadm_server_handle);
+  if (status)
     goto cleanup;
 
-  realm = krb5_princ_realm(context, creds.client);
-  code = krb5_build_principal_ext(context, &creds.server,
-				  realm->length, realm->data,
-				  KRB5_TGS_NAME_SIZE, KRB5_TGS_NAME,
-				  realm->length, realm->data, 0);
-  if (code)
-    goto cleanup;
+  status =  kadm5_get_principal(kadm_server_handle, princ, &dprinc, KADM5_PRINCIPAL_NORMAL_MASK);
 
-  code = krb5_timeofday(context, &now);
-  if (code)
-    goto cleanup;
+ cleanup:
+  krb5_free_principal(context, princ);
+  if (kadm_server_handle)
+    kadm5_destroy(kadm_server_handle);
 
-  creds.times.starttime = 0;
-  creds.times.endtime = now + 60;
-
-  code = krb5_get_in_tkt_with_password(context,
-				       0    /* options */,
-				       NULL /* addrs */,
-				       NULL /* ktypes */,
-				       NULL /* pre_auth_types */,
-				       "x"  /* password */,
-				       NULL /* ccache */,
-				       &creds,
-				       NULL /* ret_as_reply */);
-
-cleanup:
-  krb5_free_principal(context, creds.client);
-  krb5_free_principal(context, creds.server);
-
-  if (code == KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN)
+  if (status == KADM5_OK)
+    return MR_IN_USE;
+  else if (status == KADM5_UNK_PRINC)
     return MR_SUCCESS;
   else
-    return MR_IN_USE;
+    return MR_INTERNAL;
 }
 
 /* Create a new principal in Kerberos */
@@ -153,7 +145,8 @@ long register_kerberos(char *username, char *password)
       (void) kadm5_free_policy_ent(kadm_server_handle, &defpol);
     } 
 
-  mask |= KADM5_PRINCIPAL;
+  mask |= KADM5_PRINCIPAL | KADM5_ATTRIBUTES;
+  princ.attributes |= KRB5_KDB_REQUIRES_PRE_AUTH | KRB5_KDB_DISALLOW_SVR;
   status = kadm5_create_principal(kadm_server_handle, &princ, mask, password);
 
 cleanup:

@@ -1,4 +1,4 @@
-# $Id: Makefile.in 4070 2012-02-02 23:09:55Z zacheiss $
+# $Id: Makefile.in 4082 2012-06-21 18:12:51Z jweiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -34,16 +34,16 @@ LIB_TARGET=libdcm.a
 
 OBJS=	acl.lo confluence.lo cups-print.lo dhcp.lo directory.lo events.lo \
 	hesiod.lo hosts.lo mailhub.lo ndb.lo network.lo pobox.lo \
-	postoffice.lo print.lo warehouse-lists.lo winad.lo www.lo zephyr.lo
+	postoffice.lo print.lo warehouse-lists.lo winad.lo zephyr.lo
 
 CFILES= acl.c confluence.c cups-print.c dhcp.c directory.c events.c \
 	hesiod.c hosts.c mailhub.c ndb.c network.c pobox.c \
-	postoffice.c print.c warehouse-lists.c winad.c www.c zephyr.c
+	postoffice.c print.c warehouse-lists.c winad.c zephyr.c
 
 TARGET=	acl.gen confluence.gen cups-print.gen dhcp.gen directory.gen \
 	events.gen hesiod.gen hosts.gen mailhub.gen ndb.gen \
 	network.gen pobox.gen postoffice.gen print.gen \
-	warehouse-lists.gen winad.gen www.gen zephyr.gen
+	warehouse-lists.gen winad.gen zephyr.gen
 
 SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	cups-print.sh  dhcp.sh events.sh hesiod.sh ip-billing.gen \
@@ -51,7 +51,7 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	ndb.sh null.sh postoffice.sh print.sh print-accounting.gen printer-list.gen \
         sapprint.gen sapprint.sh spwatch.gen tsm.gen tsm.sh ua-elect.gen warehouse.gen \
-        warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh
+        warehouse.sh winstats.gen winstats.sh zephyr.sh
 
 .SUFFIXES: .pc .gen .lo
 
@@ -123,9 +123,6 @@ zephyr.gen: zephyr.lo libdcm.a $(MR_LIBDEP)
 
 postoffice.gen: postoffice.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) postoffice.lo libdcm.a $(SQL_LIBS) $(LIBS)
-
-www.gen: www.lo libdcm.a $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) www.lo libdcm.a $(SQL_LIBS) $(LIBS)
 
 winad.gen: winad.lo libdcm.a $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) winad.lo libdcm.a $(SQL_LIBS) $(LIBS)

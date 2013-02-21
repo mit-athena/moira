@@ -1,0 +1,30 @@
+.TH namespace 1 "31 July 2012" "Project Athena"
+.SH NAME
+namespace \- manipulate the campus namespace
+.SH SYNOPSIS
+.B namespace [options]
+.SH DESCRIPTION
+.I namespace
+is a tool for manipulating the campus namespace.  It is a subset of the
+functions available in
+.B moira
+, including the Mail Forwarding (pobox) menu, the Mailing Lists menu,
+and account information.
+
+See moira(1) for a description of the menu-driven system and how to use
+it.
+.SH OPTIONS
+.IP \fB-nomenu\fR
+Don't use the curses-based interface.
+.IP \fB-menu\fR
+Do use the curses-based interface (default).
+.IP \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  
+.SH AUTHOR
+MIT Information Services & Technology
+.SH SEE ALSO
+moira(1), chpobox(1), listmaint(1), mailmaint(1)
+
+

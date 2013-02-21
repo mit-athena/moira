@@ -1,4 +1,4 @@
-/* $Id: genacl.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: genacl.pc 4092 2013-01-18 15:36:33Z zacheiss $
  *
  * Utility functions for outputting ACLs
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/genacl.pc $ $Id: genacl.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/genacl.pc $ $Id: genacl.pc 4092 2013-01-18 15:36:33Z zacheiss $");
 
 static char *defaultrealm = NULL;
 
@@ -93,9 +93,7 @@ void canon_krb(struct imember *m, int vers, char *buf, int len)
       break;
 
     case 'K':
-      /* We assume we have a krb4-style namespace.  If we want a krb5 acl, we need to
-       * krb5_425_conv_principal() on it. For krb4, do nothing special.
-       */ 
+
       at = strchr(m->name, '@');
       if (!at)
 	at = strchr(m->name, '\0');
@@ -107,45 +105,36 @@ void canon_krb(struct imember *m, int vers, char *buf, int len)
 	  snprintf(kbuf + plen, len - plen, "@%s", defaultrealm);
 	}
 
-      if (vers == 5)
+      /* Assume a v5 namespace, convert if krb4 requested. */
+      if (vers == 4)
 	{
-	  char name[ANAME_SZ] = "\0", inst[INST_SZ] = "\0", realm[REALM_SZ] = "\0";
-	  char *kuser = NULL;
 	  krb5_context context = NULL;
-	  krb5_principal client = NULL;
-	  int status = 0;
-
-	  if (mr_kname_parse(name, inst, realm, kbuf) != 0)
-	    goto out;
+          krb5_principal client = NULL;
+          int status = 0;
+	  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
 
 	  status = krb5_init_context(&context);
+          if (status)
+            goto out;
+
+	  status = krb5_parse_name(context, kbuf, &client);
 	  if (status)
 	    goto out;
 
-	  status = krb5_425_conv_principal(context, name, inst, realm, &client);
+	  status = krb5_524_conv_principal(context, client, name, inst, realm);
 	  if (status)
 	    goto out;
 
-	  status = krb5_unparse_name(context, client, &kuser);
-	  if (status)
-	    goto out;
-
-	  strncpy(buf, kuser, MAX_K_NAME_SZ);
-	  buf[MAX_K_NAME_SZ - 1] = '\0';
+	  snprintf(buf, len, "%s", mr_kname_unparse(name, inst, realm));
 
 	out:
-	  if (kuser)
-	    krb5_free_unparsed_name(context, kuser);
 	  if (client)
 	    krb5_free_principal(context, client);
 	  if (context)
 	    krb5_free_context(context);
 	}
       else
-	{
-	  /* v4 output, and we should already have added a realm. */
-	  snprintf(buf, len, "%s", kbuf);
-	}
+	snprintf(buf, len, "%s", kbuf);
       break;
     }
 }

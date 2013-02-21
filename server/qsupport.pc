@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc 4017 2010-08-26 19:09:55Z zacheiss $
+/* $Id: qsupport.pc 4093 2013-01-31 02:44:17Z zacheiss $
  *
  * Special query routines
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 4017 2010-08-26 19:09:55Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 4093 2013-01-31 02:44:17Z zacheiss $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -203,7 +203,7 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
  * how many different ancestors a member is allowed to have.
  */
 
-#define MAXLISTDEPTH	3072
+#define MAXLISTDEPTH	4096
 
 int add_member_to_list(struct query *q, char **argv, client *cl)
 {

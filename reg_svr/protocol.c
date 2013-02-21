@@ -1,4 +1,4 @@
-/* $Id: protocol.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: protocol.c 4091 2013-01-18 15:35:41Z zacheiss $
  *
  * Reg_svr protocol and encryption/decryption routines
  *
@@ -22,13 +22,13 @@
 #include <unistd.h>
 
 #include <com_err.h>
-#include <des.h>
+#include <openssl/des.h>
 
 /* RSARef includes */
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/protocol.c $ $Id: protocol.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/protocol.c $ $Id: protocol.c 4091 2013-01-18 15:35:41Z zacheiss $");
 
 R_RSA_PRIVATE_KEY *rsa_key;
 char *emsg[NUM_REG_ERRORS], *ename[NUM_REG_ERRORS];

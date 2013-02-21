@@ -3,8 +3,8 @@ Section: debathena/net
 Priority: extra
 Maintainer: Debathena Project <debathena@mit.edu>
 Build-Depends: @cdbs@, comerr-dev, libkrb5-dev, libhesiod-dev,
- libzephyr-dev, libreadline-dev, libncurses-dev
-Standards-Version: 3.8.4
+ libzephyr-dev, libreadline-dev, libncurses-dev, libssl-dev
+Standards-Version: 3.9.1
 
 Package: debathena-moira-clients
 Architecture: any

@@ -1,4 +1,4 @@
-/* $Id: moira_site.h 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: moira_site.h 4097 2013-02-11 14:54:53Z zacheiss $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -402,7 +402,8 @@
 #define US_HALF_ENROLLED              7
 #define US_NO_LOGIN_YET_KERBEROS_ONLY 8
 #define US_REGISTERED_KERBEROS_ONLY   9
-#define US_END                       10
+#define US_SUSPENDED                 10
+#define US_END                       11
 
 /* User shell queries */
 

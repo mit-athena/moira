@@ -4,7 +4,7 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 
-DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4 --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath
+DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4 --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath --with-openssl
 DEB_DH_INSTALL_SOURCEDIR = $(DEB_DESTDIR)
 DEB_DH_STRIP_ARGS_debathena-libmoira0 += --dbg-package=debathena-libmoira0-dbg
 DEB_DH_STRIP_ARGS_debathena-libmrclient0 += --dbg-package=debathena-libmrclient0-dbg

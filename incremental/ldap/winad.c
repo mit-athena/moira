@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 4074 2012-03-28 13:24:31Z zacheiss $ */
+/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/ldap/winad.c $ $Id: winad.c 4097 2013-02-11 14:54:53Z zacheiss $ */
 /* ldap.incr arguments example
  *
  * arguments when moira creates the account - ignored by ldap.incr since the 
@@ -4308,7 +4308,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
 	}
 
-      if ((State == US_NO_PASSWD) || (State == US_REGISTERED))
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) || (State == US_SUSPENDED))
         {
           group_count = 0;
           group_base = NULL;
@@ -4348,7 +4348,6 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
               hide_address_lists_v[0] = "FALSE";
 	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		       LDAP_MOD_ADD);
-	      ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, 
 		       LDAP_MOD_REPLACE);
 	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
@@ -4687,11 +4686,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
 
-      if (Exchange)
+      if (State != US_SUSPENDED) 
 	{
-	  hide_address_lists_v[0] = "TRUE";
-	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
-		   LDAP_MOD_REPLACE);
+	  if (Exchange)
+	    {
+	      hide_address_lists_v[0] = "TRUE";
+	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
+		       LDAP_MOD_REPLACE);
+	    }
 	}
     }
   else
@@ -4719,7 +4721,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	}
  
       argv[0] = user_name;
-
+    
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
 	{
 	  if(!strcmp(save_argv[1], "EXCHANGE") || 
@@ -4743,8 +4745,15 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
               if(!strcmp(save_argv[1], "SPLIT") || 
 		 !strcmp(save_argv[1], "SMTP")) {
 
-                deliver_and_redirect_v[0] = "TRUE";
-                alt_recipient_v[0] = alt_recipient;
+		if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+		  deliver_and_redirect_v[0] = "FALSE";
+		  alt_recipient_v[0] = NULL;
+		} 
+		else {
+		  deliver_and_redirect_v[0] = "TRUE";
+		  alt_recipient_v[0] = alt_recipient;
+		}
+
                 ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
                 ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
                          LDAP_MOD_REPLACE);
@@ -4752,8 +4761,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	    }
 	  else 
 	    {
-	      deliver_and_redirect_v[0] = "FALSE";
-	      alt_recipient_v[0] = alt_recipient;
+	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+		deliver_and_redirect_v[0] = "FALSE";
+		alt_recipient_v[0] = NULL;
+	      } else {
+		deliver_and_redirect_v[0] = "FALSE";
+		alt_recipient_v[0] = alt_recipient;
+	      }
+
 	      ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
 		       LDAP_MOD_REPLACE);
@@ -4774,8 +4789,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	}
       else
 	{
-	  deliver_and_redirect_v[0] = "FALSE";
-	  alt_recipient_v[0] = alt_recipient;
+	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+	    deliver_and_redirect_v[0] = "FALSE";
+	    alt_recipient_v[0] = NULL;
+	  } else {
+	    deliver_and_redirect_v[0] = "FALSE";
+	    alt_recipient_v[0] = alt_recipient;
+	  }
+
 	  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
 		   LDAP_MOD_REPLACE);	  
@@ -5006,7 +5027,6 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   if (Exchange)
     {
-      ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_REPLACE);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE); 
       ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE); 
       ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE); 
@@ -5312,7 +5332,8 @@ int user_create(int ac, char **av, void *ptr)
   if (Exchange)
     {
       if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
-	  (atoi(av[U_STATE]) != US_REGISTERED))
+	  (atoi(av[U_STATE]) != US_REGISTERED) &&
+	  (atoi(av[U_STATE]) != US_SUSPENDED))
 	{
 	  hide_address_lists_v[0] = "TRUE";
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -5325,7 +5346,6 @@ int user_create(int ac, char **av, void *ptr)
                    LDAP_MOD_ADD);
 	}
 
-      ADD_ATTR("msExchQueryBaseDN", query_base_dn_v, LDAP_MOD_ADD);
       ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, LDAP_MOD_ADD);
       ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_ADD);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
@@ -5356,25 +5376,40 @@ int user_create(int ac, char **av, void *ptr)
 	      if(!strcmp(save_argv[1], "SPLIT") ||
 		 !strcmp(save_argv[1], "SMTP")) {
 		
-		deliver_and_redirect_v[0] = "TRUE";
-		alt_recipient_v[0] = alt_recipient;
+		if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
+		    (atoi(av[U_STATE]) == US_REGISTERED) ||
+		    (atoi(av[U_STATE]) == US_SUSPENDED)) {
+		  
+		  deliver_and_redirect_v[0] = "TRUE";
+		  alt_recipient_v[0] = alt_recipient;
 
-		ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
-		ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
+		  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+		  ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
 			 LDAP_MOD_ADD);
+		}
 	      }
 	    }
 	  else 
 	    {
-	      alt_recipient_v[0] = alt_recipient;
-	      ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+	      if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
+		  (atoi(av[U_STATE]) == US_REGISTERED) ||
+		  (atoi(av[U_STATE]) == US_SUSPENDED)) {
+		
+		alt_recipient_v[0] = alt_recipient;
+		ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+	      }
 	    }
 	}
       else
 	{
-	  alt_recipient_v[0] = alt_recipient;
-	  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
-	  
+	  if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
+	      (atoi(av[U_STATE]) == US_REGISTERED) ||
+	      (atoi(av[U_STATE]) == US_SUSPENDED)) {
+
+	    alt_recipient_v[0] = alt_recipient;
+	    ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+	  }
+
 	  com_err(whoami, 0, "Unable to fetch pobox for %s", user_name);
 	}
     }
@@ -5995,7 +6030,7 @@ void free_values(char **modvalues)
 static int illegalchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, /* SPACE - / */
+  1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, /* 0 - ? */
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* P - _ */
@@ -6014,7 +6049,7 @@ static int illegalchars[] = {
 static int illegalchars_ldap[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, /* SPACE - / */
+  0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, /* 0 - ? */
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, /* P - _ */

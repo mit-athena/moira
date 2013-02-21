@@ -1,5 +1,5 @@
 #include <sys/time.h>
-#include <des.h>
+#include <openssl/des.h>
 
 typedef struct reg_client {
   int fd;				/* socket */

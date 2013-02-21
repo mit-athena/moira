@@ -1,4 +1,4 @@
-/* $Id: stanley.c 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: stanley.c 4097 2013-02-11 14:54:53Z zacheiss $
  *
  * Command line oriented Moira users tool.
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 3979 2010-02-16 20:26:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4097 2013-02-11 14:54:53Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -68,7 +68,8 @@ static char *states[] = {
   "Enrolled/Not Registerable (6)",
   "Half Enrolled (7)",
   "Registerable, Kerberos only (8)",
-  "Active, Kerberos only (9)"
+  "Active, Kerberos only (9)",
+  "Suspended (10)"
 };
 
 static char *UserState(int state)

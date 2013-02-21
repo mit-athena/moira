@@ -1,4 +1,4 @@
-/* $Id: user.c 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: user.c 4097 2013-02-11 14:54:53Z zacheiss $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 3979 2010-02-16 20:26:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4097 2013-02-11 14:54:53Z zacheiss $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -66,7 +66,8 @@ static char *states[] = {
   "Enrolled/Not Registerable (6)",
   "Half Enrolled (7)",
   "Registerable, Kerberos only (8)",
-  "Active, Kerberos only (9)"
+  "Active, Kerberos only (9)",
+  "Suspended (10)"
 };
 
 static char *UserState(int state)

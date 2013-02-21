@@ -1,4 +1,4 @@
-/* $Id: zephyr.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: zephyr.pc 4090 2013-01-02 17:17:05Z zacheiss $
  *
  * This generates zephyr acl files
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/zephyr.pc $ $Id: zephyr.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/zephyr.pc $ $Id: zephyr.pc 4090 2013-01-02 17:17:05Z zacheiss $");
 
 void do_class(TARFILE *tf, char *class);
 void dump_zacl(FILE *out, char *type, int id);
@@ -129,7 +129,7 @@ void dump_zacl(FILE *out, char *type, int id)
   if (!strcmp(type, "ALL"))
     fprintf(out, "*.*@*\n");
   else if (strcmp(type, "NONE") != 0)
-    dump_krb_acl(out, type, id, 4);
+    dump_krb_acl(out, type, id, 5);
 }
 
 void sqlerr(void)

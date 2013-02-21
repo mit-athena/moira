@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 # libtoolT - Provide generalized library-building support services.
 # Generated automatically by  (GNU  )
@@ -44,10 +44,10 @@ available_tags=" CXX F77"
 
 # ### BEGIN LIBTOOL CONFIG
 
-# Libtool was configured on host contents-vnder-pressvre:
+# Libtool was configured on host this-too-shall-pass.MIT.EDU:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/bash"
+SHELL="/bin/sh"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -66,7 +66,7 @@ fast_install=yes
 
 # The host system.
 host_alias=
-host=x86_64-unknown-linux-gnu
+host=x86_64-redhat-linux-gnu
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -319,7 +319,7 @@ link_all_deplibs=unknown
 sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include /etc/ld.so.conf.d/*.conf  "
+sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include ld.so.conf.d/*.conf "
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -6769,10 +6769,10 @@ build_old_libs=`case $build_libtool_libs in yes) $echo no;; *) $echo yes;; esac`
 # End:
 # ### BEGIN LIBTOOL TAG CONFIG: CXX
 
-# Libtool was configured on host contents-vnder-pressvre:
+# Libtool was configured on host this-too-shall-pass.MIT.EDU:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/bash"
+SHELL="/bin/sh"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -6791,7 +6791,7 @@ fast_install=yes
 
 # The host system.
 host_alias=
-host=x86_64-unknown-linux-gnu
+host=x86_64-redhat-linux-gnu
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -6942,11 +6942,11 @@ striplib="strip --strip-unneeded"
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
-predep_objects="/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/crti.o /usr/lib/gcc/x86_64-linux-gnu/4.4.3/crtbeginS.o"
+predep_objects="/usr/lib/gcc/x86_64-redhat-linux/4.1.2/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/4.1.2/crtbeginS.o"
 
 # Dependencies to place after the objects being linked to create a
 # shared library.
-postdep_objects="/usr/lib/gcc/x86_64-linux-gnu/4.4.3/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/crtn.o"
+postdep_objects="/usr/lib/gcc/x86_64-redhat-linux/4.1.2/crtendS.o /usr/lib/gcc/x86_64-redhat-linux/4.1.2/../../../../lib64/crtn.o"
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
@@ -6958,7 +6958,7 @@ postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
 
 # The library search path used internally by the compiler when linking
 # a shared library.
-compiler_lib_search_path="-L/usr/lib/gcc/x86_64-linux-gnu/4.4.3 -L/usr/lib/gcc/x86_64-linux-gnu/4.4.3 -L/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../.."
+compiler_lib_search_path="-L/usr/lib/gcc/x86_64-redhat-linux/4.1.2 -L/usr/lib/gcc/x86_64-redhat-linux/4.1.2 -L/usr/lib/gcc/x86_64-redhat-linux/4.1.2/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64"
 
 # Method to check whether dependent libraries are shared objects.
 deplibs_check_method="pass_all"
@@ -7041,7 +7041,7 @@ link_all_deplibs=unknown
 sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include /etc/ld.so.conf.d/*.conf  "
+sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include ld.so.conf.d/*.conf "
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -7065,10 +7065,10 @@ include_expsyms=""
 
 # ### BEGIN LIBTOOL TAG CONFIG: F77
 
-# Libtool was configured on host contents-vnder-pressvre:
+# Libtool was configured on host this-too-shall-pass.MIT.EDU:
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/bash"
+SHELL="/bin/sh"
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -7087,7 +7087,7 @@ fast_install=yes
 
 # The host system.
 host_alias=
-host=x86_64-unknown-linux-gnu
+host=x86_64-redhat-linux-gnu
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -7100,7 +7100,7 @@ AR_FLAGS="cru"
 LTCC="gcc"
 
 # A language-specific compiler.
-CC="f95"
+CC="g77"
 
 # Is the compiler the GNU C compiler?
 with_gcc=yes
@@ -7340,7 +7340,7 @@ link_all_deplibs=unknown
 sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include /etc/ld.so.conf.d/*.conf  "
+sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 include ld.so.conf.d/*.conf "
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""

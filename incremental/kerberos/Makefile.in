@@ -1,0 +1,51 @@
+# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=../..
+mrbindir=@mrbindir@
+
+KERBEROS_OBJS=kerberos.lo
+
+TARGET=kerberos.incr
+
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(KERBEROS_OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install:
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) kerberos.incr $(mrbindir)
+
+kerberos.incr: $(KERBEROS_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(KERBEROS_OBJS) -lkadm5clnt $(LIBS)

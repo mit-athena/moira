@@ -1,4 +1,4 @@
-/* $Id: afs.c 4079 2012-05-23 22:42:25Z jweiss $
+/* $Id: afs.c 4097 2013-02-11 14:54:53Z zacheiss $
  *
  * Do AFS incremental updates
  *
@@ -23,6 +23,8 @@
 #include <com_err.h>
 #ifdef HAVE_KRB4
 #include <krb.h>
+#else
+#include <mr_krb.h>
 #endif
 #include <krb5.h>
 
@@ -41,7 +43,7 @@
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4079 2012-05-23 22:42:25Z jweiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4097 2013-02-11 14:54:53Z zacheiss $");
 
 char *whoami;
 
@@ -155,10 +157,10 @@ void do_user(char **before, int beforec, char **after, int afterc)
   if (beforec > U_UID)
     buid = atoi(before[U_UID]);
 
-  /* We consider "half-registered" users to be active */
-  if (astate == 2)
+  /* We consider "half-registered" users and "suspended" users to be active */
+  if ((astate == 2) || (astate == 10))
     astate = 1;
-  if (bstate == 2)
+  if (bstate == 2 || (astate == 10))
     bstate = 1;
 
   if (astate != 1 && bstate != 1)		/* inactive user */
@@ -581,42 +583,42 @@ void edit_group(int op, char *group, char *type, char *member)
   static char *local_realm = NULL;
   struct member *m;
   krb5_context context = NULL;
+  krb5_principal client = NULL;
+  char name[ANAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+  char canon_member[MAX_K_NAME_SZ];
+
+  memset(name, 0, sizeof(name));
+  memset(inst, 0, sizeof(inst));
+  memset(realm, 0, sizeof(realm));
+
+  code = krb5_init_context(&context);
+  if (code)
+    goto out;
 
   /* The following KERBEROS code allows for the use of entities
    * user@foreign_cell.
    */
   if (!local_realm)
     {
-      code = krb5_init_context(&context);
-      if (code)
-	goto out;
-
       code = krb5_get_default_realm(context, &local_realm);
       if (code)
 	goto out;
     }
 
-  if (!strcmp(type, "KERBEROS"))
-    {
-      p = strchr(member, '@');
-      if (p && !strcasecmp(p+1, local_realm))
-	*p = 0;
-    }
-  else if (strcmp(type, "USER"))
-    return;					/* invalid type */
-
   /* Cannot risk doing another query during a callback */
-  /* We could do this simply for type USER, but eventually this may also
-   * dynamically add KERBEROS types to the prdb, and we will need to do
-   * a query to look up the uid of the null-instance user */
+
+  /* We could do this simply for type USER, but eventually this may
+   * also dynamically add KERBEROS types to the prdb, and we will need
+   * to do a query to look up the uid of the null-instance user */
+
   if (mr_connections)
     {
       m = malloc(sizeof(struct member));
       if (!m)
-	{
-	  critical_alert(whoami, "incremental", "Out of memory");
-	  exit(1);
-	}
+        {
+          critical_alert(whoami, "incremental", "Out of memory");
+          exit(1);
+        }
       m->op = op;
       strcpy(m->list, group);
       strcpy(m->type, type);
@@ -625,6 +627,27 @@ void edit_group(int op, char *group, char *type, char *member)
       member_head = m;
       return;
     }
+
+  if (!strcmp(type, "KERBEROS"))
+    {
+      /* AFS still uses a v4-style namespace, so convert. */
+      code = krb5_parse_name(context, member, &client);
+      if (code)
+	goto out;
+
+      code = krb5_524_conv_principal(context, client, name, inst, realm);
+      if (code)
+	goto out;
+
+      strcpy(canon_member, mr_kname_unparse(name, inst, realm));
+      member = canon_member;
+
+      p = strchr(member, '@');
+      if (p && !strcasecmp(p+1, local_realm))
+	*p = 0;
+    }
+  else if (strcmp(type, "USER"))
+    return;					/* invalid type */
 
   strcpy(buf, "system:");
   strcat(buf, group);
@@ -669,6 +692,8 @@ void edit_group(int op, char *group, char *type, char *member)
 	}
 
     out:
+      if (client)
+	krb5_free_principal(context, client);
       if (context)
 	krb5_free_context(context);
       if (local_realm)
@@ -719,7 +744,7 @@ int pr_try(int (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
       else if (code == PRPERM)
 	system("/usr/bin/aklog");
       else
-	sleep(15);
+	sleep(1);
 
       /* Re-initialize the prdb connection */
       code = pr_Initialize(0, AFSCONF_CLIENTNAME, 0);

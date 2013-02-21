@@ -1,4 +1,4 @@
-# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: Makefile.in 4084 2012-11-02 03:19:52Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -19,7 +19,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@
+SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@ @KERBEROS_SUBDIRS@
 
 .SUFFIXES: .pc
 

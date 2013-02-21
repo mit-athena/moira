@@ -1,3 +1,11 @@
+debathena-moira (4.0.0-r4097-0debathena1) unstable; urgency=low
+
+  * Re-snapshot moira at r4097 to pick up Status 10 (Suspended) (Trac: #1295)
+  * Remove our addusr.1 and namespace.1 in favor of upstreams (Trac: #918)
+  * Build-dep on OpenSSL and pass new configure flag per moira r4091
+
+ -- Jonathan Reed <jdreed@mit.edu>  Thu, 21 Feb 2013 11:51:39 -0500
+
 debathena-moira (4.0.0-r4081-0debathena1) unstable; urgency=low
 
   * Re-snapshot moira at r4081, to pick up client changes for lockers of

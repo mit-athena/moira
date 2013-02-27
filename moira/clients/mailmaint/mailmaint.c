@@ -43,7 +43,7 @@
 static void DELETE_A_CHAR(void)
 {
     int x, y;
-    getsyx(&y, &x);
+    getsyx(y, x);
     x -= 1;
     mvdelch(y,x);
 }

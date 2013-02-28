@@ -27,11 +27,13 @@
 #include <windows.h>
 #include <conio.h>
 #include <process.h>
+#include <io.h>
 #ifdef getchar
 #undef getchar
 #endif
 #define getchar() _getch()
 #define getpid _getpid
+#typedef int mode_t;
 #endif /* _WIN32 */
 
 RCSID("$HeadURL$ $Id$");

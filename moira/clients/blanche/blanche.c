@@ -392,7 +392,7 @@ int main(int argc, char **argv)
   /* create if needed */
   if (createflag)
     {
-      char *argv[13];
+      char *argv[15];
 
       argv[L_NAME] = listname;
       argv[L_ACTIVE] = (active == 0) ? "0" : "1";

@@ -37,12 +37,13 @@
 
 #ifdef HAVE_HESIOD
 #include <hesiod.h>
+#endif
+
 #ifdef _WIN32
-/* This is declared in wshelper's resolv.h, but the definition of
- * the putlong macro conflicts with Moira's
+/* This is declared in wshelper's headers, but those also include a
+ * definition of the putlong macro which conflicts with Moira's.
  */
 struct hostent * WINAPI rgethostbyname(char *name);
-#endif
 #endif
 
 RCSID("$HeadURL$ $Id$");
@@ -52,6 +53,10 @@ RCSID("$HeadURL$ $Id$");
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
+
+#ifdef _WIN32
+static int mr_conn_wsaStart = 0;
+#endif
 
 /* mrgdb compatibility magic
 
@@ -96,6 +101,11 @@ static char response[53] = "\0\0\0\061\0\0\0\003\0\001\001disposition\0server_id
 int mr_connect(char *server)
 {
   char *port, **pp, *sbuf = NULL;
+#ifdef _WIN32
+  WORD wVersionRequested;
+  WSADATA wsaData;
+  int err;
+#endif
 
   if (_mr_conn)
     return MR_ALREADY_CONNECTED;
@@ -104,6 +114,14 @@ int mr_connect(char *server)
 
   if (!server || (strlen(server) == 0))
     server = getenv("MOIRASERVER");
+
+#ifdef _WIN32
+  wVersionRequested = MAKEWORD(2, 2);
+  err = WSAStartup(wVersionRequested, &wsaData);
+  if (err != 0)
+    return MR_CANT_CONNECT;
+  mr_conn_wsaStart++;
+#endif
 
 #ifdef HAVE_HESIOD
   if (!server || (strlen(server) == 0))
@@ -148,7 +166,7 @@ int mr_connect_internal(char *server, char *port)
   int ok = 0;
   int on = 1; /* Value variable for setsockopt() */
 
-#if defined(_WIN32) && defined(HAVE_HESIOD)
+#if defined(_WIN32)
   shost = rgethostbyname(server);
 #else
   shost = gethostbyname(server);
@@ -232,6 +250,13 @@ int mr_disconnect(void)
   _mr_conn = 0;
   free(mr_server_host);
   mr_server_host = NULL;
+#ifdef _WIN32
+  if (mr_conn_wsaStart > 0)
+    {
+      WSACleanup();
+      mr_conn_wsaStart--;
+    }
+#endif
   return MR_SUCCESS;
 }
 

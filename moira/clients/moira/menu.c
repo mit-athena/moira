@@ -33,7 +33,7 @@
 #endif
 #define getchar() _getch()
 #define getpid _getpid
-#typedef int mode_t;
+typedef int mode_t;
 #endif /* _WIN32 */
 
 RCSID("$HeadURL$ $Id$");

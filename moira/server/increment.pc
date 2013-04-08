@@ -139,7 +139,9 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case HOSTALIAS_TABLE:
       strcpy(before[0], argv[0]);
       strcpy(before[1], argv[1]);
-      beforec = 2;
+      name_to_id(before[1], MACHINE_TABLE, &id);
+      sprintf(before[2], "%d", id);
+      beforec = 3;
       break;
     case HWADDRMAP_TABLE:
       strcpy(before[0], argv[0]);
@@ -361,7 +363,9 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case HOSTALIAS_TABLE:
       strcpy(after[0], argv[0]);
       strcpy(after[1], argv[1]);
-      afterc = 2;
+      name_to_id(after[1], MACHINE_TABLE, &id);
+      sprintf(after[2], "%d", id);
+      afterc = 3;
       break;
     case HWADDRMAP_TABLE:
       strcpy(after[0], argv[0]);

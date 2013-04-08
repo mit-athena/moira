@@ -65,6 +65,8 @@ int main(int argc, char **argv)
   struct utsname name;
   int s, conn;
   struct sigaction sa;
+  FILE *pid_file;
+  char *pid_path = NULL;
 
   whoami = strrchr(argv[0], '/');
   if (whoami)
@@ -127,6 +129,28 @@ int main(int argc, char **argv)
 
   set_com_err_hook(syslog_com_err_proc);
   openlog(whoami, LOG_PID, LOG_DAEMON);
+
+  if ((pid_path = malloc(strlen(PIDFILEPATH) + strlen(whoami) + 6)) != NULL)
+    {
+      sprintf(pid_path, "%s/%s.pid", PIDFILEPATH, whoami);
+      pid_file = fopen(pid_path, "w");
+      if (pid_file)
+	{
+	  fprintf(pid_file, "%d\n", getpid ());
+	  fclose(pid_file);
+	}
+      else
+	{
+	  com_err(whoami, errno, "Unable to write PID file %s", pid_path);
+	  exit(1);
+	}
+      free(pid_path);
+    }
+  else 
+    {
+      com_err(whoami, errno, "Could not allocate memory for pidfile path");
+      exit(1);
+    }
 
   /* now loop waiting for connections */
   while (1)

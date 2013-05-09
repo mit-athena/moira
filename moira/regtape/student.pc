@@ -247,13 +247,17 @@ struct entry *get_next_entry(FILE *in)
     {
       e.type = "G";
       sprintf(title, "Grad Student");
+      e.affiliation_detailed = "Graduate Student";      
     }
   else
     {
       e.type = classbuf;
       sprintf(classbuf, "%d", nyear + 4 - atoi(year) + 1900);
       sprintf(title, "Undergrad (class of %s)", classbuf);
+      e.affiliation_detailed = "Undergraduate Student";
     }
+
+  e.affiliation_basic = "student";
 
   e.dept = course;
 

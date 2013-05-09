@@ -32,6 +32,7 @@ RCSID("$HeadURL$ $Id$");
  * phone2 [12]
  * dept [50]
  * title [50]
+ * employee type [40]
  */
 
 #define LOC_ID 0
@@ -52,6 +53,8 @@ RCSID("$HeadURL$ $Id$");
 #define LEN_DEPT 50
 #define LOC_TITLE (LOC_DEPT + LEN_DEPT)
 #define LEN_TITLE 50
+#define LOC_EMPLOYEE_TYPE (LOC_TITLE + LEN_TITLE)
+#define LEN_EMPLOYEE_TYPE 40
 
 struct entry *get_next_entry(FILE *in);
 void process_entry(struct entry *e, int secure);
@@ -147,6 +150,7 @@ struct entry *get_next_entry(FILE *in)
   static char first_name[LEN_FIRST_NAME + 1], middle_name[LEN_MIDDLE_NAME + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
+  static char employee_type[LEN_EMPLOYEE_TYPE + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
   char *p, *q;
 
@@ -162,6 +166,7 @@ struct entry *get_next_entry(FILE *in)
   strlcpy(phone2, &buf[LOC_PHONE2], LEN_PHONE2 + 1);
   strlcpy(dept, &buf[LOC_DEPT], LEN_DEPT + 1);
   strlcpy(title, &buf[LOC_TITLE], LEN_TITLE + 1);
+  strlcpy(employee_type, &buf[LOC_EMPLOYEE_TYPE], LEN_EMPLOYEE_TYPE + 1);
 
   e.last = strtrim(last_name);
   e.first = strtrim(first_name);
@@ -242,6 +247,7 @@ struct entry *get_next_entry(FILE *in)
   e.xtitle = strtrim(title);
 
   e.type = "MITS";
+
   if ((strstr(uppercase(e.xtitle), "PROF") &&
        !strstr(uppercase(e.xtitle), "PROFESSION")) ||
       strstr(uppercase(e.xtitle), "LECTURE"))
@@ -251,6 +257,12 @@ struct entry *get_next_entry(FILE *in)
 
   FixCase(e.dept);
   FixCase(e.xtitle);
+
+  e.affiliation_detailed = strtrim(employee_type);
+  if (!strcmp(e.affiliation_detailed, "Faculty"))
+    e.affiliation_basic = "faculty";
+  else
+    e.affiliation_basic = "staff";
 
   return &e;
 }

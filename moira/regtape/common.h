@@ -25,6 +25,9 @@ struct entry {
 
   /* Only used by student load */
   char *reg_type;
+
+  char *affiliation_basic;
+  char *affiliation_detailed;
 };
 
 void fixphone(char *phone);

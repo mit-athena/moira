@@ -35,7 +35,7 @@ VOTE_OBJS=vote.lo
 CFILES=student.c staff.c common.c vote.c
 
 TARGET=student staff vote
-SCRIPTS=grouper.pl staff.sql stellar.pl student.sql
+SCRIPTS=affiliates.pl grouper.pl staff.sql stellar.pl student.sql
 
 .SUFFIXES: .pc .lo
 

@@ -131,7 +131,7 @@ int access_login(struct query *q, char *argv[], client *cl)
   if (q->argc != 1)
     return MR_ARGS;
 
-  if (!strcmp(q->shortname, "gual"))
+  if (!strcmp(q->shortname, "gual") || !strcmp(q->shortname, "gura"))
     {
       EXEC SQL SELECT users_id INTO :id FROM users
 	WHERE login = :argv[0] AND users_id != 0;
@@ -528,6 +528,77 @@ int access_filesys(struct query *q, char *argv[], client *cl)
     return MR_PERM;
 }
 
+/* access_shot - successful if:
+ *  - opt is 0 or 1.
+ *  - user is owner of subnet containing host.
+ *  - user is owner of host and network isn't RESERVED / INFRASTRUCTURE.
+ *  - user has 'CAN SPEND OR COMMIT FUNDS' for host cost object and 
+ *    affiliation is one of student, faculty, or research staff.
+ */ 
+int access_shot(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, sid, status;
+  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
+  char login[USERS_LOGIN_SIZE], affiliation[USERS_AFFILIATION_DETAILED_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  int id;
+  char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
+
+  id = *(int *)argv[0];
+
+  /* opt must be zero or one for non-query owner */
+  if (atoi(argv[1]) != 0 && atoi(argv[1]) != 1)
+    return MR_PERM;
+
+  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
+    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid, :status
+    FROM machine m, subnet s WHERE m.mach_id = :id AND m.snet_id = s.snet_id;
+  
+  /* subnet owner? */
+  if (find_member(stype, sid, cl))
+    return MR_SUCCESS;
+
+  /* If we're not the subnet owner, don't allow this for certain types of networks */
+  if (status == SNET_STATUS_RESERVED || status == SNET_STATUS_INFRASTRUCTURE)
+    return MR_PERM;
+
+  /* host owner? */
+  if (find_member(mtype, mid, cl))
+    return MR_SUCCESS;
+
+  /* If we've gotten this far, you must be student/faculty/research staff. */
+  EXEC SQL SELECT u.login, u.affiliation_detailed INTO :login, :affiliation
+    FROM USERS u WHERE u.users_id = :cl->users_id;
+
+  if (strcmp(strtrim(affiliation), "Faculty") &&
+      strcmp(strtrim(affiliation), "Undergraduate Student") &&
+      strcmp(strtrim(affiliation), "Graduate Student") &&
+      strcmp(strtrim(affiliation), "Sponsored Research Staff") &&
+      strcmp(strtrim(affiliation), "Other Academic Group"))
+    return MR_PERM;
+
+  /* Need to check all possible cost object types in Roles */
+  sprintf(roles_qualifier, "F%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "C%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "I%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "P%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  /* Default case */
+  return MR_PERM;
+}
 
 /* access_host - successful if owner of host, or subnet containing host
  */
@@ -537,7 +608,6 @@ int access_host(struct query *q, char *argv[], client *cl)
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, sid, id, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
-  char *account_number;
   EXEC SQL END DECLARE SECTION;
   int status, idx;
 
@@ -550,7 +620,7 @@ int access_host(struct query *q, char *argv[], client *cl)
   
   if (q->type == MR_Q_APPEND)
     {
-      /* Non-query owner must set use to zero */
+      /* Non-query owner must set use to zero. is ignored anyway */
       if (atoi(argv[6 + idx]) != 0)
 	return MR_PERM;
 
@@ -569,9 +639,8 @@ int access_host(struct query *q, char *argv[], client *cl)
 	{
 	  if (subnet_status == SNET_STATUS_BILLABLE)
 	    {
-	      account_number = argv[7];
 	      EXEC SQL SELECT account_number FROM accountnumbers 
-		WHERE account_number = :account_number;
+		WHERE account_number = :argv[7];
 	      if (sqlca.sqlcode == SQL_NO_MATCH)
 		return MR_ACCOUNT_NUMBER;
 	    }
@@ -589,13 +658,17 @@ int access_host(struct query *q, char *argv[], client *cl)
       char contact[MACHINE_CONTACT_SIZE], address[MACHINE_ADDRESS_SIZE];
       char name[MACHINE_NAME_SIZE];
       char billing_contact[MACHINE_BILLING_CONTACT_SIZE];
+      char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
+      char login[USERS_LOGIN_SIZE];
       EXEC SQL END DECLARE SECTION;
+      int is_machine_owner = 0;
+      char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
 
       id = *(int *)argv[0];
-      EXEC SQL SELECT m.name, m.use, m.contact, m.billing_contact, m.status, 
-	m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id,
+      EXEC SQL SELECT m.name, m.use, m.contact, m.billing_contact, m.account_number,
+	m.status,  m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id,
 	s.owner_type, s.owner_id, s.status INTO :name, :use, :contact, 
-	:billing_contact, :status, :address, :mtype, :mid, :acomment, 
+	:billing_contact, :account_number, :status, :address, :mtype, :mid, :acomment, 
 	:ocomment, :snid, :stype, :sid, :subnet_status
 	FROM machine m, subnet s
 	WHERE m.mach_id = :id AND s.snet_id = m.snet_id;
@@ -608,9 +681,8 @@ int access_host(struct query *q, char *argv[], client *cl)
 	  if ((subnet_status == SNET_STATUS_BILLABLE) &&
 	      (atoi(argv[10]) != 3))
 	    {
-	      account_number = argv[8];
 	      EXEC SQL SELECT account_number FROM accountnumbers 
-		WHERE account_number = :account_number;
+		WHERE account_number = :argv[8];
 	      if (sqlca.sqlcode == SQL_NO_MATCH)
 		return MR_ACCOUNT_NUMBER;
 	    }
@@ -624,42 +696,77 @@ int access_host(struct query *q, char *argv[], client *cl)
       if (isdigit(argv[1][0]) && strcmp(strtrim(name), argv[1]))
 	return MR_BAD_CHAR;
 
-      if (!find_member(stype, sid, cl))
+      if (find_member(stype, sid, cl))
 	{
-	  if (find_member(mtype, mid, cl))
+	  /* If moving to a new subnet, make sure user is on acl there */
+	  id = *(int *)argv[9 + idx];
+	  if (id != snid)
 	    {
-	      /* host owner also cannot change contact, status, address,
-		 owner, or acomment */
-	      if (strcmp(argv[6], strtrim(contact)) ||
-		  (status != atoi(argv[8 + idx])) ||
-		  strcmp(argv[10 + idx], strtrim(address)) ||
-		  strcmp(argv[11 + idx], strtrim(mtype)) ||
-		  (mid != *(int *)argv[12 + idx]) || 
-		  (acomment != *(int *)argv[13 + idx]))
+	      EXEC SQL SELECT owner_type, owner_id INTO :stype, :sid
+		FROM subnet WHERE snet_id=:id;
+	      if (!find_member(stype, sid, cl))
 		return MR_PERM;
-	      /* Billing contact field didn't appear until version 6 */
-	      if (q->version >= 6)
-		if (strcmp(argv[7], strtrim(billing_contact)))
-		    return MR_PERM;
 	    }
-	  else
-	    return MR_PERM;
+	  
+	  return MR_SUCCESS;
 	}
 
-      /* If moving to a new subnet, make sure user is on acl there */
-      id = *(int *)argv[9 + idx];
-      if (id != snid)
+      /* Check host owner */
+      if (find_member(mtype, mid, cl))
+	is_machine_owner = 1;
+      /* Check roles permissions, don't let them work for reserved and infrastructure networks */
+      else if (subnet_status != SNET_STATUS_RESERVED && subnet_status != SNET_STATUS_INFRASTRUCTURE)
 	{
-	  EXEC SQL SELECT owner_type, owner_id INTO :stype, :sid
-	    FROM subnet WHERE snet_id=:id;
-	  if (!find_member(stype, sid, cl))
-	    return MR_PERM;
+	  EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
+  
+	  /* Need to check all possible cost object types in Roles */
+	  sprintf(roles_qualifier, "F%s", strtrim(account_number));
+	  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+	    is_machine_owner = 1;
+
+	  if (!is_machine_owner)
+	    {
+	      sprintf(roles_qualifier, "C%s", strtrim(account_number));
+	      if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+		is_machine_owner = 1;
+	    }
+
+	  if (!is_machine_owner)
+	    {
+	      sprintf(roles_qualifier, "I%s", strtrim(account_number));
+	      if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+		is_machine_owner = 1;
+	    }
+
+	  if (!is_machine_owner)
+	    {
+	      sprintf(roles_qualifier, "P%s", strtrim(account_number));
+	      if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+		is_machine_owner = 1;
+	    }
 	}
+
+      if (!is_machine_owner)
+	return MR_PERM;
+      
+      /* host owner also cannot change contact, status, subnet, address, owner, or acomment */
+      if (strcmp(argv[6], strtrim(contact)) ||
+	  (status != atoi(argv[8 + idx])) ||
+	  (snid != *(int *)argv[9 + idx]) ||
+	  strcmp(argv[10 + idx], strtrim(address)) ||
+	  strcmp(argv[11 + idx], strtrim(mtype)) ||
+	  (mid != *(int *)argv[12 + idx]) || 
+	  (acomment != *(int *)argv[13 + idx]))
+	return MR_PERM;
+
+      /* Billing contact field didn't appear until version 6 */
+      if (q->version >= 6)
+	if (strcmp(argv[7], strtrim(billing_contact)))
+	  return MR_PERM;
 
       return MR_SUCCESS;
     }
 }
-
 
 /* access_ahal - check for adding a host alias.
  * successful if host has less then 2 aliases and (client is owner of
@@ -670,10 +777,13 @@ int access_host(struct query *q, char *argv[], client *cl)
 int access_ahal(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt, id, mid, sid;
+  int cnt, id, mid, sid, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
+  char login[USERS_LOGIN_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
+  char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
 
   if (q->type == MR_Q_RETRIEVE)
     return MR_SUCCESS;
@@ -692,19 +802,108 @@ int access_ahal(struct query *q, char *argv[], client *cl)
    */
   if (q->type == MR_Q_APPEND && cnt >= 2)
     return MR_PERM;
-  EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id
-    INTO :mtype, :mid, :stype, :sid FROM machine m, subnet s
-    WHERE m.mach_id = :id and s.snet_id = m.snet_id;
+
+  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
+    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid,
+    :subnet_status FROM machine m, subnet s WHERE m.mach_id = :id and s.snet_id = m.snet_id;
+
   status = find_member(mtype, mid, cl);
   if (status)
     return MR_SUCCESS;
+
   status = find_member(stype, sid, cl);
   if (status)
     return MR_SUCCESS;
-  else
+
+  /* If you're only a Roles owner, punt for network reserved / infrastructure */
+  if (subnet_status == SNET_STATUS_RESERVED || subnet_status == SNET_STATUS_INFRASTRUCTURE)
     return MR_PERM;
+
+  EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
+
+  /* Need to check all possible cost object types in Roles */
+  sprintf(roles_qualifier, "F%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "C%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "I%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "P%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  return MR_PERM;
 }
 
+/* Same logic as access_ahal, for different table */
+
+int access_hwaddr(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, id, mid, sid, subnet_status;
+  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
+  char login[USERS_LOGIN_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  int status;
+  char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
+
+  id = *(int *)argv[0];
+  
+  EXEC SQL SELECT count(name) INTO :cnt from hwaddrmap WHERE mach_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* if the type is MR_Q_APPEND, this is ahha and we need to make sure
+   * there will be no more than 2 hwaddrs.  If it's not, it must be
+   * dhha and any owner will do.
+   */
+  if (q->type == MR_Q_APPEND && cnt >= 2)
+    return MR_PERM;
+
+  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
+    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid,
+    :subnet_status FROM machine m, subnet s WHERE m.mach_id = :id and s.snet_id = m.snet_id;
+
+  status = find_member(mtype, mid, cl);
+  if (status)
+    return MR_SUCCESS;
+
+  status = find_member(stype, sid, cl);
+  if (status)
+    return MR_SUCCESS;
+
+  /* If you're only a Roles owner, punt for network reserved / infrastructure */
+  if (subnet_status == SNET_STATUS_RESERVED || subnet_status == SNET_STATUS_INFRASTRUCTURE)
+    return MR_PERM;
+
+  EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
+
+  /* Need to check all possible cost object types in Roles */
+  sprintf(roles_qualifier, "F%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+  
+  sprintf(roles_qualifier, "C%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+  
+  sprintf(roles_qualifier, "I%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  sprintf(roles_qualifier, "P%s", strtrim(account_number));
+  if (check_roles_authorization(strtrim(login), "CAN SPEND OR COMMIT FUNDS", roles_qualifier) == MR_SUCCESS)
+    return MR_SUCCESS;
+
+  return MR_PERM;
+}
 
 /* access_snt - check for retrieving network structure
  */
@@ -1021,3 +1220,42 @@ struct mxentry *getmxrecords(const char *name)
   pmx[ind].pref = -1;
   return(pmx);
 }
+
+/* Based heavily on Roles PL/SQL function ROLESAPI_IS_USER_AUTHORIZED */
+int check_roles_authorization(char *login, char *function_name,
+			      char *qualifier_code)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  /* Check for direct authorization */
+  EXEC SQL SELECT COUNT(*) INTO :rowcount FROM roles_authorization
+    WHERE kerberos_name = UPPER(:login)
+    AND function_name = :function_name
+    AND qualifier_code = :qualifier_code
+    AND do_function = 'Y'
+    AND effective_date <= SYSDATE
+    AND (SYSDATE <= expiration_date OR expiration_date is NULL);
+
+  if (rowcount > 0)
+    return MR_SUCCESS;
+
+  /* Check for indirect authorization */
+  EXEC SQL SELECT COUNT(*) INTO :rowcount FROM roles_authorization
+    WHERE kerberos_name = UPPER(:login)
+    AND function_name = :function_name
+    AND do_function = 'Y' AND descend = 'Y'
+    AND effective_date <= SYSDATE
+    AND (SYSDATE <= expiration_date OR expiration_date is NULL)
+    AND qualifier_id IN (SELECT parent_id FROM roles_qualifier_descendent
+    WHERE child_id = (SELECT qualifier_id FROM roles_qualifier
+    WHERE qualifier_code = :qualifier_code AND qualifier_type =
+    (SELECT qualifier_type FROM roles_function WHERE function_name = :function_name)));
+
+  if (rowcount > 0)
+    return MR_SUCCESS;
+
+  return MR_PERM;
+}
+

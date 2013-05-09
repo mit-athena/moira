@@ -64,6 +64,7 @@ int info_flag, update_flag, create_flag, delete_flag, list_map_flag;
 int update_alias_flag, update_map_flag, verbose, noauth;
 int list_container_flag, update_container_flag, unformatted_flag;
 int list_hwaddr_flag, update_hwaddr_flag;
+int set_host_opt_flag, set_ttl_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
@@ -74,7 +75,7 @@ char *hostname, *whoami;
 
 char *newname, *address, *network, *h_status, *vendor, *model;
 char *os, *location, *contact, *billing_contact, *account_number;
-char *adm_cmt, *op_cmt;
+char *adm_cmt, *op_cmt, *opt, *ttl;
 
 in_addr_t ipaddress;
 struct owner_type *owner;
@@ -103,9 +104,10 @@ int main(int argc, char **argv)
   update_alias_flag = verbose = noauth = 0;
   list_container_flag = update_container_flag = 0;
   list_hwaddr_flag = update_hwaddr_flag = 0;
+  set_host_opt_flag = set_ttl_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = account_number = adm_cmt = NULL;
-  op_cmt = NULL;
+  op_cmt = opt = NULL;
   owner = NULL;
   alias_add_queue = alias_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
@@ -241,10 +243,10 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+          /* This could be for either update_host or set_host_opt                                                                                                                                                                                       * Don't set any flags and take our cues from the other                                                                                                                                                                                       * arguments we're given.                                                                                                                                                                                                                     */
 	  else if (argis("oc", "opcmt")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
-	      update_flag++;
 	      op_cmt = *arg;
 	    } else
 	      usage(argv);
@@ -319,6 +321,22 @@ int main(int argc, char **argv)
 	      usage(argv);
 	    update_hwaddr_flag++;
 	  }
+	  else if (argis("oi", "optin")) {
+	    set_host_opt_flag++;
+	    opt = "0";
+	  }
+	  else if (argis("oo", "optout")) {
+	    set_host_opt_flag++;
+	    opt = "1";
+	  }
+	  else if (argis("ttl", "setttl")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      set_ttl_flag++;
+	      ttl = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("lhw", "listhwaddr"))
 	    list_hwaddr_flag++;
 	  else if (argis("u", "unformatted"))
@@ -348,17 +366,20 @@ int main(int argc, char **argv)
   if (hostname == NULL)
     usage(argv);
 
+  if (op_cmt && !set_host_opt_flag)
+    update_flag++;
+
   /* default to info_flag if nothing else was specified */
   if(!(info_flag   || update_flag   || create_flag     || \
        delete_flag || list_map_flag || update_map_flag || \
        update_alias_flag || update_container_flag || \
        list_container_flag || update_hwaddr_flag || \
-       list_hwaddr_flag)) {
+       list_hwaddr_flag || set_host_opt_flag || set_ttl_flag)) {
     info_flag++;
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stella", 8, !noauth);
+  status = mrcl_connect(server, "stella", 9, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -832,6 +853,42 @@ int main(int argc, char **argv)
       }
   }
 
+  if (set_host_opt_flag) {
+    char *argv[3];
+
+    /* Must specify non-null admin. comment if opting out */
+    if (atoi(opt) > 0 && !op_cmt)
+      {
+	com_err(whoami, 0, "Must specify operational comment when opting out of default network security policy");
+	exit(1);
+      }
+    else if (!op_cmt)
+      op_cmt = "";
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    argv[1] = opt;
+    argv[2] = op_cmt;
+
+    status = wrap_mr_query("shot", 3, argv, NULL, NULL);
+    if (status) {
+      com_err(whoami, status, "while setting host network security options");
+      exit(1);
+    }
+  }
+
+  if (set_ttl_flag) {
+    char *argv[2];
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    argv[1] = ttl;
+
+    status = wrap_mr_query("set_host_ttl", 2, argv, NULL, NULL);
+    if (status) {
+      com_err(whoami, status, "while setting host TTL");
+      exit(1);
+    }
+  }
+
   if (delete_flag) {
     char *argv[1];
 
@@ -869,7 +926,8 @@ void usage(char **argv)
 	  "-c   | -contact contact");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ac  | -admcmt adm_cmt",
 	  "-bc  | -billingcontact billing_contact");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-an  | -accountnumber account_number",          "-A   | -address address");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-an  | -accountnumber account_number",
+	  "-A   | -address address");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-N   | -network network",
 	  "-am  | -addmap cluster");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | deletemap cluster",
@@ -883,7 +941,10 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ahw | -addhwaddr hwaddr",
 	  "-dhw | -delhwaddr hwaddr");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lhw | -listhwaddr",
-	  "-db  | -database host[:port]");
+	  "-oi  | -optin");
+  fprintf(stderr,  USAGE_OPTIONS_FORMAT, "-oo  | -optout",
+	  "-ttl | -setttl ttl");
+  fprintf(stderr, "  %-39s\n", "-db  | -database host[:port]");
   exit(1);
 }
 
@@ -908,6 +969,26 @@ int show_alias_info_unformatted(int argc, char **argv, void *hint)
   else
     printf(", %s", argv[0]);
 
+  return MR_CONT;
+}
+
+/* Show TTL if not default */
+
+#define DEFAULT_TTL "1800"
+
+int show_ttl(int argc, char **argv, void *hint)
+{
+  if (strcmp(argv[0], DEFAULT_TTL))
+      printf("DNS TTL:  %s\n\n", argv[0]);
+
+  return MR_CONT;
+}
+
+int show_ttl_unformatted(int argc, char **argv, void *hint)
+{
+  if (strcmp(argv[0], DEFAULT_TTL))
+    printf("DNS TTL:          %s\n", argv[0]);
+  
   return MR_CONT;
 }
 
@@ -953,6 +1034,7 @@ void show_host_info(char **argv)
   printf("Machine:  %s\n", argv[M_NAME]);
   args[0] = "*";
   args[1] = argv[M_NAME];
+
   show_has_aliases = 0;
   stat = wrap_mr_query("get_hostalias", 2, args, show_alias_info, &elem);
   printf("\n");
@@ -962,6 +1044,15 @@ void show_host_info(char **argv)
   } else {
     printf("\n");
   }
+
+  args[0] = argv[M_NAME];
+
+  stat = wrap_mr_query("get_host_ttl", 1, args, show_ttl, &elem);
+  if (stat) {
+    if (stat != MR_NO_MATCH)
+      com_err(whoami, stat, "while getting host TTL");
+  }
+  
   sprintf(tbuf, "%s %s", argv[M_OWNER_TYPE],
           strcmp(argv[M_OWNER_TYPE], "NONE") ? argv[M_OWNER_NAME] : "");
   printf("Address:  %-16s    Network:    %-16s\n",
@@ -992,6 +1083,7 @@ void show_host_info_unformatted(char **argv)
   int stat;
 
   printf("Machine:          %s\n", argv[M_NAME]);
+
   args[0] = "*";
   args[1] = argv[M_NAME];
   show_has_aliases = 0;
@@ -1001,6 +1093,13 @@ void show_host_info_unformatted(char **argv)
     com_err(whoami, stat, "while getting aliases");
   else
     printf("\n");
+
+  args[0] = argv[M_NAME];
+  stat = wrap_mr_query("get_host_ttl", 1, args, show_ttl_unformatted,
+		       &elem);
+  if (stat && stat != MR_NO_MATCH)
+    com_err(whoami, stat, "while getting host TTL");
+  
   printf("Address:          %s\n", argv[M_ADDR]);
   printf("Network:          %s\n", argv[M_SUBNET]);
   printf("Owner Type:       %s\n", argv[M_OWNER_TYPE]);

@@ -12,6 +12,7 @@
 
 #include <netinet/in.h>
 
+#include <stdio.h>
 #include <stdarg.h>
 
 #ifdef HAVE_KRB4
@@ -60,7 +61,7 @@ extern char *krb_realm;
 /* max length of query argument allowed */
 #define ARGLEN	257
 /* Used to setup static argv, maximum argc */
-#define QMAXARGS	25
+#define QMAXARGS	30
 
 /* statistics on number of queries by version number */
 extern int newqueries;
@@ -159,8 +160,10 @@ int access_member(struct query *q, char *argv[], client *cl);
 int access_qgli(struct query *q, char *argv[], client *cl);
 int access_service(struct query *q, char *argv[], client *cl);
 int access_filesys(struct query *q, char *argv[], client *cl);
+int access_shot(struct query *q, char *argv[], client *cl);
 int access_host(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
+int access_hwaddr(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
 int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
@@ -168,6 +171,8 @@ int access_container(struct query *q, char *argv[], client *cl);
 int access_update_user(struct query *q, char *argv[], client *cl);
 int check_mail_string(char *mailstring);
 struct mxentry *getmxrecords(const char *);
+int check_roles_authorization(char *login, char *function_name,
+			      char *qualifier_code);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,

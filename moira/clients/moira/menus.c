@@ -534,7 +534,7 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  10,
+  12,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show", "Get machine information"},
@@ -562,9 +562,17 @@ Menu machine_menu = {
       {"delete", "Delete this machine"},
       {"name", "Machine's Name: "}
     } },
+    { SetMachineOpt, NULLMENU, 2, {
+      {"setopt", "Set network security options for this machine"},
+      {"name", "Machine's Name: "},
+    } },
     SUBMENU("cnames", "Alias names for machines", &cname_menu),
     SUBMENU("mappings", "Machine To Cluster Mappings Menu", &mappings_menu),
     SUBMENU("hwaddrs", "Hardware Addresses for machines", &hwaddr_menu),
+    { SetMachineTTL, NULLMENU, 2, {
+      {"setttl", "Set DNS TTL for this machine"},
+      {"name", "Machine's Name: "},
+    } },
   }
 };
 

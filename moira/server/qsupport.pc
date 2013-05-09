@@ -991,7 +991,34 @@ int ghbo_internal(char *atype, int aid,
       found++;
     }
   EXEC SQL CLOSE csr115b;
-  
+
+  if (!strcmp(type, "USER"))
+    {
+      /* Check for permissions granted via Roles */
+      EXEC SQL DECLARE csr115c CURSOR FOR
+	SELECT m.name FROM machine m, subnet s
+	WHERE m.account_number IN (SELECT SUBSTR(ra.qualifier_code, 2)
+	FROM roles_authorization ra, users u WHERE ra.kerberos_name = UPPER(u.login)
+	AND u.users_id = :id AND ra.function_name = 'CAN SPEND OR COMMIT FUNDS'
+        AND ra.do_function = 'Y' AND ra.effective_date <= SYSDATE
+	AND (SYSDATE <= ra.expiration_date OR ra.expiration_date IS NULL))
+        AND m.snet_id = s.snet_id AND (s.status != 0 AND s.status != 6);
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr115c;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr115c INTO :name;
+	  if (sqlca.sqlcode)
+	    break;
+	  (*action)(1, rargv, actarg);
+	  found++;
+	}
+      EXEC SQL CLOSE csr115c;
+    }
+	
   if (!found)
     return MR_NO_MATCH;
   return MR_SUCCESS;
@@ -1005,8 +1032,10 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
   EXEC SQL BEGIN DECLARE SECTION;
   char *atype;
   long aid, listid, id;
+  char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
+  char *rargv[1];
 
   atype = argv[0];
   aid = *(int *)argv[1];
@@ -1069,6 +1098,35 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
 	}
       if (ghbo_internal("USER", aid, action, actarg) == MR_SUCCESS)
 	found++;
+
+      /* Check for implied permissions from Roles */
+      rargv[0] = name;
+
+      EXEC SQL DECLARE csr108r CURSOR FOR
+	SELECT m.name FROM machine m, subnet s WHERE m.account_number IN
+	(SELECT SUBSTR(qualifier_code, 2) FROM roles_qualifier WHERE qualifier_id IN
+	(SELECT child_id FROM roles_qualifier_descendent WHERE parent_id IN
+	(SELECT qualifier_id FROM roles_authorization ra, users u
+	WHERE ra.kerberos_name = UPPER(u.login) AND u.users_id = :aid 
+	AND ra.do_function = 'Y' AND ra.descend = 'Y' AND ra.effective_date <= SYSDATE 
+	AND (SYSDATE <= ra.expiration_date OR ra.expiration_date IS NULL)))
+	AND qualifier_type = (SELECT qualifier_type FROM roles_function
+        WHERE function_name = 'CAN SPEND OR COMMIT FUNDS'))
+	AND m.snet_id = s.snet_id AND (s.status != 0 AND s.status != 6);
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr108r;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr108r INTO :name;
+	  if (sqlca.sqlcode)
+	    break;
+	  (*action)(1, rargv, actarg);
+	  found++;
+	}
+      EXEC SQL CLOSE csr108r;
     }
 
   if (!strcmp(atype, "RKERBEROS"))

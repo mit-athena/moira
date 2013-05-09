@@ -111,12 +111,21 @@ static char *gual12_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *gual_fields[] = {
+static char *gual14_fields[] = {
   "login",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *gual_fields[] = {
+  "login",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "affiliation_basic", "affiliation_detailed",
+  "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *gubl2_fields[] = {
@@ -158,6 +167,24 @@ static struct validate gubl_validate =
   followup_get_user,
 };
 
+static char *gura_fields[] = {
+  "login",
+  "login", "function_category", "function_name", "qualifier_code", "do_function", "grant",
+};
+
+static struct validate gura_validate = 
+{ 
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    access_login,
+    0,
+    0,
+};
+
 static char *guau2_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
@@ -188,12 +215,21 @@ static char *guau12_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guau_fields[] = {
+static char *guau14_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guau_fields[] = {
+  "unix_uid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "affiliation_basic", "affiliation_detailed",
+  "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guan2_fields[] = {
@@ -226,12 +262,21 @@ static char *guan12_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guan_fields[] = {
+static char *guan14_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guan_fields[] = {
+  "first", "last",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "affiliation_basic", "affiliation_detailed",
+  "modtime", "modby", "modwith", "created", "creator",
 };
 
 static struct validate guan2_validate =
@@ -290,12 +335,21 @@ static char *guac12_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guac_fields[] = {
+static char *guac14_fields[] = {
   "class",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guac_fields[] = {
+  "class",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "affiliation_basic", "affiliation_detailed",
+  "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guam2_fields[] = {
@@ -328,12 +382,21 @@ static char *guam12_fields[] = {
   "modtime", "modby", "modwith", "created", "creator", 
 };
 
-static char *guam_fields[] = {
+static char *guam14_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guam_fields[] = {
+  "clearid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "affiliation_basic", "affiliation_detailed",
+  "modtime", "modby", "modwith", "created", "creator",
 };
 
 static char *guas_fields[] = {
@@ -1575,6 +1638,55 @@ static struct validate uhst_validate = {
   set_modtime_by_id,
 };
 
+static char *shot_fields[] = {
+  "name",
+  "use", "ops_comment",
+};
+
+static struct valobj shot_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 1},
+  {V_ID, 2, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+};
+
+static struct validate shot_validate = {
+  shot_valobj,
+  3,
+  0,
+  0,
+  0,
+  "mach_id",
+  access_shot,
+  0,
+  set_modtime_by_id,
+};
+  
+static char *sttl_fields[] = {
+  "name", "ttl",
+};
+
+static struct valobj sttl_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 1},
+};
+
+static struct validate sttl_validate = {
+  sttl_valobj,
+  2,
+  0,
+  0,
+  0,
+  "mach_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
+static char *gttl_fields[] = {
+  "name",
+  "ttl",
+};
+
 static char *ahha_fields[] = {
   "name", "hwaddr",
 };
@@ -1591,7 +1703,7 @@ static struct validate ahha_validate = {
   0,
   0,
   "mach_id",
-  0,
+  access_hwaddr,
   setup_ahha,
   set_mach_modtime_by_id,
 };
@@ -1612,7 +1724,7 @@ static struct validate dhha_validate = {
   0,
   0,
   "mach_id",
-  0,
+  access_hwaddr,
   0,
   set_mach_modtime_by_id,
 };
@@ -4340,6 +4452,24 @@ struct query Queries[] = {
   },
 
   {
+    /* Q_GURA - GET_USER_ROLES_AUTHORIZATIONS */
+    "get_user_roles_authorizations",
+    "gura",
+    1,
+    MR_Q_RETRIEVE,
+    "ra",
+    /* We don't own the schema for this table */
+    NO_TABLE,
+    "LOWER(ra.kerberos_name), ra.function_category, NVL(ra.function_name, CHR(0)), ra.qualifier_code, NVL(ra.do_function, CHR(0)), NVL(ra.grant_and_view, CHR(0)) FROM roles_authorization ra",
+    gura_fields,
+    6,
+    "ra.kerberos_name LIKE UPPER('%s') AND ra.effective_date < SYSDATE AND (ra.expiration_date > SYSDATE OR expiration_date is null)",
+    1,
+    "ra.kerberos_name, ra.function_category, ra.function_name, ra.qualifier_code",
+    &gura_validate,
+  },
+
+  {
     /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN, v2 */
     "get_user_account_by_login",
     "gual",
@@ -4416,8 +4546,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    gual_fields,
+    gual14_fields,
     25,
+    "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubl_validate,
+  },
+
+  {
+    /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN, v15 */
+    "get_user_account_by_login",
+    "gual",
+    15,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    gual_fields,
+    27,
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4501,8 +4648,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guau_fields,
+    guau14_fields,
     25,
+    "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubu_validate,
+  },
+
+  {
+    /* Q_GUAU - GET_USER_ACCOUNT_BY_UID, v15 */
+    "get_user_account_by_uid",
+    "guau",
+    15,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guau_fields,
+    27,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4586,8 +4750,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guan_fields,
+    guan14_fields,
     25,
+    "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
+    2,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v15 */
+    "get_user_account_by_name",
+    "guan",
+    15,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guan_fields,
+    27,
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     "u.login",
@@ -4671,8 +4852,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guac_fields,
+    guac14_fields,
     25,
+    "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS, v15 */
+    "get_user_account_by_class",
+    "guac",
+    15,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guac_fields,
+    27,
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4756,8 +4954,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guam_fields,
+    guam14_fields,
     25,
+    "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID, v15 */
+    "get_user_account_by_id",
+    "guai",
+    15,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guam_fields,
+    27,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -5846,7 +6061,8 @@ struct query Queries[] = {
     MR_Q_APPEND,
     "m",
     MACHINE_TABLE,
-    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
+    /* We set use to "NVL('0', '%s')", which is to say, '0', but using up one argv element. */
+    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('0', '%s'), %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), %s, %s)",
     ahst2_fields,
     14,
     0,
@@ -5863,7 +6079,8 @@ struct query Queries[] = {
     MR_Q_APPEND,
     "m",
     MACHINE_TABLE,
-    "INTO machine (name, vendor, model, os, location, contact, billing_contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
+    /* We set use to "NVL('0', '%s')", which is to say, '0', but using up one argv element. */
+    "INTO machine (name, vendor, model, os, location, contact, billing_contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('0', '%s'), %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), %s, %s)",
     ahst6_fields,
     15,
     0,
@@ -5880,7 +6097,8 @@ struct query Queries[] = {
     MR_Q_APPEND,
     "m",
     MACHINE_TABLE,
-    "INTO machine (name, vendor, model, os, location, contact, billing_contact, account_number, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
+    /* We set use to "NVL('0', '%s')", which is to say, '0', but using up one argv element. */
+    "INTO machine (name, vendor, model, os, location, contact, billing_contact, account_number, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('0', '%s'), %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), %s, %s)",
     ahst_fields,
     16,
     0,
@@ -5897,7 +6115,8 @@ struct query Queries[] = {
     MR_Q_UPDATE,
     "m",
     MACHINE_TABLE,
-    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
+    /* See comment in ahst about use field. */
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), use = NVL(use, '%s'), status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
     uhst2_fields,
     14,
     "mach_id = %d",
@@ -5914,7 +6133,8 @@ struct query Queries[] = {
     MR_Q_UPDATE,
     "m",
     MACHINE_TABLE,
-    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
+    /* See comment in ahst about use field */
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), use = NVL(use, '%s'), status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
     uhst6_fields,
     15,
     "mach_id = %d",
@@ -5931,13 +6151,65 @@ struct query Queries[] = {
     MR_Q_UPDATE,
     "m",
     MACHINE_TABLE,
-    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), account_number = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
+    /* See comment in ahst about use field */
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), account_number = NVL('%s', CHR(0)), use = NVL(use, '%s'), status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
     uhst_fields,
     16,
     "mach_id = %d",
     1,
     NULL,
     &uhst_validate,
+  },
+
+  {
+    /* Q_SHOT - SET_HOST_OPT, v9 */
+    "set_host_opt",
+    "shot",
+    9,
+    MR_Q_UPDATE,
+    "m",
+    MACHINE_TABLE,
+    "machine SET use = %s, ocomment = %d, inuse = SYSDATE",
+    shot_fields,
+    2,
+    "mach_id = %d",
+    1,
+    NULL,
+    &shot_validate,
+  },
+
+  {
+    /* Q_STTL - SET_HOST_TTL, v9 */
+    "set_host_ttl",
+    "sttl",
+    9,
+    MR_Q_UPDATE,
+    "m",
+    MACHINE_TABLE,
+    "machine SET ttl = %s",
+    sttl_fields,
+    1,
+    "mach_id = %d",
+    1,
+    NULL,
+    &sttl_validate,
+  },
+
+  {
+    /* Q_GTTL - GET_HOST_TTL, v9 */
+    "get_host_ttl",
+    "gttl",
+    2,
+    MR_Q_RETRIEVE,
+    "m",
+    MACHINE_TABLE,
+    "m.ttl FROM machine m",
+    gttl_fields,
+    1,
+    "m.name LIKE UPPER('%s')",
+    1,
+    NULL,
+    NULL,
   },
 
   {

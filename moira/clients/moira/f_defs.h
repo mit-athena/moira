@@ -51,6 +51,8 @@ int MachineByAcctNumber(int argc, char **argv);
 int AddMachine(int argc, char **argv);
 int UpdateMachine(int argc, char **argv);
 int DeleteMachine(int argc, char **argv);
+int SetMachineOpt(int argc, char **argv);
+int SetMachineTTL(int argc, char **argv);
 int MachineToClusterMap(int argc, char **argv);
 int AddMachineToCluster(int argc, char **argv);
 int RemoveMachineFromCluster(int argc, char **argv);

@@ -18,7 +18,6 @@ create index i_mac_name on  machine (name);
 create index i_mac_addr on machine (address);
 create index i_mac_loc on machine (location);
 create index i_mac_snet on machine (snet_id);
-create index i_mac_hwaddr on machine (hwaddr);
 create index i_mac_owner on machine (owner_id);
 create index i_mac_acctnumber on machine(account_number);
 

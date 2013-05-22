@@ -28,6 +28,7 @@ struct entry {
 
   char *affiliation_basic;
   char *affiliation_detailed;
+  char *email_address;
 };
 
 void fixphone(char *phone);

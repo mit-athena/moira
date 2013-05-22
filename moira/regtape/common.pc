@@ -72,6 +72,8 @@ void process_entry(struct entry *e, int secure)
   char dmiddle[USERS_MIDDLE_SIZE];
   char affiliation_basic[USERS_AFFILIATION_BASIC_SIZE];
   char affiliation_detailed[USERS_AFFILIATION_DETAILED_SIZE];
+  char mit_email[USERS_LOGIN_SIZE + 9]; /* strlen("@mit.edu") + 1; */
+  char alternate_email[USERS_ALTERNATE_EMAIL_SIZE];
   int id, status, fmodby, xnlen = USERS_XNAME_SIZE - 1;
   EXEC SQL END DECLARE SECTION;
 
@@ -88,12 +90,12 @@ void process_entry(struct entry *e, int secure)
   id = 0;
 
   /* Get user info */
-  EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
+  EXEC SQL SELECT users_id, login||'@mit.edu', first, last, middle, type, office_addr,
     office_phone, home_addr, home_phone, department, status, fmodby,
-    affiliation_basic, affiliation_detailed
-    INTO :id, :dfirst, :dlast, :dmiddle, :type, :oaddr,
+    affiliation_basic, affiliation_detailed, alternate_email
+    INTO :id, :mit_email, :dfirst, :dlast, :dmiddle, :type, :oaddr,
     :ophone, :haddr, :hphone, :dept, :status, :fmodby,
-    :affiliation_basic, :affiliation_detailed
+    :affiliation_basic, :affiliation_detailed, :alternate_email
     FROM users
     WHERE clearid = :sid AND status != 3;
   if (sqlfail())
@@ -180,6 +182,33 @@ void process_entry(struct entry *e, int secure)
 	{
 	  dbmserr("updating affiliation", sqlca.sqlcode);
 	  exit(1);
+	}
+    }
+
+  /* Update alternate email information, if any */
+  strtrim(alternate_email);
+  strtrim(mit_email);
+  if (strlen(e->email_address) > 0)
+    {
+      /* If directory information email address is the default, treat is as empty. */
+      if (!strcmp(mit_email, e->email_address))
+	e->email_address = "";
+
+      if (strcmp(alternate_email, e->email_address))
+	{
+	  com_err(whoami, 0, "alternate email for %s %s changed from \"%s\" to \"%s\"",
+		  first, last, alternate_email, e->email_address);
+	  
+	  strlcpy(alternate_email, e->email_address, USERS_ALTERNATE_EMAIL_SIZE);
+	  
+	  EXEC SQL UPDATE users SET alternate_email = NVL(:alternate_email, CHR(0)),
+	    modby = :who, modwith = :prog, modtime = SYSDATE
+	    WHERE users_id = :id;
+	  if (sqlca.sqlcode)
+	    {
+	      dbmserr("updating alternate email", sqlca.sqlcode);
+	      exit(1);
+	    }
 	}
     }
 

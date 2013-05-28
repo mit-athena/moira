@@ -16,7 +16,7 @@ use DBI;
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT login, type FROM users WHERE (status = 1 OR status = 2 OR status = 10) AND type LIKE '20%' " .
+$sth = $dbh->prepare("SELECT login, type FROM users WHERE (status = 1 OR status = 2 OR status = 10 OR status = 11) AND type LIKE '20%' " .
 		     "ORDER BY type, login")
     || exit $MR_DBMS_ERR;
 

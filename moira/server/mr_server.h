@@ -275,6 +275,7 @@ int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
 int update_container(struct query *q, char *argv[], client *cl);
 int set_container_list(struct query *q, char *argv[], client *cl);
+int update_user_password_expiration(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
@@ -307,7 +308,6 @@ int get_machines_of_container(struct query *q, char **argv, client *cl,
 int get_subcontainers_of_container(struct query *q, char **argv, client *cl,
 			    int (*action)(int, char *[], void *),
 			    void *actarg);
-
 
 /* prototypes from qvalidate.pc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);

@@ -4308,7 +4308,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
 	}
 
-      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) || (State == US_SUSPENDED))
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) || (State == US_SUSPENDED) ||
+	  (State == US_EXPIRED) || (State == US_EXPIRED_KERBEROS_ONLY))
         {
           group_count = 0;
           group_base = NULL;
@@ -4686,7 +4687,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
 
-      if (State != US_SUSPENDED) 
+      if ((State != US_SUSPENDED) && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY))
 	{
 	  if (Exchange)
 	    {
@@ -4745,7 +4746,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
               if(!strcmp(save_argv[1], "SPLIT") || 
 		 !strcmp(save_argv[1], "SMTP")) {
 
-		if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+		if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
+		    && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
 		  deliver_and_redirect_v[0] = "FALSE";
 		  alt_recipient_v[0] = NULL;
 		} 
@@ -4761,7 +4763,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	    }
 	  else 
 	    {
-	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
+		  && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
 		deliver_and_redirect_v[0] = "FALSE";
 		alt_recipient_v[0] = NULL;
 	      } else {
@@ -4789,7 +4792,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	}
       else
 	{
-	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)) {
+	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
+	      && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
 	    deliver_and_redirect_v[0] = "FALSE";
 	    alt_recipient_v[0] = NULL;
 	  } else {
@@ -5333,7 +5337,9 @@ int user_create(int ac, char **av, void *ptr)
     {
       if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
 	  (atoi(av[U_STATE]) != US_REGISTERED) &&
-	  (atoi(av[U_STATE]) != US_SUSPENDED))
+	  (atoi(av[U_STATE]) != US_SUSPENDED) &&
+	  (atoi(av[U_STATE]) != US_EXPIRED) &&
+	  (atoi(av[U_STATE]) != US_EXPIRED_KERBEROS_ONLY))
 	{
 	  hide_address_lists_v[0] = "TRUE";
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -5378,7 +5384,9 @@ int user_create(int ac, char **av, void *ptr)
 		
 		if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
 		    (atoi(av[U_STATE]) == US_REGISTERED) ||
-		    (atoi(av[U_STATE]) == US_SUSPENDED)) {
+		    (atoi(av[U_STATE]) == US_SUSPENDED) ||
+		    (atoi(av[U_STATE]) == US_EXPIRED) ||
+		    (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
 		  
 		  deliver_and_redirect_v[0] = "TRUE";
 		  alt_recipient_v[0] = alt_recipient;
@@ -5393,7 +5401,9 @@ int user_create(int ac, char **av, void *ptr)
 	    {
 	      if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
 		  (atoi(av[U_STATE]) == US_REGISTERED) ||
-		  (atoi(av[U_STATE]) == US_SUSPENDED)) {
+		  (atoi(av[U_STATE]) == US_SUSPENDED) ||
+		  (atoi(av[U_STATE]) == US_EXPIRED) ||
+		  (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
 		
 		alt_recipient_v[0] = alt_recipient;
 		ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
@@ -5404,7 +5414,9 @@ int user_create(int ac, char **av, void *ptr)
 	{
 	  if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
 	      (atoi(av[U_STATE]) == US_REGISTERED) ||
-	      (atoi(av[U_STATE]) == US_SUSPENDED)) {
+	      (atoi(av[U_STATE]) == US_SUSPENDED) ||
+	      (atoi(av[U_STATE]) == US_EXPIRED) ||
+	      (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
 
 	    alt_recipient_v[0] = alt_recipient;
 	    ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);

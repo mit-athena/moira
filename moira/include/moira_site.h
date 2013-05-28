@@ -405,7 +405,9 @@
 #define US_NO_LOGIN_YET_KERBEROS_ONLY 8
 #define US_REGISTERED_KERBEROS_ONLY   9
 #define US_SUSPENDED                 10
-#define US_END                       11
+#define US_EXPIRED                   11
+#define US_EXPIRED_KERBEROS_ONLY     12
+#define US_END                       13
 
 /* User shell queries */
 

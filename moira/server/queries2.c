@@ -1336,6 +1336,23 @@ static struct validate dpob_validate =	/* DELETE_POBOX */
   set_pobox_modtime,
 };
 
+static char *uupe_fields[] = {
+  "login",
+};
+
+static struct validate uupe_validate =  /* UPDATE_USER_PASSWORD_EXPIRATION */
+  {
+    VOuser0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    update_user_password_expiration,
+    0,
+  };
+
 static char *gmac_fields[] = {
   "name",
   "name", "type", "modtime", "modby", "modwith",
@@ -5898,6 +5915,23 @@ struct query Queries[] = {
     1,
     NULL,
     &dpob_validate,
+  },
+
+  {
+    /* Q_UUPE - UPDATE_USER_PASSWORD_EXPIRATION */
+    "update_user_password_expiration",
+    "uupe",
+    2,
+    MR_Q_UPDATE,
+    0,
+    USERS_TABLE,
+    0,
+    uupe_fields,
+    1,
+    NULL,
+    0,
+    NULL,
+    &uupe_validate,
   },
 
   {

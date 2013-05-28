@@ -157,10 +157,10 @@ void do_user(char **before, int beforec, char **after, int afterc)
   if (beforec > U_UID)
     buid = atoi(before[U_UID]);
 
-  /* We consider "half-registered" users and "suspended" users to be active */
-  if ((astate == 2) || (astate == 10))
+  /* We consider "half-registered", "suspended", and "expired" users to be active */
+  if ((astate == 2) || (astate == 10) || (astate == 11))
     astate = 1;
-  if (bstate == 2 || (astate == 10))
+  if (bstate == 2 || (astate == 10) || (astate == 11))
     bstate = 1;
 
   if (astate != 1 && bstate != 1)		/* inactive user */

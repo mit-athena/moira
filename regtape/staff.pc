@@ -1,4 +1,4 @@
-/* $Id: staff.pc 4066 2012-01-19 21:44:57Z zacheiss $
+/* $Id: staff.pc 4111 2013-05-22 20:26:51Z zacheiss $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4066 2012-01-19 21:44:57Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4111 2013-05-22 20:26:51Z zacheiss $");
 
 /* File format is:
  *
@@ -32,6 +32,8 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id:
  * phone2 [12]
  * dept [50]
  * title [50]
+ * employee type [40]
+ * email address [100]
  */
 
 #define LOC_ID 0
@@ -52,6 +54,10 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id:
 #define LEN_DEPT 50
 #define LOC_TITLE (LOC_DEPT + LEN_DEPT)
 #define LEN_TITLE 50
+#define LOC_EMPLOYEE_TYPE (LOC_TITLE + LEN_TITLE)
+#define LEN_EMPLOYEE_TYPE 40
+#define LOC_EMAIL_ADDRESS (LOC_EMPLOYEE_TYPE + LEN_EMPLOYEE_TYPE)
+#define LEN_EMAIL_ADDRESS 100
 
 struct entry *get_next_entry(FILE *in);
 void process_entry(struct entry *e, int secure);
@@ -147,6 +153,7 @@ struct entry *get_next_entry(FILE *in)
   static char first_name[LEN_FIRST_NAME + 1], middle_name[LEN_MIDDLE_NAME + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
+  static char employee_type[LEN_EMPLOYEE_TYPE + 1], email_address[LEN_EMAIL_ADDRESS + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
   char *p, *q;
 
@@ -162,6 +169,8 @@ struct entry *get_next_entry(FILE *in)
   strlcpy(phone2, &buf[LOC_PHONE2], LEN_PHONE2 + 1);
   strlcpy(dept, &buf[LOC_DEPT], LEN_DEPT + 1);
   strlcpy(title, &buf[LOC_TITLE], LEN_TITLE + 1);
+  strlcpy(employee_type, &buf[LOC_EMPLOYEE_TYPE], LEN_EMPLOYEE_TYPE + 1);
+  strlcpy(email_address, &buf[LOC_EMAIL_ADDRESS], LEN_EMAIL_ADDRESS + 1);
 
   e.last = strtrim(last_name);
   e.first = strtrim(first_name);
@@ -242,6 +251,7 @@ struct entry *get_next_entry(FILE *in)
   e.xtitle = strtrim(title);
 
   e.type = "MITS";
+
   if ((strstr(uppercase(e.xtitle), "PROF") &&
        !strstr(uppercase(e.xtitle), "PROFESSION")) ||
       strstr(uppercase(e.xtitle), "LECTURE"))
@@ -251,6 +261,14 @@ struct entry *get_next_entry(FILE *in)
 
   FixCase(e.dept);
   FixCase(e.xtitle);
+
+  e.affiliation_detailed = strtrim(employee_type);
+  if (!strcmp(e.affiliation_detailed, "Faculty"))
+    e.affiliation_basic = "faculty";
+  else
+    e.affiliation_basic = "staff";
+
+  e.email_address = strtrim(email_address);
 
   return &e;
 }

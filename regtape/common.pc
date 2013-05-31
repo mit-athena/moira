@@ -1,4 +1,4 @@
-/* $Id: common.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: common.pc 4111 2013-05-22 20:26:51Z zacheiss $
  *
  * Staff/Student load common code
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/common.pc $ $Id: common.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/common.pc $ $Id: common.pc 4111 2013-05-22 20:26:51Z zacheiss $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -70,6 +70,10 @@ void process_entry(struct entry *e, int secure)
   char haddr[USERS_HOME_ADDR_SIZE], hphone[USERS_HOME_PHONE_SIZE];
   char dfirst[USERS_FIRST_SIZE], dlast[USERS_LAST_SIZE];
   char dmiddle[USERS_MIDDLE_SIZE];
+  char affiliation_basic[USERS_AFFILIATION_BASIC_SIZE];
+  char affiliation_detailed[USERS_AFFILIATION_DETAILED_SIZE];
+  char mit_email[USERS_LOGIN_SIZE + 9]; /* strlen("@mit.edu") + 1; */
+  char alternate_email[USERS_ALTERNATE_EMAIL_SIZE];
   int id, status, fmodby, xnlen = USERS_XNAME_SIZE - 1;
   EXEC SQL END DECLARE SECTION;
 
@@ -86,10 +90,12 @@ void process_entry(struct entry *e, int secure)
   id = 0;
 
   /* Get user info */
-  EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
-    office_phone, home_addr, home_phone, department, status, fmodby
-    INTO :id, :dfirst, :dlast, :dmiddle, :type, :oaddr,
-    :ophone, :haddr, :hphone, :dept, :status, :fmodby
+  EXEC SQL SELECT users_id, login||'@mit.edu', first, last, middle, type, office_addr,
+    office_phone, home_addr, home_phone, department, status, fmodby,
+    affiliation_basic, affiliation_detailed, alternate_email
+    INTO :id, :mit_email, :dfirst, :dlast, :dmiddle, :type, :oaddr,
+    :ophone, :haddr, :hphone, :dept, :status, :fmodby,
+    :affiliation_basic, :affiliation_detailed, :alternate_email
     FROM users
     WHERE clearid = :sid AND status != 3;
   if (sqlfail())
@@ -151,6 +157,58 @@ void process_entry(struct entry *e, int secure)
 	{
 	  dbmserr("updating name", sqlca.sqlcode);
 	  exit(1);
+	}
+    }
+
+  /* Update affiliation information */
+  strtrim(affiliation_basic);
+  strtrim(affiliation_detailed);
+  if (strcmp(affiliation_basic, e->affiliation_basic) ||
+      strcmp(affiliation_detailed, e->affiliation_detailed))
+    {
+      com_err(whoami, 0, "affiliation for %s %s changed from \"%s (%s)\" to \"%s (%s)\"",
+	      first, last, affiliation_detailed, affiliation_basic, e->affiliation_detailed,
+	      e->affiliation_basic);
+
+      strlcpy(affiliation_basic, e->affiliation_basic, USERS_AFFILIATION_BASIC_SIZE);
+      strlcpy(affiliation_detailed, e->affiliation_detailed, USERS_AFFILIATION_DETAILED_SIZE);
+
+      EXEC SQL UPDATE users
+	SET affiliation_basic = NVL(:affiliation_basic, CHR(0)),
+	affiliation_detailed = NVL(:affiliation_detailed, CHR(0)),
+	modby = :who, modwith = :prog, modtime = SYSDATE
+	WHERE users_id = :id;
+      if (sqlca.sqlcode)
+	{
+	  dbmserr("updating affiliation", sqlca.sqlcode);
+	  exit(1);
+	}
+    }
+
+  /* Update alternate email information, if any */
+  strtrim(alternate_email);
+  strtrim(mit_email);
+  if (strlen(e->email_address) > 0)
+    {
+      /* If directory information email address is the default, treat is as empty. */
+      if (!strcmp(mit_email, e->email_address))
+	e->email_address = "";
+
+      if (strcmp(alternate_email, e->email_address))
+	{
+	  com_err(whoami, 0, "alternate email for %s %s changed from \"%s\" to \"%s\"",
+		  first, last, alternate_email, e->email_address);
+	  
+	  strlcpy(alternate_email, e->email_address, USERS_ALTERNATE_EMAIL_SIZE);
+	  
+	  EXEC SQL UPDATE users SET alternate_email = NVL(:alternate_email, CHR(0)),
+	    modby = :who, modwith = :prog, modtime = SYSDATE
+	    WHERE users_id = :id;
+	  if (sqlca.sqlcode)
+	    {
+	      dbmserr("updating alternate email", sqlca.sqlcode);
+	      exit(1);
+	    }
 	}
     }
 
@@ -249,6 +307,7 @@ void newuser(struct entry *e, int secure)
   char *id, *last, *first, *middle, *type;
   char *name, *dept, *haddr, *hphone, *oaddr, *ophone;
   char *xtitle, *xaddress, *xphone1, *xphone2;
+  char *affiliation_basic, *affiliation_detailed;
   EXEC SQL END DECLARE SECTION;
 
   users_id = set_next_users_id();
@@ -273,7 +332,9 @@ void newuser(struct entry *e, int secure)
   xaddress = e->xaddress;
   xphone1 = e->xphone1;
   xphone2 = e->xphone2;
-
+  affiliation_basic = e->affiliation_basic;
+  affiliation_detailed = e->affiliation_detailed;
+  
   com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 
   EXEC SQL INSERT INTO users
@@ -282,7 +343,8 @@ void newuser(struct entry *e, int secure)
      department, home_addr, home_phone, office_addr, office_phone, fmodtime,
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
-     created, creator, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration)
+     created, creator, winhomedir, winprofiledir, sponsor_type,
+     sponsor_id, expiration, affiliation_basic, affiliation_detailed)
     VALUES (:login, :users_id, :uid, '/bin/athena/bash', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
@@ -293,7 +355,8 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who, '[DFS]', '[DFS]', 'NONE', 0, CHR(0));
+	    SYSDATE, :who, '[DFS]', '[DFS]', 'NONE', 0, CHR(0), :affiliation_basic,
+	    :affiliation_detailed);
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

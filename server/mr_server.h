@@ -1,4 +1,4 @@
-/* $Id: mr_server.h 4001 2010-04-21 20:38:45Z zacheiss $
+/* $Id: mr_server.h 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -12,6 +12,7 @@
 
 #include <netinet/in.h>
 
+#include <stdio.h>
 #include <stdarg.h>
 
 #ifdef HAVE_KRB4
@@ -60,7 +61,7 @@ extern char *krb_realm;
 /* max length of query argument allowed */
 #define ARGLEN	257
 /* Used to setup static argv, maximum argc */
-#define QMAXARGS	25
+#define QMAXARGS	30
 
 /* statistics on number of queries by version number */
 extern int newqueries;
@@ -159,8 +160,10 @@ int access_member(struct query *q, char *argv[], client *cl);
 int access_qgli(struct query *q, char *argv[], client *cl);
 int access_service(struct query *q, char *argv[], client *cl);
 int access_filesys(struct query *q, char *argv[], client *cl);
+int access_shot(struct query *q, char *argv[], client *cl);
 int access_host(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
+int access_hwaddr(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
 int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
@@ -168,6 +171,8 @@ int access_container(struct query *q, char *argv[], client *cl);
 int access_update_user(struct query *q, char *argv[], client *cl);
 int check_mail_string(char *mailstring);
 struct mxentry *getmxrecords(const char *);
+int check_roles_authorization(char *login, char *function_name,
+			      char *qualifier_code);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,
@@ -270,6 +275,7 @@ int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
 int update_container(struct query *q, char *argv[], client *cl);
 int set_container_list(struct query *q, char *argv[], client *cl);
+int update_user_password_expiration(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
@@ -302,7 +308,6 @@ int get_machines_of_container(struct query *q, char **argv, client *cl,
 int get_subcontainers_of_container(struct query *q, char **argv, client *cl,
 			    int (*action)(int, char *[], void *),
 			    void *actarg);
-
 
 /* prototypes from qvalidate.pc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);

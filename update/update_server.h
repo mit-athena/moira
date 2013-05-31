@@ -33,3 +33,7 @@ void reject_call(int c);
 
 extern char *whoami, *hostname;
 extern int have_authorization, uid;
+
+#ifndef PIDFILEPATH
+#define PIDFILEPATH "/var/run"
+#endif

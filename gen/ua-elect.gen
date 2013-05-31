@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: ua-elect.gen 4097 2013-02-11 14:54:53Z zacheiss $
+# $Id: ua-elect.gen 4113 2013-05-28 14:29:10Z zacheiss $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -16,7 +16,7 @@ use DBI;
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT login, type FROM users WHERE (status = 1 OR status = 2 OR status = 10) AND type LIKE '20%' " .
+$sth = $dbh->prepare("SELECT login, type FROM users WHERE (status = 1 OR status = 2 OR status = 10 OR status = 11) AND type LIKE '20%' " .
 		     "ORDER BY type, login")
     || exit $MR_DBMS_ERR;
 

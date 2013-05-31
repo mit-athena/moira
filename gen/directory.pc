@@ -1,4 +1,4 @@
-/* $Id: directory.pc 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: directory.pc 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/directory.pc $ $Id: directory.pc 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/directory.pc $ $Id: directory.pc 4113 2013-05-28 14:29:10Z zacheiss $");
 
 char *whoami = "directory.gen";
 char *db = "moira/moira";
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
   EXEC SQL DECLARE x CURSOR FOR SELECT 
     login, last, first, middle, office_addr, office_phone, 
     home_addr, home_phone, clearid, type 
-    FROM users WHERE (status = 1 OR status = 10) AND type != 'SYSTEM' AND type != 'STAFF'
+    FROM users WHERE (status = 1 OR status = 10 OR status = 11) AND type != 'SYSTEM' AND type != 'STAFF'
     AND type != 'TEST' AND type != 'REGTEST' AND type != 'SHARED'
     AND type != 'MGMT' AND type != 'DOOMED' AND type NOT LIKE 'GUES%';
   EXEC SQL OPEN x;

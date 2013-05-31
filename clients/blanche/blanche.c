@@ -1,4 +1,4 @@
-/* $Id: blanche.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: blanche.c 4099 2013-02-28 20:20:19Z zacheiss $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/blanche/blanche.c $ $Id: blanche.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/blanche/blanche.c $ $Id: blanche.c 4099 2013-02-28 20:20:19Z zacheiss $");
 
 struct member {
   int type;
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
   /* create if needed */
   if (createflag)
     {
-      char *argv[13];
+      char *argv[15];
 
       argv[L_NAME] = listname;
       argv[L_ACTIVE] = (active == 0) ? "0" : "1";

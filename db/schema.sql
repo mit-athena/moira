@@ -56,7 +56,10 @@ create table users
 	sponsor_id	INTEGER		DEFAULT 0	NOT NULL,
 	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
 	alternate_email	VARCHAR(255)	DEFAULT CHR(0)	NOT NULL,
-	alternate_phone	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL
+	alternate_phone	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
+	affiliation_basic	VARCHAR(10)	DEFAULT 'affiliate'	NOT NULL,
+	affiliation_detailed	VARCHAR(40)	DEFAULT 'MIT Affiliate'	NOT NULL,
+	last_krb_pwd_change	DATE		DEFAULT SYSDATE		NOT NULL
 );
 
 create table krbmap
@@ -91,7 +94,8 @@ create table machine
 	inuse		DATE		DEFAULT SYSDATE	NOT NULL,
 	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
 	modby		INTEGER		DEFAULT 0	NOT NULL,
-	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
+	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
+	ttl             INTEGER         DEFAULT 1800    NOT NULL
 );
 
 create table hostalias

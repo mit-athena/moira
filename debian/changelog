@@ -1,3 +1,9 @@
+debathena-moira (4.0.0-r4113-0debathena0) unstable; urgency=low
+
+  * Snapshot moira at r4113 to pick up new firewall-related changes
+
+ -- Jonathan Reed <jdreed@mit.edu>  Fri, 31 May 2013 10:39:59 -0400
+
 debathena-moira (4.0.0-r4097-0debathena1) unstable; urgency=low
 
   * Re-snapshot moira at r4097 to pick up Status 10 (Suspended) (Trac: #1295)

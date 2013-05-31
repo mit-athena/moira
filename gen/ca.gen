@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ca.gen 4097 2013-02-11 14:54:53Z zacheiss $
+# $Id: ca.gen 4113 2013-05-28 14:29:10Z zacheiss $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -29,7 +29,7 @@ while (($id, $dir, $machname) = $sth->fetchrow_array) {
     $foo = $dbh->prepare("SELECT u.login, u.fullname ".
 			 "FROM users u, filesys f ".
 			 "WHERE f.label = u.login AND ".
-			 "(u.status = 1 OR u.status = 10) ".
+			 "(u.status = 1 OR u.status = 10 OR u.status = 11) ".
 			 "AND f.phys_id = " . $dbh->quote($id));
     $first = 1;
     $foo->execute || exit $MR_DBMS_ERR;
@@ -50,7 +50,7 @@ while (($id, $dir, $machname) = $sth->fetchrow_array) {
 $sth = $dbh->prepare("SELECT UNIQUE u.login, u.fullname, f.name ".
 		     "FROM users u, filesys f ".
 		     "WHERE f.label = u.login AND ".
-		     "(u.status = 1 OR u.status = 10) ".
+		     "(u.status = 1 OR u.status = 10 OR u.status = 11) ".
 		     "AND f.type = 'AFS' ".
 		     "ORDER BY u.login") || exit $MR_DBMS_ERR;
 

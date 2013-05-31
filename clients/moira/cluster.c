@@ -1,4 +1,4 @@
-/* $Id: cluster.c 4001 2010-04-21 20:38:45Z zacheiss $
+/* $Id: cluster.c 4110 2013-05-09 15:43:17Z zacheiss $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,9 +40,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4001 2010-04-21 20:38:45Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4110 2013-05-09 15:43:17Z zacheiss $");
 
 void PrintAliases(char **info);
+void PrintTTL(char **info);
 static void PrintMachine(char **info);
 struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 struct mqelem *GetMachineByOwner(char *type, char *name);
@@ -239,6 +240,19 @@ void PrintAliases(char **info)
     }
 }
 
+void PrintTTL(char **info)
+{
+  char buf[256];
+
+  if (strcmp(info[0], DEFAULT_TTL))
+    {
+      sprintf(buf, "DNS TTL:  %s\n", info[0]);
+      Put_message(buf);
+    }
+  else
+    Put_message("");
+}
+
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in
  *                   a coherent form.
@@ -256,6 +270,7 @@ static char *PrintMachInfo(char **info)
   Put_message("");
   sprintf(buf, "Machine:  %s", info[M_NAME]);
   Put_message(buf);
+
   args[0] = "*";
   args[1] = info[M_NAME];
   if ((stat = do_mr_query("get_hostalias", 2, args, StoreInfo, &elem)))
@@ -267,10 +282,21 @@ static char *PrintMachInfo(char **info)
     {
       Loop(QueueTop(elem), (void (*)(char **)) PrintAliases);
       FreeQueue(elem);
+      elem = NULL;
       Put_message(aliases);
       free(aliases);
       aliases = NULL;
     }
+
+  args[0] = info[M_NAME];
+  if ((stat = do_mr_query("get_host_ttl", 1, args, StoreInfo, &elem)))
+    com_err(program_name, stat, " getting host TTL");
+  else
+    {
+      Loop(QueueTop(elem), (void (*)(char **)) PrintTTL);
+      FreeQueue(elem);
+    }
+
   sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
 	  strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
   sprintf(buf, "Address:  %-16s    Network:    %-16s",
@@ -1293,6 +1319,60 @@ int DeleteMachine(int argc, char **argv)
   QueryLoop(top, PrintMachInfo, RealDeleteMachine, "Delete the machine");
   FreeQueue(top);
   free(tmpname);
+  return DM_NORMAL;
+}
+
+int SetMachineOpt(int argc, char **argv)
+{
+  char *args[3];
+  int status;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup("0");
+  args[2] = strdup("");
+    
+  if (GetYesNoValueFromUser("Opt out of network firewall policy?:", &args[1]) ==
+      SUB_ERROR)
+    return DM_NORMAL;
+
+  if (!strcmp(args[1], "1"))
+    {
+      if (GetValueFromUser("Reason for opting out:", &args[2]) == SUB_ERROR)
+	return DM_NORMAL;
+    }
+
+  if ((status = do_mr_query("set_host_opt", 3, args, NULL, NULL)))
+    com_err(program_name, status, " in SetMachineOpt");
+
+  free(args[0]);
+  free(args[1]);
+  free(args[2]);
+  return DM_NORMAL;
+}
+
+int SetMachineTTL(int argc, char **argv)
+{
+  char *args[2];
+  struct mqelem *elem = NULL;
+  int status;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  if ((status = do_mr_query("get_host_ttl", 1, args, StoreInfo, &elem)))
+    com_err(program_name, status, " in SetMachineTTL");
+
+  args[1] = strdup(((char **)elem->q_data)[0]);
+
+  if (GetValueFromUser("TTL", &args[1]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  if ((status = do_mr_query("set_host_ttl", 2, args, NULL, NULL)))
+    com_err(program_name, status, " in SetMachineTTL");
+
+  FreeQueue(elem);
+  free(args[0]);
+  free(args[1]);
+
   return DM_NORMAL;
 }
 

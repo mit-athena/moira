@@ -1,4 +1,4 @@
-/* $Id: menu.c 4024 2010-11-29 20:20:25Z zacheiss $
+/* $Id: menu.c 4102 2013-03-06 22:58:55Z zacheiss $
  *
  * Generic menu system module.
  *
@@ -27,14 +27,16 @@
 #include <windows.h>
 #include <conio.h>
 #include <process.h>
+#include <io.h>
 #ifdef getchar
 #undef getchar
 #endif
 #define getchar() _getch()
 #define getpid _getpid
+typedef int mode_t;
 #endif /* _WIN32 */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 4024 2010-11-29 20:20:25Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 4102 2013-03-06 22:58:55Z zacheiss $");
 
 #ifdef MAX
 #undef MAX

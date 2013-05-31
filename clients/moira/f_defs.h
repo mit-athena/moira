@@ -1,4 +1,4 @@
-/* $Id: f_defs.h 4001 2010-04-21 20:38:45Z zacheiss $
+/* $Id: f_defs.h 4110 2013-05-09 15:43:17Z zacheiss $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -51,6 +51,8 @@ int MachineByAcctNumber(int argc, char **argv);
 int AddMachine(int argc, char **argv);
 int UpdateMachine(int argc, char **argv);
 int DeleteMachine(int argc, char **argv);
+int SetMachineOpt(int argc, char **argv);
+int SetMachineTTL(int argc, char **argv);
 int MachineToClusterMap(int argc, char **argv);
 int AddMachineToCluster(int argc, char **argv);
 int RemoveMachineFromCluster(int argc, char **argv);

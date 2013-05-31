@@ -1,4 +1,4 @@
-/* $Id: increment.pc 4068 2012-02-02 21:31:10Z zacheiss $
+/* $Id: increment.pc 4110 2013-05-09 15:43:17Z zacheiss $
  *
  * Deal with incremental updates
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4068 2012-02-02 21:31:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4110 2013-05-09 15:43:17Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -104,11 +104,12 @@ void incremental_before(enum tables table, char *qual, char **argv)
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
-	      "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
-	      "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id FROM machine m "
+	      "m.contact, m.billing_contact, m.account_number, m.status, m.address, "
+	      "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id, m.use, "
+	      "TO_CHAR(m.inuse, 'DD-mon-YYYY'), m.ttl FROM machine m "
 	      "WHERE %s", qual);
       dosql(before);
-      beforec = 16;
+      beforec = 19;
       name = xmalloc(0);
       id = atoi(before[12]);
       if (!strncmp(before[11], "USER", 4))
@@ -139,12 +140,16 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case HOSTALIAS_TABLE:
       strcpy(before[0], argv[0]);
       strcpy(before[1], argv[1]);
-      beforec = 2;
+      name_to_id(before[1], MACHINE_TABLE, &id);
+      sprintf(before[2], "%d", id);
+      beforec = 3;
       break;
     case HWADDRMAP_TABLE:
       strcpy(before[0], argv[0]);
       strcpy(before[1], argv[1]);
-      beforec = 2;
+      name_to_id(before[1], MACHINE_TABLE, &id);
+      sprintf(before[2], "%d", id);
+      beforec = 3;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "
@@ -326,11 +331,12 @@ void incremental_after(enum tables table, char *qual, char **argv)
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
-              "m.contact, m.billing_contact, m.account_number, m.status, m.address,"
-              "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id FROM machine m "
+              "m.contact, m.billing_contact, m.account_number, m.status, m.address, "
+              "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id, m.use, "
+	      "TO_CHAR(m.inuse, 'DD-mon-YYYY'), m.ttl FROM machine m "
               "WHERE %s", qual);
       dosql(after);
-      afterc = 16;
+      afterc = 19;
       name = xmalloc(0);
       id = atoi(after[12]);
       if (!strncmp(after[11], "USER", 4))
@@ -361,12 +367,16 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case HOSTALIAS_TABLE:
       strcpy(after[0], argv[0]);
       strcpy(after[1], argv[1]);
-      afterc = 2;
+      name_to_id(after[1], MACHINE_TABLE, &id);
+      sprintf(after[2], "%d", id);
+      afterc = 3;
       break;
     case HWADDRMAP_TABLE:
       strcpy(after[0], argv[0]);
       strcpy(after[1], argv[1]);
-      afterc = 2;
+      name_to_id(after[1], MACHINE_TABLE, &id);
+      sprintf(after[2], "%d", id);
+      afterc = 3;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "

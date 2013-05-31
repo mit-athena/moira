@@ -2,9 +2,9 @@ Source: debathena-moira
 Section: debathena/net
 Priority: extra
 Maintainer: Debathena Project <debathena@mit.edu>
-Build-Depends: @cdbs@, comerr-dev, libkrb5-dev, libhesiod-dev,
+Build-Depends: debhelper (>= 7.0.50~), comerr-dev, libkrb5-dev, libhesiod-dev,
  libzephyr-dev, libreadline-dev, libncurses-dev, libssl-dev
-Standards-Version: 3.9.1
+Standards-Version: 3.9.3
 
 Package: debathena-moira-clients
 Architecture: any

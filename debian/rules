@@ -1,21 +1,23 @@
 #!/usr/bin/make -f
+%:
+	dh $@
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/autotools.mk
-include /usr/share/cdbs/1/rules/patchsys-quilt.mk
+override_dh_auto_configure:
+	dh_auto_configure -- \
+	--without-krb4 --with-krb5 --with-hesiod --with-zephyr \
+	--with-com_err=/usr --without-oracle --without-afs \
+	--disable-rpath --with-openssl
 
-DEB_CONFIGURE_EXTRA_FLAGS += --without-krb4 --with-krb5 --with-hesiod --with-zephyr --with-com_err=/usr --without-oracle --without-afs --disable-rpath --with-openssl
-DEB_DH_INSTALL_SOURCEDIR = $(DEB_DESTDIR)
-DEB_DH_STRIP_ARGS_debathena-libmoira0 += --dbg-package=debathena-libmoira0-dbg
-DEB_DH_STRIP_ARGS_debathena-libmrclient0 += --dbg-package=debathena-libmrclient0-dbg
+override_dh_strip:
+	dh_strip --package=debathena-libmoira0 --dbg-package=debathena-libmoira0-dbg
+	dh_strip --package=debathena-libmrclient0 --dbg-package=debathena-libmrclient0-dbg
+	dh_strip --remaining-packages
 
-common-install-impl::
-	mv $(DEB_DESTDIR)/usr/bin/chfn $(DEB_DESTDIR)/usr/bin/chfn.moira
-	mv $(DEB_DESTDIR)/usr/bin/chsh $(DEB_DESTDIR)/usr/bin/chsh.moira
-	mv $(DEB_DESTDIR)/usr/share/man/man1/chsh.1 \
-		$(DEB_DESTDIR)/usr/share/man/man1/chsh.moira.1
-	mv $(DEB_DESTDIR)/usr/share/man/man1/chfn.1 \
-		$(DEB_DESTDIR)/usr/share/man/man1/chfn.moira.1
-
-clean::
-	rm -f libtool util/rsaref/Makefile
+override_dh_install:
+	dh_install
+	mv debian/debathena-moira-clients/usr/bin/chfn debian/debathena-moira-clients/usr/bin/chfn.moira
+	mv debian/debathena-moira-clients/usr/bin/chsh debian/debathena-moira-clients/usr/bin/chsh.moira
+	mv debian/debathena-moira-clients/usr/share/man/man1/chsh.1 \
+		debian/debathena-moira-clients/usr/share/man/man1/chsh.moira.1
+	mv debian/debathena-moira-clients/usr/share/man/man1/chfn.1 \
+		debian/debathena-moira-clients/usr/share/man/man1/chfn.moira.1

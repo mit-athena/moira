@@ -14,13 +14,13 @@ override_dh_strip:
 	dh_strip --remaining-packages
 
 override_dh_install:
+	mv debian/tmp/usr/bin/chfn debian/tmp/usr/bin/chfn.moira
+	mv debian/tmp/usr/bin/chsh debian/tmp/usr/bin/chsh.moira
+	mv debian/tmp/usr/share/man/man1/chsh.1 \
+		debian/tmp/usr/share/man/man1/chsh.moira.1
+	mv debian/tmp/usr/share/man/man1/chfn.1 \
+		debian/tmp/usr/share/man/man1/chfn.moira.1
 	dh_install
-	mv debian/debathena-moira-clients/usr/bin/chfn debian/debathena-moira-clients/usr/bin/chfn.moira
-	mv debian/debathena-moira-clients/usr/bin/chsh debian/debathena-moira-clients/usr/bin/chsh.moira
-	mv debian/debathena-moira-clients/usr/share/man/man1/chsh.1 \
-		debian/debathena-moira-clients/usr/share/man/man1/chsh.moira.1
-	mv debian/debathena-moira-clients/usr/share/man/man1/chfn.1 \
-		debian/debathena-moira-clients/usr/share/man/man1/chfn.moira.1
 
 override_dh_clean:
 	dh_clean

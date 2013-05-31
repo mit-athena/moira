@@ -21,3 +21,7 @@ override_dh_install:
 		debian/debathena-moira-clients/usr/share/man/man1/chsh.moira.1
 	mv debian/debathena-moira-clients/usr/share/man/man1/chfn.1 \
 		debian/debathena-moira-clients/usr/share/man/man1/chfn.moira.1
+
+override_dh_clean:
+	dh_clean
+	rm -f libtool util/rsaref/Makefile

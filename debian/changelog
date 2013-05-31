@@ -2,6 +2,7 @@ debathena-moira (4.0.0-r4113-0debathena2) unstable; urgency=low
 
   * Switch to dh7
   * Bump standards version
+  * Switch to source format 3.0 (quilt)
 
  -- Alexander Chernyakhovsky <achernya@mit.edu>  Fri, 31 May 2013 17:18:31 -0400
 

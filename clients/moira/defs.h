@@ -1,4 +1,4 @@
-/* $Id: defs.h 3979 2010-02-16 20:26:57Z zacheiss $
+/* $Id: defs.h 4110 2013-05-09 15:43:17Z zacheiss $
  *
  *	This is the file defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -37,6 +37,8 @@
 #define DEFAULT_NO      ("0")
 #define DEFAULT_COMMENT ("none")
 
+#define DEFAULT_TTL "1800"
+
 #define SUB_NORMAL 0
 #define SUB_ERROR 1
 
@@ -50,7 +52,7 @@ typedef int Bool;
 
 /* What version of the queries are we asking for? */
 
-#define QUERY_VERSION 14
+#define QUERY_VERSION 15
 
 /* This is unimplemented in the menu stuff, but would be nice. */
 

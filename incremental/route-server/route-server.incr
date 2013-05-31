@@ -1,0 +1,162 @@
+#!/moira/bin/perl -Tw
+# $Id$
+
+$ENV{'PATH'} = "";
+
+$MR_ARGV_LEN = 19;
+$ADDRESS_POS = 10;
+$OPT_POS = 16;
+
+$URL = "https://hostsec-rs-1.mit.edu/cgi-bin/optout.pl";
+$STOP_FILE = "/moira/route-server/noroute";
+$CRED_FILE = "/moira/route-server/creds";
+
+use JSON;
+use LWP;
+use File::Basename;
+
+my @input = @ARGV;
+
+$whoami = basename($0);
+
+print "$whoami @ARGV\n";
+
+if (!@ARGV) {
+  critical_alert("$whoami: no moira input received via ARGV");
+}
+
+# Support a stop file.
+$i = 0;
+while (-e $STOP_FILE) {
+    sleep 60;
+    if ($i > 30) {
+	critical_alert("$whoami: incremental failed ($STOP_FILE exists");
+    }
+    $i++;
+}
+
+my $type       = shift(@input);
+my $before_len = shift(@input);
+my $after_len  = shift(@input);
+
+if ($type eq "machine") {
+    if ($before_len == 0 && $after_len == $MR_ARGV_LEN) {
+	# machine add, do nothing.
+	exit 0;
+    } elsif ($before_len == $MR_ARGV_LEN && $after_len == $MR_ARGV_LEN) {
+	do_machine(@input);
+	exit 0;
+    } elsif ($before_len == $MR_ARGV_LEN && $after_len == 0) {
+	do_machine(@input);
+	exit 0;
+    } else {
+	critical_alert("$whoami: malformed $type incremental arguments");
+    }
+} else {
+    critical_alert("$whoami called on unexpected table $type");
+}
+
+exit 0;
+
+sub critical_alert {
+    my ($error) = @_;
+
+    my $logfile = "/moira/critical.log";
+    open(LOG, ">>$logfile");
+    $tnow = localtime;
+    print LOG "$tnow <$$> $error\n";
+    close(LOG);
+
+    $error =~ /(.*)/;
+    $error = $1;
+
+    my $zwrite = "/usr/local/bin/zwrite";
+
+    if (-f $zwrite) {
+	system($zwrite, "-q", "-d", "-n", "-c", "moira", "-i", "incremental", "-m", "$error");
+    }
+    
+    exit 1;
+}
+
+sub do_machine {
+
+    my (@moira_input) = @_;
+
+    if ($after_len == 0) {
+	# machine deletion
+	$address = $moira_input[$ADDRESS_POS];
+	if ($address ne "unassigned") {
+	    update_route_server("del", $address);
+	}
+    } else {
+	# Need to check before and after address and opt-out status.
+	$before_address = $moira_input[$ADDRESS_POS];
+	$before_option = $moira_input[$OPT_POS];
+
+	$after_address = $moira_input[$after_len + $ADDRESS_POS];
+	$after_option = $moira_input[$after_len + $OPT_POS];
+
+	# Did our address change?
+	if ($before_address ne $after_address) {
+	    # If it did, consider before and after states independently.
+
+	    if ($before_address ne "unassigned" && $before_option > 0) {
+		# Delete the address that's no longer in use.
+		update_route_server("del", $before_address);
+	    }
+
+	    if ($after_address ne "unassigned" && $after_option > 0) {
+		# Opt in the new address if desired.
+		update_route_server("add", $after_address);
+	    }
+	} else {
+	    # Address didn't change, did our opt-out status?
+	    if ($before_option != $after_option) {
+		# If it's different, just look at after state to decide what to do.
+		if ($after_address ne "unassigned") {
+		    if ($after_option == 0) {
+			update_route_server("del", $after_address);
+		    } else {
+			update_route_server("add", $after_address);
+		    }
+		}
+	    }
+	}
+    }
+    
+    return;
+}
+
+sub update_route_server {
+
+    my ($operation, $address) = @_;
+    my %outhash = ();
+
+    $outhash{'action'} = $operation;
+    $outhash{'ip'} = $address;
+
+    print "POSTing to $URL: $operation $address\n";
+    
+    my $json = encode_json(\%outhash);
+
+    open(CREDS, $CRED_FILE) or critical_alert("$whoami: Unable to open credentials file");
+    while (<CREDS>) {
+	($username, $password) = split(/:/);
+	last;
+    }
+
+    my $req = HTTP::Request->new('POST', $URL);
+    $req->header( 'Content-Type' => 'application/json' );
+    $req->authorization_basic($username, $password);
+    $req->content( $json );
+
+    my $lwp = LWP::UserAgent->new;
+    my $res = $lwp->request($req);
+
+    if (!$res->is_success) {
+        critical_alert("$whoami: Failed POST attempt for machine");
+    }
+
+    return;
+}

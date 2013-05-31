@@ -1,4 +1,4 @@
-/* $Id: afs.c 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: afs.c 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * Do AFS incremental updates
  *
@@ -43,7 +43,7 @@
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4113 2013-05-28 14:29:10Z zacheiss $");
 
 char *whoami;
 
@@ -157,10 +157,10 @@ void do_user(char **before, int beforec, char **after, int afterc)
   if (beforec > U_UID)
     buid = atoi(before[U_UID]);
 
-  /* We consider "half-registered" users and "suspended" users to be active */
-  if ((astate == 2) || (astate == 10))
+  /* We consider "half-registered", "suspended", and "expired" users to be active */
+  if ((astate == 2) || (astate == 10) || (astate == 11))
     astate = 1;
-  if (bstate == 2 || (astate == 10))
+  if (bstate == 2 || (astate == 10) || (astate == 11))
     bstate = 1;
 
   if (astate != 1 && bstate != 1)		/* inactive user */

@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: reg_svr.pc 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -39,7 +39,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/reg_svr.pc $ $Id: reg_svr.pc 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/reg_svr.pc $ $Id: reg_svr.pc 4113 2013-05-28 14:29:10Z zacheiss $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -386,6 +386,8 @@ void RIFO(reg_client *rc, int argc, char **argv)
     case US_ENROLL_NOT_ALLOWED:
     case US_REGISTERED_KERBEROS_ONLY:
     case US_SUSPENDED:
+    case US_EXPIRED:
+    case US_EXPIRED_KERBEROS_ONLY:
       reply(rc, ALREADY_REGISTERED, "INIT", "c", NULL, login);
       return;
 

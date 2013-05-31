@@ -1,0 +1,78 @@
+#!/moira/bin/perl -Tw
+# $Id$
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/infoblox';
+$outfile = '/moira/dcm/infoblox.out';
+
+umask 022;
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+open(HOSTSOUT, ">$outdir/hosts") || exit $MR_OCONFIG;
+open(ALIASESOUT, ">$outdir/hostaliases") || exit $MR_OCONFIG;
+
+$sth = $dbh->prepare("SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, " .
+		     "m.contact, m.billing_contact, m.account_number, m.status, m.address, " .
+		     "m.owner_type, m.owner_id, s.string, s2.string, sn.name, m.use, " .
+		     "TO_CHAR(m.inuse, 'DD-mon-YYYY'), m.ttl FROM machine m, strings s, strings s2, " .
+		     "subnet sn WHERE s.string_id = m.acomment AND s2.string_id = m.ocomment AND " .
+		     "m.snet_id = sn.snet_id ORDER BY m.name")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($mname, $mach_id, $vendor, $model, $os, $location, $contact, $billing_contact, $account_number,
+	$status, $address, $owner_type, $owner_id, $acomment, $ocomment, $subnet, $opt, $inuse, $ttl) = $sth->fetchrow_array) {
+    if ($owner_type eq "USER") {
+	($owner_name) = $dbh->selectrow_array("SELECT login FROM users WHERE users_id = " . $dbh->quote($owner_id));
+    } elsif ($owner_type eq "KERBEROS") {
+	($owner_name) = $dbh->selectrow_array("SELECT string FROM strings WHERE string_id = " . $dbh->quote($owner_id));
+    } elsif ($owner_type eq "LIST") {
+	($owner_name) = $dbh->selectrow_array("SELECT name FROM list WHERE list_id = " . $dbh->quote($owner_id));
+    } else {
+	$owner_name = "NONE";
+    }
+
+    if (!defined($owner_name)) {
+	$owner_name = "UNKNOWN";
+    }
+
+    $acomment =~ s/[\n\r\t]+//g;
+    $ocomment =~ s/[\n\r\t]+//g;
+
+    $row = "$mname\t$mach_id\t$vendor\t$model\t$os\t$location\t$contact\t$billing_contact\t$account_number\t$status\t$address\t$owner_type\t$owner_name\t$acomment\t$ocomment\t$subnet\t$opt\t$inuse\t$ttl\n";
+    $row =~ s/\0//g;
+    print HOSTSOUT $row;
+
+    (($count) = $dbh->selectrow_array("SELECT count(name) FROM hostalias WHERE mach_id = " . $dbh->quote($mach_id))) || exit $MR_DBMS_ERR;
+    if ($count > 0) {
+	print ALIASESOUT "$mname\t";
+
+	$sth2 = $dbh->prepare("SELECT name FROM hostalias WHERE mach_id = " . $dbh->quote($mach_id)) || exit $MR_DBMS_ERR;
+	$sth2->execute || exit $MR_DBMS_ERR;
+	
+	while (($alias) = $sth2->fetchrow_array) {
+	    print ALIASESOUT "$alias\t";
+	}
+
+	print ALIASESOUT "\n";
+    }
+}
+
+close(HOSTSOUT);
+close(ALIASESOUT);
+$dbh->disconnect;
+
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
+
+exit 0;

@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4060 2011-12-01 19:50:15Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4111 2013-05-22 20:26:51Z zacheiss $");
 
 /* File format is:
 
@@ -38,6 +38,8 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $I
 185-204	phone
 205-234	office address
 235-254	office phone
+255-304 registration type
+305-364 email address
 
 */
 
@@ -69,6 +71,8 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $I
 #define LEN_OPHONE 20
 #define LOC_REG_TYPE (LOC_OPHONE + LEN_OPHONE)
 #define LEN_REG_TYPE 50
+#define LOC_EMAIL_ADDRESS (LOC_REG_TYPE + LEN_REG_TYPE)
+#define LEN_EMAIL_ADDRESS 60
 
 EXEC SQL BEGIN DECLARE SECTION;
 int who;
@@ -178,6 +182,7 @@ struct entry *get_next_entry(FILE *in)
   static char ophone[LEN_OPHONE + 1], title[128];
   static char zip[LEN_ZIP + 1], oaddr[LEN_OADDR + 1];
   static char reg_type[LEN_REG_TYPE + 1];
+  static char email_address[LEN_EMAIL_ADDRESS + 1];
   static int nyear = 0;
   int ends_jr, ends_iii, ends_iv, ends_sr, ends_ii, ends_v;
   char *p;
@@ -225,6 +230,8 @@ struct entry *get_next_entry(FILE *in)
   strtrim(ophone);
   strlcpy(reg_type, &buf[LOC_REG_TYPE], LEN_REG_TYPE + 1);
   strtrim(reg_type);
+  strlcpy(email_address, &buf[LOC_EMAIL_ADDRESS], LEN_EMAIL_ADDRESS + 1);
+  strtrim(email_address);
 
   e.first = first;
   e.last = last;
@@ -247,18 +254,24 @@ struct entry *get_next_entry(FILE *in)
     {
       e.type = "G";
       sprintf(title, "Grad Student");
+      e.affiliation_detailed = "Graduate Student";      
     }
   else
     {
       e.type = classbuf;
       sprintf(classbuf, "%d", nyear + 4 - atoi(year) + 1900);
       sprintf(title, "Undergrad (class of %s)", classbuf);
+      e.affiliation_detailed = "Undergraduate Student";
     }
+
+  e.affiliation_basic = "student";
 
   e.dept = course;
 
   /* Used to detect cross-registered students. */
   e.reg_type = reg_type;
+
+  e.email_address = email_address;
 
   e.oaddr = oaddr;
   fixaddress(e.oaddr);

@@ -1,4 +1,4 @@
-/* $Id: stanley.c 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: stanley.c 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * Command line oriented Moira users tool.
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4113 2013-05-28 14:29:10Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -69,7 +69,9 @@ static char *states[] = {
   "Half Enrolled (7)",
   "Registerable, Kerberos only (8)",
   "Active, Kerberos only (9)",
-  "Suspended (10)"
+  "Suspended (10)",
+  "Expired (11)",
+  "Expired, Kerberos only (12)"
 };
 
 static char *UserState(int state)
@@ -331,7 +333,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 14, !noauth);
+  status = mrcl_connect(server, "stanley", 15, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -343,10 +345,10 @@ int main(int argc, char **argv)
   /* create if needed */
   if (create_flag)
     {
-      char *argv[25];
+      char *argv[27];
       int cnt;
 
-      for (cnt = 0; cnt < 25; cnt++) {
+      for (cnt = 0; cnt < 27; cnt++) {
 	argv[cnt] = "";
       }
 
@@ -452,8 +454,8 @@ int main(int argc, char **argv)
     }
   else if (update_flag)
     {
-      char *old_argv[25];
-      char *argv[25];
+      char *old_argv[27];
+      char *argv[27];
       char *args[5];
 
       args[0] = username;
@@ -636,7 +638,7 @@ int main(int argc, char **argv)
   if (info_flag)
     {
       char *args[2];
-      char *argv[25];
+      char *argv[27];
 
       args[0] = username;
       status = wrap_mr_query("get_user_account_by_login", 1, args,
@@ -656,7 +658,7 @@ int main(int argc, char **argv)
   if (reg_flag)
     {
       char *args[3];
-      char *argv[25];
+      char *argv[27];
 
       args[0] = username;
       status = wrap_mr_query("get_user_account_by_login", 1, args,
@@ -797,18 +799,20 @@ void show_user_info(char **argv)
 
   sprintf(tbuf, "%s, %s %s", argv[U_LAST], argv[U_FIRST], argv[U_MIDDLE]);
   printf("Login name: %-20s Full name: %s\n", argv[U_NAME], tbuf);
-  printf("User id: %-23s Login shell: %-10s\n", argv[U_UID], argv[U_SHELL]);
-  printf("Class: %-25s Windows Console Shell: %-10s\n", argv[U_CLASS],
-	 argv[U_WINCONSOLESHELL]);
-  printf("Account is: %-20s MIT ID number: %s\n",
-         UserState(atoi(argv[U_STATE])), argv[U_MITID]);
+  printf("Account is: %-20s\n",
+         UserState(atoi(argv[U_STATE])));
+  printf("User id: %-23s MIT ID number: %s\n", argv[U_UID], argv[U_MITID]);
+  printf("Class: %-25s Affiliation: %s (%s)\n", argv[U_CLASS],
+         argv[U_AFF_DETAILED], argv[U_AFF_BASIC]);
   sprintf(tbuf, "%s %s", argv[U_SPONSOR_TYPE],
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
   printf("Sponsor: %-23s Expiration date: %s\n", tbuf, argv[U_EXPIRATION]);
   printf("Alternate Email: %s\n", argv[U_ALT_EMAIL]);
   printf("Alternate Phone: %s\n", argv[U_ALT_PHONE]);
-  printf("Windows Home Directory: %s\n", argv[U_WINHOMEDIR]);
-  printf("Windows Profile Directory: %s\n", argv[U_WINPROFILEDIR]);
+  printf("Login shell: %-19s Windows Console shell: %s\n", argv[U_SHELL],
+	 argv[U_WINCONSOLESHELL]);
+  printf("Windows Home Directory: %-08s Windows Profile Directory: %s\n",
+	 argv[U_WINHOMEDIR], argv[U_WINPROFILEDIR]);
   status = atoi(argv[U_STATE]);
   if (status == 0 || status == 2)
     {
@@ -835,6 +839,8 @@ void show_user_info_unformatted(char **argv)
 	  strcmp(argv[U_SPONSOR_TYPE], "NONE") ? argv[U_SPONSOR_NAME] : "");
   printf("Sponsor:                   %s\n", tbuf);
   printf("Expiration date:           %s\n", argv[U_EXPIRATION]);
+  printf("Basic Affiliation:         %s\n", argv[U_AFF_BASIC]);
+  printf("Detailed Affiliation:      %s\n", argv[U_AFF_DETAILED]);
   printf("Alternate Email:           %s\n", argv[U_ALT_EMAIL]);
   printf("Alternate Phone:           %s\n", argv[U_ALT_PHONE]);
   printf("Login shell:               %s\n", argv[U_SHELL]);

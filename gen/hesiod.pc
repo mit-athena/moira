@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: hesiod.pc 4113 2013-05-28 14:29:10Z zacheiss $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4113 2013-05-28 14:29:10Z zacheiss $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -242,7 +242,7 @@ int do_passwd(void)
     office_phone, home_phone, users_id, potype, pop_id, imap_id, exchange_id,
     status
     FROM users
-    WHERE status = 1 OR status = 2 OR status = 5 OR status = 6 OR status = 10
+    WHERE status = 1 OR status = 2 OR status = 5 OR status = 6 OR status = 10 OR status = 11
     ORDER BY users_id;
   EXEC SQL OPEN u_cursor;
   while (1)

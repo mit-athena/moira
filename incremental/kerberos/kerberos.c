@@ -83,8 +83,11 @@ int main(int argc, char **argv)
   if ((astate == 1) || (astate == 6) || (astate == 9))
     activate = 1;
   /* Deactivating a principal */
-  else if ((astate == 3) || astate == 10)
+  else if ((astate == 3) || (astate == 10))
     activate = 0;
+  /* Forcing password change */
+  else if ((astate == 11) || (astate == 12))
+    activate = 2;
   /* Can ignore other changes */
   else
     exit(0);
@@ -93,12 +96,22 @@ int main(int argc, char **argv)
   if (status)
     {
       com_err(whoami, status, "while modifying Kerberos principal for user %s", after[U_NAME]);
-      critical_alert(whoami, "incremental", "Couldn't %s Kerberos principal for user %s",
-		     activate ? "enable" : "disable", after[U_NAME]);
+      if (activate == 2)
+	critical_alert(whoami, "incremental", "Couldn't %s Kerberos principal for user %s",
+		       "modify", after[U_NAME]);
+      else 
+	critical_alert(whoami, "incremental", "Couldn't %s Kerberos principal for user %s",
+		       activate ? "enable" : "disable", after[U_NAME]);
     }
   else
-    com_err(whoami, 0, "Successfully %sd Kerberos principal for user %s",
-	    activate ? "enable" : "disable", after[U_NAME]);
+    {
+      if (activate == 2)
+	com_err(whoami, 0, "Successfully %s Kerberos principal for user %s",
+		"modified", after[U_NAME]);
+      else
+	com_err(whoami, 0, "Successfully %sd Kerberos principal for user %s",
+                activate ? "enable" : "disable", after[U_NAME]);
+    }
 
   exit(0);
 }
@@ -168,15 +181,23 @@ long modify_kerberos(char *username, int activate)
     goto cleanup;
 
   mask |= KADM5_ATTRIBUTES;
-  if (activate)
+  if (activate == 2)
+    {
+      /* Force password change */
+      dprinc.attributes |= KRB5_KDB_REQUIRES_PWCHANGE;
+      dprinc.attributes &= ~KRB5_KDB_DISALLOW_ALL_TIX;
+    }
+  else if (activate == 1)
     {
       /* Enable principal */
       dprinc.attributes &= ~KRB5_KDB_DISALLOW_ALL_TIX;
+      dprinc.attributes &= ~KRB5_KDB_REQUIRES_PWCHANGE;
     }
   else
     {
       /* Disable principal */
       dprinc.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
+      dprinc.attributes &= ~KRB5_KDB_REQUIRES_PWCHANGE;
     }
 
   status = kadm5_modify_principal(kadm_server_handle, &dprinc, mask);

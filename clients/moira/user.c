@@ -1,4 +1,4 @@
-/* $Id: user.c 4097 2013-02-11 14:54:53Z zacheiss $
+/* $Id: user.c 4113 2013-05-28 14:29:10Z zacheiss $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4097 2013-02-11 14:54:53Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4113 2013-05-28 14:29:10Z zacheiss $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -67,7 +67,9 @@ static char *states[] = {
   "Half Enrolled (7)",
   "Registerable, Kerberos only (8)",
   "Active, Kerberos only (9)",
-  "Suspended (10)"
+  "Suspended (10)",
+  "Expired (11)",
+  "Expired, Kerberos only (12)"
 };
 
 static char *UserState(int state)
@@ -112,11 +114,13 @@ static void PrintUserInfo(char **info)
   sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
   sprintf(buf, "Login name: %-20s Full name: %s", info[U_NAME], name);
   Put_message(buf);
-  sprintf(buf, "User id: %-23s Login shell: %-10s",
-	  info[U_UID], info[U_SHELL]);
+  sprintf(buf, "Account is %-20s", UserState(atoi(info[U_STATE])));
   Put_message(buf);
-  sprintf(buf, "Class: %-25s Windows Console Shell: %-10s",
-	  info[U_CLASS], info[U_WINCONSOLESHELL]);
+  sprintf(buf, "User id: %-23s MIT ID number: %s",
+	  info[U_UID], info[U_MITID]);
+  Put_message(buf);
+  sprintf(buf, "Class: %-25s Affiliation: %s (%s)",
+	  info[U_CLASS], info[U_AFF_DETAILED], info[U_AFF_BASIC]);
   Put_message(buf);
   sprintf(sponsor, "%s %s", info[U_SPONSOR_TYPE], info[U_SPONSOR_NAME]);
   sprintf(buf, "Sponsor: %-23s Expiration date: %s", sponsor,  info[U_EXPIRATION]);
@@ -125,12 +129,11 @@ static void PrintUserInfo(char **info)
   Put_message(buf);
   sprintf(buf, "Alternate Phone: %s", info[U_ALT_PHONE]);
   Put_message(buf);
-  sprintf(buf, "Account is: %-20s MIT ID number: %s",
-	  UserState(atoi(info[U_STATE])), info[U_MITID]);
+  sprintf(buf, "Login shell: %-19s Windows Console shell: %s", info[U_SHELL],
+         info[U_WINCONSOLESHELL]);
   Put_message(buf);
-  sprintf(buf, "Windows Home Directory: %s", info[U_WINHOMEDIR]);
-  Put_message(buf);
-  sprintf(buf, "Windows Profile Directory: %s", info[U_WINPROFILEDIR]);
+  sprintf(buf, "Windows Home Directory: %-08s Windows Profile Directory: %s",
+         info[U_WINHOMEDIR], info[U_WINPROFILEDIR]);
   Put_message(buf);
   status = atoi(info[U_STATE]);
   if (status == 0 || status == 2)

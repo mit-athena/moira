@@ -706,7 +706,11 @@ static void RealUpdateUser(char **info, Bool junk)
       Put_message("Aborted.");
       return;
     }
-  if ((status = do_mr_query("update_user_account", CountArgs(args),
+
+  /* Subtract 2 from CountArgs() because affiliation fields are returned by
+   * get query but aren't exposed to update query.
+   */
+  if ((status = do_mr_query("update_user_account", CountArgs(args) - 2,
 			    args, NULL, NULL)))
     {
       com_err(program_name, status, " in ModifyFields");

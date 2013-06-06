@@ -1,4 +1,4 @@
-/* $Id: user.c 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: user.c 4114 2013-06-05 18:57:06Z zacheiss $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4113 2013-05-28 14:29:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4114 2013-06-05 18:57:06Z zacheiss $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -706,7 +706,11 @@ static void RealUpdateUser(char **info, Bool junk)
       Put_message("Aborted.");
       return;
     }
-  if ((status = do_mr_query("update_user_account", CountArgs(args),
+
+  /* Subtract 2 from CountArgs() because affiliation fields are returned by
+   * get query but aren't exposed to update query.
+   */
+  if ((status = do_mr_query("update_user_account", CountArgs(args) - 2,
 			    args, NULL, NULL)))
     {
       com_err(program_name, status, " in ModifyFields");

@@ -22,6 +22,7 @@ override_dh_install:
 		debian/tmp/usr/share/man/man1/chfn.moira.1
 	dh_install
 
+# Why does distclean not deal with these two makefiles?
 override_dh_clean:
 	dh_clean
-	rm -f libtool util/rsaref/Makefile
+	rm -f util/rsaref/Makefile incremental/kerberos/Makefile

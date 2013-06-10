@@ -27,6 +27,7 @@ bindir=@bindir@
 OBJS=mrtest.lo
 
 TARGET=mrtest
+SCRIPTS=qy
 
 .SUFFIXES: .lo
 
@@ -45,6 +46,7 @@ depend:
 
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mrtest $(DESTDIR)$(bindir)
+	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir); done
 
 $(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

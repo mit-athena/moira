@@ -57,7 +57,7 @@ void RealDeleteFSAlias(char **info, Bool one_item);
 #define DEFAULT_ACCESS   ("w")
 #define DEFAULT_COMMENTS DEFAULT_COMMENT
 #define DEFAULT_OWNER    (user)
-#define DEFAULT_OWNERS   (user)
+#define DEFAULT_OWNERS   ("wheel")
 #define DEFAULT_CREATE   DEFAULT_YES
 #define DEFAULT_L_TYPE   ("PROJECT")
 #define DEFAULT_CELL	 ("athena.mit.edu")
@@ -383,13 +383,18 @@ static char **AskFSInfo(char **info, Bool name)
     }
   if (!fsgroup)
     {
+      char *p;
+      int fsltypelen, fsnamelen;
+
+      if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
+			  &info[FS_L_TYPE]) == SUB_ERROR)
+	return NULL;
+
       if (!strcasecmp(info[FS_TYPE], "AFS"))
 	{
 	  char *path, *args[3], *p;
-	  int status, depth, fsltypelen, fsnamelen;
-	  if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
-			      &info[FS_L_TYPE]) == SUB_ERROR)
-	    return NULL;
+	  int status, depth;
+
 	  if (!name || newdefaults)
 	    {
 	      free(info[FS_PACK]);
@@ -457,21 +462,40 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
-	      /* If the lockername ends in ".lockertype" strip that.
-	       * eg.  the SITE locker "foo.site" becomes just "foo"
-	       */
-	      fsltypelen = strlen(info[FS_L_TYPE]);
-	      fsnamelen = strlen(temp_buf);
-	      p = (temp_buf + fsnamelen - fsltypelen);
-	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
-		*(p-1) = '\0';
-	      info[FS_PACK] = strdup(temp_buf);
-	      fsnamelen = strlen(info[FS_M_POINT]);
-	      p = (info[FS_M_POINT] + fsnamelen - fsltypelen);
-	      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
-		*(p-1) = '\0';
+	    }
+
+	  info[FS_PACK] = strdup(temp_buf);
+
+	} 
+      else if (!strcasecmp(info[FS_TYPE], "NFS"))
+	{
+	  char buf[BUFSIZ];
+
+	  if (!strcasecmp(info[FS_L_TYPE], "SITE"))
+	    {
+	      sprintf(buf, "/site/%s", info[FS_NAME]);
+
+	      free(info[FS_PACK]);
+	      info[FS_PACK] = strdup(buf);
+
+	      free(info[FS_M_POINT]);
+	      info[FS_M_POINT] = strdup(buf);
 	    }
 	}
+      
+      /* If the lockername ends in ".lockertype" strip that.
+       * eg.  the SITE locker "foo.site" becomes just "foo"
+       */
+      fsltypelen = strlen(info[FS_L_TYPE]);
+      fsnamelen = strlen(info[FS_PACK]);
+      p = (info[FS_PACK] + fsnamelen - fsltypelen);
+      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+	*(p-1) = '\0';
+      fsnamelen = strlen(info[FS_M_POINT]);
+      p = (info[FS_M_POINT] + fsnamelen - fsltypelen);
+      if (!strcasecmp(p, info[FS_L_TYPE]) && *(p-1) == '.')
+	*(p-1) = '\0';
+
       if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==
 	  SUB_ERROR)
 	return NULL;
@@ -496,12 +520,6 @@ static char **AskFSInfo(char **info, Bool name)
     if (GetYesNoValueFromUser("Propagate changes to fileserver",
 			      &info[FS_CREATE]) == SUB_ERROR)
       return NULL;
-  if (strcasecmp(info[FS_TYPE], "AFS"))
-    {
-      if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
-			  &info[FS_L_TYPE]) == SUB_ERROR)
-	return NULL;
-    }
 
   FreeAndClear(&info[FS_MODTIME], TRUE);
   FreeAndClear(&info[FS_MODBY], TRUE);

@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
   if (unixflg && windowsflg)
     usage();
   
-  if (mrcl_connect(server, "chsh", 14, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "chsh", 15, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check */

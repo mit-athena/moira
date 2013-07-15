@@ -180,6 +180,7 @@ static char **SetUserDefaults(char **info)
   info[U_ALT_PHONE] = strdup("");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
+  info[U_AFF_BASIC] = info[U_AFF_DETAILED] = NULL;
   return info;
 }
 

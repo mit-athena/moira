@@ -370,6 +370,8 @@ char **AskUserInfo(char **info, Bool name)
   FreeAndClear(&info[U_MODTIME], TRUE);
   FreeAndClear(&info[U_MODBY], TRUE);
   FreeAndClear(&info[U_MODWITH], TRUE);
+  FreeAndClear(&info[U_AFF_BASIC], TRUE);
+  FreeAndClear(&info[U_AFF_DETAILED], TRUE);
 
   /*
    * Slide the newname into the #2 slot, this screws up all future references
@@ -708,10 +710,7 @@ static void RealUpdateUser(char **info, Bool junk)
       return;
     }
 
-  /* Subtract 2 from CountArgs() because affiliation fields are returned by
-   * get query but aren't exposed to update query.
-   */
-  if ((status = do_mr_query("update_user_account", CountArgs(args) - 2,
+  if ((status = do_mr_query("update_user_account", CountArgs(args),
 			    args, NULL, NULL)))
     {
       com_err(program_name, status, " in ModifyFields");

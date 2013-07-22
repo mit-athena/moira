@@ -236,11 +236,13 @@ typedef struct _GUID
   unsigned char Data4[8];
 } GUID;
 
-typedef struct _SID_IDENTIFIER_AUTHORITY { 
+typedef struct _SID_IDENTIFIER_AUTHORITY 
+{ 
   BYTE Value[6]; 
 } SID_IDENTIFIER_AUTHORITY, *PSID_IDENTIFIER_AUTHORITY; 
 
-typedef struct _SID {
+typedef struct _SID 
+{
   BYTE  Revision;
   BYTE  SubAuthorityCount;
   SID_IDENTIFIER_AUTHORITY IdentifierAuthority;
@@ -321,7 +323,8 @@ typedef struct _SID {
 #define OU_CONTAINER_ID        3
 #define OU_CONTAINER_GROUP     4
 
-typedef struct lk_entry {
+typedef struct lk_entry 
+{
   int     op;
   int     length;
   int     ber_value;
@@ -463,65 +466,81 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		 char *group_membership, char *MoiraId, char *attribute,
 		 LK_ENTRY **linklist_base, int *linklist_count,
 		 char *rFilter);
+
 void AfsToWinAfs(char* path, char* winPath);
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server,
                int connect_to_kdc, char **ServerList, char *ldap_realm,
 	       char *ldap_port);
+
 void ad_kdc_disconnect(void);
 int ad_server_connect(char *connectedServer, char *domain);
+
 int attribute_update(LDAP *ldap_handle, char *distinguished_name, 
 		     char *attribute_value, char *attribute, char *user_name);
+
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
 int checkADname(LDAP *ldap_handle, char *dn_path, char *Name);
 int check_winad(void);
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, 
 	       char *MoiraId);
+
 /* containers */
 int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName, 
                        char *distinguishedName, int count, char **av);
+
 void container_check(LDAP *ldap_handle, char *dn_path, char *name);
 int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av);
 int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av);
 int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, 
 				    char *distinguishedName, int count, 
 				    char **av);
+
 void container_get_dn(char *src, char *dest);
 void container_get_name(char *src, char *dest);
 int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName);
 int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, 
 		     char **before, int afterc, char **after);
+
 int container_update(LDAP *ldap_handle, char *dn_path, int beforec, 
 		     char **before, int afterc, char **after);
 
 int GetAceInfo(int ac, char **av, void *ptr);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
+
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, 
 		   char *machine_ou, char *pPtr);
+
 int Moira_container_group_create(char **after);
 int Moira_container_group_delete(char **before);
 int Moira_groupname_create(char *GroupName, char *ContainerName,
 			   char *ContainerRowID);
+
 int Moira_container_group_update(char **before, char **after);
 int Moira_process_machine_container_group(char *MachineName, char* groupName,
 					  int DeleteMachine);
+
 int Moira_addGroupToParent(char *origContainerName, char *GroupName);
 int Moira_getContainerGroup(int ac, char **av, void *ptr);
 int Moira_getGroupName(char *origContainerName, char *GroupName,
 		       int ParentFlag);
+
 int Moira_setContainerGroup(char *ContainerName, char *GroupName);
 int ProcessAce(LDAP *ldap_handle, char *dn_path, char *group_name, char *Type,
                int UpdateGroup, int *ProcessGroup, char *maillist,
 	       char *nfsgroup);
+
 int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                   char *group_name, char *group_ou, char *group_membership, 
                   int group_security_flag, int type, char *maillist,
 		  char *nfsgroup);
+
 int process_lists(int ac, char **av, void *ptr);
 int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, 
 			 char *TargetGroupName, int HiddenGroup, 
 			 char *AceType, char *AceName);
+
 int ProcessMachineName(int ac, char **av, void *ptr);
 int ReadConfigFile(char *DomainName);
 int ReadDomainList();
@@ -532,21 +551,27 @@ int save_fsgroup_info(int argc, char **argv, void *hint);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
                        char *user_name, char *MoiraId, int operation);
+
 int user_delete(LDAP *ldap_handle, char *dn_path, 
                 char *u_name, char *MoiraId);
+
 int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name, 
                 char *user_name);
+
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
 		char *middle, char *last, char *shell, char *class);
+
 void change_to_lower_case(char *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
 int contact_remove_email(LDAP *ld, char *bind_path,
 			 LK_ENTRY **linklist_entry, int linklist_current);
+
 int group_create(int ac, char **av, void *ptr);
 int group_delete(LDAP *ldap_handle, char *dn_path, 
                  char *group_name, char *group_membership, char *MoiraId);
+
 int group_rename(LDAP *ldap_handle, char *dn_path, 
                  char *before_group_name, char *before_group_membership, 
                  char *before_group_ou, int before_security_flag, 
@@ -554,34 +579,43 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 		 char *after_group_membership, char *after_group_ou, 
 		 int after_security_flag, char *after_desc,
                  char *MoiraId, char *filter, char *maillist, char *nfsgroup);
+
 int machine_check(LDAP *ldap_handle, char *dn_path, char *machine_name);
 int machine_GetMoiraContainer(int ac, char **av, void *ptr);
 int machine_get_moira_container(LDAP *ldap_handle, char *dn_path, 
 				char *machine_name, char *container_name);
+
 int machine_move_to_ou(LDAP *ldap_handle, char *dn_path, 
 		       char *MoiraMachineName, char *DestinationOu);
+
 int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                    char *group_name, char *group_ou, char *group_membership, 
                    int group_security_flag, int updateGroup, char *maillist,
 		   char *nfsgroup);
+
 int member_list_build(int ac, char **av, void *ptr);
 int member_add(LDAP *ldap_handle, char *dn_path, char *group_name, 
 	       char *group_ou, char *group_membership, 
 	       char *user_name, char *pUserOu, char *MoiraId);
+
 int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name, 
                   char *group_ou, char *group_membership, char *user_name,
                   char *pUserOu, char *MoiraId);
+
 int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
 		   char *UserOu, char *member);
+
 int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
                    char *group_ou, char *group_membership, 
                    int group_security_flag, char *MoiraId, int synchronize);
+
 int SetHomeDirectory(LDAP *ldap_handle, char *user_name, 
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
                      char **homedir_v, char **winProfile_v,
                      char **drives_v, char **apple_homedir_v, LDAPMod **mods, 
                      int OpType, int n);
+
 int sid_update(LDAP *ldap_handle, char *dn_path);
 void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n);
 int check_string(char *s);
@@ -590,27 +624,36 @@ int check_container_name(char* s);
 int mr_connect_cl(char *server, char *client, int version, int auth);
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 		  char **before, int beforec, char **after, int afterc);
+
 void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 		char **before, int beforec, char **after, int afterc);
+
 void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
+
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
              char **before, int beforec, char **after, int afterc);
+
 void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                char **before, int beforec, char **after, int afterc);
+
 void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 char **before, int beforec, char **after, int afterc);
+
 int linklist_create_entry(char *attribute, char *value,
                           LK_ENTRY **linklist_entry);
+
 int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp, 
                    char **attr_array, LK_ENTRY **linklist_base, 
                    int *linklist_count, unsigned long ScopeType);
-void linklist_free(LK_ENTRY *linklist_base);
 
+void linklist_free(LK_ENTRY *linklist_base);
 int retrieve_attributes(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                         char *distinguished_name, LK_ENTRY **linklist_current);
+
 int retrieve_entries(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                      LK_ENTRY **linklist_base, int *linklist_count);
+
 int retrieve_values(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                     char *Attribute, char *distinguished_name, 
                     LK_ENTRY **linklist_current);
@@ -618,11 +661,12 @@ int retrieve_values(LDAP *ldap_handle, LDAPMessage *ldap_entry,
 int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count, 
                         char *oldValue, char *newValue,
                         char ***modvalues, int type);
-void free_values(char **modvalues);
 
+void free_values(char **modvalues);
 int convert_domain_to_dn(char *domain, char *dnp);
 void get_distinguished_name(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
                             char *distinguished_name);
+
 int moira_disconnect(void);
 int moira_connect(void);
 void print_to_screen(const char *fmt, ...);
@@ -630,7 +674,6 @@ int GetMachineName(char *MachineName);
 int tickets_get_k5();
 int destroy_cache(void);
 int dest_tkt(void);
-
 int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
 		 char **homeServerName);
 
@@ -700,6 +743,7 @@ int main(int argc, char **argv)
     {
       if (strlen(DomainNames[k]) == 0)
 	continue;
+
       for (i = 0; i < argc; i++)
 	{
 	  if (orig_argv[i] != NULL)
@@ -936,8 +980,8 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (rc = moira_connect())
     {
-      critical_alert(whoami, "Ldap incremental", "Error contacting Moira server : %s",
-		     error_message(rc));
+      critical_alert(whoami, "Ldap incremental", 
+		     "Error contacting Moira server : %s", error_message(rc));
       return;
     }
 
@@ -972,6 +1016,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   com_err(whoami, 0, "updating container %s information", 
 	  after[CONTAINER_NAME]);
+
   container_update(ldap_handle, dn_path, beforec, before, afterc, after);
   Moira_container_group_update(before, after);
   moira_disconnect();
@@ -1014,10 +1059,10 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (beforec < L_LIST_ID)
         return;
+
       if (beforec > L_LIST_DESC)
-        {
-          strcpy(before_list_id, before[L_LIST_ID]);
-        }
+	strcpy(before_list_id, before[L_LIST_ID]);
+
       before_security_flag = 0;
       get_group_membership(before_group_membership, before_group_ou, 
 			   &before_security_flag, before);
@@ -1027,10 +1072,10 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (afterc < L_LIST_ID)
         return;
+
       if (afterc > L_LIST_DESC)
-        {
-          strcpy(list_id, after[L_LIST_ID]);
-        }
+	strcpy(list_id, after[L_LIST_ID]);
+
       security_flag = 0;
       get_group_membership(group_membership, group_ou, &security_flag, after);
     }
@@ -1064,12 +1109,14 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 				     before[L_MAILLIST], 
 				     before[L_LIST_NFSGROUP]);
                 }
+
               if ((rc != AD_NO_GROUPS_FOUND) && (rc != 0))
                 {
                   com_err(whoami, 0, "Unable to process list %s",
                           before[L_NAME]);
                   return;
                 }
+
               if (rc == AD_NO_GROUPS_FOUND)
                 updateGroup = 0;
             }
@@ -1112,8 +1159,10 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                           before[L_NAME], after[L_NAME]);
                   return;
                 }
+
               updateGroup = 0;
             }
+
           beforec = 0;
         }
       else
@@ -1204,13 +1253,12 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
     
       if (atoi(after[L_ACTIVE]))
-        {
-          populate_group(ldap_handle, dn_path, after[L_NAME], group_ou, 
-                         group_membership, security_flag, list_id, 1);
-        }
+	populate_group(ldap_handle, dn_path, after[L_NAME], group_ou, 
+		       group_membership, security_flag, list_id, 1);
 
       moira_disconnect();
     }
+
   return;
 }
 
@@ -1307,6 +1355,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (beforec < LM_EXTRA_GID)
         return;
+
       if (!atoi(before[LM_EXTRA_ACTIVE]))
         {
           com_err(whoami, 0, 
@@ -1394,6 +1443,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                   else
                     com_err(whoami, 0, "Unable to remove %s from group %s - "
 			    "unable to process group", user_name, group_name);
+
                   return;
                 }
             }
@@ -1435,10 +1485,8 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
     
       if (atoi(ptr[LM_EXTRA_ACTIVE]))
-        {
-          populate_group(ldap_handle, dn_path, ptr[LM_LIST], group_ou, 
-                         group_membership, security_flag, moira_list_id, 1);
-        }
+	populate_group(ldap_handle, dn_path, ptr[LM_LIST], group_ou, 
+		       group_membership, security_flag, moira_list_id, 1);
 
       moira_disconnect();
     }
@@ -1462,11 +1510,14 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
           memset(machine_ou, '\0', sizeof(machine_ou));
 	  memset(NewMachineName, '\0', sizeof(NewMachineName));
+
           if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], 
 			     machine_ou, NewMachineName))
             return;
+
 	  if (ptr[LM_MEMBER] != NULL)	  
 	    free(ptr[LM_MEMBER]);
+
 	  ptr[LM_MEMBER] = strdup(NewMachineName);
           pUserOu = machine_ou;
         }
@@ -1591,35 +1642,6 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	  
           callback_rc = 0;
 
-	  if (Exchange)
-	    {
-	      group_count = 0;
-	      group_base = NULL;
-	  
-	      sprintf(filter, "(&(objectClass=group)(cn=%s))", ptr[LM_MEMBER]);
-	      attr_array[0] = "cn";
-	      attr_array[1] = NULL;
-	      if ((rc = linklist_build(ldap_handle, dn_path, filter, 
-				       attr_array, &group_base, &group_count,
-				       LDAP_SCOPE_SUBTREE)) != 0)
-		{
-		  com_err(whoami, 0, "Unable to process user %s : %s",
-			  ptr[LM_MEMBER], ldap_err2string(rc));
-		  return;
-		}
-	      
-	      if (group_count)
-		{
-		  com_err(whoami, 0, "Object already exists with name %s",
-			  ptr[LM_MEMBER]);
-		  return;
-		}
-	  
-	      linklist_free(group_base);
-	      group_count = 0;
-	      group_base = NULL;
-	    }
-
           if (rc = mr_query("get_user_account_by_login", 1, av, 
                             save_query_info, save_argv))
             {
@@ -1648,15 +1670,17 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           if (rc != 0)
             return;
         }
+
       pUserOu = user_ou;
     }
 
-  if (rc = moira_connect()) {
-    critical_alert(whoami, "Ldap incremental",
-		   "Error contacting Moira server : %s",
-		   error_message(rc));              
-    return;
-  }
+  if (rc = moira_connect()) 
+    {
+      critical_alert(whoami, "Ldap incremental",
+		     "Error contacting Moira server : %s",
+		     error_message(rc));              
+      return;
+    }
 
   if (rc = populate_group(ldap_handle, dn_path, group_name,
 			  group_ou, group_membership, security_flag,
@@ -1735,6 +1759,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           com_err(whoami, 0, "Unable to process because user %s has been "
 		  "previously expungeded", before[U_NAME]);
         }
+
       return;
     }
 
@@ -1762,36 +1787,6 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       call_args[2] = after_user_id;
       call_args[3] = NULL;
       callback_rc = 0;
-
-      if (Exchange) 
-	{
-	  group_count = 0;
-	  group_base = NULL;
-	  
-	  sprintf(filter, "(&(objectClass=group)(cn=%s))", after[U_NAME]);
-	  attr_array[0] = "cn";
-	  attr_array[1] = NULL;
-	  
-	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-				   &group_base, &group_count,
-				   LDAP_SCOPE_SUBTREE)) != 0)
-	    {
-	      com_err(whoami, 0, "Unable to process user %s : %s",
-		      after[U_NAME], ldap_err2string(rc));
-	      return;
-	    }
-	  
-	  if (group_count >= 1)
-	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      after[U_NAME]);
-	      return;
-	    }
-      
-	  linklist_free(group_base);
-	  group_count = 0;
-	  group_base = NULL;
-	}
 
       if (rc = mr_query("get_user_account_by_login", 1, av,
                         save_query_info, save_argv))
@@ -1833,9 +1828,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
           if ((rc = user_rename(ldap_handle, dn_path, before[U_NAME], 
                                 after[U_NAME])) != LDAP_SUCCESS)
-            {
-              return;
-            }
+	    return;
         }
     }
 
@@ -1859,11 +1852,9 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
   int         i;
   char        *cPtr;
   
-  if (((*modvalues) = calloc(1, 
+  if (((*modvalues) = calloc(1,
 			     (modvalue_count + 1) * sizeof(char *))) == NULL)
-    {
-      return(1);
-    }
+    return(1);
 
   for (i = 0; i < (modvalue_count + 1); i++)
     (*modvalues)[i] = NULL;
@@ -1871,6 +1862,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
   if (modvalue_count != 0)
     {
       linklist_ptr = linklist_base;
+
       for (i = 0; i < modvalue_count; i++)
         {
           if ((oldValue != NULL) && (newValue != NULL))
@@ -1883,6 +1875,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
                       if (((*modvalues)[i] = calloc(1, strlen(newValue) + 1))
                           == NULL)
                         return(1);
+
                       memset((*modvalues)[i], '\0', strlen(newValue) + 1);
                       strcpy((*modvalues)[i], newValue);
                     }
@@ -1894,6 +1887,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
 					       strlen(oldValue)) + 
 					       strlen(newValue) + 1)) == NULL)
                         return(1);
+
                       memset((*modvalues)[i], '\0', 
                              (int)(cPtr - linklist_ptr->value) + 
                              (linklist_ptr->length - strlen(oldValue)) + 
@@ -1921,13 +1915,15 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
               memcpy((*modvalues)[i], linklist_ptr->value,
                      linklist_ptr->length);
             }
+
           linklist_ptr = linklist_ptr->next;
         }
+
       (*modvalues)[i] = NULL;
     }
+
   return(0);
 }
-
 
 int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp, 
                    char **attr_array, LK_ENTRY **linklist_base,
@@ -2009,6 +2005,7 @@ int retrieve_attributes(LDAP *ldap_handle, LDAPMessage *ldap_entry,
       retrieve_values(ldap_handle, ldap_entry, Attribute, distinguished_name,
                       linklist_current);
       ldap_memfree(Attribute);
+
       while ((Attribute = ldap_next_attribute(ldap_handle, ldap_entry, 
                                               ptr)) != NULL)
         {
@@ -2093,6 +2090,7 @@ int retrieve_values(LDAP *ldap_handle, LDAPMessage *ldap_entry,
               memset((*linklist_current)->value, '\0', ber_length);
               memcpy((*linklist_current)->value, 
 		     (*(LDAP_BERVAL **)Ptr)->bv_val, ber_length);
+
               (*linklist_current)->length = ber_length;
             }
           else
@@ -2114,6 +2112,7 @@ int retrieve_values(LDAP *ldap_handle, LDAPMessage *ldap_entry,
 
           memset((*linklist_current)->dn, '\0', 
 		 strlen(distinguished_name) + 1);
+
           strcpy((*linklist_current)->dn, distinguished_name);
 
 #ifdef LDAP_DEBUG
@@ -2299,9 +2298,7 @@ int linklist_create_entry(char *attribute, char *value,
   (*linklist_entry) = calloc(1, sizeof(LK_ENTRY));
 
   if (!(*linklist_entry))
-    {
-      return(1);
-    }
+    return(1);
 
   memset((*linklist_entry), '\0', sizeof(LK_ENTRY));
   (*linklist_entry)->attribute = calloc(1, strlen(attribute) + 1);
@@ -2484,9 +2481,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
     return(rc);
 
   if (group_count == 0)
-    {
-      return(AD_NO_GROUPS_FOUND);
-    }
+    return(AD_NO_GROUPS_FOUND);
 
   if (group_count != 1)
     {
@@ -2531,8 +2526,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   sprintf(contact_mail, "%s@mit.edu", after_group_name); 
   sprintf(proxy_address, "SMTP:%s@%s", after_group_name, 
 	  lowercase(ldap_domain));
-  sprintf(mail_nickname, "%s", after_group_name);
 
+  sprintf(mail_nickname, "%s", after_group_name);
   com_err(whoami, 0, "Old %s New %s,%s", old_dn, new_dn, new_dn_path);
 
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, new_dn_path,
@@ -2547,9 +2542,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 
   if (!strncmp(&sam_name[strlen(sam_name) - strlen(group_suffix)], 
 	       group_suffix, strlen(group_suffix)))
-    {
       sprintf(sam_name, "%s%s", after_group_name, group_suffix);
-    }
   else
     {
       com_err(whoami, 0, 
@@ -2570,15 +2563,17 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   sprintf(new_dn, "cn=%s,%s,%s", after_group_name, after_group_ou, dn_path);
   rc = attribute_update(ldap_handle, new_dn, after_desc, "description", 
 			after_group_name);
+
   n = 0;
   ADD_ATTR("samAccountName", samAccountName_v, LDAP_MOD_REPLACE);
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
 
-  if(!ActiveDirectory) {
-    ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
-  }
+  if(!ActiveDirectory) 
+    {
+      ADD_ATTR("name", name_v, LDAP_MOD_REPLACE);
+    }
 
   if (Exchange)
     {
@@ -2704,7 +2699,7 @@ int group_create(int ac, char **av, void *ptr)
   else 
     groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
 
-  if (!check_string(av[L_NAME]))
+  if(!check_string(av[L_NAME]))
     {
       com_err(whoami, 0, "Unable to process invalid LDAP list name %s", 
 	      av[L_NAME]);
@@ -2852,8 +2847,7 @@ int group_create(int ac, char **av, void *ptr)
 	  ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD);
 	}
 	  
-      mods[n] = NULL;
-      
+      mods[n] = NULL;      
       rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
       
       for (i = 0; i < n; i++)
@@ -2872,8 +2866,8 @@ int group_create(int ac, char **av, void *ptr)
     {
       rc = attribute_update((LDAP *)call_args[0], new_dn, av[L_DESC], 
 			    "description", av[L_NAME]);
-      sprintf(info, "The Administrator of this list is: %s", av[L_ACE_NAME]);
 
+      sprintf(info, "The Administrator of this list is: %s", av[L_ACE_NAME]);
       rc = attribute_update((LDAP *)call_args[0], new_dn, info, "info", 
 				av[L_NAME]);
 
@@ -2970,9 +2964,18 @@ int group_create(int ac, char **av, void *ptr)
 	      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("legacyExchangeDN", legacy_exchange_dn_v, 
 		       LDAP_MOD_REPLACE);
+
 	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
 		       LDAP_MOD_REPLACE);
+
+	      /*
+	       * Allow time for the attribute deletions to propagate to 
+	       * Active Directory so that subsequent queries that try 
+	       * to use the same email address work properly
+	       */
+
+	      sleep(10);
 	    }
 	}
       else
@@ -3073,6 +3076,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 
   dwInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | 
     DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION;
+
   BEREncodeSecurityBits(dwInfo, acBERBuf);
 
   sprintf(search_path, "%s,%s", group_ou_root, dn_path);
@@ -3135,12 +3139,14 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 				       attr_array, &group_base, &group_count, 
 				       LDAP_SCOPE_SUBTREE) != 0))
 		return(1);
+
 	      if (group_count == 1)
 		{
 		  strcpy(AceDn, group_base->dn);
 		  AceSidCount = group_base->length;
 		  memcpy(AceSid, group_base->value, AceSidCount);
 		}
+
 	      linklist_free(group_base);
 	      group_base = NULL;
 	      group_count = 0;
@@ -3161,10 +3167,10 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 				       attr_array, &group_base, &group_count, 
 				       LDAP_SCOPE_SUBTREE) != 0))
 		return(1);
+
 	      if (group_count == 1)
-		{
-		  strcpy(AceDn, group_base->dn);
-		}
+		strcpy(AceDn, group_base->dn);
+
 	      linklist_free(group_base);
 	      group_base = NULL;
 	      group_count = 0;
@@ -3181,7 +3187,6 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 	  ADD_ATTR("owner", owner_v, LDAP_MOD_REPLACE);
 
 	  mods[n] = NULL;
-
 	  rc = ldap_modify_s(ldap_handle, TargetDn, mods);
 	  
 	  for (i = 0; i < n; i++)
@@ -3227,6 +3232,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
           UserTemplateSidCount = group_base->length;
           memcpy(UserTemplateSid, group_base->value, UserTemplateSidCount);
         }
+
       linklist_free(group_base);
       group_base = NULL;
       group_count = 0;
@@ -3343,8 +3349,11 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
 	  address_book_v[0] = NULL;
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v, 
 		   LDAP_MOD_REPLACE);
+
 	  ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
-	} else {
+	} 
+      else 
+	{
 	  hide_address_lists_v[0] = "FALSE";
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v, 
 		   LDAP_MOD_REPLACE);
@@ -3352,7 +3361,6 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path,
     }
 
   mods[n] = NULL;
-
   rc = ldap_modify_s(ldap_handle, TargetDn, mods);
 
   for (i = 0; i < n; i++)
@@ -3422,6 +3430,7 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
                   group_name, ldap_err2string(rc));
           return(rc);
         }
+
       linklist_free(group_base);
     }
   else
@@ -3527,11 +3536,11 @@ int member_list_build(int ac, char **av, void *ptr)
 
   while (linklist)
     {
-    if (!strcasecmp(temp, linklist->member) &&
-	!strcasecmp(av[ACE_TYPE], linklist->type))
-      return(0);
-
-    linklist = linklist->next;
+      if (!strcasecmp(temp, linklist->member) &&
+	  !strcasecmp(av[ACE_TYPE], linklist->type))
+	return(0);
+      
+      linklist = linklist->next;
     }
 
   linklist = calloc(1, sizeof(LK_ENTRY));
@@ -3602,9 +3611,7 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   group_count = 0;
 
   if(ActiveDirectory)
-    {
-      sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-    }
+    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
   else
     {
       if(!strcmp(UserOu, user_ou))
@@ -3689,9 +3696,7 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
   group_count = 0;
 
   if(ActiveDirectory)
-    {
-      sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-    }
+    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
   else 
     {
       if(!strcmp(UserOu, user_ou))
@@ -3721,10 +3726,8 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
     free(mods[i]);
 
   if (rc != LDAP_SUCCESS)
-    {
-      com_err(whoami, 0, "Unable to add %s to list %s as a member : %s",
-              user_name, group_name, ldap_err2string(rc));
-    }
+    com_err(whoami, 0, "Unable to add %s to list %s as a member : %s",
+	    user_name, group_name, ldap_err2string(rc));
 
   return(rc);
 }
@@ -3826,6 +3829,15 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       return(AD_INVALID_NAME);
     }
 
+  if(Exchange)
+    {
+      if(!email_isvalid(user)) 
+	{
+	  com_err(whoami, 0, "Unable to process invalid LDAP name %s", user);
+	  return(AD_INVALID_NAME);
+	}
+    }
+
   strcpy(mail, user);
   strcpy(contact_name, mail);
   strcpy(internal_contact_name, mail);
@@ -3855,8 +3867,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
   default_address_book_v[0] = default_address_book;
   contact_address_book_v[0] = contact_address_book;
   strcpy(new_dn, cn_user_name);
-  n = 0;
 
+  n = 0;
   ADD_ATTR("cn", contact_v, LDAP_MOD_ADD);
 
   if(!ActiveDirectory)
@@ -3888,7 +3900,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 
   if (Exchange)
     {
-      if((s = strstr(mail, "@mit.edu")) != (char *) NULL)
+      if((s = strstr(lowercase(mail), "@mit.edu")) != (char *) NULL)
 	return(rc);
 
       if (!strcmp(group_ou, contact_ou) && email_isvalid(mail))
@@ -4069,7 +4081,6 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
     }
 
   mods[n] = NULL;
-
   rc = ldap_add_ext_s(ld, new_dn, mods, NULL, NULL);
 
   for (i = 0; i < n; i++)
@@ -4080,14 +4091,13 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       if ((rc != LDAP_SUCCESS) && (rc == LDAP_ALREADY_EXISTS) &&
 	  !strcmp(group_ou, contact_ou) && email_isvalid(mail))
 	{
-	  n = 0;
-	  
+	  n = 0;  
 	  ADD_ATTR("mail", email_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("proxyAddresses", proxy_address_external_v, 
 		   LDAP_MOD_REPLACE);
-	  ADD_ATTR("targetAddress", target_address_v, LDAP_MOD_REPLACE);
 
+	  ADD_ATTR("targetAddress", target_address_v, LDAP_MOD_REPLACE);
 	  hide_address_lists_v[0] = "TRUE";
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		   LDAP_MOD_REPLACE);
@@ -4096,9 +4106,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  rc = ldap_modify_s(ld, new_dn, mods);
       
 	  if (rc) 
-	    {
-	      com_err(whoami, 0, "Unable to update contact %s", mail);
-	    }
+	    com_err(whoami, 0, "Unable to update contact %s", mail);
       
 	  for (i = 0; i < n; i++)
 	    free(mods[i]);
@@ -4121,6 +4129,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		char *middle, char *last, char *shell, char *class)
 {
   LDAPMod   *mods[40];
+  LDAPMod   *DelMods[40];
   LK_ENTRY  *group_base;
   int  group_count;
   char distinguished_name[512];
@@ -4154,6 +4163,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   int  rc;
   int  i;
   int  OldUseSFU30;
+  int  MailDisabled = 0;
   u_int userAccountControl = UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | 
     UF_PASSWD_CANT_CHANGE;
   char filter[128];
@@ -4197,6 +4207,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   dwInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
     DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION;
+
   BEREncodeSecurityBits(dwInfo, acBERBuf);
 
   if (!check_string(user_name))
@@ -4227,8 +4238,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   address_book_v[2] = email_address_list;
   sprintf(all_users_address_list, "%s%s", ALL_USERS_ADDRESS_LIST_PREFIX, 
 	  dn_path);
-  address_book_v[3] = all_users_address_list;
 
+  address_book_v[3] = all_users_address_list;
   mail_nickname_v[0] = user_name;
 
   memset(mail, '\0', sizeof(mail));
@@ -4236,6 +4247,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   memset(alt_recipient, '\0', sizeof(alt_recipient));
   sprintf(alt_recipient, "cn=%s@exchange-forwarding.mit.edu,%s,%s", user_name,
 	  contact_ou, dn_path);
+
   sprintf(search_string, "@%s", uppercase(ldap_domain));
   memset(filesys_name, '\0', sizeof(filesys_name));
   sprintf(filesys_name, "%s.po", user_name);
@@ -4248,17 +4260,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   if (strlen(MoiraId) != 0)
     {
       if(ActiveDirectory)
-	{
-	  sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
-	}
+	sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       else
-	{
-	  sprintf(filter, 
-		  "(&(objectClass=mitPerson)(mitMoiraId=%s))", MoiraId);
-	}
+	sprintf(filter, 
+		"(&(objectClass=mitPerson)(mitMoiraId=%s))", MoiraId);
 
       attr_array[0] = "cn";
       attr_array[1] = NULL;
+
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, 
 			       LDAP_SCOPE_SUBTREE)) != 0)
@@ -4278,6 +4287,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       sprintf(temp, "%s,%s", user_ou, dn_path);
+
       if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
                                &group_base, &group_count, 
 			       LDAP_SCOPE_SUBTREE)) != 0)
@@ -4304,33 +4314,91 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   if (Exchange)
     {
       if(contact_create(ldap_handle, dn_path, contact_mail, contact_ou))
+	com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
+
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))", mail,
+	      mail, user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, 
+			       attr_array, &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0) 
 	{
-	  com_err(whoami, 0, "Unable to create user contact %s", contact_mail);
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
 	}
-
-      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) || (State == US_SUSPENDED) ||
-	  (State == US_EXPIRED) || (State == US_EXPIRED_KERBEROS_ONLY))
+      
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object already exists with mail %s",
+		  mail);
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
+	      "(mailnickname=%s))", user_name, user_name, user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, 
+			       attr_array, &group_base, 
+			       &group_count, LDAP_SCOPE_SUBTREE)) != 0)
+	{
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
+	}
+      
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object already exists with mail %s@mit.edu",
+		  user_name);
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+      
+      if ((State != US_NO_PASSWD) &&
+	  (State != US_REGISTERED) &&
+	  (State != US_SUSPENDED)) 
+	MailDisabled++;
+      
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) ||
+	  (State == US_SUSPENDED))
         {
-          group_count = 0;
-          group_base = NULL;
-
-          sprintf(filter,
-                  "(&(objectClass=user)(homeMDB=*)(sAMAccountName=%s))",
-                  user_name);
-
-          attr_array[0] = "homeMDB";
-          attr_array[1] = NULL;
-
-          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
-                                   &group_base, &group_count,
-                                   LDAP_SCOPE_SUBTREE)) != 0)
-            {
-              com_err(whoami, 0, "Unable to process user %s : %s",
-                      user_name, ldap_err2string(rc));
-              return(rc);
-            }
-
-	  if(group_count == 0) 
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,
+		  "(&(objectClass=user)(homeMDB=*)(sAMAccountName=%s))",
+		  user_name);
+	  
+	  attr_array[0] = "homeMDB";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+				   &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+      
+	  if(group_count == 0 && !MailDisabled) 
 	    {
 	      if(find_homeMDB(ldap_handle, dn_path, &homeMDB, &homeServerName))
 		{
@@ -4349,8 +4417,10 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
               hide_address_lists_v[0] = "FALSE";
 	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
 		       LDAP_MOD_ADD);
+
 	      ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, 
 		       LDAP_MOD_REPLACE);
+
 	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
 	      ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
@@ -4372,10 +4442,1461 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		  return(rc);
 		}
 	    }
+	}
+
+      if (State == US_DELETED)
+	{
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "mail";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("mail", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "HomeMDB";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("HomeMDB", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "homeMTA";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("HomeMTA", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "legacyExchangeDN";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("legacyExchangeDN", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMailboxAuditEnable";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMailboxAuditEnable", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchAddressBookFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchAddressBookFlags", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchArchiveQuota";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchArchiveQuota", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchArchiveWarnQuota";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchArchiveWarnQuota", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchBypassAudit";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchBypassAudit", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchDumpsterQuota";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchDumpsterQuota", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchDumpsterWarningQuota";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchDumpsterWarningQuota", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchHomeServerName";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchHomeServerName", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMailboxAuditEnable";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMailboxAuditEnable", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMailboxAuditLogAgeLimit";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMailboxAuditLogAgeLimit", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMailboxGuid";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMailboxGuid", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMDBRulesQuota";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMDBRulesQuota", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchModerationFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchModerationFlags", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchPoliciesIncluded";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchPoliciesIncluded", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchProvisioningFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchProvisioningFlags", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchRBACPolicyLink";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchRBACPolicyLink", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
 
 	  linklist_free(group_base);
 	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchRecipientDisplayType";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchRecipientDisplayType", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchRecipientDisplayType";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchRecipientDisplayType", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchRecipientTypeDetails";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchRecipientTypeDetails", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchTransportRecipientSettingsFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchTransportRecipientSettingsFlags", 
+		       LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchTransportRecipientSettingsFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchTransportRecipientSettingsFlags", 
+		       LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchTransportRecipientSettingsFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchTransportRecipientSettingsFlags", 
+		       LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchTransportRecipientSettingsFlags";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchTransportRecipientSettingsFlags", 
+		       LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchUMDtmfMap";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchUMDtmfMap", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchUMEnabledFlags2";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchUMEnabledFlags2", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchUserAccountControl";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchUserAccountControl", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchVersion";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchVersion", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "proxyAddresses";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("proxyAddresses", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "showInAddressBook";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("showInAddressBook", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "mailNickname";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("mailNickname", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchHideFromAddressLists";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchHideFromAddressLists", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "mdbUseDefaults";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("mdbUseDefaults", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "deliverAndRedirect";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("deliverAndRedirect", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "altRecipient";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("altRecipient", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchMailboxTemplateLink";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchMailboxTemplateLink", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchThrottlingPolicyDN";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchThrottlingPolicyDN", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+
+	  linklist_free(group_base);
+	  group_count = 0;
+	  group_base = NULL;
+	      
+	  sprintf(filter,"(sAMAccountName=%s)", user_name);
+	  
+	  attr_array[0] = "msExchUserCulture";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if(group_count)
+	    {
+	      i = 0;
+	      DEL_ATTR("msExchUserCulture", LDAP_MOD_DELETE);
+	      
+	      DelMods[i] = NULL;
+	      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+	      
+	      if(rc)
+		{
+		  com_err(whoami, 0,
+			  "Unable to delete the exchange attributes for " 
+			  "%s : %s", user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	    }
+	  
+	  /*
+	   * Allow time for domain controller to delete the attributes, so 
+	   * subsequent queries to re-use the email address on a list for a
+	   * deactivated user work properly.
+	   */
+
+	  sleep(10);
 	}
+
+      linklist_free(group_base);
+      group_count = 0;
     }
 
   if(!ActiveDirectory) 
@@ -4396,6 +5917,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_REPLACE);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
 	  
@@ -4408,12 +5930,12 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		    user_name, ldap_err2string(rc));
 
 	  sprintf(temp, "%s@%s", user_name, save_argv[FS_MACHINE]);
-	  
 	  mit_moira_imap_address_v[0]  = temp;
 		
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_ADD);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
 	  
@@ -4423,11 +5945,13 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	  if(rc)
 	    com_err(whoami, 0, "Unable to set the mitMoiraIMAPAddress for " 
 		    "%s : %s", user_name, ldap_err2string(rc));	  
-	} else if(rc==MR_NO_MATCH) {
-	  
+	} 
+      else if(rc==MR_NO_MATCH) 
+	{
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		 LDAP_MOD_REPLACE);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
 	  
@@ -4438,9 +5962,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	    com_err(whoami, 0, 
 		    "Unable to set the mitMoiraIMAPAddress for %s : %s",
 		    user_name, ldap_err2string(rc));
-
-      }
-
+	  
+	}
+      
       argv[0] = user_name;
 	  
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
@@ -4518,14 +6042,16 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 			      user_name, ldap_err2string(rc));
 		  }
 	      }
-	    } else {
+	    } 
+	  else 
+	    {
 	      StringTrim(p);
 
-	    if((c = strchr(p, '@')) == NULL)
-	      sprintf(temp, "%s@mit.edu", p);
-	    else
-	      sprintf(temp, "%s", p);
-	    
+	      if((c = strchr(p, '@')) == NULL)
+		sprintf(temp, "%s@mit.edu", p);
+	      else
+		sprintf(temp, "%s", p);
+	      
 	    if(email_isvalid(temp) && State != US_DELETED) 
 	      {
 		mail_routing_v[0]  = temp;
@@ -4545,8 +6071,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 			  user_name, ldap_err2string(rc));
 	      }
 	    }
-	} else if(rc==MR_NO_MATCH) {
-	  
+	}
+      else if(rc==MR_NO_MATCH) 
+	{
 	  n = 0;
 	  ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_REPLACE);
 	  mods[n] = NULL;
@@ -4560,6 +6087,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		    "Unable to set the mailRoutingAddress for %s : %s",
 		    user_name, ldap_err2string(rc));
 	}
+
       moira_disconnect();
     }
 
@@ -4570,23 +6098,24 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     rc = attribute_update(ldap_handle, distinguished_name, "none", 
 			  "employeeID", user_name);
 
-  if(strlen(first)) {
+  if(strlen(first))
     strcat(displayName, first);
-  }
+  
 
-  if(strlen(middle)) {
-    if(strlen(first)) 
-      strcat(displayName, " ");
+  if(strlen(middle)) 
+    {
+      if(strlen(first)) 
+	strcat(displayName, " ");
+      strcat(displayName, middle);
+    }
 
-    strcat(displayName, middle);
-  }
-
-  if(strlen(last)) {
-    if(strlen(middle) || strlen(first))
-      strcat(displayName, " ");
-
-    strcat(displayName, last);
-  }
+  if(strlen(last)) 
+    {
+      if(strlen(middle) || strlen(first))
+	strcat(displayName, " ");
+      
+      strcat(displayName, last);
+    }
 
   if(update_name_info) 
     {
@@ -4609,10 +6138,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     }
 
   if(!ActiveDirectory)
-    {
-      rc = attribute_update(ldap_handle, distinguished_name, displayName, 
-			    "eduPersonNickname", user_name);
-    }
+    rc = attribute_update(ldap_handle, distinguished_name, displayName, 
+			  "eduPersonNickname", user_name);
 
   if(update_name_info) 
     {
@@ -4639,16 +6166,12 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     }
   
   if(ActiveDirectory)
-    {
-      rc = attribute_update(ldap_handle, distinguished_name, Uid, "uid", 
-			    user_name);
-    }
+    rc = attribute_update(ldap_handle, distinguished_name, Uid, "uid", 
+			  user_name);
   else
-    {
-      rc = attribute_update(ldap_handle, distinguished_name, user_name, "uid", 
-			    user_name);
-    }
-    
+    rc = attribute_update(ldap_handle, distinguished_name, user_name, "uid", 
+			  user_name);
+  
   rc = attribute_update(ldap_handle, distinguished_name, MoiraId, 
 			"mitMoiraId", user_name);
 
@@ -4687,9 +6210,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
 
-      if ((State != US_SUSPENDED) && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY))
+      if (State != US_SUSPENDED)
 	{
-	  if (Exchange)
+	  if (Exchange && !MailDisabled)
 	    {
 	      hide_address_lists_v[0] = "TRUE";
 	      ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -4699,7 +6222,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     }
   else
     {
-      if (Exchange)
+      if (Exchange && !MailDisabled)
 	{
 	  hide_address_lists_v[0] = "FALSE";
 	  ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -4711,7 +6234,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   userAccountControl_v[0] = userAccountControlStr;
   ADD_ATTR("userAccountControl", userAccountControl_v, LDAP_MOD_REPLACE);
 
-  if (Exchange)
+  if (Exchange && !MailDisabled)
     {
       if (rc = moira_connect())
 	{
@@ -4744,33 +6267,38 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		}
 
               if(!strcmp(save_argv[1], "SPLIT") || 
-		 !strcmp(save_argv[1], "SMTP")) {
+		 !strcmp(save_argv[1], "SMTP")) 
+		{
+		  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) &&
+		      (State != US_SUSPENDED))
+		    {
+		      deliver_and_redirect_v[0] = "FALSE";
+		      alt_recipient_v[0] = NULL;
+		    } 
+		  else 
+		    {
+		      deliver_and_redirect_v[0] = "TRUE";
+		      alt_recipient_v[0] = alt_recipient;
+		    }
 
-		if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
-		    && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
-		  deliver_and_redirect_v[0] = "FALSE";
-		  alt_recipient_v[0] = NULL;
-		} 
-		else {
-		  deliver_and_redirect_v[0] = "TRUE";
-		  alt_recipient_v[0] = alt_recipient;
+		  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
+		  ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
+			   LDAP_MOD_REPLACE);
 		}
-
-                ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
-                ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
-                         LDAP_MOD_REPLACE);
-	      }
 	    }
 	  else 
 	    {
-	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
-		  && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
-		deliver_and_redirect_v[0] = "FALSE";
-		alt_recipient_v[0] = NULL;
-	      } else {
-		deliver_and_redirect_v[0] = "FALSE";
-		alt_recipient_v[0] = alt_recipient;
-	      }
+	      if ((State != US_NO_PASSWD) && (State != US_REGISTERED) &&
+		  (State != US_SUSPENDED)) 
+		{
+		  deliver_and_redirect_v[0] = "FALSE";
+		  alt_recipient_v[0] = NULL;
+		} 
+	      else 
+		{
+		  deliver_and_redirect_v[0] = "FALSE";
+		  alt_recipient_v[0] = alt_recipient;
+		}
 
 	      ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
@@ -4792,14 +6320,17 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	}
       else
 	{
-	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_SUSPENDED)
-	      && (State != US_EXPIRED) && (State != US_EXPIRED_KERBEROS_ONLY)) {
-	    deliver_and_redirect_v[0] = "FALSE";
-	    alt_recipient_v[0] = NULL;
-	  } else {
-	    deliver_and_redirect_v[0] = "FALSE";
-	    alt_recipient_v[0] = alt_recipient;
-	  }
+	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) &&
+	      (State != US_SUSPENDED)) 
+	    {
+	      deliver_and_redirect_v[0] = "FALSE";
+	      alt_recipient_v[0] = NULL;
+	    } 
+	  else 
+	    {
+	      deliver_and_redirect_v[0] = "FALSE";
+	      alt_recipient_v[0] = alt_recipient;
+	    }
 
 	  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_REPLACE);
 	  ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
@@ -4823,8 +6354,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     }
   else
     {
-      mail_v[0] = contact_mail;
-      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+      if(!Exchange) 
+	{
+	  mail_v[0] = contact_mail;
+	  ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+	}
 
       if(!ActiveDirectory)
 	{
@@ -4896,8 +6430,10 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       OldUseSFU30 = UseSFU30;
       SwitchSFU(mods, &UseSFU30, n);
+
       if (OldUseSFU30 != UseSFU30)
 	rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+
       if (rc)
         {
 	  com_err(whoami, 0, "Unable to modify user data for %s : %s",
@@ -4966,14 +6502,15 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
     sprintf(new_dn, "uid=%s", user_name);
 
   sprintf(mail, "%s@%s", user_name, lowercase(ldap_domain));
+
   if(Exchange)
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
   else
     sprintf(contact_mail, "%s@mit.edu", user_name);
+
   sprintf(proxy_address, "smtp:%s@%s", user_name, lowercase(ldap_domain));
   sprintf(proxy_address_mit, "SMTP:%s@mit.edu", user_name);
   sprintf(proxy_address_x500, "%s/cn=%s?mit.edu", X500_PREFIX, user_name);
-  
   sprintf(principal, "%s@%s", user_name, PRIMARY_REALM);
 
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, NULL, TRUE, 
@@ -4986,8 +6523,8 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   if (Exchange)
     {
-      sprintf(temp, "cn=%s@exchange-forwarding.mit.edu,%s,%s", before_user_name, 
-	      contact_ou, dn_path);
+      sprintf(temp, "cn=%s@exchange-forwarding.mit.edu,%s,%s", 
+	      before_user_name, contact_ou, dn_path);
 
       if(rc = ldap_delete_s(ldap_handle, temp))
 	{
@@ -5147,6 +6684,7 @@ int user_create(int ac, char **av, void *ptr)
   int  rc;
   int  i;
   int  OldUseSFU30;
+  int  MailDisabled = 0;
   char **call_args;
   char WinHomeDir[1024];
   char WinProfileDir[1024];
@@ -5199,6 +6737,7 @@ int user_create(int ac, char **av, void *ptr)
   memset(email_address_list, '\0', sizeof(email_address_list));
   memset(all_users_address_list, '\0', sizeof(all_users_address_list));
   memset(filesys_name, '\0', sizeof(filesys_name));
+
   strcpy(WinHomeDir, av[U_WINHOMEDIR]);
   strcpy(WinProfileDir, av[U_WINPROFILEDIR]);
   strcpy(user_name, av[U_NAME]);
@@ -5206,37 +6745,36 @@ int user_create(int ac, char **av, void *ptr)
   sprintf(sam_name, "%s", av[U_NAME]);
   sprintf(filesys_name, "%s.po", user_name);
 
-  if(strlen(av[U_FIRST])) {
+  if(strlen(av[U_FIRST]))
     strcat(displayName, av[U_FIRST]);
-  }
-
-  if(strlen(av[U_MIDDLE])) {
-    if(strlen(av[U_FIRST]))
-       strcat(displayName, " "); 
   
-    strcat(displayName, av[U_MIDDLE]);
-  }
+  if(strlen(av[U_MIDDLE])) 
+    {
+      if(strlen(av[U_FIRST]))
+	strcat(displayName, " "); 
+      
+      strcat(displayName, av[U_MIDDLE]);
+    }
 
-  if(strlen(av[U_LAST])) {
-    if(strlen(av[U_FIRST]) || strlen(av[U_MIDDLE]))
-      strcat(displayName, " ");
-
-    strcat(displayName, av[U_LAST]);
-  }
+  if(strlen(av[U_LAST])) 
+    {
+      if(strlen(av[U_FIRST]) || strlen(av[U_MIDDLE]))
+	strcat(displayName, " ");
+      
+      strcat(displayName, av[U_LAST]);
+    }
 
   samAccountName_v[0] = sam_name;
 
   if ((atoi(av[U_STATE]) != US_NO_PASSWD) && 
       (atoi(av[U_STATE]) != US_REGISTERED))
-    {
-      userAccountControl |= UF_ACCOUNTDISABLE;
-    }
-
+    userAccountControl |= UF_ACCOUNTDISABLE;
+  
   sprintf(userAccountControlStr, "%ld", userAccountControl);
   userAccountControl_v[0] = userAccountControlStr;
   userPrincipalName_v[0] = upn;
   sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
-  
+
   if(ActiveDirectory)
     cn_v[0] = user_name;
   else
@@ -5273,6 +6811,7 @@ int user_create(int ac, char **av, void *ptr)
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
   else
     sprintf(contact_mail, "%s@mit.edu", user_name);    
+
   sprintf(query_base_dn, "%s%s", ADDRESS_LIST_PREFIX, call_args[1]);
   query_base_dn_v[0] = query_base_dn;
   sprintf(rbac_policy_link, "%s%s", RBAC_POLICY_PREFIX, call_args[1]);
@@ -5281,25 +6820,92 @@ int user_create(int ac, char **av, void *ptr)
   address_book_v[0] = mit_address_list;
   sprintf(global_address_list, "%s%s", GLOBAL_ADDRESS_LIST_PREFIX, 
 	  call_args[1]);
+
   address_book_v[1] = global_address_list;
   sprintf(email_address_list, "%s%s", EMAIL_ADDRESS_LIST_PREFIX, call_args[1]);
   address_book_v[2] = email_address_list;
   sprintf(all_users_address_list, "%s%s", ALL_USERS_ADDRESS_LIST_PREFIX, 
 	  call_args[1]);
+
   address_book_v[3] = all_users_address_list;
   sprintf(alt_recipient, "cn=%s@exchange-forwarding.mit.edu,%s,%s", user_name,
 	  contact_ou, call_args[1]);
+
   sprintf(search_string, "@%s", uppercase(ldap_domain));
 
   if (Exchange)
     {
-      if(contact_create((LDAP *)call_args[0], call_args[1], contact_mail, 
-			contact_ou))
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(|(mail=%s)(proxyaddresses=smtp%s)(mailnickname=%s))", mail,
+	      mail, user_name);
+  
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+			       filter_exp, 
+			       attr_array, &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0) 
 	{
-	  com_err(whoami, 0, "Unable to create user contact %s", 
-		  contact_mail);
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
 	}
       
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object already exists with mail %s",
+		  mail);
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
+	      "(mailnickname=%s))", user_name, user_name, user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter_exp, 
+			       attr_array, &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0) 
+	{
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
+	}
+      
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object already exists with mail %s@mit.edu",
+		  user_name);
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+    
+      if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
+	  (atoi(av[U_STATE]) != US_REGISTERED) &&
+	  (atoi(av[U_STATE]) != US_SUSPENDED)) 
+	MailDisabled++;
+      
+    }
+
+  if (Exchange && !MailDisabled)
+    {
+      if(contact_create((LDAP *)call_args[0], call_args[1], contact_mail, 
+			contact_ou))
+	com_err(whoami, 0, "Unable to create user contact %s", 
+		contact_mail);
+          
       if(find_homeMDB((LDAP *)call_args[0], call_args[1], &homeMDB, 
 		      &homeServerName)) 
 	{
@@ -5315,7 +6921,6 @@ int user_create(int ac, char **av, void *ptr)
     }
 
   n = 0;
-
   ADD_ATTR("cn", cn_v, LDAP_MOD_ADD);
   
   if(ActiveDirectory) 
@@ -5333,13 +6938,11 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("name", name_v, LDAP_MOD_ADD);
   ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
 
-  if (Exchange)
+  if (Exchange && !MailDisabled)
     {
       if ((atoi(av[U_STATE]) != US_NO_PASSWD) &&
 	  (atoi(av[U_STATE]) != US_REGISTERED) &&
-	  (atoi(av[U_STATE]) != US_SUSPENDED) &&
-	  (atoi(av[U_STATE]) != US_EXPIRED) &&
-	  (atoi(av[U_STATE]) != US_EXPIRED_KERBEROS_ONLY))
+	  (atoi(av[U_STATE]) != US_SUSPENDED)) 
 	{
 	  hide_address_lists_v[0] = "TRUE";
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
@@ -5359,7 +6962,7 @@ int user_create(int ac, char **av, void *ptr)
       mdbUseDefaults_v[0] = "TRUE";
       ADD_ATTR("mdbUseDefaults", mdbUseDefaults_v, LDAP_MOD_ADD);
       ADD_ATTR("msExchHomeServerName", homeServerName_v, LDAP_MOD_ADD); 
-      
+    
       argv[0] = user_name;
     
       if (!(rc = mr_query("get_pobox", 1, argv, save_query_info, save_argv)))
@@ -5374,61 +6977,56 @@ int user_create(int ac, char **av, void *ptr)
 	      rc = mr_query("add_member_to_list", 3, argv, NULL, NULL);
 	      
 	      if ((rc) && (rc != MR_EXISTS))
-		{
-		  com_err(whoami, 0, "Unable to add user %s to %s: %s",
-			  user_name, exchange_acl, error_message(rc));
-		}
+		com_err(whoami, 0, "Unable to add user %s to %s: %s",
+			user_name, exchange_acl, error_message(rc));
 
 	      if(!strcmp(save_argv[1], "SPLIT") ||
-		 !strcmp(save_argv[1], "SMTP")) {
-		
-		if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
-		    (atoi(av[U_STATE]) == US_REGISTERED) ||
-		    (atoi(av[U_STATE]) == US_SUSPENDED) ||
-		    (atoi(av[U_STATE]) == US_EXPIRED) ||
-		    (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
-		  
-		  deliver_and_redirect_v[0] = "TRUE";
-		  alt_recipient_v[0] = alt_recipient;
-
-		  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
-		  ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
-			 LDAP_MOD_ADD);
+		 !strcmp(save_argv[1], "SMTP")) 
+		{
+		  if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
+		      (atoi(av[U_STATE]) == US_REGISTERED) ||
+		      (atoi(av[U_STATE]) == US_SUSPENDED))
+		    {
+		      deliver_and_redirect_v[0] = "TRUE";
+		      alt_recipient_v[0] = alt_recipient;
+		      
+		      ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+		      ADD_ATTR("deliverAndRedirect", deliver_and_redirect_v,
+			       LDAP_MOD_ADD);
+		    }
 		}
-	      }
 	    }
 	  else 
 	    {
 	      if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
 		  (atoi(av[U_STATE]) == US_REGISTERED) ||
-		  (atoi(av[U_STATE]) == US_SUSPENDED) ||
-		  (atoi(av[U_STATE]) == US_EXPIRED) ||
-		  (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
-		
-		alt_recipient_v[0] = alt_recipient;
-		ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
-	      }
+		  (atoi(av[U_STATE]) == US_SUSPENDED))
+		{
+		  alt_recipient_v[0] = alt_recipient;
+		  ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+		}
 	    }
 	}
       else
 	{
 	  if ((atoi(av[U_STATE]) == US_NO_PASSWD) ||
 	      (atoi(av[U_STATE]) == US_REGISTERED) ||
-	      (atoi(av[U_STATE]) == US_SUSPENDED) ||
-	      (atoi(av[U_STATE]) == US_EXPIRED) ||
-	      (atoi(av[U_STATE]) == US_EXPIRED_KERBEROS_ONLY)) {
-
-	    alt_recipient_v[0] = alt_recipient;
-	    ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
-	  }
-
+	      (atoi(av[U_STATE]) == US_SUSPENDED)) 
+	    {
+	      alt_recipient_v[0] = alt_recipient;
+	      ADD_ATTR("altRecipient", alt_recipient_v, LDAP_MOD_ADD);
+	    }
+	  
 	  com_err(whoami, 0, "Unable to fetch pobox for %s", user_name);
 	}
     }
   else
     {
-      mail_v[0] = contact_mail;
-      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+      if(!Exchange) 
+	{
+	  mail_v[0] = contact_mail;
+	  ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+	}
 
       if(!ActiveDirectory)
 	{
@@ -5436,40 +7034,39 @@ int user_create(int ac, char **av, void *ptr)
 	}
     }
 
-  if(strlen(av[U_FIRST])) {
+  if(strlen(av[U_FIRST]))
     ADD_ATTR("givenName", givenName_v, LDAP_MOD_ADD);
-  }
+  
 
-  if(strlen(av[U_LAST]) || strlen(av[U_NAME])) {
+  if(strlen(av[U_LAST]) || strlen(av[U_NAME])) 
     ADD_ATTR("sn", sn_v, LDAP_MOD_ADD);
-  }
 
-  if(strlen(av[U_FIRST]) || strlen(av[U_MIDDLE]) || strlen(av[U_LAST])) {
-    ADD_ATTR("displayName", displayName_v, LDAP_MOD_ADD);
+  if(strlen(av[U_FIRST]) || strlen(av[U_MIDDLE]) || strlen(av[U_LAST])) 
+    {
+      ADD_ATTR("displayName", displayName_v, LDAP_MOD_ADD);
 
-    if(!ActiveDirectory)
-      {
+      if(!ActiveDirectory)
 	ADD_ATTR("eduPersonNickname", displayName_v, LDAP_MOD_ADD);      
-      }
-  } else {
-    ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
+    } 
+  else 
+    {
+      ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
 
     if(!ActiveDirectory)
-      {
-	ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_ADD);            
-      }
-  }
+      ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_ADD);            
+    }
 
-  if (strlen(av[U_MIDDLE]) == 1) {
-    initials_v[0] = av[U_MIDDLE];
-    ADD_ATTR("initials", initials_v, LDAP_MOD_ADD);
-  }
+  if (strlen(av[U_MIDDLE]) == 1) 
+    {
+      initials_v[0] = av[U_MIDDLE];
+      ADD_ATTR("initials", initials_v, LDAP_MOD_ADD);
+    }
 
   if (strlen(call_args[2]) != 0)    
     {
       mitMoiraId_v[0] = call_args[2];
       ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD); 
-  }
+    }
 
   ADD_ATTR("altSecurityIdentities", altSecurityIdentities_v, LDAP_MOD_ADD);
 
@@ -5578,13 +7175,13 @@ int user_create(int ac, char **av, void *ptr)
     }
 
   mods[n] = NULL;
-
   rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
 
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
     {
       OldUseSFU30 = UseSFU30;
       SwitchSFU(mods, &UseSFU30, n);
+
       if (OldUseSFU30 != UseSFU30)
 	rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
     }
@@ -5605,19 +7202,16 @@ int user_create(int ac, char **av, void *ptr)
       if ((rc = set_password(sam_name, "", ldap_domain)) != 0)
         {
           ad_kdc_disconnect();
+
           if (!ad_server_connect(default_server, ldap_domain))
-            {
-              com_err(whoami, 0, "Unable to set password for user %s : %s",
-                      user_name, 
-		      "cannot get changepw ticket from windows domain");
-            }
+	    com_err(whoami, 0, "Unable to set password for user %s : %s",
+		    user_name, 
+		    "cannot get changepw ticket from windows domain");
           else
             {
               if ((rc = set_password(sam_name, "", ldap_domain)) != 0)
-                {
-                  com_err(whoami, 0, "Unable to set password for user %s "
-			  ": %ld", user_name, rc);
-                }
+		com_err(whoami, 0, "Unable to set password for user %s "
+			": %ld", user_name, rc);
             }
         }
     }
@@ -5640,6 +7234,7 @@ int user_create(int ac, char **av, void *ptr)
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_REPLACE);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
 	  
@@ -5658,6 +7253,7 @@ int user_create(int ac, char **av, void *ptr)
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_ADD);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
 	  
@@ -5667,22 +7263,24 @@ int user_create(int ac, char **av, void *ptr)
 	  if(rc)
 	    com_err(whoami, 0, "Unable to set the mitMoiraIMAPAddress for " 
 		    "%s : %s", user_name, ldap_err2string(rc));	  
-	} else if(rc==MR_NO_MATCH) {
-	  
+	} 
+      else if(rc==MR_NO_MATCH) 
+	{
 	  n = 0;
 	  ADD_ATTR("mitMoiraIMAPAddress", mit_moira_imap_address_v, 
 		   LDAP_MOD_REPLACE);
+
 	  mods[n] = NULL;
 	  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
 	  
 	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
 	    rc = LDAP_SUCCESS;
-
+	  
 	  if(rc)
 	    com_err(whoami, 0, 
 		    "Unable to set the mitMoiraIMAPAddress for %s : %s",
 		    user_name, ldap_err2string(rc));
-
+	  
 	}
 
       argv[0] = user_name;
@@ -5704,43 +7302,17 @@ int user_create(int ac, char **av, void *ptr)
 
 	  p = strdup(save_argv[3]);
 	  
-	  if((c = strchr(p, ',')) != NULL) {
-	    q = strtok(p, ",");
-	    StringTrim(q);
-
-	    if ((c = strchr(q, '@')) == NULL)
-	      sprintf(temp, "%s@mit.edu", q);
-	    else
-	      sprintf(temp, "%s", q);
-
-	    if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED) 
-	      {
-		mail_routing_v[0]  = temp;
-
-		n = 0;
-		ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_ADD);
-		mods[n] = NULL;
-		rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
-		
-		if (rc == LDAP_ALREADY_EXISTS || 
-		    rc == LDAP_TYPE_OR_VALUE_EXISTS)
-		  rc = LDAP_SUCCESS;
-		
-		if(rc)
-		  com_err(whoami, 0, 
-			  "Unable to set the mailRoutingAddress for %s : %s",
-			  user_name, ldap_err2string(rc));
-	      }
-
-	    while((q = strtok(NULL, ",")) != NULL) {
+	  if((c = strchr(p, ',')) != NULL) 
+	    {
+	      q = strtok(p, ",");
 	      StringTrim(q);
 
-	      if((c = strchr(q, '@')) == NULL)
+	      if ((c = strchr(q, '@')) == NULL)
 		sprintf(temp, "%s@mit.edu", q);
 	      else
 		sprintf(temp, "%s", q);
 
-	      if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED)
+	      if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED) 
 		{
 		  mail_routing_v[0]  = temp;
 		  
@@ -5758,35 +7330,67 @@ int user_create(int ac, char **av, void *ptr)
 			    "Unable to set the mailRoutingAddress for %s : %s",
 			    user_name, ldap_err2string(rc));
 		}
-	    }
-	  } else {
-	    StringTrim(p);
 
-	    if((c = strchr(p, '@')) == NULL)
-	      sprintf(temp, "%s@mit.edu", p);
-	    else
-	      sprintf(temp, "%s", p);
+	      while((q = strtok(NULL, ",")) != NULL) {
+		StringTrim(q);
+		
+		if((c = strchr(q, '@')) == NULL)
+		  sprintf(temp, "%s@mit.edu", q);
+		else
+		  sprintf(temp, "%s", q);
 
-	    if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED) 
-	      {
-		mail_routing_v[0]  = temp;
-		
-		n = 0;
-		ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_ADD);
-		mods[n] = NULL;
-		rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
-		
-		if (rc == LDAP_ALREADY_EXISTS || 
-		    rc == LDAP_TYPE_OR_VALUE_EXISTS)
-		  rc = LDAP_SUCCESS;
-		
-		if(rc)
-		  com_err(whoami, 0, 
-			  "Unable to set the mailRoutingAddress for %s : %s",
-			  user_name, ldap_err2string(rc));
+		if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED)
+		  {
+		    mail_routing_v[0]  = temp;
+		    
+		    n = 0;
+		    ADD_ATTR("mailRoutingAddress", mail_routing_v, 
+			     LDAP_MOD_ADD);
+
+		    mods[n] = NULL;
+		    rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+		    
+		    if (rc == LDAP_ALREADY_EXISTS || 
+			rc == LDAP_TYPE_OR_VALUE_EXISTS)
+		      rc = LDAP_SUCCESS;
+		    
+		    if(rc)
+		      com_err(whoami, 0, 
+			      "Unable to set the mailRoutingAddress for "
+			      "%s : %s", user_name, ldap_err2string(rc));
+		  }
 	      }
-	  }
+	    } 
+	  else 
+	    {
+	      StringTrim(p);
+	      
+	      if((c = strchr(p, '@')) == NULL)
+		sprintf(temp, "%s@mit.edu", p);
+	      else
+		sprintf(temp, "%s", p);
+	      
+	      if(email_isvalid(temp) && atoi(av[U_STATE]) != US_DELETED) 
+		{
+		  mail_routing_v[0]  = temp;
+		  
+		  n = 0;
+		  ADD_ATTR("mailRoutingAddress", mail_routing_v, LDAP_MOD_ADD);
+		  mods[n] = NULL;
+		  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+		  
+		  if (rc == LDAP_ALREADY_EXISTS || 
+		      rc == LDAP_TYPE_OR_VALUE_EXISTS)
+		    rc = LDAP_SUCCESS;
+		  
+		  if(rc)
+		    com_err(whoami, 0, 
+			  "Unable to set the mailRoutingAddress for %s : %s",
+			    user_name, ldap_err2string(rc));
+		}
+	    }
 	}
+      
       moira_disconnect();
     }
 
@@ -5826,6 +7430,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
       sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "UserAccountControl";
       attr_array[1] = NULL;
+
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, 
 			       LDAP_SCOPE_SUBTREE)) != 0)
@@ -5879,6 +7484,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
   linklist_free(group_base);
   group_base = NULL;
   group_count = 0;
+
   n = 0;
   ADD_ATTR("UserAccountControl", modvalues, LDAP_MOD_REPLACE);
 
@@ -5930,24 +7536,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
       sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "name";
       attr_array[1] = NULL;
-      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count, 
-			       LDAP_SCOPE_SUBTREE)) != 0)
-        {
-          com_err(whoami, 0, "Unable to process user %s : %s",
-                  user_name, ldap_err2string(rc));
-          goto cleanup;
-        }
-    }
-  
-  if (group_count != 1)
-    {
-      linklist_free(group_base);
-      group_count = 0;
-      group_base = NULL;
-      sprintf(filter, "(sAMAccountName=%s)", user_name);
-      attr_array[0] = "name";
-      attr_array[1] = NULL;
+
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, 
 			       LDAP_SCOPE_SUBTREE)) != 0)
@@ -5960,8 +7549,25 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 
   if (group_count != 1)
     {
-      goto cleanup;
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
+      sprintf(filter, "(sAMAccountName=%s)", user_name);
+      attr_array[0] = "name";
+      attr_array[1] = NULL;
+
+      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                               &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0)
+        {
+          com_err(whoami, 0, "Unable to process user %s : %s",
+                  user_name, ldap_err2string(rc));
+          goto cleanup;
+        }
     }
+
+  if (group_count != 1)
+    goto cleanup;
   
   strcpy(distinguished_name, group_base->dn);
 
@@ -6023,20 +7629,18 @@ void linklist_free(LK_ENTRY *linklist_base)
 
 void free_values(char **modvalues)
 {
-  int i;
-
-  i = 0;
+  int i = 0;
 
   if (modvalues != NULL)
     {
-    while (modvalues[i] != NULL)
-      {
-        free(modvalues[i]);
-        modvalues[i] = NULL;
-        ++i;
-      }
-    free(modvalues);
-  }
+      while (modvalues[i] != NULL)
+	{
+	  free(modvalues[i]);
+	  modvalues[i] = NULL;
+	  ++i;
+	}
+      free(modvalues);
+    }
 }
 
 static int illegalchars[] = {
@@ -6083,6 +7687,66 @@ int check_string(char *s)
   char  *string;
 
   string = s;
+
+  /*
+   * Active Directory does not like objects that do not start with a
+   * letter, it does not sync properly to Microsoft's cloud Active Directory
+   */
+  
+  if(ActiveDirectory)
+    {
+      character = *s;
+      
+      if(!isalnum(character))
+	{
+	  com_err(whoami, 0, "Found illegal leading char '%c' (%d) in "
+		  "string %s", character, (unsigned) character, string);
+	  return 0;
+	}
+    }
+
+  /*
+   * Active Directory does not like names the contain two or more
+   * consecutive '.' characters
+   */
+
+  if(ActiveDirectory)
+    {
+      if(strstr(s, "..") != NULL)
+	{
+	  com_err(whoami, 0, "Found illegal substring in "
+		  "string %s", string);
+	  return 0;
+	}
+    }
+
+  /*
+   * Active Directory does not like names the contain the sequence ".@"
+   */
+
+  if(ActiveDirectory)
+    {
+      if(strstr(s, ".@") != NULL)
+	{
+	  com_err(whoami, 0, "Found illegal substring in "
+		  "string %s", string);
+	  return 0;
+	}
+    }
+
+  /*
+   * Active Directory does not like names the contain the sequence "@."
+   */
+  
+  if(ActiveDirectory)
+    {
+      if(strstr(s, "@.") != NULL)
+	{
+	  com_err(whoami, 0, "Found illegal substring in "
+		  "string %s", string);
+	  return 0;
+	}
+    }
 
   for (; *s; s++)
     {
@@ -6231,8 +7895,7 @@ int GetAceInfo(int ac, char **av, void *ptr)
   char **call_args;
   int   security_flag;
 
-  call_args = ptr;
-  
+  call_args = ptr; 
   strcpy(call_args[0], av[L_ACE_TYPE]);
   strcpy(call_args[1], av[L_ACE_NAME]);
   security_flag = 0;
@@ -6367,9 +8030,7 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
 
 	  if(!strcasecmp(AceName, PRODUCTION_PRINCIPAL) ||
 	     !strcasecmp(AceName, TEST_PRINCIPAL))
-	    {
-	      return(1);
-	    }
+	    return(1);
 
           if (rc = mr_query("get_user_account_by_login", 1, av, 
 			    save_query_info, save_argv))
@@ -6489,10 +8150,11 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   member_base = NULL;
   group_members = 0;
 
-  if((max_group_members == -1) && !synchronize) {
-    com_err(whoami, 0, "Skipping populate group for %s", group_name);
-    return(0);
-  }
+  if((max_group_members == -1) && !synchronize) 
+    {
+      com_err(whoami, 0, "Skipping populate group for %s", group_name);
+      return(0);
+    }
 
   if (rc = mr_query("get_end_members_of_list", 1, av,
                     member_list_build, call_args))
@@ -6596,7 +8258,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 
 		      return(3);
 		    }
-
+		
 		  if (rc = user_create(U_END, save_argv, call_args)) 
 		    {
 		      com_err(whoami, 0, "Unable to create user %s "
@@ -6619,15 +8281,11 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	      pUserOu = user_ou;
 		  
 	      if(ActiveDirectory) 
-		{
-		  sprintf(member, "cn=%s,%s,%s", ptr->member, pUserOu, 
-			  dn_path);
-		}
+		sprintf(member, "cn=%s,%s,%s", ptr->member, pUserOu, 
+			dn_path);
 	      else 
-		{
-		  sprintf(member, "uid=%s,%s,%s", ptr->member, pUserOu, 
-			  dn_path);
-		}
+		sprintf(member, "uid=%s,%s,%s", ptr->member, pUserOu, 
+			dn_path);
 	    }
           else if (!strcasecmp(ptr->type, "STRING"))
             {
@@ -6670,8 +8328,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 
 	  if(i > 1) 
 	    members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
-	  members[i++] = strdup(member);
 
+	  members[i++] = strdup(member);
           ptr = ptr->next;
         }
     
@@ -6783,14 +8441,11 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
     }
 
   if (group_count == 0)
-    {
-      return(AD_NO_GROUPS_FOUND);
-    }
+    return(AD_NO_GROUPS_FOUND);
 
   if (group_count > 1)
     {
       ptr = group_base;
-
       strcpy(group_dn, ptr->dn);
 
       while (ptr != NULL)
@@ -6805,6 +8460,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
         {
           com_err(whoami, 0, "%d groups with moira id = %s", group_count, 
 		  MoiraId);
+
           ptr = group_base;
 
           while (ptr != NULL)
@@ -7057,7 +8713,6 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
 
   if ((*linklist_count) == 1)
     {
-
       pPtr = (*linklist_base);
       dn = strdup(pPtr->dn);
       dn += 3;
@@ -7073,7 +8728,6 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   (*linklist_base) = NULL;
   (*linklist_count) = 0;
   sprintf(filter, "(sAMAccountName=%s%s)", group_name, group_suffix);
-
   attr_array[0] = attribute;
   attr_array[1] = NULL;
 
@@ -7111,9 +8765,9 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
   if (strlen(MoiraId) != 0)
     {
       sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
-
       attr_array[0] = "sAMAccountName";
       attr_array[1] = NULL;
+
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, 
 			       LDAP_SCOPE_SUBTREE)) != 0)
@@ -7274,10 +8928,8 @@ void container_check(LDAP *ldap_handle, char *dn_path, char *name)
           rc = container_create(ldap_handle, dn_path, 7, av);
 
           if (rc == LDAP_SUCCESS)
-            {
-              com_err(whoami, 0, "container %s created without a mitMoiraId", 
-		      cName);
-            }
+	    com_err(whoami, 0, "container %s created without a mitMoiraId", 
+		    cName);
 
           cName[i] = '/';
         }
@@ -7331,7 +8983,6 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec,
     }
 
   (*pPtr) = '\0';
-
   container_get_dn(temp, dName);
 
   if (strlen(temp) != 0)
@@ -7340,7 +8991,6 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec,
     sprintf(new_dn_path, "%s", dn_path);
 
   sprintf(new_cn, "OU=%s", cName);
-
   container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
 
   if ((rc = ldap_rename_s(ldap_handle, distinguishedName, new_cn, new_dn_path,
@@ -7482,6 +9132,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
 	      attr_array[1] = NULL;
 	      group_count = 0;
 	      group_base = NULL;
+
 	      if ((rc = linklist_build(ldap_handle, dn_path, filter, 
 				       attr_array, 
 				       &group_base, &group_count, 
@@ -7493,6 +9144,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
 		      managedBy_v[0] = managedByDN;
 		      ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_ADD);
 		    }
+
 		  linklist_free(group_base);
 		  group_base = NULL;
 		  group_count = 0;
@@ -7502,7 +9154,6 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
     }
   
   mods[n] = NULL;
-
   sprintf(temp, "%s,%s", dName, dn_path);
   rc = ldap_add_ext_s(ldap_handle, temp, mods, NULL, NULL);
   
@@ -7594,9 +9245,7 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path,
 			   LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
     {
       if (group_count == 1)
-        {
-          strcpy(distinguishedName, group_base->value);
-        }
+	strcpy(distinguishedName, group_base->value);
 
       linklist_free(group_base);
       group_base = NULL;
@@ -7617,9 +9266,7 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path,
 			       LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
         {
           if (group_count == 1)
-            {
-              strcpy(distinguishedName, group_base->value);
-            }
+	    strcpy(distinguishedName, group_base->value);
 
           linklist_free(group_base);
           group_base = NULL;
@@ -7649,7 +9296,6 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   int       rc;
   int       i;
   int       n;
-
 
   strcpy(ad_path, distinguishedName);
 
@@ -7698,8 +9344,8 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   linklist_free(group_base);
   group_base = NULL;
   group_count = 0;
-
   n = 0;
+
   if (strlen(av[CONTAINER_ROWID]) != 0)
     {
       moiraId_v[0] = av[CONTAINER_ROWID];
@@ -7707,10 +9353,8 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
     }
 
   if (strlen(av[CONTAINER_DESC]) != 0)
-    {
-      attribute_update(ldap_handle, ad_path, av[CONTAINER_DESC], "description",
-		       dName);
-    }
+    attribute_update(ldap_handle, ad_path, av[CONTAINER_DESC], "description",
+		     dName);
   else
     {
       if (strlen(desc) != 0)
@@ -7728,6 +9372,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 	    {
 	      sprintf(managedByDN, "CN=%s,%s,%s", av[CONTAINER_ID], 
 		      kerberos_ou, dn_path);
+
 	      managedBy_v[0] = managedByDN;
 	      ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
 	    }
@@ -7745,16 +9390,12 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 	  memset(filter, '\0', sizeof(filter));
 
 	  if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
-	    {
-	      sprintf(filter, "(&(cn=%s)(&(objectCategory=person)"
-		      "(objectClass=user)))", av[CONTAINER_ID]);
-	    }
+	    sprintf(filter, "(&(cn=%s)(&(objectCategory=person)"
+		    "(objectClass=user)))", av[CONTAINER_ID]);
 
 	  if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
-	    {
-	      sprintf(filter, "(&(objectClass=group)(cn=%s))", 
-		      av[CONTAINER_ID]);
-	    }
+	    sprintf(filter, "(&(objectClass=group)(cn=%s))", 
+		    av[CONTAINER_ID]);
 
 	  if (strlen(filter) != 0)
 	    {
@@ -7762,6 +9403,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 	      attr_array[1] = NULL;
 	      group_count = 0;
 	      group_base = NULL;
+
 	      if ((rc = linklist_build(ldap_handle, dn_path, filter, 
 				       attr_array, &group_base, &group_count, 
 				       LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
@@ -7775,10 +9417,8 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 		  else
 		    {
 		      if (strlen(managedByDN) != 0)
-			{
-			  attribute_update(ldap_handle, ad_path, "", 
-					   "managedBy", dName);
-			}
+			attribute_update(ldap_handle, ad_path, "", 
+					 "managedBy", dName);
 		    }
 
 		  linklist_free(group_base);
@@ -7789,10 +9429,8 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 	  else
 	    {
 	      if (strlen(managedByDN) != 0)
-		{
-		  attribute_update(ldap_handle, ad_path, "", "managedBy", 
-				   dName);
-		}
+		attribute_update(ldap_handle, ad_path, "", "managedBy", 
+				 dName);
 	    }
 	}
     }
@@ -7862,9 +9500,7 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
           if ((rc = linklist_build(ldap_handle, dName, filter, attr_array, 
                                    &group_base, &group_count, 
 				   LDAP_SCOPE_SUBTREE)) != LDAP_SUCCESS)
-            {
-              break;
-            }
+	    break;
 
           if (group_count == 0)
             break;
@@ -7876,10 +9512,13 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
               if (!strcasecmp(pPtr->attribute, "cn"))
                 {
                   sprintf(new_cn, "cn=%s", pPtr->value);
+
                   if (i == 0)
                     sprintf(temp, "%s,%s", orphans_other_ou, dn_path);
+
                   if (i == 1)
                     sprintf(temp, "%s,%s", orphans_machines_ou, dn_path);
+
                   count = 1;
 
                   while (1)
@@ -7896,10 +9535,8 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
                     }
                 }
               else if (!strcasecmp(pPtr->attribute, "ou"))
-                {
-                  rc = ldap_delete_s(ldap_handle, pPtr->dn);
-                }
-
+		rc = ldap_delete_s(ldap_handle, pPtr->dn);
+	      
               pPtr = pPtr->next;
             }
 
@@ -7961,9 +9598,7 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member,
     }
 
   if (group_count != 1)
-    {
-      return(1);
-    }
+    return(1);
 
   strcpy(dn, group_base->dn);
   strcpy(cn, group_base->value);
@@ -8106,6 +9741,7 @@ int machine_get_moira_container(LDAP *ldap_handle, char *dn_path,
   call_args[0] = (char *)container_name;
   rc = mr_query("get_machine_to_container_map", 1, av, 
 		machine_GetMoiraContainer, call_args);
+
   return(rc);
 }
 
@@ -8127,6 +9763,7 @@ int Moira_container_group_create(char **after)
   memset(GroupName, '\0', sizeof(GroupName));
   rc = Moira_groupname_create(GroupName, after[CONTAINER_NAME], 
 			      after[CONTAINER_ROWID]);
+
   if (rc)
     return rc;
   
@@ -8147,11 +9784,9 @@ int Moira_container_group_create(char **after)
   argv[L_MEMACE_NAME] = "sms";
 
   if (rc = mr_query("add_list", 15, argv, NULL, NULL))
-    {
-      com_err(whoami, 0, 
-	      "Unable to create container group %s for container %s: %s",
-	      GroupName, after[CONTAINER_NAME], error_message(rc));
-    }
+    com_err(whoami, 0, 
+	    "Unable to create container group %s for container %s: %s",
+	    GroupName, after[CONTAINER_NAME], error_message(rc));
 
   Moira_setContainerGroup(after[CONTAINER_NAME], GroupName);
   Moira_addGroupToParent(after[CONTAINER_NAME], GroupName);
@@ -8171,12 +9806,14 @@ int Moira_container_group_update(char **before, char **after)
 
   memset(BeforeGroupName, '\0', sizeof(BeforeGroupName));
   Moira_getGroupName(after[CONTAINER_NAME], BeforeGroupName, 0);
+
   if (strlen(BeforeGroupName) == 0)
     return(0);
 
   memset(AfterGroupName, '\0', sizeof(AfterGroupName));
   rc = Moira_groupname_create(AfterGroupName, after[CONTAINER_NAME], 
 			      after[CONTAINER_ROWID]);
+
   if (rc)
     return rc;
 
@@ -8232,11 +9869,9 @@ int Moira_container_group_delete(char **before)
       argv[2] = GroupName;
 
       if (rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL))
-	{
-	  com_err(whoami, 0, 
-		  "Unable to delete container group %s from list: %s",
-		  GroupName, ParentGroupName, error_message(rc));
-	}
+	com_err(whoami, 0, 
+		"Unable to delete container group %s from list: %s",
+		GroupName, ParentGroupName, error_message(rc));
     }
   
   if (strlen(GroupName) != 0)
@@ -8244,10 +9879,8 @@ int Moira_container_group_delete(char **before)
       argv[0] = GroupName;
 
       if (rc = mr_query("delete_list", 1, argv, NULL, NULL))
-	{
-	  com_err(whoami, 0, "Unable to delete container group %s : %s",
-		  GroupName, error_message(rc));
-	}
+	com_err(whoami, 0, "Unable to delete container group %s : %s",
+		GroupName, error_message(rc));
     }
   
   return(rc);
@@ -8277,11 +9910,9 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
     ptr1 = strrchr(temp, '/');
 
     if (ptr1 != NULL)
-    {
-        sprintf(tempgname, "%s-%s", ++ptr1, ptr);
-    }
+      sprintf(tempgname, "%s-%s", ++ptr1, ptr);
     else
-        strcpy(tempgname, ptr);
+      strcpy(tempgname, ptr);
   }
   else
     strcpy(tempgname, temp);
@@ -8317,8 +9948,10 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
 	{
 	  if (rc == MR_NO_MATCH)
 	    break;
+
 	  com_err(whoami, 0, "Moira error while creating group name for "
 		  "container %s : %s", ContainerName, error_message(rc));
+
 	  return rc;
 	}
 
@@ -8329,6 +9962,7 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
 	  com_err(whoami, 0, "Unable to find a unique group name for "
 		  "container %s: too many duplicate container names",
 		  ContainerName);
+
 	  return 1;
 	}
 
@@ -8351,11 +9985,9 @@ int Moira_setContainerGroup(char *origContainerName, char *GroupName)
   argv[1] = GroupName;
   
   if ((rc = mr_query("set_container_list", 2, argv, NULL, NULL)))
-    {
-      com_err(whoami, 0, 
-	      "Unable to set container group %s in container %s: %s",
-	      GroupName, origContainerName, error_message(rc));
-    }
+    com_err(whoami, 0, 
+	    "Unable to set container group %s in container %s: %s",
+	    GroupName, origContainerName, error_message(rc));
   
   return(0);
 }
@@ -8380,11 +10012,9 @@ int Moira_addGroupToParent(char *origContainerName, char *GroupName)
    argv[2] = GroupName;
 
    if ((rc = mr_query("add_member_to_list", 3, argv, NULL, NULL)))
-     {
-       com_err(whoami, 0, 
-	       "Unable to add container group %s to parent group %s: %s",
-	       GroupName, ParentGroupName, error_message(rc));
-     }
+     com_err(whoami, 0, 
+	     "Unable to add container group %s to parent group %s: %s",
+	     GroupName, ParentGroupName, error_message(rc));
    
    return(0);
  }
@@ -8461,10 +10091,8 @@ int Moira_process_machine_container_group(char *MachineName, char* GroupName,
     rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL);
 
   if (rc)
-    {
-      com_err(whoami, 0, "Unable to add machine %s to container group%s: %s",
-	      MachineName, GroupName, error_message(rc));
-    }
+    com_err(whoami, 0, "Unable to add machine %s to container group%s: %s",
+	    MachineName, GroupName, error_message(rc));
 
   return(0);
 }
@@ -8488,9 +10116,7 @@ int GetMachineName(char *MachineName)
   szDot = strchr(NewMachineName,'.');
 
   if ((szDot) && (!strcasecmp(szDot+1, DOMAIN_SUFFIX)))
-    {
-      return(0);
-    }
+    return(0);
   
   // If not, see if it has a Moira alias in the top-level MIT domain.
   memset(NewMachineName, '\0', sizeof(NewMachineName));
@@ -8533,10 +10159,8 @@ int ProcessMachineName(int ac, char **av, void *ptr)
 
       szDot = strchr(MachineName,'.');
 
-        if ((szDot) && (!strcasecmp(szDot+1,DOMAIN_SUFFIX)))
-	  {
-            strcpy(call_args[0], MachineName);
-	  }
+      if ((szDot) && (!strcasecmp(szDot+1,DOMAIN_SUFFIX)))
+	strcpy(call_args[0], MachineName);
     }
 
   return(0);
@@ -8549,20 +10173,20 @@ void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n)
   if (*UseSFU30)
     {
       for (i = 0; i < n; i++)
-        {
+	{
 	  if (!strcmp(mods[i]->mod_type, "msSFU30UidNumber"))
 	    mods[i]->mod_type = "uidNumber";
-        }
+	}
 
       (*UseSFU30) = 0;
     }
   else
     {
       for (i = 0; i < n; i++)
-        {
+	{
 	  if (!strcmp(mods[i]->mod_type, "uidNumber"))
 	    mods[i]->mod_type = "msSFU30UidNumber";
-        }
+	}
 
       (*UseSFU30) = 1;
     }
@@ -8614,7 +10238,6 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 	  if(!strcmp(save_argv[FS_TYPE], "FSGROUP") ||
 	     !strcmp(save_argv[FS_TYPE], "MUL"))
 	    {
-	
 	      argv[0] = save_argv[FS_NAME];
 	      fsgCount = 0;
 	      
@@ -8627,16 +10250,12 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		      
 		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
 					  save_query_info, save_argv)))
-			{
-			  strcpy(path, save_argv[FS_PACK]);
-			}
+			strcpy(path, save_argv[FS_PACK]);
 		    }
 		}
 	    }
 	  else
-	    {
-	      strcpy(path, save_argv[FS_PACK]);
-	    }
+	    strcpy(path, save_argv[FS_PACK]);
 	}
       
       moira_disconnect();
@@ -8685,7 +10304,6 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 	  if(!strcmp(save_argv[FS_TYPE], "FSGROUP") ||
 	     !strcmp(save_argv[FS_TYPE], "MUL"))
 	    {
-	
 	      argv[0] = save_argv[FS_NAME];
 	      fsgCount = 0;
 	      
@@ -8698,16 +10316,12 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		      
 		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
 					  save_query_info, save_argv)))
-			{
-			  strcpy(path, save_argv[FS_PACK]);
-			}
+			strcpy(path, save_argv[FS_PACK]);
 		    }
 		}
 	    }
 	  else
-	    {
-	      strcpy(path, save_argv[FS_PACK]);
-	    }
+	    strcpy(path, save_argv[FS_PACK]);
 	}
      
       moira_disconnect();
@@ -8745,9 +10359,7 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
       memset(winPath, '\0', sizeof(winPath));
     else if (!strcasecmp(WinHomeDir, "[afs]") || 
 	     !strcasecmp(WinHomeDir, "[dfs]"))
-      {
-        strcpy(homeDrive, "H:");
-      }
+      strcpy(homeDrive, "H:");
     else
       {
         strcpy(winPath, WinHomeDir);
@@ -8762,21 +10374,15 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
       memset(winProfile, '\0', sizeof(winProfile));
     else if (strcasecmp(WinProfileDir, "[afs]") && 
 	     strcasecmp(WinProfileDir, "[dfs]"))
-      {
-        strcpy(winProfile, WinProfileDir);
-      }
+      strcpy(winProfile, WinProfileDir);
     
     if (strlen(winProfile) != 0)
-      {
-        if (winProfile[strlen(winProfile) - 1] == '\\')
-	  winProfile[strlen(winProfile) - 1] = '\0';
-      }
+      if (winProfile[strlen(winProfile) - 1] == '\\')
+	winProfile[strlen(winProfile) - 1] = '\0';
 
     if (strlen(winPath) != 0)
-      {
-        if (winPath[strlen(winPath) - 1] == '\\')
-	  winPath[strlen(winPath) - 1] = '\0';
-      }
+      if (winPath[strlen(winPath) - 1] == '\\')
+	winPath[strlen(winPath) - 1] = '\0';
     
     if ((winProfile[1] == ':') && (strlen(winProfile) == 2))
       strcat(winProfile, "\\");
@@ -8785,17 +10391,15 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
       strcat(winPath, "\\");
     
     if (strlen(winPath) == 0)
-      {
-	if (OpType == LDAP_MOD_REPLACE)
-	  {
-	    i = 0;
-	    DEL_ATTR("homeDirectory", LDAP_MOD_DELETE);
-	    DelMods[i] = NULL;
-	    //unset homeDirectory attribute for user.
-	    rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
-	    free(DelMods[0]);
-	  }
-      }
+      if (OpType == LDAP_MOD_REPLACE)
+	{
+	  i = 0;
+	  DEL_ATTR("homeDirectory", LDAP_MOD_DELETE);
+	  DelMods[i] = NULL;
+	  //unset homeDirectory attribute for user.
+	  rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+	  free(DelMods[0]);
+	}
     else
       {
 	homedir_v[0] = strdup(winPath);
@@ -8804,14 +10408,14 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     
     if (strlen(winProfile) == 0)
       {
-        if (OpType == LDAP_MOD_REPLACE)
+	if (OpType == LDAP_MOD_REPLACE)
 	  {
-            i = 0;
-            DEL_ATTR("profilePath", LDAP_MOD_DELETE);
-            DelMods[i] = NULL;
-            //unset profilePate attribute for user.
-            rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
-            free(DelMods[0]);
+	    i = 0;
+	    DEL_ATTR("profilePath", LDAP_MOD_DELETE);
+	    DelMods[i] = NULL;
+	    //unset profilePate attribute for user.
+	    rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+	    free(DelMods[0]);
 	  }
       }
     else
@@ -8822,14 +10426,14 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     
     if (strlen(homeDrive) == 0)
       {
-        if (OpType == LDAP_MOD_REPLACE)
+	if (OpType == LDAP_MOD_REPLACE)
 	  {
-            i = 0;
-            DEL_ATTR("homeDrive", LDAP_MOD_DELETE);
-            DelMods[i] = NULL;
-            //unset homeDrive attribute for user
-            rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
-            free(DelMods[0]);
+	    i = 0;
+	    DEL_ATTR("homeDrive", LDAP_MOD_DELETE);
+	    DelMods[i] = NULL;
+	    //unset homeDrive attribute for user
+	    rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+	    free(DelMods[0]);
 	  }
       }
     else
@@ -8946,68 +10550,68 @@ int ReadConfigFile(char *DomainName)
 
     if ((fptr = fopen(temp, "r")) != NULL)
       {
-        while (fgets(temp, sizeof(temp), fptr) != 0)
+	while (fgets(temp, sizeof(temp), fptr) != 0)
 	  {
-            for (i = 0; i < (int)strlen(temp); i++)
+	    for (i = 0; i < (int)strlen(temp); i++)
 	      temp[i] = toupper(temp[i]);
-
-            if (temp[strlen(temp) - 1] == '\n')
+	    
+	    if (temp[strlen(temp) - 1] == '\n')
 	      temp[strlen(temp) - 1] = '\0';
-
-            StringTrim(temp);
-
-            if (strlen(temp) == 0)
+	    
+	    StringTrim(temp);
+	    
+	    if (strlen(temp) == 0)
 	      continue;
-
-            if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
+	    
+	    if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
 	      {
-                if (strlen(temp) > (strlen(DOMAIN)))
+		if (strlen(temp) > (strlen(DOMAIN)))
 		  {
-                    strcpy(ldap_domain, &temp[strlen(DOMAIN)]);
-                    StringTrim(ldap_domain);
+		    strcpy(ldap_domain, &temp[strlen(DOMAIN)]);
+		    StringTrim(ldap_domain);
 		  }
 	      }
-            else if (!strncmp(temp, REALM, strlen(REALM)))
-              {
-                if (strlen(temp) > (strlen(REALM)))
-                  {
-                    strcpy(ldap_realm, &temp[strlen(REALM)]);
-                    StringTrim(ldap_realm);
-                  }
-              }
-            else if (!strncmp(temp, PORT, strlen(PORT)))
-              {
-                if (strlen(temp) > (strlen(PORT)))
+	    else if (!strncmp(temp, REALM, strlen(REALM)))
+	      {
+		if (strlen(temp) > (strlen(REALM)))
+		  {
+		    strcpy(ldap_realm, &temp[strlen(REALM)]);
+		    StringTrim(ldap_realm);
+		  }
+	      }
+	    else if (!strncmp(temp, PORT, strlen(PORT)))
+	      {
+		if (strlen(temp) > (strlen(PORT)))
                   {
                     strcpy(ldap_port, &temp[strlen(PORT)]);
                     StringTrim(ldap_port);
                   }
-              }
-            else if (!strncmp(temp, PRINCIPALNAME, strlen(PRINCIPALNAME)))
+	      }
+	    else if (!strncmp(temp, PRINCIPALNAME, strlen(PRINCIPALNAME)))
 	      {
-                if (strlen(temp) > (strlen(PRINCIPALNAME)))
+		if (strlen(temp) > (strlen(PRINCIPALNAME)))
 		  {
-                    strcpy(PrincipalName, &temp[strlen(PRINCIPALNAME)]);
-                    StringTrim(PrincipalName);
+		    strcpy(PrincipalName, &temp[strlen(PRINCIPALNAME)]);
+		    StringTrim(PrincipalName);
 		  }
 	      }
-            else if (!strncmp(temp, SERVER, strlen(SERVER)))
+	    else if (!strncmp(temp, SERVER, strlen(SERVER)))
 	      {
-                if (strlen(temp) > (strlen(SERVER)))
+		if (strlen(temp) > (strlen(SERVER)))
 		  {
-                    ServerList[Count] = calloc(1, 256);
-                    strcpy(ServerList[Count], &temp[strlen(SERVER)]);
-                    StringTrim(ServerList[Count]);
-                    ++Count;
+		    ServerList[Count] = calloc(1, 256);
+		    strcpy(ServerList[Count], &temp[strlen(SERVER)]);
+		    StringTrim(ServerList[Count]);
+		    ++Count;
 		  }
 	      }
-            else if (!strncmp(temp, MSSFU, strlen(MSSFU)))
+	    else if (!strncmp(temp, MSSFU, strlen(MSSFU)))
 	      {
-                if (strlen(temp) > (strlen(MSSFU)))
+		if (strlen(temp) > (strlen(MSSFU)))
 		  {
-                    strcpy(temp1, &temp[strlen(MSSFU)]);
-                    StringTrim(temp1);
-                    if (!strcmp(temp1, SFUTYPE))
+		    strcpy(temp1, &temp[strlen(MSSFU)]);
+		    StringTrim(temp1);
+		    if (!strcmp(temp1, SFUTYPE))
 		      UseSFU30 = 1;
 		  }
 	      }
@@ -9099,15 +10703,15 @@ int ReadConfigFile(char *DomainName)
 		      }
 		  }
 	      }
-            else if (!strncmp(temp, MAX_MEMBERS, strlen(MAX_MEMBERS)))
-              {
-                if (strlen(temp) > (strlen(MAX_MEMBERS)))
-                  {
-                    strcpy(temp1, &temp[strlen(MAX_MEMBERS)]);
-                    StringTrim(temp1);
-                    max_group_members = atoi(temp1);
-                  }
-              }
+	    else if (!strncmp(temp, MAX_MEMBERS, strlen(MAX_MEMBERS)))
+	      {
+		if (strlen(temp) > (strlen(MAX_MEMBERS)))
+		  {
+		    strcpy(temp1, &temp[strlen(MAX_MEMBERS)]);
+		    StringTrim(temp1);
+		    max_group_members = atoi(temp1);
+		  }
+	      }
 	    else if(!strncmp(temp, UPDATE_NAME_INFO, 
 			     strlen(UPDATE_NAME_INFO))) 
 	      {
@@ -9119,25 +10723,24 @@ int ReadConfigFile(char *DomainName)
 		      update_name_info = 0;
 		  }
 	      }
-            else
+	    else
 	      {
-                if (strlen(ldap_domain) != 0)
+		if (strlen(ldap_domain) != 0)
 		  {
-                    memset(ldap_domain, '\0', sizeof(ldap_domain));
-                    break;
+		    memset(ldap_domain, '\0', sizeof(ldap_domain));
+		    break;
 		  }
-
-                if (strlen(temp) != 0)
+		
+		if (strlen(temp) != 0)
 		  strcpy(ldap_domain, temp);
 	      }
 	  }
-        fclose(fptr);
+
+	fclose(fptr);
       }
     
     if (strlen(ldap_domain) == 0)
-      {
       strcpy(ldap_domain, DomainName);
-      }
 
     if (Count == 0)
         return(0);
@@ -9145,10 +10748,8 @@ int ReadConfigFile(char *DomainName)
     for (i = 0; i < Count; i++)
       {
         if (ServerList[i] != 0)
-	  {
-            for (k = 0; k < (int)strlen(ServerList[i]); k++)
-	      ServerList[i][k] = toupper(ServerList[i][k]);
-	  }
+	  for (k = 0; k < (int)strlen(ServerList[i]); k++)
+	    ServerList[i][k] = toupper(ServerList[i][k]);
       }
     
     return(0);
@@ -9175,15 +10776,15 @@ int ReadDomainList()
 	{
 	  for (i = 0; i < (int)strlen(temp); i++)
 	    temp[i] = toupper(temp[i]);
-
+	  
 	  if (temp[strlen(temp) - 1] == '\n')
 	    temp[strlen(temp) - 1] = '\0';
-
+	  
 	  StringTrim(temp);
-
+	  
 	  if (strlen(temp) == 0)
 	    continue;
-
+	  
 	  if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
 	    {
 	      if (strlen(temp) > (strlen(DOMAIN)))
@@ -9198,14 +10799,15 @@ int ReadDomainList()
 	  StringTrim(DomainNames[Count]);
 	  ++Count;
 	}
-
+      
       fclose(fptr);
     }
-
+  
   if (Count == 0)
     {
-      critical_alert(whoami, "incremental", "%s", "ldap.incr cannot run due to a "
-		     "configuration error in ldap.cfg");
+      critical_alert(whoami, "incremental", "%s", 
+		     "ldap.incr cannot run due to a configuration error in "
+		     "ldap.cfg");
       return(1);
     }
   
@@ -9221,52 +10823,65 @@ int email_isvalid(const char *address) {
     return 0;
     
   /* first we validate the name portion (name@domain) */
-  for (c = address;  *c;  c++) {
-    if (*c == '\"' && (c == address || *(c - 1) == '.' || *(c - 1) == 
-		       '\"')) {
-      while (*++c) {
-        if (*c == '\"') 
-	  break;
-        if (*c == '\\' && (*++c == ' ')) 
+  for (c = address;  *c;  c++) 
+    {
+      if (*c == '\"' && (c == address || *(c - 1) == '.' || *(c - 1) == 
+			 '\"')) 
+	{
+	  while (*++c) 
+	    {
+	      if (*c == '\"') 
+		break;
+	      if (*c == '\\' && (*++c == ' ')) 
+		continue;
+	      if (*c <= ' ' || *c >= 127) 
+		return 0;
+	    }
+	  
+	  if (!*c++) 
+	    return 0;
+	  
+	  if (*c == '@') 
+	    break;
+	  
+	  if (*c != '.') 
+	    return 0;
+	  
 	  continue;
-        if (*c <= ' ' || *c >= 127) 
-	  return 0;
-      }
-
-      if (!*c++) 
-	return 0;
+	}
+      
       if (*c == '@') 
 	break;
-      if (*c != '.') 
+      
+      if (*c <= ' ' || *c >= 127) 
 	return 0;
-      continue;
+      
+      if (strchr(rfc822_specials, *c)) 
+	return 0;
     }
-
-    if (*c == '@') 
-      break;
-    if (*c <= ' ' || *c >= 127) 
-      return 0;
-    if (strchr(rfc822_specials, *c)) 
-      return 0;
-  }
-
+  
   if (c == address || *(c - 1) == '.') 
     return 0;
 
   /* next we validate the domain portion (name@domain) */
-  if (!*(domain = ++c)) return 0;
-  do {
-    if (*c == '.') {
-      if (c == domain || *(c - 1) == '.') 
-	return 0;
-      count++;
-    }
-    if (*c <= ' ' || *c >= 127) 
-      return 0;
-    if (strchr(rfc822_specials, *c)) 
-      return 0;
-  } while (*++c);
+  if (!*(domain = ++c)) 
+    return 0;
 
+  do 
+    {
+      if (*c == '.') {
+	if (c == domain || *(c - 1) == '.') 
+	  return 0;
+	count++;
+      }
+
+      if (*c <= ' ' || *c >= 127) 
+	return 0;
+      
+      if (strchr(rfc822_specials, *c)) 
+	return 0;
+    } while (*++c);
+  
   return (count >= 1);
 }
 
@@ -9323,71 +10938,72 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
     {
       gPtr = group_base;
       
-      while(gPtr) {
-	if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "public")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "Recover")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "recover")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "reserve")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "PF")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "pf")) != (char *) NULL) || 
-	    ((s = strstr(gPtr->dn, "TSM")) != (char *) NULL) ||
-	    ((s = strstr(gPtr->dn, "tsm")) != (char *) NULL))
-	  {
-	    gPtr = gPtr->next;
-	    continue;
-	  }
+      while(gPtr) 
+	{
+	  if (((s = strstr(gPtr->dn, "Public")) != (char *) NULL) ||
+	      ((s = strstr(gPtr->dn, "public")) != (char *) NULL) || 
+	      ((s = strstr(gPtr->dn, "Recover")) != (char *) NULL) || 
+	      ((s = strstr(gPtr->dn, "recover")) != (char *) NULL) || 
+	      ((s = strstr(gPtr->dn, "Reserve")) != (char *) NULL) ||
+	      ((s = strstr(gPtr->dn, "reserve")) != (char *) NULL) ||
+	      ((s = strstr(gPtr->dn, "PF")) != (char *) NULL) ||
+	      ((s = strstr(gPtr->dn, "pf")) != (char *) NULL) || 
+	      ((s = strstr(gPtr->dn, "TSM")) != (char *) NULL) ||
+	      ((s = strstr(gPtr->dn, "tsm")) != (char *) NULL))
+	    {
+	      gPtr = gPtr->next;
+	      continue;
+	    }
 
-	/* 
-	 * Due to limits in active directory we need to use the LDAP
-	 * range semantics to query and return all the values in 
-	 * large lists, we will stop increasing the range when
-	 * the result count is 0.
-         */
-
-	i = 0;	
-	mdbbl_count = 0;
-
-	for(;;) 
-	  {
-	    memset(sub_filter, '\0', sizeof(sub_filter));
-	    memset(range, '\0', sizeof(range));
-	    sprintf(sub_filter, "(objectClass=msExchMDB)");
-
-	    if(isLast)
-	      sprintf(range, "homeMDBBL;Range=%d-*", rangeLow);
-	    else 
-	      sprintf(range, "homeMDBBL;Range=%d-%d", rangeLow, rangeHigh);
-
-	    attr_array[0] = range;
-	    attr_array[1] = NULL;
-	    
-	    sub_group_base = NULL;
-	    sub_group_count = 0;
-	    
-	    if ((rc = linklist_build(ldap_handle, gPtr->dn, sub_filter, 
-				     attr_array, &sub_group_base, 
-				     &sub_group_count, 
-				     LDAP_SCOPE_SUBTREE)) != 0) 
-	      {
-		com_err(whoami, 0, "Unable to find homeMDBBL %s",
-			ldap_err2string(rc));
-		return(rc);
-	      }
-
-	    if(!sub_group_count)
-	      {
-		if(isLast) 
-		  {
-		    isLast = 0;
-		    rangeLow = 0;
-		    rangeHigh = rangeLow + (rangeStep - 1);
-		    break;
-		  }
-		else
-		  isLast++;
-	      }
+	  /* 
+	   * Due to limits in active directory we need to use the LDAP
+	   * range semantics to query and return all the values in 
+	   * large lists, we will stop increasing the range when
+	   * the result count is 0.
+	   */
+	  
+	  i = 0;	
+	  mdbbl_count = 0;
+	  
+	  for(;;) 
+	    {
+	      memset(sub_filter, '\0', sizeof(sub_filter));
+	      memset(range, '\0', sizeof(range));
+	      sprintf(sub_filter, "(objectClass=msExchMDB)");
+	      
+	      if(isLast)
+		sprintf(range, "homeMDBBL;Range=%d-*", rangeLow);
+	      else 
+		sprintf(range, "homeMDBBL;Range=%d-%d", rangeLow, rangeHigh);
+	      
+	      attr_array[0] = range;
+	      attr_array[1] = NULL;
+	      
+	      sub_group_base = NULL;
+	      sub_group_count = 0;
+	      
+	      if ((rc = linklist_build(ldap_handle, gPtr->dn, sub_filter, 
+				       attr_array, &sub_group_base, 
+				       &sub_group_count, 
+				       LDAP_SCOPE_SUBTREE)) != 0) 
+		{
+		  com_err(whoami, 0, "Unable to find homeMDBBL %s",
+			  ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if(!sub_group_count)
+		{
+		  if(isLast) 
+		    {
+		      isLast = 0;
+		      rangeLow = 0;
+		      rangeHigh = rangeLow + (rangeStep - 1);
+		      break;
+		    }
+		  else
+		    isLast++;
+		}
 
 	    mdbbl_count += sub_group_count;
 	    rangeLow = rangeHigh + 1;
@@ -9436,6 +11052,7 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   if(group_count) 
     {
       legacyExchangeDN = strdup(group_base->value);
+
       if((s = strrchr(legacyExchangeDN, '/')) != (char *) NULL) 
 	{
 	  *s = '\0';
@@ -9472,10 +11089,9 @@ int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
   if(group_count) 
     {
       owningServerName = strdup(group_base->value);
+
       if((s = strchr(owningServerName, ',')) != (char *) NULL) 
-	{
-	  *s = '\0';
-	}
+	*s = '\0';
     } 
 
   sprintf(temp, "%s/%s", legacyExchangeDN, owningServerName);
@@ -9494,6 +11110,7 @@ char *lowercase(char *s)
       if (isupper(*p))
 	*p = tolower(*p);
     }
+
   return s;
 }
 
@@ -9506,6 +11123,7 @@ char *uppercase(char *s)
       if (islower(*p))
 	*p = toupper(*p);
     }
+
   return s;
 }
 
@@ -9523,28 +11141,37 @@ char *escape_string(char *s)
 
   /* Escape any special characters */
 
-  for(; *q != '\0'; q++) {
-    if(*q == ',')
-      string[i++] = '\\';
-    if(*q == '+') 
-      string[i++] = '\\';
-    if(*q == '"') 
-      string[i++] = '\\';
-    if(*q == '\\') 
-      string[i++] = '\\';
-    if(*q == '<') 
-      string[i++] = '\\';
-    if(*q == '>') 
-      string[i++] = '\\';
-    if(*q == ';')
-      string[i++] = '\\';
-    if(*q == '#')
-      string[i++] = '\\';
-    if(*q == '=')
-      string[i++] = '\\';
+  for(; *q != '\0'; q++) 
+    {
+      if(*q == ',')
+	string[i++] = '\\';
 
-    string[i++] = *q;
-  }
+      if(*q == '+') 
+	string[i++] = '\\';
+
+      if(*q == '"') 
+	string[i++] = '\\';
+
+      if(*q == '\\') 
+	string[i++] = '\\';
+
+      if(*q == '<') 
+	string[i++] = '\\';
+
+      if(*q == '>') 
+	string[i++] = '\\';
+
+      if(*q == ';')
+	string[i++] = '\\';
+      
+      if(*q == '#')
+	string[i++] = '\\';
+
+      if(*q == '=')
+	string[i++] = '\\';
+      
+      string[i++] = *q;
+    }
 
   return strdup(string);
 }
@@ -9587,9 +11214,7 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
   char         temp[256];
 
   if(ActiveDirectory)
-    {
-      sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-    }
+    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
   else
     {
       if(!strcmp(UserOu, user_ou))
@@ -9617,13 +11242,9 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
     }
           
   if (group_count)
-    {
-      rc = 1;
-    }
+    rc = 1;
   else 
-    {
-      rc = 0;
-    }
+    rc = 0;
 
   linklist_free(group_base);
   group_count = 0;
@@ -9651,20 +11272,22 @@ static char *default_values[] = {
 #define VALIDVAL(n) ((n >= SASL_CB_USER) && (n <= SASL_CB_GETREALM))
 #define VAL(n) default_values[n-0x4001]
 
-static int example_sasl_interact( LDAP *ld, unsigned flags, void *defaults, void *prompts ) {
+static int example_sasl_interact( LDAP *ld, unsigned flags, void *defaults, 
+				  void *prompts ) {
+
   sasl_interact_t         *interact = NULL;
   int                     rc;
 
-  if (prompts == NULL) {
+  if (prompts == NULL) 
     return (LDAP_PARAM_ERROR);
-  }
 
-  for (interact = prompts; interact->id != SASL_CB_LIST_END; interact++) {
-    if (VALIDVAL(interact->id)) {
-      interact->result = VAL(interact->id);
-      interact->len = strlen((char *)interact->result);
-    }
-  }
+  for (interact = prompts; interact->id != SASL_CB_LIST_END; interact++) 
+    if (VALIDVAL(interact->id)) 
+      {
+	interact->result = VAL(interact->id);
+	interact->len = strlen((char *)interact->result);
+      }
+
   return (LDAP_SUCCESS);
 }
 
@@ -9692,10 +11315,12 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
     return(1);
 
   convert_domain_to_dn(ldap_domain, dn_path);
+
   if (strlen(dn_path) == 0)
     return(1);
 
   Count = 0;
+
   while (ServerList[Count] != NULL)
     ++Count;
 
@@ -9711,12 +11336,16 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
         {
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION,
                                &version);
+
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT,
                                (void *)&Max_wait_time);
+
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT,
                                (void *)&Max_size_limit);
+
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS,
                                LDAP_OPT_OFF);
+
           rc = ldap_set_option((*ldap_handle), LDAP_OPT_X_SASL_SSF_MAX,
                                &max_ssf);
 
@@ -9725,32 +11354,35 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
 						 example_sasl_interact,
 						 NULL, &ctrls);
 
-	  
           if (rc == LDAP_SUCCESS)
-            {
-              if (connect_to_kdc)
-                {
-                  if (!ad_server_connect(ServerList[i], ldap_domain))
-                    {
+	    {
+	      if (connect_to_kdc)
+		{
+		  if (!ad_server_connect(ServerList[i], ldap_domain))
+		    {
 		      printf("ad_server_connect failed\n");
-                      ldap_unbind_s((*ldap_handle));
-                      (*ldap_handle) = NULL;
-                      continue;
-                    }
-                }
-              if (strlen(default_server) == 0)
-		strcpy(default_server, ServerList[i]);
-              strcpy(connected_server, ServerList[i]);
-              break;
-            }
+		      ldap_unbind_s((*ldap_handle));
+		      (*ldap_handle) = NULL;
+		      continue;
+		    }
+
+		  if (strlen(default_server) == 0)
+		    strcpy(default_server, ServerList[i]);
+
+		  strcpy(connected_server, ServerList[i]);
+		  break;
+		}
+	    }
           else
             {
               (*ldap_handle) = NULL;
             }
         }
     }
+
   if ((*ldap_handle) == NULL)
     return(1);
+
   return(0);
 }
 
@@ -9763,6 +11395,7 @@ int convert_domain_to_dn(char *domain, char *dnp)
   memset(dn, '\0', sizeof(dn));
   strcpy(dn, "dc=");
   dp = dn+3;
+
   for (fp = domain; *fp; fp++)
     {
       if (*fp == '.')
@@ -9780,24 +11413,30 @@ int convert_domain_to_dn(char *domain, char *dnp)
 
 void ad_kdc_disconnect()
 {
-
   if (auth_context != NULL)
     {
       krb5_auth_con_free(context, auth_context);
+
       if (ap_req.data != NULL)
         free(ap_req.data);
+
       krb5_free_cred_contents(context, &creds);
+
       if (credsp != NULL)
         krb5_free_creds(context, credsp);
     }
+
   credsp = NULL;
   auth_context = NULL;
+
   if (context != NULL)
     {
       if (ccache)
 	krb5_cc_close(context, ccache);
+
       krb5_free_context(context);
     }
+
   close(kdc_socket);
 
 }

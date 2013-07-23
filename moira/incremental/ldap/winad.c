@@ -7035,25 +7035,32 @@ int user_create(int ac, char **av, void *ptr)
     }
 
   if(strlen(av[U_FIRST]))
-    ADD_ATTR("givenName", givenName_v, LDAP_MOD_ADD);
-  
+    {
+      ADD_ATTR("givenName", givenName_v, LDAP_MOD_ADD);
+    }
 
   if(strlen(av[U_LAST]) || strlen(av[U_NAME])) 
-    ADD_ATTR("sn", sn_v, LDAP_MOD_ADD);
+    {
+      ADD_ATTR("sn", sn_v, LDAP_MOD_ADD);
+    }
 
   if(strlen(av[U_FIRST]) || strlen(av[U_MIDDLE]) || strlen(av[U_LAST])) 
     {
       ADD_ATTR("displayName", displayName_v, LDAP_MOD_ADD);
 
-      if(!ActiveDirectory)
-	ADD_ATTR("eduPersonNickname", displayName_v, LDAP_MOD_ADD);      
+      if(!ActiveDirectory) 
+	{
+	  ADD_ATTR("eduPersonNickname", displayName_v, LDAP_MOD_ADD);      
+	}
     } 
   else 
     {
       ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
 
-    if(!ActiveDirectory)
-      ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_ADD);            
+      if(!ActiveDirectory) 
+	{
+	  ADD_ATTR("eduPersonNickname", name_v, LDAP_MOD_ADD);            
+	}
     }
 
   if (strlen(av[U_MIDDLE]) == 1) 

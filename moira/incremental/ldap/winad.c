@@ -375,16 +375,20 @@ CN=Policies,CN=RBAC,CN=Massachusetts Institute of Technology,\
 CN=Microsoft Exchange,CN=Services,CN=Configuration,"
 
 #define ADD_ATTR(t, v, o) 		\
+do { 					\
   mods[n] = malloc(sizeof(LDAPMod));	\
   mods[n]->mod_op = o;	                \
   mods[n]->mod_type = t; 		\
-  mods[n++]->mod_values = v
+  mods[n++]->mod_values = v;		\
+} while (0)
 
 #define DEL_ATTR(t, o) 		        \
+do {					\
   DelMods[i] = malloc(sizeof(LDAPMod));	\
   DelMods[i]->mod_op = o;	        \
   DelMods[i]->mod_type = t; 		\
-  DelMods[i++]->mod_values = NULL
+  DelMods[i++]->mod_values = NULL;	\
+} while (0)
 
 #define DOMAIN_SUFFIX   "MIT.EDU"
 #define DOMAIN  "DOMAIN:"

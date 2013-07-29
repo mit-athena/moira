@@ -2464,8 +2464,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  
 	  if (group_count)
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      after_group_name);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, after_group_name);
 	      MailDisabled++;
 	    }
 	
@@ -2793,8 +2793,8 @@ int group_create(int ac, char **av, void *ptr)
 	      
 	      if (group_count)
 		{
-		  com_err(whoami, 0, "Object already exists with name %s",
-			  av[L_NAME]);
+		  com_err(whoami, 0, "Object %s already exists with name %s",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 	
@@ -2932,11 +2932,11 @@ int group_create(int ac, char **av, void *ptr)
 			  av[L_NAME], ldap_err2string(rc));
 		  return(rc);
 		}
-	      
+	    
 	      if (group_count)
 		{
-		  com_err(whoami, 0, "Object already exists with name %s",
-			  av[L_NAME]);
+		  com_err(whoami, 0, "Object %s already exists with name %s",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 	      
@@ -3927,8 +3927,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
 
@@ -3951,8 +3951,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
   
@@ -3975,8 +3975,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
 	
@@ -3999,8 +3999,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
 	  
@@ -4025,8 +4025,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
 
@@ -4050,8 +4050,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
       
 	  if (group_count) 
 	    {
-	      com_err(whoami, 0, "Object already exists with name %s",
-		      user);
+	      com_err(whoami, 0, "Object %s already exists with name %s",
+		      group_base->dn, user);
 	      return(1);
 	    }
 
@@ -4324,8 +4324,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       group_base = NULL;
       
       sprintf(filter_exp, 
-	      "(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))", mail,
-	      mail, user_name);
+	      "(&(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))"
+	      "(!(samaccountname=%s)))", mail, mail, user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -4337,11 +4337,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		  user_name, ldap_err2string(rc));
 	  return(1);
 	}
-      
+    
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object already exists with mail %s",
-		  mail);
+	  com_err(whoami, 0, "Object %s already exists with mail %s",
+		  group_base->dn, mail);
 	  MailDisabled++;
 	}
       
@@ -4350,8 +4350,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       group_base = NULL;
       
       sprintf(filter_exp, 
-	      "(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
-	      "(mailnickname=%s))", user_name, user_name, user_name);
+	      "(&(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
+	      "(mailnickname=%s))(!(samaccountname=%s)))", user_name, 
+	      user_name, user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -4366,8 +4367,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object already exists with mail %s@mit.edu",
-		  user_name);
+	  com_err(whoami, 0, "Object %s already exists with mail %s@mit.edu",
+		  group_base->dn, user_name);
 	  MailDisabled++;
 	}
       
@@ -6843,9 +6844,8 @@ int user_create(int ac, char **av, void *ptr)
       group_base = NULL;
       
       sprintf(filter_exp, 
-	      "(|(mail=%s)(proxyaddresses=smtp%s)(mailnickname=%s))", mail,
-	      mail, user_name);
-  
+	      "(&(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))"
+	      "(!(samaccountname=%s)))", mail, mail, user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -6861,8 +6861,8 @@ int user_create(int ac, char **av, void *ptr)
       
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object already exists with mail %s",
-		  mail);
+	  com_err(whoami, 0, "Object %s already exists with mail %s",
+		  group_base->dn, mail);
 	  MailDisabled++;
 	}
       
@@ -6871,8 +6871,9 @@ int user_create(int ac, char **av, void *ptr)
       group_base = NULL;
       
       sprintf(filter_exp, 
-	      "(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
-	      "(mailnickname=%s))", user_name, user_name, user_name);
+	      "(&(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
+	      "(mailnickname=%s))(!(samaccountname=%s)))", user_name,
+	      user_name, user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -6884,11 +6885,11 @@ int user_create(int ac, char **av, void *ptr)
 		  user_name, ldap_err2string(rc));
 	  return(1);
 	}
-      
+
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object already exists with mail %s@mit.edu",
-		  user_name);
+	  com_err(whoami, 0, "Object %s already exists with mail %s@mit.edu",
+		  group_base->dn, user_name);
 	  MailDisabled++;
 	}
       

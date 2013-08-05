@@ -19,7 +19,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@ @KERBEROS_SUBDIRS@ route-server
+SUBDIRS=incr-runner @AFS_SUBDIRS@ @WINAD_SUBDIRS@ @KERBEROS_SUBDIRS@ route-server
 
 .SUFFIXES: .pc
 

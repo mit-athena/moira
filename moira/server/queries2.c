@@ -4389,6 +4389,22 @@ static char *glic_fields[] = {
   "containername", "listname",
 };
 
+static struct validate giql_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_incremental_queue_length
+};
+
+static char *giql_fields[] = {
+  "service", "length",
+};
+
 /* Generalized Query Definitions */
 
 /* Multiple versions of the same query MUST be listed in ascending
@@ -8947,6 +8963,23 @@ struct query Queries[] = {
     1,
     NULL,
     &glic_validate,
+  },
+
+  {
+    /* Q_GIQL - GET_INCREMENTAL_QUEUE_LENGTH */
+    "get_incremental_queue_length",
+    "giql",
+    2,
+    MR_Q_RETRIEVE,
+    0,
+    0,
+    0,
+    giql_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &giql_validate,
   },
 
 };

@@ -223,8 +223,6 @@ int main(int argc, char **argv)
 	{
 	  if (errno != EINTR)
 	    com_err(whoami, errno, "in select");
-	  if (!inc_running || now - inc_started > INC_TIMEOUT)
-	    next_incremental();
 	  continue;
 	}
 
@@ -239,8 +237,6 @@ int main(int argc, char **argv)
 	}
 
       time(&now);
-      if (!inc_running || now - inc_started > INC_TIMEOUT)
-	next_incremental();
       tardy = now - 30 * 60;
 
       /* If we're asleep and we should wake up, do it */
@@ -393,8 +389,6 @@ void reapchild(int x)
 
   while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-      if (pid == inc_pid)
-	inc_running = 0;
       if (!takedown && (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0))
 	{
 	  child_exited_abnormally = 1;

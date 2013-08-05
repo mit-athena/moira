@@ -1,0 +1,356 @@
+/* $Id$
+ *
+ * Incremental Runner for Moira.
+ *
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include <moira_schema.h>
+#include "update.h"
+
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "vis.h"
+#include "setproctitle.h"
+
+#define NOINCRFILE "/etc/noincr"
+
+#define MAXARGC 20
+#define INC_TIMEOUT (3 * 60)        /* 3 minutes */
+
+int inc_pid = 0;
+int inc_running = 0;
+time_t inc_started;
+int child_exited_abnormally = 0;
+int child_pid, child_signal, child_status;
+
+EXEC SQL INCLUDE sqlca;
+void sqlglm(char *, unsigned int *, unsigned int *);
+void dbmserr(void);
+void *xmalloc(size_t);
+void do_service(char *name);
+void free_argv(char **argv, int argc);
+void reapchild(int x);
+
+RCSID("$HeadURL$ $Id$");
+
+char whobuf[256], *whoami = whobuf, *db = "moira";
+
+int main(int argc, char **argv)
+{
+  int status, pid;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char buf[INCREMENTAL_SERVICE_SIZE], *name;
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
+
+  if (strchr(argv[0], '/'))
+    strcpy(whoami, strrchr(argv[0], '/') + 1);
+  else strcpy(whoami, argv[0]);
+
+  setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+  setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+
+  initialize_sms_error_table();
+  initialize_krb_error_table();
+
+  initproctitle(argc, argv);
+
+  if (argc > 2)
+    {
+      com_err(whoami, 0, "Usage: whoami [servicename]", argv[0]);
+      exit (1);
+    }
+  else if (argc == 2)
+    {
+      setproctitle(argv[0], argv[1]);
+      if (strchr(argv[0], '/'))
+	strcpy(whoami, strrchr(argv[0], '/') + 1);
+      else strcpy(whoami, argv[0]);
+      /* never returns */
+      do_service(argv[1]);
+      exit(0);
+    }
+
+  EXEC SQL WHENEVER SQLERROR DO dbmserr();
+
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+
+  /* fetch list of services */
+  EXEC SQL DECLARE csr_svc CURSOR FOR SELECT DISTINCT LOWER(service) FROM incremental;
+  EXEC SQL OPEN csr_svc;
+  sq = sq_create();
+  while (1)
+    { 
+      EXEC SQL FETCH csr_svc INTO :buf;
+      if (sqlca.sqlcode)
+        break;
+
+      sq_save_data(sq, strdup(strtrim(buf)));
+    }
+  EXEC SQL CLOSE csr_svc;
+
+  /* we will repeatedly open and close the db since it seems to get
+     upset if you keep it open across a fork */
+  EXEC SQL COMMIT RELEASE;
+
+  /* Now run through list */
+  while (sq_get_data(sq, &name))
+    { 
+        {
+          switch (fork())
+            {
+            case -1:
+              com_err(whoami, errno, "forking for service %s -- exiting",
+                      name);
+              exit(1);
+            case 0:
+              com_err(whoami, 0, "child forked for service %s", name);
+	      setproctitle(argv[0], name);
+	      if (strchr(argv[0], '/'))
+		strcpy(whoami, strrchr(argv[0], '/') + 1);
+	      else strcpy(whoami, argv[0]);
+	      /* never returns */
+	      do_service(name);
+              exit(0);
+            default:
+	      
+              break;
+            }
+        }
+    }
+
+  /* Need to call critical_alert() if any of our forked children exit
+     for any reason */
+
+  com_err(whoami, 0, "Waiting for children to exit");
+  while ((pid = waitpid(0, &status, 0)) > 0)
+    {
+      if (WIFSIGNALED(status))
+	critical_alert(whoami, "incr-runner", "incr-runner child (pid %d) exited on signal %d",
+		       pid, WTERMSIG(status));
+      else if (WEXITSTATUS(status) > 0)
+	critical_alert(whoami, "incr-runner", "incr-runner child (pid %d) exited with status %d",
+		       pid, WEXITSTATUS(status));
+    }
+  com_err(whoami, 0, "exiting");
+  exit(0);
+}
+
+void do_service(char *name)
+{
+  char *argv[MAXARGC * 2 + 4], prog[MAXPATHLEN], cbefore[3], cafter[3];
+  int i, length = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int beforec, afterc, incremental_id;
+  char table[INCREMENTAL_QUEUE_TABLE_NAME_SIZE];
+  char encoded_before[INCREMENTAL_QUEUE_BEFORE_SIZE];
+  char encoded_after[INCREMENTAL_QUEUE_AFTER_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  void *flattened_before = NULL, *flattened_after = NULL;
+  char **before_argv = NULL, **after_argv = NULL;
+  sigset_t sigs;
+  time_t now;
+  struct sigaction action;
+
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+
+  action.sa_flags = 0;
+  sigemptyset(&action.sa_mask);
+  
+  action.sa_handler = reapchild;
+  sigaddset(&action.sa_mask, SIGCHLD);
+  if (sigaction(SIGCHLD, &action, NULL) < 0)
+    {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+  while (1)
+    {
+      /* if incrementals are not enabled, exit after logging */
+      if (!access(NOINCRFILE, F_OK))
+	{
+	  com_err(whoami, 0, "%s exists -- exiting", NOINCRFILE);
+	  exit(1);
+	}
+
+      if (child_exited_abnormally)
+        {
+          critical_alert(whoami, "incr-runner", "%d: child exits with signal %d status %d",
+                         child_pid, child_signal, child_status);
+          child_exited_abnormally = 0;
+        }
+
+      time(&now);
+
+      if (inc_running && now - inc_started < INC_TIMEOUT)
+	goto sleep;
+
+      if (inc_running)
+	critical_alert(whoami, "incr-runner", "incremental timeout on pid %d", inc_pid);
+
+      EXEC SQL SELECT table_name, beforec, afterc, before, after, incremental_id INTO
+	:table, :beforec, :afterc, :encoded_before, :encoded_after, :incremental_id FROM
+	(SELECT * FROM incremental_queue WHERE service = :name ORDER BY timestamp)
+	WHERE rownum = 1;
+
+      /* No matching rows */
+      if (sqlca.sqlerrd[2] == 0)
+	goto sleep;
+      
+      sprintf(prog, "%s/%s.incr", BIN_DIR, name);
+      argv[0] = prog;
+      argv[1] = strtrim(table);
+      sprintf(cbefore, "%d", beforec);
+      argv[2] = cbefore;
+      sprintf(cafter, "%d", afterc);
+      argv[3] = cafter;
+
+      if (beforec > 0)
+	{
+	  length = 0;
+
+	  flattened_before = xmalloc(INCREMENTAL_QUEUE_BEFORE_SIZE);
+	  strunvis(flattened_before, encoded_before);
+	  
+	  before_argv = xmalloc(beforec * sizeof(char *));
+	  for (i = 0; i < beforec; i++)
+	    {
+	      before_argv[i] = xmalloc(MAX_FIELD_WIDTH);
+	      strcpy(before_argv[i], flattened_before + length);
+	      length += strlen(before_argv[i]) + 1;
+	      argv[4 + i] = before_argv[i];
+	    }
+	}
+
+      if (afterc > 0)
+	{
+	  length = 0;
+	  
+	  flattened_after = xmalloc(INCREMENTAL_QUEUE_AFTER_SIZE);
+	  strunvis(flattened_after, encoded_after);
+	  
+	  after_argv = xmalloc(afterc * sizeof(char *));
+	  for (i = 0; i < afterc; i++)
+	    {
+	      after_argv[i] = xmalloc(MAX_FIELD_WIDTH);
+	      strcpy(after_argv[i], flattened_after + length);
+	      length += strlen(after_argv[i]) + 1;
+	      argv[4 + beforec + i] = after_argv[i];
+	    }
+	}
+
+      argv[4 + beforec + afterc] = 0;
+
+      EXEC SQL DELETE FROM incremental_queue WHERE incremental_id = :incremental_id;
+      EXEC SQL COMMIT WORK;
+      
+      sigemptyset(&sigs);
+      sigaddset(&sigs, SIGCHLD);
+      sigprocmask(SIG_BLOCK, &sigs, NULL);
+      inc_pid = vfork();
+      switch (inc_pid)
+	{
+	case 0:
+	  execv(prog, argv);
+	  _exit(1);
+	case -1:
+	  critical_alert(whoami, "incr-runner", "Failed to start incremental update %s", prog);
+	  break;
+	default:
+	  inc_running = 1;
+	  inc_started = now;
+	}
+
+      sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+
+      if (flattened_before)
+	{
+	  free(flattened_before);
+	  flattened_before = NULL;
+	}
+      if (flattened_after)
+	{
+	  free(flattened_after);
+	  flattened_after = NULL;
+	}
+      if (before_argv)
+	{
+	  free_argv(before_argv, beforec);
+	  before_argv = NULL;
+	}
+      if (after_argv)
+	{
+	  free_argv(after_argv, afterc);
+	  after_argv = NULL;
+	}
+
+    sleep:
+      sleep(1);
+    }
+
+  EXEC SQL COMMIT RELEASE;
+}
+
+void dbmserr(void)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char err_msg[256];
+  EXEC SQL END DECLARE SECTION;
+  int bufsize = 256, msglength = 0;
+
+  sqlglm(err_msg, &bufsize, &msglength);
+  err_msg[msglength] = '\0';
+  com_err(whoami, 0, "Encountered SQL error:\n%s", err_msg);
+  com_err(whoami, 0, "exiting");
+  exit(1);
+}
+
+/* malloc or die! */
+void *xmalloc(size_t bytes)
+{
+  void *buf = malloc(bytes);
+
+  if (buf)
+    return buf;
+
+  critical_alert(whoami, "incr-runner", "Out of memory");
+  exit(1);
+}
+
+void free_argv(char **argv, int argc)
+{
+  while (--argc >= 0)
+    free(argv[argc]);
+  free(argv);
+}
+
+void reapchild(int x)
+{
+  int status, pid;
+
+  while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+      if (pid == inc_pid)
+        inc_running = 0;
+      if (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0)
+        {
+          child_exited_abnormally = 1;
+          child_pid = pid;
+          child_signal = WTERMSIG(status);
+          child_status = WEXITSTATUS(status);
+        }
+    }
+}

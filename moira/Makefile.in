@@ -14,7 +14,7 @@ mrbindir=@mrbindir@
 libdir=@libdir@
 
 CLIENTDIRS=include lib clients update man @WEBMOIRA_SUBDIRS@
-SVRDIRS=db server backup dbck dcm gen regtape incremental @AFS_SYNCDIR@ @RSAREF_SUBDIRS@
+SVRDIRS=db util/bsd-compat server backup dbck dcm gen regtape incremental @AFS_SYNCDIR@ @RSAREF_SUBDIRS@
 DEPDIRS=@COM_ERR_SUBDIR@
 
 SUBDIRS=$(CLIENTDIRS) @SVRSUBDIRS@

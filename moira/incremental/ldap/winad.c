@@ -4207,6 +4207,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *mail_alternate_v[] = {NULL, NULL};
   char *mit_moira_imap_address_v[] = {NULL, NULL};
   char *deliver_and_redirect_v[] = {NULL, NULL};
+  char *recipient_limit_v[] = {NULL, NULL};
   char *c;
 
   dwInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
@@ -4449,6 +4450,33 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	    }
 	}
 
+      n = 0;
+
+      if (State == US_SUSPENDED) 
+	{
+	  recipient_limit_v[0] = "0";
+	  ADD_ATTR("msExchRecipLimit", recipient_limit_v, LDAP_MOD_REPLACE);
+	}
+      else
+	{
+	  recipient_limit_v[0] = NULL;
+	  ADD_ATTR("msExchRecipLimit", recipient_limit_v, LDAP_MOD_REPLACE);
+	}
+
+      mods[n] = NULL;
+      rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+      
+      if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+	rc = LDAP_SUCCESS;
+      
+      if(rc)
+	{
+	  com_err(whoami, 0,
+		  "Unable to set the exchange attributes for %s : %s",
+		  user_name, ldap_err2string(rc));
+		  return(rc);
+	}
+      
       if (State == US_DELETED)
 	{
 	  linklist_free(group_base);
@@ -6677,6 +6705,7 @@ int user_create(int ac, char **av, void *ptr)
   char *hide_address_lists_v[] = {NULL, NULL};
   char *principal_v[] = {NULL, NULL};
   char *loginshell_v[] = {NULL, NULL};
+  char *recipient_limit_v[] = {NULL, NULL};
   char userAccountControlStr[80];
   char temp[1024];
   char principal[256];
@@ -6950,14 +6979,18 @@ int user_create(int ac, char **av, void *ptr)
 	  (atoi(av[U_STATE]) != US_SUSPENDED)) 
 	{
 	  hide_address_lists_v[0] = "TRUE";
+	  recipient_limit_v[0] = NULL;
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
                    LDAP_MOD_ADD);
+          ADD_ATTR("msExchRecipLimit", recipient_limit_v, LDAP_MOD_ADD);
 	} 
       else 
 	{
           hide_address_lists_v[0] = "FALSE";
+	  recipient_limit_v[0] = "0";
           ADD_ATTR("msExchHideFromAddressLists", hide_address_lists_v,
                    LDAP_MOD_ADD);
+          ADD_ATTR("msExchRecipLimit", recipient_limit_v, LDAP_MOD_ADD);
 	}
 
       ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, LDAP_MOD_ADD);

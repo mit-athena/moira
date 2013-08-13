@@ -10295,12 +10295,16 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		      
 		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
 					  save_query_info, save_argv)))
-			strcpy(path, save_argv[FS_PACK]);
+			{
+			  strcpy(path, save_argv[FS_PACK]);
+			}
 		    }
 		}
 	    }
 	  else
-	    strcpy(path, save_argv[FS_PACK]);
+	    {
+	      strcpy(path, save_argv[FS_PACK]);
+	    }
 	}
       
       moira_disconnect();
@@ -10361,7 +10365,9 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 		      
 		      if (!(rc = mr_query("get_filesys_by_label", 1, argv, 
 					  save_query_info, save_argv)))
-			strcpy(path, save_argv[FS_PACK]);
+			{
+			  strcpy(path, save_argv[FS_PACK]);
+			}
 		    }
 		}
 	    }
@@ -10381,7 +10387,9 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
 	    }
 	}
       else
-	return(n);
+	{
+	  return(n);
+	}
     }
 
     if ((!strcasecmp(WinHomeDir, "[dfs]")) || 
@@ -10401,10 +10409,14 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     }
     
     if (!strcasecmp(WinHomeDir, "[local]"))
-      memset(winPath, '\0', sizeof(winPath));
+      {
+	memset(winPath, '\0', sizeof(winPath));
+      }
     else if (!strcasecmp(WinHomeDir, "[afs]") || 
 	     !strcasecmp(WinHomeDir, "[dfs]"))
-      strcpy(homeDrive, "H:");
+      {
+	strcpy(homeDrive, "H:");
+      }
     else
       {
         strcpy(winPath, WinHomeDir);
@@ -10416,41 +10428,55 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name,
     
     // nothing needs to be done if WinProfileDir is [afs].
     if (!strcasecmp(WinProfileDir, "[local]"))
-      memset(winProfile, '\0', sizeof(winProfile));
+      {
+	memset(winProfile, '\0', sizeof(winProfile));
+      }
     else if (strcasecmp(WinProfileDir, "[afs]") && 
 	     strcasecmp(WinProfileDir, "[dfs]"))
-      strcpy(winProfile, WinProfileDir);
-    
+      {
+	strcpy(winProfile, WinProfileDir);
+      }
+
     if (strlen(winProfile) != 0)
-      if (winProfile[strlen(winProfile) - 1] == '\\')
-	winProfile[strlen(winProfile) - 1] = '\0';
+      {
+	if (winProfile[strlen(winProfile) - 1] == '\\')
+	  {
+	    winProfile[strlen(winProfile) - 1] = '\0';
+	  }
+      }
 
     if (strlen(winPath) != 0)
-      if (winPath[strlen(winPath) - 1] == '\\')
-	winPath[strlen(winPath) - 1] = '\0';
-    
+      {
+	if (winPath[strlen(winPath) - 1] == '\\')
+	  {
+	    winPath[strlen(winPath) - 1] = '\0';
+	  }
+      }
+
     if ((winProfile[1] == ':') && (strlen(winProfile) == 2))
       strcat(winProfile, "\\");
 
     if ((winPath[1] == ':') && (strlen(winPath) == 2))
       strcat(winPath, "\\");
-    
+
     if (strlen(winPath) == 0)
-      if (OpType == LDAP_MOD_REPLACE)
-	{
-	  i = 0;
-	  DEL_ATTR("homeDirectory", LDAP_MOD_DELETE);
-	  DelMods[i] = NULL;
-	  //unset homeDirectory attribute for user.
-	  rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
-	  free(DelMods[0]);
-	}
+      {
+	if (OpType == LDAP_MOD_REPLACE)
+	  {
+	    i = 0;
+	    DEL_ATTR("homeDirectory", LDAP_MOD_DELETE);
+	    DelMods[i] = NULL;
+	    //unset homeDirectory attribute for user.
+	    rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+	    free(DelMods[0]);
+	  }
+      }
     else
       {
 	homedir_v[0] = strdup(winPath);
 	ADD_ATTR("homeDirectory", homedir_v, OpType);
       }
-    
+
     if (strlen(winProfile) == 0)
       {
 	if (OpType == LDAP_MOD_REPLACE)

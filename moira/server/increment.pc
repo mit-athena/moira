@@ -629,7 +629,7 @@ void incremental_update(void)
 	      EXEC SQL INSERT INTO incremental_queue
 		(incremental_id, table_name, service, beforec, afterc, before, after, timestamp)
 		VALUES (incremental_seq.nextval, :iu->table, :iu->service, :iu->beforec, :iu->afterc, 
-			NVL(:before_encoded, CHR(0)), NVL(:after_encoded, CHR(0)), SYSDATE);
+			NVL(:before_encoded, CHR(0)), NVL(:after_encoded, CHR(0)), SYSTIMESTAMP);
 	      EXEC SQL COMMIT WORK;
 
 	      if (before_flattened)

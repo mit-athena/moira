@@ -7,7 +7,7 @@ $MR_ARGV_LEN = 19;
 $ADDRESS_POS = 10;
 $OPT_POS = 16;
 
-$URL = "https://hostsec-rs-1.mit.edu/cgi-bin/optout.pl";
+@URLS = ('https://hostsec-rs-1.mit.edu/cgi-bin/route.pl', 'https://hostsec-rs-2.mit.edu/cgi-bin/route.pl');
 $STOP_FILE = "/moira/route-server/noroute";
 $CRED_FILE = "/moira/route-server/creds";
 
@@ -53,7 +53,7 @@ if ($type eq "machine") {
 	critical_alert("$whoami: malformed $type incremental arguments");
     }
 } else {
-    critical_alert("$whoami called on unexpected table $type");
+    critical_alert("$whoami: called on unexpected table $type");
 }
 
 exit 0;
@@ -83,19 +83,38 @@ sub do_machine {
 
     my (@moira_input) = @_;
 
+    $before_address = $moira_input[$ADDRESS_POS];
+    $before_option = $moira_input[$OPT_POS];
+
+    if ($before_option == 0) {
+	$before_state = "none";
+    } elsif ($before_option == 1 || $before_option == 2) {
+	$before_state = "optout";
+    } elsif ($before_option == 3) {
+	$before_state = "blackhole";
+    } else {
+	critical_alert("$whoami: Unexpected machine opt $before_option");
+    }
+
     if ($after_len == 0) {
 	# machine deletion
-	$address = $moira_input[$ADDRESS_POS];
-	if ($address ne "unassigned") {
-	    update_route_server("del", $address);
+	if ($before_address ne "unassigned") {
+	    update_route_server("none", $before_state, $before_address);
 	}
     } else {
-	# Need to check before and after address and opt-out status.
-	$before_address = $moira_input[$ADDRESS_POS];
-	$before_option = $moira_input[$OPT_POS];
 
 	$after_address = $moira_input[$after_len + $ADDRESS_POS];
 	$after_option = $moira_input[$after_len + $OPT_POS];
+
+	if ($after_option == 0) {
+	    $after_state = "none";
+	} elsif ($after_option == 1 || $after_option == 2) {
+	    $after_state = "optout";
+	} elsif ($after_option == 3) {
+	    $after_state = "blackhole";
+	} else {
+	    critical_alert("$whoami: Unexpected machine opt $after_option");
+	}
 
 	# Did our address change?
 	if ($before_address ne $after_address) {
@@ -103,59 +122,64 @@ sub do_machine {
 
 	    if ($before_address ne "unassigned" && $before_option > 0) {
 		# Delete the address that's no longer in use.
-		update_route_server("del", $before_address);
+		update_route_server("none", $before_state, $before_address);
 	    }
 
 	    if ($after_address ne "unassigned" && $after_option > 0) {
-		# Opt in the new address if desired.
-		update_route_server("add", $after_address);
+		    update_route_server($after_state, "none", $after_address);
 	    }
 	} else {
-	    # Address didn't change, did our opt-out status?
+	    # Address didn't change, did our status?
 	    if ($before_option != $after_option) {
 		# If it's different, just look at after state to decide what to do.
 		if ($after_address ne "unassigned") {
-		    if ($after_option == 0) {
-			update_route_server("del", $after_address);
-		    } else {
-			update_route_server("add", $after_address);
-		    }
+		    update_route_server($after_state, $before_state, $after_address);
 		}
 	    }
 	}
     }
-    
+
     return;
 }
 
 sub update_route_server {
 
-    my ($operation, $address) = @_;
+    my ($state, $prevstate, $address) = @_;
     my %outhash = ();
 
-    $outhash{'action'} = $operation;
+    $outhash{'state'} = $state;
+    $outhash{'prevstate'} = $prevstate;
     $outhash{'ip'} = $address;
 
-    print "POSTing to $URL: $operation $address\n";
-    
     my $json = encode_json(\%outhash);
 
     open(CREDS, $CRED_FILE) or critical_alert("$whoami: Unable to open credentials file");
     while (<CREDS>) {
-	($username, $password) = split(/:/);
-	last;
+        ($username, $password) = split(/:/);
+        last;
     }
 
-    my $req = HTTP::Request->new('POST', $URL);
-    $req->header( 'Content-Type' => 'application/json' );
-    $req->authorization_basic($username, $password);
-    $req->content( $json );
+    foreach $URL (@URLS) {
+	print "POSTing to $URL: $state $prevstate $address\n";
 
-    my $lwp = LWP::UserAgent->new;
-    my $res = $lwp->request($req);
+	my $req = HTTP::Request->new('POST', $URL);
+	$req->header( 'Content-Type' => 'application/json' );
+	$req->authorization_basic($username, $password);
+	$req->content( $json );
 
-    if (!$res->is_success) {
-        critical_alert("$whoami: Failed POST attempt for machine");
+	my $lwp = LWP::UserAgent->new;
+	my $res = $lwp->request($req);
+	
+	if (!$res->is_success) {
+	    push(@errors, " failed POSTing to $URL");
+	}
+    }
+
+    if (scalar(@errors) > 0) {
+	foreach $error (@errors) {
+	    $allerrors .= $error;
+	}
+	critical_alert("$whoami:$allerrors");
     }
 
     return;

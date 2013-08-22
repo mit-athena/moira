@@ -47,6 +47,8 @@ struct string_list {
 int info_flag, update_flag, create_flag, deact_flag, reg_flag;
 int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
 
+int count;
+
 struct owner_type *sponsor;
 struct string_list *reservation_add_queue, *reservation_remove_queue;
 
@@ -89,8 +91,8 @@ static char *UserState(int state)
 void usage(char **argv);
 int save_query_info(int argc, char **argv, void *hint);
 int show_reservations(int argc, char **argv, void *hint);
-void show_user_info(char **argv);
-void show_user_info_unformatted(char **argv);
+int show_user_info(int argc, char **argv, void *hint);
+int show_user_info_unformatted(int argc, char **argv, void *hint);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
@@ -341,6 +343,34 @@ int main(int argc, char **argv)
     }
   if (status)
     exit(2);
+
+  /* Maybe our 'username' is actually an MIT ID number.
+   *  If so, resolve it into a username.
+   */
+  if ((!info_flag) && (strlen(username) > 8) && (atoi(username) != 0))
+    {
+      char *argv[27];
+      char *args[1];
+
+      args[0] = username;
+
+      count = 0;
+      status = wrap_mr_query("get_user_account_by_id", 1, args,
+			     save_query_info, argv);
+      if (status)
+	{
+	  com_err(whoami, status, "while mapping MIT ID to username.");
+	  exit(1);
+	}
+
+      if (count > 1)
+	{
+	  com_err(whoami, 0, "Cannot specify non-unique MIT ID for this operation.");
+	  exit(1);
+	}
+
+      username = argv[U_NAME];
+    }
 
   /* create if needed */
   if (create_flag)
@@ -641,17 +671,20 @@ int main(int argc, char **argv)
       char *argv[27];
 
       args[0] = username;
-      status = wrap_mr_query("get_user_account_by_login", 1, args,
-			     save_query_info, argv);
+
+      if ((strlen(username) > 8) && (atoi(username) != 0))
+	status = wrap_mr_query("get_user_account_by_id", 1, args,
+			       unformatted_flag ? show_user_info_unformatted : show_user_info,
+			       argv);
+      else
+	status = wrap_mr_query("get_user_account_by_login", 1, args,
+			       unformatted_flag ? show_user_info_unformatted : show_user_info,
+			       argv);
       if (status)
 	{
 	  com_err(whoami, status, "while getting user information.");
 	  exit(1);
 	}
-      if (unformatted_flag)
-	show_user_info_unformatted(argv);
-      else
-	show_user_info(argv);
     }
 
   /* register a user */
@@ -754,7 +787,8 @@ int save_query_info(int argc, char **argv, void *hint)
 
   for(i = 0; i < argc; i++)
     nargv[i] = strdup(argv[i]);
-  
+
+  count++;
   return MR_CONT;
 }
 
@@ -792,7 +826,7 @@ void print_query(char *query_name, int argc, char **argv) {
   printf("\n");
 }
 
-void show_user_info(char **argv)
+int show_user_info(int argc, char **argv, void *hint)
 {
   char tbuf[BUFSIZ];
   int status;
@@ -823,9 +857,11 @@ void show_user_info(char **argv)
   printf("Created  by %s on %s.\n", argv[U_CREATOR], argv[U_CREATED]);
   printf("Last mod by %s at %s with %s.\n", argv[U_MODBY], argv[U_MODTIME],
 	 argv[U_MODWITH]);
+
+  return MR_CONT;
 }
 
-void show_user_info_unformatted(char **argv)
+int show_user_info_unformatted(int argc, char **argv, void *hint)
 {
   char tbuf[BUFSIZ];
   int status;
@@ -859,6 +895,8 @@ void show_user_info_unformatted(char **argv)
   printf("Last mod by:               %s\n", argv[U_MODBY]);
   printf("Last mod on:               %s\n", argv[U_MODTIME]);
   printf("Last mod with:             %s\n", argv[U_MODWITH]);
+
+  return MR_CONT;
 }
 
 void usage(char **argv)

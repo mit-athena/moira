@@ -262,7 +262,7 @@ int do_passwd(void)
       strcpy(u->name, login);
       u->lists = NULL;
       hash_store(users, id, u);
-      if (status == 1 || status == 2)
+      if (status == 1 || status == 2 || status == 10 || status == 11)
 	{
 	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
 		  login, HCLASS, HTYPE, login, uid, fullname, oa,

@@ -120,21 +120,17 @@ sub do_machine {
 	if ($before_address ne $after_address) {
 	    # If it did, consider before and after states independently.
 
-	    if ($before_address ne "unassigned" && $before_option > 0) {
+	    if ($before_address ne "unassigned") {
 		# Delete the address that's no longer in use.
 		update_route_server("none", $before_state, $before_address);
 	    }
 
-	    if ($after_address ne "unassigned" && $after_option > 0) {
+	    if ($after_address ne "unassigned") {
 		    update_route_server($after_state, "none", $after_address);
 	    }
 	} else {
-	    # Address didn't change, did our status?
-	    if ($before_option != $after_option) {
-		# If it's different, just look at after state to decide what to do.
-		if ($after_address ne "unassigned") {
-		    update_route_server($after_state, $before_state, $after_address);
-		}
+	    if ($after_address ne "unassigned") {
+		update_route_server($after_state, $before_state, $after_address);
 	    }
 	}
     }

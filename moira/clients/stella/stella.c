@@ -329,6 +329,14 @@ int main(int argc, char **argv)
 	    set_host_opt_flag++;
 	    opt = "1";
 	  }
+	  else if (argis("opt", "option")) {
+            if (arg - argv < argc - 1) {
+              arg++;
+              set_host_opt_flag++;
+              opt = *arg;
+            } else
+              usage(argv);
+          }
 	  else if (argis("ttl", "setttl")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -857,7 +865,7 @@ int main(int argc, char **argv)
     char *argv[3];
 
     /* Must specify non-null admin. comment if opting out */
-    if (atoi(opt) > 0 && !op_cmt)
+    if (atoi(opt) == 1 && !op_cmt)
       {
 	com_err(whoami, 0, "Must specify operational comment when opting out of default network security policy");
 	exit(1);

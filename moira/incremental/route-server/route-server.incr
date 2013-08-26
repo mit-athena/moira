@@ -167,7 +167,10 @@ sub update_route_server {
 	my $res = $lwp->request($req);
 	
 	if (!$res->is_success) {
+	    print "failed POSTing to $URL: " . $res->decoded_content;
 	    push(@errors, " failed POSTing to $URL");
+	} else {
+	    print "$URL response: " . $res->decoded_content;
 	}
     }
 

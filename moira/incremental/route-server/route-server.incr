@@ -84,22 +84,11 @@ sub do_machine {
     my (@moira_input) = @_;
 
     $before_address = $moira_input[$ADDRESS_POS];
-    $before_option = $moira_input[$OPT_POS];
-
-    if ($before_option == 0) {
-	$before_state = "none";
-    } elsif ($before_option == 1 || $before_option == 2) {
-	$before_state = "optout";
-    } elsif ($before_option == 3) {
-	$before_state = "blackhole";
-    } else {
-	critical_alert("$whoami: Unexpected machine opt $before_option");
-    }
 
     if ($after_len == 0) {
 	# machine deletion
 	if ($before_address ne "unassigned") {
-	    update_route_server("none", $before_state, $before_address);
+	    update_route_server("none", $before_address);
 	}
     } else {
 
@@ -122,15 +111,15 @@ sub do_machine {
 
 	    if ($before_address ne "unassigned") {
 		# Delete the address that's no longer in use.
-		update_route_server("none", $before_state, $before_address);
+		update_route_server("none", $before_address);
 	    }
 
 	    if ($after_address ne "unassigned") {
-		    update_route_server($after_state, "none", $after_address);
+		    update_route_server($after_state, $after_address);
 	    }
 	} else {
 	    if ($after_address ne "unassigned") {
-		update_route_server($after_state, $before_state, $after_address);
+		update_route_server($after_state, $after_address);
 	    }
 	}
     }
@@ -140,11 +129,10 @@ sub do_machine {
 
 sub update_route_server {
 
-    my ($state, $prevstate, $address) = @_;
+    my ($state, $address) = @_;
     my %outhash = ();
 
     $outhash{'state'} = $state;
-    $outhash{'prevstate'} = $prevstate;
     $outhash{'ip'} = $address;
 
     my $json = encode_json(\%outhash);

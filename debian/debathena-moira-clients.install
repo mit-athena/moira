@@ -16,6 +16,7 @@ usr/bin/listmaint
 usr/bin/dcmmaint
 usr/bin/usermaint
 usr/bin/update_test
+usr/bin/qy
 usr/share/man/man1/*
 usr/share/man/man8/mrtest.8
 etc/shells.moira

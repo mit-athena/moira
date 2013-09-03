@@ -1,3 +1,9 @@
+debathena-moira (4.0.0-r4138-0debathena2) unstable; urgency=low
+
+  * Actually ship qy
+
+ -- Jonathan Reed <jdreed@mit.edu>  Tue, 03 Sep 2013 12:34:07 -0400
+
 debathena-moira (4.0.0-r4138-0debathena1) unstable; urgency=low
 
   * Snapshot moira at r4138 to pick up summer changes

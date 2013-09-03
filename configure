@@ -20285,7 +20285,7 @@ echo "$as_me: error: Unsupported Oracle release" >&2;}
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
@@ -21030,7 +21030,8 @@ fi
 
 
 
-for ac_func in strlcpy strlcat uname strvis
+
+for ac_func in strlcpy strlcat uname strvis setproctitle
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5

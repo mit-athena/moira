@@ -1,3 +1,10 @@
+debathena-moira (4.0.0-r4138-0debathena1) unstable; urgency=low
+
+  * Snapshot moira at r4138 to pick up summer changes
+  * qy is now included
+
+ -- Jonathan Reed <jdreed@mit.edu>  Tue, 03 Sep 2013 10:34:15 -0400
+
 debathena-moira (4.0.0-r4114-0debathena1) unstable; urgency=low
 
   * Re-import moira at r4114 to pick up bugfix

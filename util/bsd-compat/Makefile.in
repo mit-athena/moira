@@ -1,0 +1,36 @@
+# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
+
+SHELL=/bin/sh
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+RANLIB=@RANLIB@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+
+OBJS=	setproctitle.o vis.o
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: bsdcompat.a
+
+clean:
+	rm -f $(OBJS) bsdcompat.a
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+
+bsdcompat.a: $(OBJS)
+	ar cru $@ $(OBJS)
+	$(RANLIB) $@

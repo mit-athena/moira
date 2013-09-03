@@ -1,4 +1,4 @@
-/* $Id: chsh.c 4048 2011-08-24 18:07:26Z zacheiss $
+/* $Id: chsh.c 4117 2013-06-11 19:53:11Z zacheiss $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -28,7 +28,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 4048 2011-08-24 18:07:26Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chsh/chsh.c $ $Id: chsh.c 4117 2013-06-11 19:53:11Z zacheiss $");
 
 void usage(void);
 int get_shell(int argc, char **argv, void *username);
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
   if (unixflg && windowsflg)
     usage();
   
-  if (mrcl_connect(server, "chsh", 14, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "chsh", 15, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check */

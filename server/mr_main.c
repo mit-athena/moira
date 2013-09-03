@@ -1,4 +1,4 @@
-/* $Id: mr_main.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mr_main.c 4127 2013-08-05 12:54:39Z zacheiss $
  *
  * Moira server process.
  *
@@ -33,7 +33,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_main.c $ $Id: mr_main.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_main.c $ $Id: mr_main.c 4127 2013-08-05 12:54:39Z zacheiss $");
 
 client *cur_client;
 
@@ -223,8 +223,6 @@ int main(int argc, char **argv)
 	{
 	  if (errno != EINTR)
 	    com_err(whoami, errno, "in select");
-	  if (!inc_running || now - inc_started > INC_TIMEOUT)
-	    next_incremental();
 	  continue;
 	}
 
@@ -239,8 +237,6 @@ int main(int argc, char **argv)
 	}
 
       time(&now);
-      if (!inc_running || now - inc_started > INC_TIMEOUT)
-	next_incremental();
       tardy = now - 30 * 60;
 
       /* If we're asleep and we should wake up, do it */
@@ -393,8 +389,6 @@ void reapchild(int x)
 
   while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-      if (pid == inc_pid)
-	inc_running = 0;
       if (!takedown && (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0))
 	{
 	  child_exited_abnormally = 1;

@@ -1,4 +1,4 @@
-/* $Id: stella.c 4110 2013-05-09 15:43:17Z zacheiss $
+/* $Id: stella.c 4136 2013-08-23 20:56:02Z zacheiss $
  *
  * Command line oriented Moira host tool.
  *
@@ -32,7 +32,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stella/stella.c $ $Id: stella.c 4110 2013-05-09 15:43:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stella/stella.c $ $Id: stella.c 4136 2013-08-23 20:56:02Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -329,6 +329,14 @@ int main(int argc, char **argv)
 	    set_host_opt_flag++;
 	    opt = "1";
 	  }
+	  else if (argis("opt", "option")) {
+            if (arg - argv < argc - 1) {
+              arg++;
+              set_host_opt_flag++;
+              opt = *arg;
+            } else
+              usage(argv);
+          }
 	  else if (argis("ttl", "setttl")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -857,7 +865,7 @@ int main(int argc, char **argv)
     char *argv[3];
 
     /* Must specify non-null admin. comment if opting out */
-    if (atoi(opt) > 0 && !op_cmt)
+    if (atoi(opt) == 1 && !op_cmt)
       {
 	com_err(whoami, 0, "Must specify operational comment when opting out of default network security policy");
 	exit(1);

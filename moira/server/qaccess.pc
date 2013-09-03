@@ -856,7 +856,7 @@ int access_hwaddr(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
   
-  EXEC SQL SELECT count(name) INTO :cnt from hwaddrmap WHERE mach_id = :id;
+  EXEC SQL SELECT count(hwaddr) INTO :cnt from hwaddrmap WHERE mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
 

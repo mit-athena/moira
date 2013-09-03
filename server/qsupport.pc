@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: qsupport.pc 4127 2013-08-05 12:54:39Z zacheiss $
  *
  * Special query routines
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 4113 2013-05-28 14:29:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsupport.pc $ $Id: qsupport.pc 4127 2013-08-05 12:54:39Z zacheiss $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -2483,5 +2483,39 @@ int update_user_password_expiration(struct query *q, char *argv[], client *cl)
   
   incremental_after(USERS_TABLE, buffer, 0);
 
+  return MR_SUCCESS;
+}
+
+int get_incremental_queue_length(struct query *q, char *argv[], client *cl,
+				 int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char service[INCREMENTAL_SERVICE_SIZE];
+  int count = 0;
+  EXEC SQL END DECLARE SECTION;
+  char *rargv[2], countbuf[5];
+
+  rargv[0] = service;
+  rargv[1] = countbuf;
+  EXEC SQL DECLARE svc_csr CURSOR FOR
+    SELECT DISTINCT service FROM incremental;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN svc_csr;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH svc_csr INTO :service;
+      if (sqlca.sqlcode)
+	break;
+      strcpy(service, strtrim(service));
+      EXEC SQL SELECT COUNT(*) INTO :count FROM incremental_queue
+	WHERE service = :service;
+      sprintf(countbuf, "%d", count);
+      (*action)(2, rargv, actarg);
+    }
+  EXEC SQL CLOSE svc_csr;
+  
   return MR_SUCCESS;
 }

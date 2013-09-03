@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 #
-# $Id: warehouse.gen 4113 2013-05-28 14:29:10Z zacheiss $
+# $Id: warehouse.gen 4120 2013-07-01 17:38:05Z zacheiss $
 # Generate a database extract from the users table for the MIT Data Warehouse.
 $MR_DBMS_ERR = 47836421;
 $MR_OCONFIG = 47836460;
@@ -11,7 +11,7 @@ use DBI;
 
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira") || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT login, clearid, first, last, middle " .
+$sth = $dbh->prepare("SELECT login, clearid, first, last, middle, TO_CHAR(created, 'YYYYMMDD') " .
 		     "FROM users WHERE (status = 1 OR status = 2 OR " .
 		     "status = 5 OR status = 6 OR status = 7 OR status = 9 OR status = 10 " .
                      "OR status = 11 OR status = 12)");
@@ -21,10 +21,10 @@ $sth->execute || exit $MR_DBMS_ERR;
 umask 022;
 open(OUT, ">$outfile") || exit $MR_OCONFIG;
 
-while (($login, $clearid, $first, $last, $middle) = $sth->fetchrow_array) {
+while (($login, $clearid, $first, $last, $middle, $created) = $sth->fetchrow_array) {
     next if (length($clearid) < 2);
     next if ($clearid eq "0" || $clearid eq "\0" || $clearid =~ /^.\D/);
-    $row = "$login\t$clearid\t$first\t$last\t$middle\n";
+    $row = "$login\t$clearid\t$first\t$last\t$middle\t$created\n";
     $row =~ s/\0//g;
     print OUT $row;
 }

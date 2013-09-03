@@ -1,4 +1,4 @@
-# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: Makefile.in 4115 2013-06-10 13:47:42Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -27,6 +27,7 @@ bindir=@bindir@
 OBJS=mrtest.lo
 
 TARGET=mrtest
+SCRIPTS=qy
 
 .SUFFIXES: .lo
 
@@ -45,6 +46,7 @@ depend:
 
 install: all
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mrtest $(DESTDIR)$(bindir)
+	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir); done
 
 $(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

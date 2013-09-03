@@ -1,4 +1,4 @@
-/* $Id: mr_server.h 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: mr_server.h 4127 2013-08-05 12:54:39Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -59,7 +59,7 @@ struct mxentry
 extern char *krb_realm;
 
 /* max length of query argument allowed */
-#define ARGLEN	257
+#define ARGLEN	MAX_FIELD_WIDTH
 /* Used to setup static argv, maximum argc */
 #define QMAXARGS	30
 
@@ -92,7 +92,6 @@ struct valobj;
 
 /* prototypes from increment.dc */
 void incremental_init(void);
-void next_incremental(void);
 void incremental_update(void);
 void incremental_flush(void);
 
@@ -308,6 +307,9 @@ int get_machines_of_container(struct query *q, char **argv, client *cl,
 int get_subcontainers_of_container(struct query *q, char **argv, client *cl,
 			    int (*action)(int, char *[], void *),
 			    void *actarg);
+int get_incremental_queue_length(struct query *q, char **argv, client *cl,
+				 int (*action)(int, char *[], void *),
+				 void *actarg);
 
 /* prototypes from qvalidate.pc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);

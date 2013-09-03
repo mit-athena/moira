@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: hesiod.pc 4132 2013-08-22 15:40:43Z zacheiss $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4113 2013-05-28 14:29:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4132 2013-08-22 15:40:43Z zacheiss $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -262,7 +262,7 @@ int do_passwd(void)
       strcpy(u->name, login);
       u->lists = NULL;
       hash_store(users, id, u);
-      if (status == 1 || status == 2)
+      if (status == 1 || status == 2 || status == 10 || status == 11)
 	{
 	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
 		  login, HCLASS, HTYPE, login, uid, fullname, oa,

@@ -1,0 +1,187 @@
+#!/usr/bin/perl -w
+
+# NOTE: FEEPING CREATURES ARE THE FAULT OF <danw@mit.edu>, HE STARTED IT FIRST.
+# NOTE: NO, THEY WEREN'T FEEPING UNTIL <bert@mit.edu> HACKED ON THEM.
+
+use IPC::Open2;
+use FileHandle;
+# use vars qw( @connect @auth @query $debug $align );
+# use vars qw( $mrtest @help @argl @retl @fields @qret $i );
+# use strict;
+
+sub usage {
+  my $info = shift(@_) || '';
+  die "Usage: qy query args... [-db database] [-p user] [-n] [-s] [-f field,field,...]\n${info}Aborting";
+}
+
+# Parse the command-line arguments
+@connect = ("c");
+@auth =    ("a");
+@query =   ();
+@outfields = ();
+
+$debug = 0;
+$short = 0;
+
+while (@ARGV) {
+  my $arg = shift(@ARGV);
+
+  if ($arg eq "-D") {
+    $debug++;
+  } elsif ($arg eq "-db") {
+    $arg = shift(@ARGV) || usage "No argument specified to -db.\n";
+    @connect = ("c $arg");
+  } elsif ($arg eq "-p") {
+    $arg = shift(@ARGV) || usage "No argument specified to -p.\n";
+    @connect = ("p $arg");
+  } elsif ($arg eq "-n") {
+    @auth = "";
+  } elsif ($arg eq "-s") {
+    $short = 1;
+  } elsif ($arg eq "-f") {
+    $arg = shift(@ARGV);
+    @outfields = split(/, */, $arg);
+  } elsif ($arg =~ /\s/) {
+    push(@query, "\"" . $arg . "\"");
+  } else {
+    push(@query, $arg);
+  }
+}
+usage "No query specified.\n"           unless @query;
+
+# $reply = read_reply()
+#     Reads the reply from mrtest, up to the next 'moira:  '.
+# Returns:
+#     $reply --- a string containing the reply
+sub read_reply {
+  my $reply = '';
+  while ($reply !~ /^moira:  $/m) {
+    sysread MOIRA, $reply, 1024, length($reply);
+  }
+
+  $reply =~ /^moira:  $/m;
+  $' && die "internal error: unexpected text following 'moira:  '";	#'  
+  $`;
+}
+
+# @lines = command(@commands)
+#     Sends one or more commands, in order, to mrtest and reads the replies.
+# Arguments:
+#     @commands --- one or more mrtest commands (each element may contain
+#        several commands separated by newlines)
+# Returns:
+#     @lines --- the replies from mrtest, separated into individual lines
+#        (with newlines removed)
+sub command {
+  my ($cmd, @return);
+  foreach $cmd (map {split /\n/} @_) {
+    print "[command '$cmd']\n" if $debug;
+    print CMDS "$cmd\n";
+    push (@return, read_reply);
+  }
+  print "[result '@return']\n" if $debug;
+  map {split /\n/} @return;
+}
+
+# Find mrtest.
+foreach $path (split(/:/, $ENV{'PATH'})) {
+    $mrtest = "$path/mrtest";
+    last if (-x $mrtest);
+}
+$mrtest = './mrtest'                                      unless (-x $mrtest);
+$mrtest = '/moira/bin/mrtest'				  unless (-x $mrtest);
+$mrtest = '/usr/athena/etc/mrtest'                        unless (-x $mrtest);
+$mrtest = '/usr/local/etc/mrtest'                         unless (-x $mrtest);
+$mrtest = '/afs/athena/system/moira/arch/@sys/bin/mrtest' unless (-x $mrtest);
+die "Can't find an executable mrtest binary\nAborting"    unless (-x $mrtest);
+# [This does more stat()'s than it absolutely needs to, but I don't care. =)]
+
+# Open the pipes to stdout and stdin of mrtest, make the input flushed by Perl
+open2(\*MOIRA, \*CMDS, "$mrtest -q");
+autoflush CMDS 1;
+
+
+read_reply;			# wait for the initial 'moira:  ' prompt
+command @connect;		# connect to the server
+command @auth    if @auth;	# authenticate to the server (or not)
+
+# get help information on command
+if ($query[0] !~ /^_/) {
+  my $size;
+  @help = command "qy _help $query[0]";
+  exit if ($help[0] eq "0 tuples"); # error went to stderr already
+  (@help == 2) || die "Unexpected number of lines from 'qy _help'\nAborting";
+
+  # parse the help into the argument list and the response list
+  @argl = split(/\\054 |, /, ($help[0] =~ /\((.*)\)/)[0]);
+  @retl = split(/\\054 |, /, ($help[0] =~ /=>\s+(.*)$/)[0]) if ($help[0] =~ /=>/);
+
+  if ($#outfields == -1) { @outfields = @retl; }
+
+  # make the lists be constant width, so responses are aligned
+  $size = 0;
+  foreach (map length($_), @retl) { $size = $_ if $size < $_; }
+  $size += 2;  # number of spaces + 1
+  @fields = map sprintf("%-${size}s", "$_:"), @retl;
+  $size = 0;
+  foreach (map length($_), @argl) { $size = $_ if $size < $_; }
+  $size += 2;  # number of spaces + 1
+  @args = map sprintf("%-${size}s", "$_:"), @argl;
+}
+
+if (@query != @argl + 1) {
+  foreach $arg (0..$#args) {
+    if ($arg < $#query) {
+      # print given arguments
+      print $args[$arg], $query[$arg+1], "\n";
+    } else {
+      # read in remaining arguments
+      print $args[$arg];
+      $in=<>;
+      chop($in);
+      push(@query, "\"$in\"");
+    }
+  }
+  print "\n";
+}
+
+# If query is ghst, canonicalize hostname
+if ($query[0] eq "ghst" || $query[0] eq "get_host") {
+    my ($name, $junk);
+    ($name, $junk) = gethostbyname($query[1]);
+    if ($name) { $query[1] = $name; }
+}
+
+# send the query to the Moira server
+@qret = command "qy @query";
+(pop(@qret) =~ /^\d+ tuple/) || die "Unexpected last line from 'qy @query'";
+
+# print out the response from the server
+foreach (@qret) {
+  if ($query[0] =~ /^_/) {
+    print;
+  } else {
+    my @vals = split(/, /);
+    if (!$short) { for (@vals) { s/\\(\d{3})/chr(oct($1))/ge; } }
+
+    @out{@retl} = @vals;
+    if ($short) {
+      print join ", ", map { if (defined $out{$_}) {
+			       "$out{$_}";
+			     } else {
+			       "";
+			     } } @outfields;
+    } else {
+      @names{@retl} = @fields;
+      print join "\n", map { if (defined $out{$_}) {
+			       "$names{$_}$out{$_}";
+			     } else {
+			       "$names{$_}";
+			     } } @outfields;
+      print "\n";
+    }
+  }
+  print "\n";
+}
+
+command "d";			# disconnect from the server

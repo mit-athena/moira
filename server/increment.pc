@@ -1,4 +1,4 @@
-/* $Id: increment.pc 4110 2013-05-09 15:43:17Z zacheiss $
+/* $id: increment.pc 4110 2013-05-09 15:43:17Z zacheiss $
  *
  * Deal with incremental updates
  *
@@ -11,6 +11,7 @@
 #include "mr_server.h"
 #include "query.h"
 #include "qrtn.h"
+#include "vis.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -21,15 +22,11 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4110 2013-05-09 15:43:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4131 2013-08-16 18:34:32Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];
 extern int num_tables;
-
-int inc_pid = 0;
-int inc_running = 0;
-time_t inc_started;
 
 #define MAXARGC 20
 
@@ -48,7 +45,6 @@ EXEC SQL END DECLARE SECTION;
 
 /* structures to save entire sets of incremental changes */
 struct save_queue *incremental_sq = NULL;
-struct save_queue *incremental_exec = NULL;
 struct iupdate {
   char *table;
   int beforec;
@@ -58,7 +54,6 @@ struct iupdate {
   char *service;
 };
 
-void next_incremental(void);
 char **copy_argv(char **argv, int argc);
 void free_argv(char **argv, int argc);
 int table_num(char *table);
@@ -69,8 +64,6 @@ void incremental_init(void)
 
   if (!incremental_sq)
     incremental_sq = sq_create();
-  if (!incremental_exec)
-    incremental_exec = sq_create();
 
   for (i = 0; i < MAXARGC; i++)
     {
@@ -566,7 +559,10 @@ void incremental_update(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char tab[INCREMENTAL_TABLE_NAME_SIZE], serv[INCREMENTAL_SERVICE_SIZE];
   EXEC SQL END DECLARE SECTION;
-  struct iupdate *iu, *iu_save;
+  struct iupdate *iu;
+  void *before_flattened = NULL, *after_flattened = NULL;
+  char *before_encoded = NULL, *after_encoded = NULL;
+  int i, length = 0;
 
   if (!inited)
     {
@@ -597,16 +593,68 @@ void incremental_update(void)
 	  if (!strcmp(c->table, iu->table))
 	    {
 	      iu->service = c->service;
-	      iu_save = xmalloc(sizeof(struct iupdate));
-	      iu_save->service = iu->service;
-	      iu_save->table = iu->table;
-	      iu_save->beforec = iu->beforec;
-	      iu_save->afterc = iu->afterc;
-	      iu_save->before = copy_argv(iu->before, iu->beforec);
-	      iu_save->after = copy_argv(iu->after, iu->afterc);
-	      sq_save_data(incremental_exec, iu_save);
+
+	      /* Flatten argvs */
+	      if (iu->beforec > 0)
+		{
+		  before_flattened = xmalloc(iu->beforec * MAX_FIELD_WIDTH);
+		  length = 0;
+
+		  for (i = 0; i < iu->beforec; i++)
+		    {
+		      memcpy(before_flattened + length, iu->before[i], strlen(iu->before[i]) + 1);
+		      length += strlen(iu->before[i]) + 1;
+		    }
+		  
+		  before_encoded = xmalloc(4 * iu->beforec * MAX_FIELD_WIDTH + 1);
+		  strvisx(before_encoded, before_flattened, length, VIS_CSTYLE);
+		}
+	      
+	      if (iu->afterc > 0)
+		{
+		  after_flattened = xmalloc(iu->afterc * MAX_FIELD_WIDTH);
+		  length = 0;
+		  
+		  for (i = 0; i < iu->afterc; i++)
+		    {
+		      memcpy(after_flattened + length, iu->after[i], strlen(iu->after[i]) + 1);
+		      length += strlen(iu->after[i]) + 1;
+		    }
+		  
+		  after_encoded = xmalloc(4 * iu->afterc * MAX_FIELD_WIDTH + 1);
+		  strvisx(after_encoded, after_flattened, length, VIS_CSTYLE);
+		}
+	      
+	      /* Stick into DB */
+	      EXEC SQL INSERT INTO incremental_queue
+		(incremental_id, table_name, service, beforec, afterc, before, after, timestamp)
+		VALUES (incremental_seq.nextval, :iu->table, :iu->service, :iu->beforec, :iu->afterc, 
+			NVL(:before_encoded, CHR(0)), NVL(:after_encoded, CHR(0)), SYSTIMESTAMP);
+	      EXEC SQL COMMIT WORK;
+
+	      if (before_flattened)
+		{
+		  free(before_flattened);
+		  before_flattened = NULL;
+		}
+	      if (before_encoded)
+		{
+		  free(before_encoded);
+		  before_encoded = NULL;
+		}
+	      if (after_flattened)
+		{
+		  free(after_flattened);
+		  after_flattened = NULL;
+		}
+	      if (after_encoded)
+		{
+		  free(after_encoded);
+		  after_encoded = NULL;
+		}
 	    }
 	}
+
       if (!c)
 	{
 	  free_argv(iu->before, iu->beforec);
@@ -614,70 +662,7 @@ void incremental_update(void)
 	  free(iu);
 	}
     }
-  if (inc_running == 0)
-    next_incremental();
-}
-
-/* Pro*C 2.2.4 can't cope with the sigset_t below, at least in Solaris 2.6.
-   We add DEFINE=_PROC_ to the proc invocation and then #ifndef that around
-   this function so proc will pass it through without reading it. */
-
-#ifndef _PROC_
-void next_incremental(void)
-{
-  struct iupdate *iu;
-  char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[MAXPATHLEN];
-  int i;
-  sigset_t sigs;
-
-  if (!incremental_exec)
-    incremental_init();
-
-  if (sq_empty(incremental_exec) ||
-      (inc_running && now - inc_started < INC_TIMEOUT))
-    return;
-
-  if (inc_running)
-    critical_alert(whoami, "moirad", "incremental timeout on pid %d", inc_pid);
-
-  sq_remove_data(incremental_exec, &iu);
-  argv[1] = iu->table;
-  sprintf(cbefore, "%d", iu->beforec);
-  argv[2] = cbefore;
-  sprintf(cafter, "%d", iu->afterc);
-  argv[3] = cafter;
-  for (i = 0; i < iu->beforec; i++)
-    argv[4 + i] = iu->before[i];
-  for (i = 0; i < iu->afterc; i++)
-    argv[4 + iu->beforec + i] = iu->after[i];
-
-  sprintf(prog, "%s/%s.incr", BIN_DIR, iu->service);
-  argv[0] = prog;
-  argv[4 + iu->beforec + iu->afterc] = 0;
-
-  sigemptyset(&sigs);
-  sigaddset(&sigs, SIGCHLD);
-  sigprocmask(SIG_BLOCK, &sigs, NULL);
-  inc_pid = vfork();
-  switch (inc_pid)
-    {
-    case 0:
-      execv(prog, argv);
-      _exit(1);
-    case -1:
-      critical_alert(whoami, "moirad", "Failed to start incremental update %s", prog);
-      break;
-    default:
-      inc_running = 1;
-      inc_started = now;
-    }
-  sigprocmask(SIG_UNBLOCK, &sigs, NULL);
-
-  free_argv(iu->before, iu->beforec);
-  free_argv(iu->after, iu->afterc);
-  free(iu);
-}
-#endif
+} 
 
 /* Called when the current transaction is aborted to throw away any queued
  * incremental updates

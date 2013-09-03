@@ -16,13 +16,13 @@ use DBI;
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT login, clearid, first, last, type FROM users WHERE status = 1 ORDER BY login")
+$sth = $dbh->prepare("SELECT login, clearid, first, last, type, affiliation_basic, affiliation_detailed FROM users WHERE status = 1 ORDER BY login")
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($login, $clearid, $first, $last, $type) = $sth->fetchrow_array) {
-    $row = "$login\t$clearid\t$first\t$last\t$type\n";
+while (($login, $clearid, $first, $last, $type, $aff_basic, $aff_detailed) = $sth->fetchrow_array) {
+    $row = "$login\t$clearid\t$first\t$last\t$type\t$aff_basic\t$aff_detailed\n";
     $row =~ s/\0//g;
     print OUT $row;
 }

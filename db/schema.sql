@@ -497,3 +497,16 @@ create table hwaddrmap
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	hwaddr		VARCHAR(12)	DEFAULT CHR(0)	NOT NULL
 );
+
+create table incremental_queue
+(
+	table_name      VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
+	service         VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
+	beforec		INTEGER		DEFAUlT 0	NOT NULL,
+	afterc		INTEGER		DEFAULT 0	NOT NULL,
+	before		VARCHAR(4000)	DEFAULT CHR(0)	NOT NULL,
+	after		VARCHAR(4000)	DEFAULT CHR(0)	NOT NULL,
+	timestamp	TIMESTAMP	DEFAULT SYSTIMESTAMP	NOT NULL,
+	incremental_id	INTEGER		DEFAULT 0	NOT NULL
+);
+	

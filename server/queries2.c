@@ -1,4 +1,4 @@
-/* $Id: queries2.c 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: queries2.c 4127 2013-08-05 12:54:39Z zacheiss $
  *
  * This file defines the query dispatch table
  *
@@ -13,7 +13,7 @@
 
 #include "mr_et.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4113 2013-05-28 14:29:10Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4127 2013-08-05 12:54:39Z zacheiss $");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -4387,6 +4387,22 @@ static struct validate glic_validate =
 static char *glic_fields[] = {
   "listname",
   "containername", "listname",
+};
+
+static struct validate giql_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_incremental_queue_length
+};
+
+static char *giql_fields[] = {
+  "service", "length",
 };
 
 /* Generalized Query Definitions */
@@ -8947,6 +8963,23 @@ struct query Queries[] = {
     1,
     NULL,
     &glic_validate,
+  },
+
+  {
+    /* Q_GIQL - GET_INCREMENTAL_QUEUE_LENGTH */
+    "get_incremental_queue_length",
+    "giql",
+    2,
+    MR_Q_RETRIEVE,
+    0,
+    0,
+    0,
+    giql_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &giql_validate,
   },
 
 };

@@ -1,4 +1,4 @@
-# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id: Makefile.in 4127 2013-08-05 12:54:39Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,8 +32,12 @@ top_builddir=@top_builddir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
+BSDCOMPAT_PROC_INCLUDE=INCLUDE=$(SRCTOP)/util/bsd-compat
+BSDCOMPAT_INCLUDE=-I$(SRCTOP)/util/bsd-compat
+BSDCOMPAT_LIB=$(BUILDTOP)/util/bsd-compat/bsdcompat.a
+
 SYNC_OBJS=sync.lo ptutils.lo utils.lo ubik.lo
-UTIL_OBJS=pt_util.lo ptutils.lo utils.lo ubik.lo vis.lo
+UTIL_OBJS=pt_util.lo ptutils.lo utils.lo ubik.lo
 
 CFILES=sync.c
 
@@ -42,10 +46,10 @@ TARGET=afssync pt_util
 .SUFFIXES: .pc .lo
 
 .pc.c:
-	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+	$(PRO_C) $(PRO_C_FLAGS) $(BSDCOMPAT_PROC_INCLUDE) INAME=$< ONAME=$@
 
 .c.lo:
-	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $(BSDCOMPAT_INCLUDE) $<
 
 all: $(TARGET)
 
@@ -65,5 +69,5 @@ install:
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(SQL_LIBS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil
 
-pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil
+pt_util: $(UTIL_OBJS) $(MR_LIBDEP) $(BSDCOMPAT_LIB)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) $(BSDCOMPAT_LIB) -llwp -lprot -lcom_err -lafsutil

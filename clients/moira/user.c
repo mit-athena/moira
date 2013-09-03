@@ -1,4 +1,4 @@
-/* $Id: user.c 4114 2013-06-05 18:57:06Z zacheiss $
+/* $Id: user.c 4122 2013-07-16 17:53:39Z zacheiss $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4114 2013-06-05 18:57:06Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4122 2013-07-16 17:53:39Z zacheiss $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -180,6 +180,7 @@ static char **SetUserDefaults(char **info)
   info[U_ALT_PHONE] = strdup("");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
+  info[U_AFF_BASIC] = info[U_AFF_DETAILED] = NULL;
   return info;
 }
 
@@ -369,6 +370,8 @@ char **AskUserInfo(char **info, Bool name)
   FreeAndClear(&info[U_MODTIME], TRUE);
   FreeAndClear(&info[U_MODBY], TRUE);
   FreeAndClear(&info[U_MODWITH], TRUE);
+  FreeAndClear(&info[U_AFF_BASIC], TRUE);
+  FreeAndClear(&info[U_AFF_DETAILED], TRUE);
 
   /*
    * Slide the newname into the #2 slot, this screws up all future references
@@ -707,10 +710,7 @@ static void RealUpdateUser(char **info, Bool junk)
       return;
     }
 
-  /* Subtract 2 from CountArgs() because affiliation fields are returned by
-   * get query but aren't exposed to update query.
-   */
-  if ((status = do_mr_query("update_user_account", CountArgs(args) - 2,
+  if ((status = do_mr_query("update_user_account", CountArgs(args),
 			    args, NULL, NULL)))
     {
       com_err(program_name, status, " in ModifyFields");

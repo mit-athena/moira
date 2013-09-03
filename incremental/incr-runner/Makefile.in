@@ -1,4 +1,4 @@
-# $Id: Makefile.in 4127 2013-08-05 12:54:39Z zacheiss $
+# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -25,25 +25,19 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 top_builddir=@top_builddir@
-BUILDTOP=..
+BUILDTOP=../..
 mrbindir=@mrbindir@
-mrlibdir=@mrlibdir@
-libdir=@mrlibdir@
 
 BSDCOMPAT_PROC_INCLUDE=INCLUDE=$(SRCTOP)/util/bsd-compat
 BSDCOMPAT_INCLUDE=-I$(SRCTOP)/util/bsd-compat
 BSDCOMPAT_LIB=$(BUILDTOP)/util/bsd-compat/bsdcompat.a
 
-SERVER_OBJS=	mr_main.lo mr_sauth.lo mr_scall.lo mr_shutdown.lo mr_util.lo \
-		qvalidate.lo qaccess.lo qsetup.lo qsupport.lo qfollow.lo \
-		queries2.lo qrtn.lo qsubs.lo increment.lo 
-SCHEMA_OBJS=	../db/moira_schema.lo
-START_OBJS=	startmoira.lo
+OBJS=incr-runner.lo
+START_OBJS=startincr.lo
 
-CFILES=		qvalidate.c qaccess.c qsetup.c qsupport.c qfollow.c \
-		qrtn.c increment.c
+CFILES=incr-runner.c
 
-TARGET=moirad startmoira
+TARGET=incr-runner startincr
 
 .SUFFIXES: .pc .lo
 
@@ -56,7 +50,7 @@ TARGET=moirad startmoira
 all: $(TARGET)
 
 clean:
-	$(LIBTOOL) --mode=clean rm -f $(SERVER_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(START_OBJS) $(CFILES) $(TARGET) incr-runner.lis
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -64,11 +58,11 @@ cleandir distclean: clean
 depend: $(CFILES)
 
 install:
-	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) moirad $(DESTDIR)$(mrbindir)
-	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) startmoira $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) incr-runner $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) startincr $(DESTDIR)$(mrbindir)
 
-moirad: $(SERVER_OBJS) $(SCHEMA_OBJS) $(MR_LIBDEP) $(BSDCOMPAT_LIB)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SERVER_OBJS) $(SCHEMA_OBJS) $(SQL_LIBS) $(LIBS) $(BSDCOMPAT_LIB)
+incr-runner: $(OBJS) $(MR_LIBDEP) $(BSDCOMPAT_LIB)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(OBJS) $(SQL_LIBS) $(LIBS) $(BSDCOMPAT_LIB)
 
-startmoira: $(START_OBJS)
+startincr: $(START_OBJS)
 	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)

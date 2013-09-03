@@ -29,3 +29,4 @@ drop table incremental;
 drop table containers;
 drop table mcntmap;
 drop table accountnumbers;
+drop table incremental_queue;

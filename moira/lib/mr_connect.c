@@ -424,6 +424,7 @@ int mr_cont_accept(int conn, char **buf, int *nread)
 	{
 	  closesocket(conn);
 	  free(*buf);
+	  *buf = NULL;
 	  return 0;
 	}
       break;
@@ -438,11 +439,13 @@ int mr_cont_accept(int conn, char **buf, int *nread)
     {
       closesocket(conn);
       free(*buf);
+      *buf = NULL;
       return 0;
     }
 
   /* good enough */
   free(*buf);
+  *buf = NULL;
 
   if (send(conn, response, sizeof(response), 0) != sizeof(response))
     {

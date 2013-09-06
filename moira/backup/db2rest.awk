@@ -55,7 +55,7 @@ NF >= 2 {
 			printf "  EXEC SQL VAR t_%s IS STRING(%d);\n", vname[count], temp2[1]+1;
 		} else vtype[count]="str";
 		vsize[count] = temp2[1]+1;
-	} else if ($2 ~ /DATE/) {
+	} else if ($2 ~ /DATE/ || $2 ~ /TIMESTAMP/) {
 		printf "  char\tt_%s[26];\n", vname[count];
 		vtype[count]="date";
 	} else printf "Unknown data type %s\n", $2;

@@ -364,7 +364,8 @@ int main(int argc, char **argv)
 	      FD_CLR(clients[i]->con, &xwritefds);
 	      free_rtn_tuples(clients[i]);
 	      free(clients[i]->tuples);
-	      free(clients[i]->hsbuf);
+	      if (clients[i]->hsbuf)
+		free(clients[i]->hsbuf);
 	      old = clients[i];
 	      clients[i] = clients[--nclients];
 	      free(old);

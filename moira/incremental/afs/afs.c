@@ -630,21 +630,25 @@ void edit_group(int op, char *group, char *type, char *member)
 
   if (!strcmp(type, "KERBEROS"))
     {
-      /* AFS still uses a v4-style namespace, so convert. */
-      code = krb5_parse_name(context, member, &client);
-      if (code)
-	goto out;
-
-      code = krb5_524_conv_principal(context, client, name, inst, realm);
-      if (code)
-	goto out;
-
-      strcpy(canon_member, mr_kname_unparse(name, inst, realm));
-      member = canon_member;
-
-      p = strchr(member, '@');
-      if (p && !strcasecmp(p+1, local_realm))
-	*p = 0;
+      /* Check if we've been handed an IPv4 address and don't mangle it. */
+      if (inet_addr(member) == INADDR_NONE)
+	{
+	  /* AFS still uses a v4-style namespace, so convert. */
+	  code = krb5_parse_name(context, member, &client);
+	  if (code)
+	    goto out;
+	  
+	  code = krb5_524_conv_principal(context, client, name, inst, realm);
+	  if (code)
+	    goto out;
+	  
+	  strcpy(canon_member, mr_kname_unparse(name, inst, realm));
+	  member = canon_member;
+	  
+	  p = strchr(member, '@');
+	  if (p && !strcasecmp(p+1, local_realm))
+	    *p = 0;
+	}
     }
   else if (strcmp(type, "USER"))
     return;					/* invalid type */

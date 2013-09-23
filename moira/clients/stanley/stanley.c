@@ -347,7 +347,7 @@ int main(int argc, char **argv)
   /* Maybe our 'username' is actually an MIT ID number.
    *  If so, resolve it into a username.
    */
-  if ((!info_flag) && (strlen(username) > 8) && (atoi(username) != 0))
+  if ((!info_flag) && (username != NULL && strlen(username) > 8) && (atoi(username) != 0))
     {
       char *argv[27];
       char *args[1];

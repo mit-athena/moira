@@ -462,10 +462,10 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
+
+	      info[FS_PACK] = strdup(temp_buf);
 	    }
-
-	  info[FS_PACK] = strdup(temp_buf);
-
+	  
 	} 
       else if (!strcasecmp(info[FS_TYPE], "NFS"))
 	{

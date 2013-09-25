@@ -5,6 +5,7 @@
 
 use IPC::Open2;
 use FileHandle;
+use Socket;
 # use vars qw( @connect @auth @query $debug $align );
 # use vars qw( $mrtest @help @argl @retl @fields @qret $i );
 # use strict;
@@ -150,6 +151,16 @@ if ($query[0] eq "ghst" || $query[0] eq "get_host") {
     my ($name, $junk);
     ($name, $junk) = gethostbyname($query[1]);
     if ($name) { $query[1] = $name; }
+}
+
+if ($query[0] eq "asnt" || $query[0] eq "add_subnet" || $query[0] eq "usnt" || $query[0] eq "update_subnet") {
+    my ($decimal_form, $idx);
+    $idx = 0;
+    if ($query[0] eq "usnt" || $query[0] eq "update_subnet") { $idx = 1 };
+    foreach $arg (6..9) {
+	$decimal_form = unpack('N', inet_aton($query[$arg + $idx]));
+	if ($decimal_form) { $query[$arg + $idx] = $decimal_form; }
+    }
 }
 
 # send the query to the Moira server

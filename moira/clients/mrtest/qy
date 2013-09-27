@@ -159,7 +159,10 @@ if ($query[0] eq "asnt" || $query[0] eq "add_subnet" || $query[0] eq "usnt" || $
     if ($query[0] eq "usnt" || $query[0] eq "update_subnet") { $idx = 1 };
     foreach $arg (6..9) {
 	$decimal_form = unpack('N', inet_aton($query[$arg + $idx]));
-	if ($decimal_form) { $query[$arg + $idx] = $decimal_form; }
+	if ($decimal_form) { 
+	    $decimal_form -= 2**32 if $decimal_form >= 2**31;
+	    $query[$arg + $idx] = $decimal_form;
+	}
     }
 }
 

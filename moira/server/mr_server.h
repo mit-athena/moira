@@ -67,7 +67,7 @@ extern char *krb_realm;
 extern int newqueries;
 
 /* Maximum and minimum values that will be used for uids and gids */
-#define MAX_ID_VALUE	131072
+#define MAX_ID_VALUE	262144
 #define MIN_ID_VALUE	100
 
 /* Sleepy states for the server! */

@@ -30,7 +30,7 @@ EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 
 #define MIN_ID_VALUE 100
-#define MAX_ID_VALUE 131072
+#define MAX_ID_VALUE 262144
 
 /* Remove non-digits from a phone number. */
 void fixphone(char *phone)

@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc 4110 2013-05-09 15:43:17Z zacheiss $
+/* $Id: qaccess.pc 4149 2013-11-15 00:20:53Z zacheiss $
  *
  * Check access to queries
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 4110 2013-05-09 15:43:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 4149 2013-11-15 00:20:53Z zacheiss $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -267,7 +267,12 @@ int access_list(struct query *q, char *argv[], client *cl)
        */
       if (!strncasecmp(newname, "owner-", 6))
 	return MR_RESERVED;
-      
+
+      /* Don't allow new lists to end with .service or -service */
+      if (!strncasecmp(&newname[strlen(newname)-8], ".service", 8) ||
+         !strncasecmp(&newname[strlen(newname)-8], "-service", 8))
+       return MR_RESERVED;
+
       EXEC SQL SELECT users_id INTO :users_id FROM users
 	WHERE login = :newname;
       if ((sqlca.sqlcode != SQL_NO_MATCH) && strcmp(strtrim(name), newname) &&
@@ -856,7 +861,7 @@ int access_hwaddr(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
   
-  EXEC SQL SELECT count(name) INTO :cnt from hwaddrmap WHERE mach_id = :id;
+  EXEC SQL SELECT count(hwaddr) INTO :cnt from hwaddrmap WHERE mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
 

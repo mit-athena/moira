@@ -1,4 +1,4 @@
-/* $Id: attach.c 4116 2013-06-11 19:24:17Z zacheiss $
+/* $Id: attach.c 4145 2013-09-25 00:20:53Z zacheiss $
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/attach.c $ $Id: attach.c 4116 2013-06-11 19:24:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/attach.c $ $Id: attach.c 4145 2013-09-25 00:20:53Z zacheiss $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);
@@ -462,10 +462,10 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
+
+	      info[FS_PACK] = strdup(temp_buf);
 	    }
-
-	  info[FS_PACK] = strdup(temp_buf);
-
+	  
 	} 
       else if (!strcasecmp(info[FS_TYPE], "NFS"))
 	{

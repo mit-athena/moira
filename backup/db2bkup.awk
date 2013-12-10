@@ -1,4 +1,4 @@
-#	$Id: db2bkup.awk 3956 2010-01-05 20:56:56Z zacheiss $
+#	$Id: db2bkup.awk 4140 2013-09-06 00:04:24Z zacheiss $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -56,7 +56,7 @@ NF>=2 {
 			vtype[count]="str";
 		}
 		vsize[count] = temp2[1]+1;
-	} else if ($2 ~ /DATE/) {
+	} else if ($2 ~ /DATE/ || $2 ~ /TIMESTAMP/) {
 		printf "  char\tt_%s[26];\n", vname[count];
 		vtype[count]="date";
 	} else printf "Unknown data type %s\n", $2;

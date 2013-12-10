@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c 4101 2013-03-06 16:37:24Z zacheiss $
+/* $Id: mr_connect.c 4141 2013-09-06 00:04:58Z zacheiss $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -46,7 +46,7 @@
 struct hostent * WINAPI rgethostbyname(char *name);
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_connect.c $ $Id: mr_connect.c 4101 2013-03-06 16:37:24Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_connect.c $ $Id: mr_connect.c 4141 2013-09-06 00:04:58Z zacheiss $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775
@@ -424,6 +424,7 @@ int mr_cont_accept(int conn, char **buf, int *nread)
 	{
 	  closesocket(conn);
 	  free(*buf);
+	  *buf = NULL;
 	  return 0;
 	}
       break;
@@ -438,11 +439,13 @@ int mr_cont_accept(int conn, char **buf, int *nread)
     {
       closesocket(conn);
       free(*buf);
+      *buf = NULL;
       return 0;
     }
 
   /* good enough */
   free(*buf);
+  *buf = NULL;
 
   if (send(conn, response, sizeof(response), 0) != sizeof(response))
     {

@@ -861,10 +861,27 @@ int print_id(int id)
 	case 128906:
 	case 130756:
 	case 130781:
+	case 132835:
+	case 137739:
+	case 139937:
+	case 140868:
+	case 141877:
+	case 147840:
+	case 156318:
+	case 164606:
+	case 164607:
+	case 164608:
+	case 196291:
+	case 196317:
+	case 203275:
+	case 230142:
+	case 230143:
+	case 261827:
+	case 261853:
 	  return 0;
 	  break;
 	}
-      if (id > -131073 && id < 131073)
+      if (id > -262145 && id < 262145)
 	return 1;
       else
 	return 0;
@@ -1185,10 +1202,27 @@ int print_id(int id)
 	case 128906:
 	case 130756:
 	case 130781:
+	case 132835:
+	case 137739:
+	case 139937:
+	case 140868:
+	case 141877:
+	case 147840:
+	case 156318:
+	case 164606:
+	case 164607:
+	case 164608:
+	case 196291:
+	case 196317:
+	case 203275:
+	case 230142:
+	case 230143:
+	case 261827:
+	case 261853:
 	  return 1;
 	  break;
 	}
-      if (id < -131072 || id > 131072)
+      if (id < -262144 || id > 262144)
 	return 1;
       else
 	return 0;

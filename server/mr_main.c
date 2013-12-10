@@ -1,4 +1,4 @@
-/* $Id: mr_main.c 4127 2013-08-05 12:54:39Z zacheiss $
+/* $Id: mr_main.c 4142 2013-09-06 00:05:11Z zacheiss $
  *
  * Moira server process.
  *
@@ -33,7 +33,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_main.c $ $Id: mr_main.c 4127 2013-08-05 12:54:39Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_main.c $ $Id: mr_main.c 4142 2013-09-06 00:05:11Z zacheiss $");
 
 client *cur_client;
 
@@ -364,7 +364,8 @@ int main(int argc, char **argv)
 	      FD_CLR(clients[i]->con, &xwritefds);
 	      free_rtn_tuples(clients[i]);
 	      free(clients[i]->tuples);
-	      free(clients[i]->hsbuf);
+	      if (clients[i]->hsbuf)
+		free(clients[i]->hsbuf);
 	      old = clients[i];
 	      clients[i] = clients[--nclients];
 	      free(old);

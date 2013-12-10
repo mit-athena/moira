@@ -1,4 +1,4 @@
-/* $Id: stanley.c 4133 2013-08-22 20:57:48Z zacheiss $
+/* $Id: stanley.c 4144 2013-09-23 13:23:01Z zacheiss $
  *
  * Command line oriented Moira users tool.
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4133 2013-08-22 20:57:48Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4144 2013-09-23 13:23:01Z zacheiss $");
 
 struct owner_type {
   int type;
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
   /* Maybe our 'username' is actually an MIT ID number.
    *  If so, resolve it into a username.
    */
-  if ((!info_flag) && (strlen(username) > 8) && (atoi(username) != 0))
+  if ((!info_flag) && (username != NULL && strlen(username) > 8) && (atoi(username) != 0))
     {
       char *argv[27];
       char *args[1];

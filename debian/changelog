@@ -1,3 +1,9 @@
+debathena-moira (4.0.0-r4149-0debathena1) unstable; urgency=low
+
+  * Snapshot moira at r4149 to pick up changes (Trac: #1420)
+
+ -- Jonathan Reed <jdreed@mit.edu>  Tue, 10 Dec 2013 10:09:17 -0500
+
 debathena-moira (4.0.0-r4138-0debathena2) unstable; urgency=low
 
   * Actually ship qy

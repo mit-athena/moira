@@ -65,6 +65,7 @@ int update_alias_flag, update_map_flag, verbose, noauth;
 int list_container_flag, update_container_flag, unformatted_flag;
 int list_hwaddr_flag, update_hwaddr_flag;
 int set_host_opt_flag, set_ttl_flag;
+int add_dynamic_host_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
@@ -87,11 +88,13 @@ void show_host_info_unformatted(char **argv);
 int show_machine_in_cluster(int argc, char **argv, void *hint);
 int show_machine_in_container(int argc, char **argv, void *hint);
 int show_host_hwaddrs(int argc, char **argv, void *hint);
+int show_dynamic_hostname(int argc, char **argv, void *hint);
 struct owner_type *parse_member(char *s);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
 void print_query(char *query_name, int argc, char **argv);
+char *get_username(void);
 
 int main(int argc, char **argv)
 {
@@ -104,7 +107,7 @@ int main(int argc, char **argv)
   update_alias_flag = verbose = noauth = 0;
   list_container_flag = update_container_flag = 0;
   list_hwaddr_flag = update_hwaddr_flag = 0;
-  set_host_opt_flag = set_ttl_flag = 0;
+  set_host_opt_flag = set_ttl_flag = add_dynamic_host_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = account_number = adm_cmt = NULL;
   op_cmt = opt = NULL;
@@ -243,7 +246,9 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
-          /* This could be for either update_host or set_host_opt                                                                                                                                                                                       * Don't set any flags and take our cues from the other                                                                                                                                                                                       * arguments we're given.                                                                                                                                                                                                                     */
+          /* This could be for either update_host or set_host_opt *
+	     Don't set any flags and take our cues from the other *
+	     arguments we're given.  */
 	  else if (argis("oc", "opcmt")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -347,6 +352,15 @@ int main(int argc, char **argv)
 	  }
 	  else if (argis("lhw", "listhwaddr"))
 	    list_hwaddr_flag++;
+	  else if (argis("adh", "adddynamic")) {
+	    add_dynamic_host_flag++;
+            if (arg - argv < argc - 1) {
+              arg++;
+              owner = parse_member(*arg);
+            } else {
+	      owner = parse_member(get_username());
+	    }
+	  }
 	  else if (argis("u", "unformatted"))
 	    unformatted_flag++;
 	  else if (argis("n", "noauth"))
@@ -371,7 +385,7 @@ int main(int argc, char **argv)
       else
 	usage(argv);
     }
-  if (hostname == NULL)
+  if (hostname == NULL && !add_dynamic_host_flag)
     usage(argv);
 
   if (op_cmt && !set_host_opt_flag)
@@ -382,9 +396,20 @@ int main(int argc, char **argv)
        delete_flag || list_map_flag || update_map_flag || \
        update_alias_flag || update_container_flag || \
        list_container_flag || update_hwaddr_flag || \
-       list_hwaddr_flag || set_host_opt_flag || set_ttl_flag)) {
+       list_hwaddr_flag || set_host_opt_flag || set_ttl_flag || \
+       add_dynamic_host_flag)) {
     info_flag++;
   }
+
+  if (add_dynamic_host_flag && (info_flag || update_flag || create_flag || \
+				delete_flag || list_map_flag || update_map_flag || \
+				update_alias_flag || update_container_flag || \
+				list_container_flag || update_hwaddr_flag || \
+				list_hwaddr_flag || set_host_opt_flag || set_ttl_flag))
+    {
+      com_err(whoami, 0, "-adh / -adddynamic option must be the only argument provided.");
+      exit(1);
+    }
 
   /* fire up Moira */
   status = mrcl_connect(server, "stella", 9, !noauth);
@@ -397,20 +422,23 @@ int main(int argc, char **argv)
     exit(2);
 
   /* Perform the lookup by IP address if that's what we've been handed */
-  if ((ipaddress=inet_addr(hostname)) != -1) {
-    char *args[5];
-    char *argv[30];
-
-    args[1] = strdup(hostname);
-    args[0] = args[2] = args[3] = "*";
-    status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
-
-    if (status) {
-      com_err(whoami, status, "while looking up IP address.");
-    } else {
-      hostname = argv[0];
+  if (hostname)
+    {
+      if ((ipaddress=inet_addr(hostname)) != -1) {
+	char *args[5];
+	char *argv[30];
+	
+	args[1] = strdup(hostname);
+	args[0] = args[2] = args[3] = "*";
+	status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+	
+	if (status) {
+	  com_err(whoami, status, "while looking up IP address.");
+	} else {
+	  hostname = argv[0];
+	}
+      }
     }
-  }
 
   /* create if needed */
   if (create_flag)
@@ -908,6 +936,46 @@ int main(int argc, char **argv)
     }
   }
 
+  if (add_dynamic_host_flag) {
+    char *argv[2];
+
+    argv[1] = owner->name;
+    switch (owner->type)
+      {
+      case M_ANY:
+      case M_USER:
+	argv[0] = "USER";
+	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
+	if (owner->type != M_ANY || status != MR_USER)
+	  break;
+
+      case M_LIST:
+	argv[0] = "LIST";
+	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
+	break;
+
+      case M_KERBEROS:
+	argv[0] = "KERBEROS";
+	status = mrcl_validate_kerberos_member(argv[2], &argv[2]);
+	if (mrcl_get_message())
+	  mrcl_com_err(whoami);
+	if (status == MRCL_REJECT)
+	  exit(1);
+	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
+	break;
+
+      case M_NONE:
+	argv[0] = "NONE";
+	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
+	break;
+      }
+
+    if (status) {
+      com_err(whoami, status, "while adding dynamic host");
+      exit(1);
+    }
+  }
+
   /* We're done! */
   mr_disconnect();
   exit(success ? 0 : 1);
@@ -952,7 +1020,8 @@ void usage(char **argv)
 	  "-oi  | -optin");
   fprintf(stderr,  USAGE_OPTIONS_FORMAT, "-oo  | -optout",
 	  "-ttl | -setttl ttl");
-  fprintf(stderr, "  %-39s\n", "-db  | -database host[:port]");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-adh | -adddynamic owner",
+	  "-db  | -database host[:port]");
   exit(1);
 }
 
@@ -997,6 +1066,14 @@ int show_ttl_unformatted(int argc, char **argv, void *hint)
   if (strcmp(argv[0], DEFAULT_TTL))
     printf("DNS TTL:          %s\n", argv[0]);
   
+  return MR_CONT;
+}
+
+/* Show assigned dynamic hostname */
+int show_dynamic_hostname(int argc, char **argv, void *hint)
+{
+  printf("Assigned dynamic hostname: %s\n", argv[0]);
+
   return MR_CONT;
 }
 
@@ -1233,4 +1310,21 @@ void print_query(char *query_name, int argc, char **argv) {
   for(cnt=0; cnt<argc; cnt++)
     printf(" <%s>", argv[cnt]);
   printf("\n");
+}
+
+char *get_username(void)
+{
+  char *username;
+
+  username = getenv("USER");
+  if (!username)
+    {
+      username = mrcl_krb_user();
+      if (!username)
+        {
+          com_err(whoami, 0, "Could not determine username");
+          exit(1);
+        }
+    }
+  return username;
 }

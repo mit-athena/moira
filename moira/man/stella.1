@@ -102,6 +102,10 @@ When this option is given, \fB-opcmt\ \fIop_cmt\ \fR must also be specified
 with the reason for the opt-out.
 .IP \fB-ttl\ \fIttl\ \fRor\ \fB-setttl\ \fIttl\fR
 Set the DNS TTL for the specified host to \fIttl\fR.
+.IP \fB-adh\ \fIowner\ \fRor\ \fB-adddynamic\ \fIowner\fR
+Assign a dynamic host record owned by \fIowner\fR.  The name assigned
+will be printed upon successful completion.  This field is mutually exclusive
+with all other operations.
 .IP \fB-unformatted\ \fRor\ \fB-u\fR
 Display host information with each field on a seperate line, in the 
 form "fieldname: value".
@@ -129,7 +133,7 @@ to Deleted (3).
 This will rename the given host to \fInewname\fR.
 
 .SH AUTHORS
-Nickolai Zeldovich.
+Nickolai Zeldovich, Garry Zacheiss.
 .SH SEE ALSO
 moira(1)
 

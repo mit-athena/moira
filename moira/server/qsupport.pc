@@ -23,6 +23,7 @@ RCSID("$HeadURL$ $Id$");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
+extern char *sqlbuffer[QMAXARGS];
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
@@ -2517,5 +2518,91 @@ int get_incremental_queue_length(struct query *q, char *argv[], client *cl,
     }
   EXEC SQL CLOSE svc_csr;
   
+  return MR_SUCCESS;
+}
+
+int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
+			    int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int sid, value, aid, mid;
+  char mname[MACHINE_NAME_SIZE];
+  char *atype;
+  EXEC SQL END DECLARE SECTION;
+  int starting_value;
+  char buffer[256];
+  char *rargv[1];
+
+  atype = argv[0];
+  aid = *(int *)argv[1];
+  mid = atoi(argv[2]);
+
+  EXEC SQL SELECT s.snet_id INTO :sid FROM subnet s WHERE s.name = 'DHCP';
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Can't use set_next_object_id() here because our incrementing counter is in
+   * the name, not a standalone field.
+   */
+
+  EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = 'dynamic_host_id';
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_NO_ID;
+
+  starting_value = value;
+  while (1)
+    {
+      sprintf(stmt_buf, "SELECT m.name FROM machine m WHERE m.name = 'HOSTLESS-DHCP-%d.MIT.EDU'",
+	      value);
+      dosql(sqlbuffer);
+      if (sqlca.sqlcode < 0)
+        return mr_errcode;
+
+      if (sqlca.sqlerrd[2] > 0)
+	{
+	  value++;
+	  continue;
+	}
+
+      sprintf(stmt_buf, "SELECT ha.name FROM hostalias ha WHERE ha.name = 'HOSTLESS-DHCP-%d.MIT.EDU'",
+	      value);
+      dosql(sqlbuffer);
+      if (sqlca.sqlcode < 0)
+	return mr_errcode;
+      if (sqlca.sqlerrd[2] > 0)
+	{
+	  value++;
+	  continue;
+	}
+      
+      break;
+    }
+
+  com_err(whoami, 0, "setting dynamic_host_id to %d", value);
+  EXEC SQL UPDATE numvalues SET value = :value WHERE name = 'dynamic_host_id';
+
+  sprintf(mname, "HOSTLESS-DHCP-%d.MIT.EDU", value);
+  com_err(whoami, 0, "setting dynamic host name to %s", mname);
+
+  incremental_clear_before();
+  EXEC SQL INSERT INTO machine (name, vendor, model, os, location, contact, billing_contact,
+				account_number, use, status, statuschange, snet_id, address, owner_type,
+				owner_id, acomment, ocomment, created, inuse, mach_id, creator)
+    VALUES (:mname, CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), 0, 1, SYSDATE,
+	    :sid, 'unassigned', :atype, :aid, 0, 0, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), :mid, :cl->client_id);
+  if (dbms_errno)
+    return mr_errcode;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_INTERNAL;
+  sprintf(buffer, "m.mach_id = %d", mid);
+  incremental_after(MACHINE_TABLE, buffer, 0);
+
+  EXEC SQL UPDATE machine SET modtime = SYSDATE, modby = :cl->client_id, modwith = :cl->entity WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  rargv[0] = mname;
+  (*action)(1, rargv, actarg);
+
   return MR_SUCCESS;
 }

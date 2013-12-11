@@ -321,7 +321,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 
       /* execute followup routine */
       if (v->post_rtn)
-	status = (*v->post_rtn)(q, Argv, cl);
+	status = (*v->post_rtn)(q, Argv, cl, action, actarg, cl);
       break;
 
     case MR_Q_DELETE:

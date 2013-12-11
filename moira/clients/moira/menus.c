@@ -534,7 +534,7 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  12,
+  13,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show", "Get machine information"},
@@ -573,6 +573,7 @@ Menu machine_menu = {
       {"setttl", "Set DNS TTL for this machine"},
       {"name", "Machine's Name: "},
     } },
+    SIMPLEFUNC("dynamic", "Assign a dynamic host record", AddDynamicHost),
   }
 };
 

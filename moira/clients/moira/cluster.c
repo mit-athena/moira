@@ -253,6 +253,14 @@ void PrintTTL(char **info)
     Put_message("");
 }
 
+void PrintDynamicHost(char **info)
+{
+  char buf[256];
+
+  sprintf(buf, "Assigned dynamic hostname: %s\n", info[0]);
+  Put_message(buf);
+}
+
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in
  *                   a coherent form.
@@ -2754,5 +2762,38 @@ int DeleteHWAddr(int argc, char **argv)
   if (stat != MR_SUCCESS)
     com_err(program_name, stat, " in delete_host_hwaddr");
  
+  return DM_NORMAL;
+}
+
+int AddDynamicHost(int argc, char **argv)
+{
+  char buf[BUFSIZ], *type, *name, *args[2];
+  struct mqelem *elem = NULL;
+  int status;
+
+  type = strdup("USER");
+  if (GetTypeFromUser("Type of owner", "search_ace_type", &type) == SUB_ERROR)
+    return DM_NORMAL;
+
+  sprintf(buf, "Name of %s", type);
+  name = strdup(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[0] = type;
+  args[1] = name;
+
+  if ((status = do_mr_query("add_dynamic_host_record", 2, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, status, " in add_dynamic_host_record");
+      return DM_NORMAL;
+    }
+
+  Loop(QueueTop(elem), (void (*)(char **)) PrintDynamicHost);
+  FreeQueue(elem);
+
+  free(type);
+  free(name);
+
   return DM_NORMAL;
 }

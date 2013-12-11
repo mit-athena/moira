@@ -142,11 +142,16 @@ void help_query(struct query *q, int (*action)(int, char *[], void *),
       sprintf(argr, "%s => %s", argv[--argcount], q->fields[q->argc]);
       argv[argcount++] = argr;
       if (q->vcnt > 1)
-	{
-	  for (i = q->argc + 1; i < q->vcnt + q->argc; i++)
-	    argv[argcount++] = q->fields[i];
-	}
+        {
+          for (i = q->argc + 1; i < q->vcnt + q->argc; i++)
+            argv[argcount++] = q->fields[i];
+        }
     }
+  else if (q->fields_count > (q->argc + q->vcnt))
+    {
+      sprintf(argr, "%s => %s", argv[--argcount], q->fields[q->argc + q->vcnt]);
+      argv[argcount++] = argr;
+    } 
   (*action)(argcount, argv, actarg);
 }
 

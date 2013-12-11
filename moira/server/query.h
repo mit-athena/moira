@@ -21,6 +21,7 @@ struct query
   enum tables rtable;		/* range table */
   char *tlist;			/* target list */
   char **fields;		/* input and output variable names (for help) */
+  int fields_count;		/* length of fields array */
   int  vcnt;			/* variable count */
   char *qual;			/* format string for "where" clause */
   int  argc;			/* number of args for qualifier */

@@ -1102,6 +1102,33 @@ static struct validate uust_validate = {
   set_modtime_by_id,
 };
 
+static char *uupi_fields[] = {
+  "login",
+  "pin",
+};
+
+static struct valobj uupi_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_CHAR, 1, USERS_TABLE, "pin"},
+};
+
+static struct validate uupi_validate = {
+  uupi_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
+static char *gupi_fields[] = {
+  "login",
+  "pin",
+};
+
 static char *dusr_fields[] = {
   "login",
 };
@@ -5773,6 +5800,42 @@ struct query Queries[] = {
     1,
     NULL,
     &uust_validate,
+  },
+
+  {
+    /* Q_UUPI - UPDATE_USER_PIN */
+    "update_user_pin",
+    "uupi",
+    2,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET pin = '%s'",
+    uupi_fields,
+    2,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &uupi_validate,
+  },
+
+  {
+    /* Q_GUPI - GET_USER_PIN */
+    "get_user_pin",
+    "gupi",
+    2,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.pin FROM users u",
+    gupi_fields,
+    2,
+    1,
+    "u.login = '%s'",
+    1,
+    "u.login",
+    NULL,
   },
 
   {

@@ -45,7 +45,7 @@ extern int QueryCount, max_version;
 extern struct query Queries[];
 
 /* Put this in a variable so that we can patch it if necessary */
-int max_row_count = 8192;
+int max_row_count = 16384;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
 int do_retrieve(struct query *q, char *pqual,

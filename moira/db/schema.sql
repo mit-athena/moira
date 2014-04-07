@@ -106,7 +106,7 @@ create table hostalias
 
 create table subnet
 (
-	name		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	snet_id		INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(48) 	DEFAULT CHR(0)	NOT NULL,
 	status		INTEGER		DEFAULT 0	NOT NULL,

@@ -154,6 +154,11 @@ int main(int argc, char **argv)
 	      arg++;
 	      update_flag++;
 	      owner = parse_member(*arg);
+	      if (!owner)
+		{
+		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    } else
 	      usage(argv);
 	  }
@@ -162,6 +167,11 @@ int main(int argc, char **argv)
 	      arg++;
 	      update_flag++;
 	      memacl = parse_member(*arg);
+	      if (!memacl)
+		{
+		  com_err(whoami, 0, "Invalid memacl format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    } else
 	      usage(argv);
 	  }

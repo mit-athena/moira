@@ -135,8 +135,11 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  if ((memberstruct = parse_member(*arg)))
+		  memberstruct = parse_member(*arg);
+		  if (memberstruct)
 		    sq_save_data(addlist, memberstruct);
+		  else 
+		    com_err(whoami, 0, "Unable to add list member: invalid format.");
 		}
 	      else
 		usage(argv);
@@ -146,9 +149,14 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 2)
 		{
 		  ++arg;
-		  if ((memberstruct = parse_member(*arg)))
-		    sq_save_data(addlist, memberstruct);
-		  memberstruct->tag = *++arg;
+		  memberstruct = parse_member(*arg);
+		  if (memberstruct)
+		    {
+		      sq_save_data(addlist, memberstruct);
+		      memberstruct->tag = *++arg;
+		    }
+		  else
+		    com_err(whoami, 0, "Unable to add list member: invalid format.");
 		}
 	      else
 		usage(argv);
@@ -168,8 +176,11 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  if ((memberstruct = parse_member(*arg)))
+		  memberstruct = parse_member(*arg);
+		  if (memberstruct)
 		    sq_save_data(dellist, memberstruct);
+		  else
+		    com_err(whoami, 0, "Unable to delete list member: invalid format.");
 		}
 	      else
 		usage(argv);
@@ -200,9 +211,14 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 2)
 		{
 		  ++arg;
-		  if ((memberstruct = parse_member(*arg)))
-		    sq_save_data(taglist, memberstruct);
-		  memberstruct->tag = *++arg;
+		  memberstruct = parse_member(*arg);
+		  if (memberstruct)
+		    {
+		      sq_save_data(taglist, memberstruct);
+		      memberstruct->tag = *++arg;
+		    }
+		  else
+		    com_err(whoami, 0, "Unable to modify list member: invalid format.");
 		}
 	      else
 		usage(argv);
@@ -308,6 +324,11 @@ int main(int argc, char **argv)
 		  setinfo++;
 		  ++arg;
 		  owner = parse_member(*arg);
+		  if (!owner)
+		    {
+		      com_err(whoami, 0, "Invalid owner format.  Must be one of USER, LIST, KERBEROS, or NONE.");
+		      exit(1);
+		    }
 		}
 	      else
 		usage(argv);
@@ -319,6 +340,11 @@ int main(int argc, char **argv)
 		  setinfo++;
 		  ++arg;
 		  memacl = parse_member(*arg);
+		  if (!memacl)
+		    {
+		      com_err(whoami, 0, "Invalid memacl format.  Must be one of USER, LIST, KERBEROS, or NONE.");
+		      exit(1);
+		    }
 		}
 	      else
 		usage(argv);
@@ -1344,8 +1370,11 @@ void get_members_from_file(char *filename, struct save_queue *queue)
 
   while (fgets(buf, BUFSIZ, in))
     {
-      if ((memberstruct = parse_member(buf)))
+      memberstruct = parse_member(buf);
+      if (memberstruct)
 	sq_save_data(queue, memberstruct);
+      else
+	com_err(whoami, 0, "Unable to parse member: invalid format.");
     }
   if (!feof(in))
     {

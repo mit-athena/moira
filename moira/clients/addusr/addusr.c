@@ -142,6 +142,11 @@ int main(int argc, char **argv)
 		{
 		  ++arg;
 		  sponsor = parse_member(*arg);
+		  if (!sponsor)
+		    {
+		      com_err(whoami, 0, "Invalid sponsor format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		      exit(1);
+		    }
 		}
 	      else
 		usage(argv);

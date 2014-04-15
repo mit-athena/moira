@@ -152,6 +152,11 @@ int main(int argc, char **argv)
 	      arg++;
 	      update_flag++;
 	      owner = parse_member(*arg);
+	      if (!owner)
+		{
+		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    } else
 	      usage(argv);
 	  }
@@ -357,6 +362,11 @@ int main(int argc, char **argv)
             if (arg - argv < argc - 1) {
               arg++;
               owner = parse_member(*arg);
+	      if (!owner)
+		{
+		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
             } else {
 	      owner = parse_member(get_username());
 	    }

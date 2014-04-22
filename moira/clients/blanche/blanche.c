@@ -22,23 +22,6 @@
 
 RCSID("$HeadURL$ $Id$");
 
-struct member {
-  int type;
-  char *name, *tag;
-};
-
-/* It is important to membercmp that M_USER < M_LIST < M_STRING */
-#define M_ANY		0
-#define M_USER		1
-#define M_LIST		2
-#define M_STRING	3
-#define M_KERBEROS	4
-#define M_MACHINE       5
-#define M_NONE		6
-
-char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS", "MACHINE",
-		     "NONE" };
-
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
@@ -47,7 +30,7 @@ int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
 int showusers, showstrings, showkerberos, showlists, showtags, showmachines;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
 int nfsgroup, mailman;
-struct member *owner, *memacl;
+struct mrcl_ace_type *owner, *memacl;
 char *desc, *newname, *mailman_server, *gid;
 
 /* various member lists */
@@ -56,16 +39,15 @@ struct save_queue *addlist, *dellist, *memberlist, *synclist, *taglist;
 char *listname, *whoami;
 
 void usage(char **argv);
-void show_list_member(struct member *memberstruct);
+void show_list_member(struct mrcl_ace_type *memberstruct);
 int show_list_info(int argc, char **argv, void *hint);
 int save_list_info(int argc, char **argv, void *hint);
 int show_list_count(int argc, char **argv, void *hint);
 void recursive_display_list_members(void);
-void unique_add_member(struct save_queue *q, struct member *m);
+void unique_add_member(struct save_queue *q, struct mrcl_ace_type *m);
 int get_list_members(int argc, char **argv, void *sq);
 void get_members_from_file(char *filename, struct save_queue *queue);
 int collect(int argc, char **argv, void *l);
-struct member *parse_member(char *s);
 int membercmp(const void *mem1, const void *mem2);
 int sq_count_elts(struct save_queue *q);
 char *get_username(void);
@@ -75,7 +57,7 @@ int main(int argc, char **argv)
   int status, success;
   char **arg = argv;
   char *membervec[4];
-  struct member *memberstruct;
+  struct mrcl_ace_type *memberstruct;
   char *server = NULL, *p;
 
   /* clear all flags & lists */
@@ -135,7 +117,7 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  memberstruct = parse_member(*arg);
+		  memberstruct = mrcl_parse_member(*arg);
 		  if (memberstruct)
 		    sq_save_data(addlist, memberstruct);
 		  else 
@@ -149,7 +131,7 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 2)
 		{
 		  ++arg;
-		  memberstruct = parse_member(*arg);
+		  memberstruct = mrcl_parse_member(*arg);
 		  if (memberstruct)
 		    {
 		      sq_save_data(addlist, memberstruct);
@@ -176,7 +158,7 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  memberstruct = parse_member(*arg);
+		  memberstruct = mrcl_parse_member(*arg);
 		  if (memberstruct)
 		    sq_save_data(dellist, memberstruct);
 		  else
@@ -211,7 +193,7 @@ int main(int argc, char **argv)
 	      if (arg - argv < argc - 2)
 		{
 		  ++arg;
-		  memberstruct = parse_member(*arg);
+		  memberstruct = mrcl_parse_member(*arg);
 		  if (memberstruct)
 		    {
 		      sq_save_data(taglist, memberstruct);
@@ -323,8 +305,8 @@ int main(int argc, char **argv)
 		{
 		  setinfo++;
 		  ++arg;
-		  owner = parse_member(*arg);
-		  if (!owner)
+		  owner = mrcl_parse_member(*arg);
+		  if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE)
 		    {
 		      com_err(whoami, 0, "Invalid owner format.  Must be one of USER, LIST, KERBEROS, or NONE.");
 		      exit(1);
@@ -339,8 +321,8 @@ int main(int argc, char **argv)
 		{
 		  setinfo++;
 		  ++arg;
-		  memacl = parse_member(*arg);
-		  if (!memacl)
+		  memacl = mrcl_parse_member(*arg);
+		  if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE)
 		    {
 		      com_err(whoami, 0, "Invalid memacl format.  Must be one of USER, LIST, KERBEROS, or NONE.");
 		      exit(1);
@@ -443,25 +425,39 @@ int main(int argc, char **argv)
 
       if (memacl)
 	{
-	  if (memacl->type == M_ANY)
+	  argv[L_MEMACE_NAME] = memacl->name;
+	  switch (memacl->type)
 	    {
+	    case MRCL_M_ANY:
 	      status = mr_query("get_user_account_by_login", 1,
 				&memacl->name, NULL, NULL);
 	      if (status == MR_NO_MATCH)
-		memacl->type = M_LIST;
+		argv[L_MEMACE_TYPE] = "LIST";
 	      else
-		memacl->type = M_USER;
-	    }
-	  argv[L_MEMACE_TYPE] = typename[memacl->type];
-	  argv[L_MEMACE_NAME] = memacl->name;
-	  if (memacl->type == M_KERBEROS)
-	    {
+		argv[L_MEMACE_TYPE] = "USER";
+	      break;
+
+	    case MRCL_M_USER:
+	      argv[L_MEMACE_TYPE] = "USER";
+	      break;
+
+	    case MRCL_M_LIST:
+	      argv[L_MEMACE_TYPE] = "LIST";
+	      break;
+
+	    case MRCL_M_KERBEROS:
 	      status = mrcl_validate_kerberos_member(argv[L_MEMACE_NAME],
 						     &argv[L_MEMACE_NAME]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
+	      argv[L_MEMACE_TYPE] = "KERBEROS";
+	      break;
+
+	    case MRCL_M_NONE:
+	      argv[L_MEMACE_TYPE] = argv[L_MEMACE_NAME] = "NONE";
+	      break;
 	    }
 	}
       else 
@@ -472,19 +468,19 @@ int main(int argc, char **argv)
 	  argv[L_ACE_NAME] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE] = "USER";
 	      status = mr_query("add_list", 15, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE] = "LIST";
 	      status = mr_query("add_list", 15, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[L_ACE_TYPE] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[L_ACE_NAME], 
 						     &argv[L_ACE_NAME]);
@@ -494,7 +490,7 @@ int main(int argc, char **argv)
 		exit(1);
 	      status = mr_query("add_list", 15, argv, NULL, NULL);
 	      break;
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE] = argv[L_ACE_NAME] = "NONE";
 	      status = mr_query("add_list", 15, argv, NULL, NULL);
 	      break;
@@ -559,25 +555,38 @@ int main(int argc, char **argv)
 
       if (memacl)
 	{
-	  if (memacl->type == M_ANY)
+	  argv[L_MEMACE_NAME + 1] = memacl->name;
+	  switch (memacl->type)
 	    {
+	    case MRCL_M_ANY:
 	      status = mr_query("get_user_account_by_login", 1,
 				&memacl->name, NULL, NULL);
 	      if (status == MR_NO_MATCH)
-		memacl->type = M_LIST;
+		argv[L_MEMACE_TYPE + 1] = "LIST";
 	      else
-		memacl->type = M_USER;
-	    }
-	  argv[L_MEMACE_TYPE + 1] = typename[memacl->type];
-	  argv[L_MEMACE_NAME + 1] = memacl->name;
-	  if (memacl->type == M_KERBEROS)
-	    {
+		argv[L_MEMACE_TYPE + 1] = "USER";
+	      break;
+
+	    case MRCL_M_USER:
+	      argv[L_MEMACE_TYPE + 1] = "USER";
+	      break;
+
+	    case MRCL_M_LIST:
+	      argv[L_MEMACE_TYPE + 1] = "LIST";
+	      break;
+
+	    case MRCL_M_KERBEROS:
 	      status = mrcl_validate_kerberos_member(argv[L_MEMACE_NAME + 1],
 						     &argv[L_MEMACE_NAME + 1]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
+	      argv[L_MEMACE_TYPE + 1] = "KERBEROS";
+	      break;
+
+	    case MRCL_M_NONE:
+	      argv[L_MEMACE_TYPE + 1] = argv[L_MEMACE_NAME + 1] = "NONE";
 	    }
 	}
 
@@ -586,19 +595,19 @@ int main(int argc, char **argv)
 	  argv[L_ACE_NAME + 1] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE + 1] = "USER";
 	      status = mr_query("update_list", 16, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE + 1] = "LIST";
 	      status = mr_query("update_list", 16, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[L_ACE_TYPE + 1] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[L_ACE_NAME + 1],
 						     &argv[L_ACE_NAME + 1]);
@@ -608,7 +617,7 @@ int main(int argc, char **argv)
 		exit(1);
 	      status = mr_query("update_list", 16, argv, NULL, NULL);
 	      break;
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE + 1] = argv[L_ACE_NAME + 1] = "NONE";
 	      status = mr_query("update_list", 16, argv, NULL, NULL);
 	      break;
@@ -700,34 +709,34 @@ int main(int argc, char **argv)
         }
       switch (memberstruct->type)
         {
-        case M_ANY:
-        case M_USER:
+        case MRCL_M_ANY:
+        case MRCL_M_USER:
           membervec[1] = "USER";
           status = mr_query("delete_member_from_list", 3, membervec,
                             NULL, NULL);
           if (status == MR_SUCCESS)
             break;
           else if ((status != MR_USER && status != MR_NO_MATCH) ||
-                   memberstruct->type != M_ANY)
+                   memberstruct->type != MRCL_M_ANY)
             {
               com_err(whoami, status, "while deleting member %s from %s",
                       memberstruct->name, listname);
               success = 0;
               break;
             }
-        case M_LIST:
+        case MRCL_M_LIST:
           membervec[1] = "LIST";
           status = mr_query("delete_member_from_list", 3, membervec,
                             NULL, NULL);
           if (status == MR_SUCCESS)
             break;
           else if ((status != MR_LIST && status != MR_NO_MATCH) ||
-                   memberstruct->type != M_ANY)
+                   memberstruct->type != MRCL_M_ANY)
             {
-              if (status == MR_PERM && memberstruct->type == M_ANY &&
+              if (status == MR_PERM && memberstruct->type == MRCL_M_ANY &&
                   !strcmp(membervec[2], get_username()))
                 {
-		  /* M_ANY means we've fallen through from the user
+		  /* MRCL_M_ANY means we've fallen through from the user
                    * case. The user is trying to remove himself from a
                    * list, but we got MR_USER or MR_NO_MATCH above,
                    * meaning he's not really on it, and we got MR_PERM
@@ -746,11 +755,11 @@ int main(int argc, char **argv)
               success = 0;
               break;
             }
-        case M_STRING:
+        case MRCL_M_STRING:
           membervec[1] = "STRING";
           status = mr_query("delete_member_from_list", 3, membervec,
                             NULL, NULL);
-          if (status == MR_STRING && memberstruct->type == M_ANY)
+          if (status == MR_STRING && memberstruct->type == MRCL_M_ANY)
             {
               com_err(whoami, 0, " Unable to find member %s to delete from %s",
                       memberstruct->name, listname);
@@ -770,7 +779,7 @@ int main(int argc, char **argv)
               success = 0;
             }
           break;
-        case M_KERBEROS:
+        case MRCL_M_KERBEROS:
           membervec[1] = "KERBEROS";
           status = mr_query("delete_member_from_list", 3, membervec,
                             NULL, NULL);
@@ -797,7 +806,7 @@ int main(int argc, char **argv)
               success = 0;
             }
           break;
-        case M_MACHINE:
+        case MRCL_M_MACHINE:
           membervec[1] = "MACHINE";
           membervec[2] = canonicalize_hostname(memberstruct->name);
           status = mr_query("delete_member_from_list", 3, membervec,
@@ -816,7 +825,7 @@ int main(int argc, char **argv)
   while (sq_get_data(addlist, &memberstruct))
     {
       /* canonicalize string if necessary */
-      if (memberstruct->type != M_KERBEROS &&
+      if (memberstruct->type != MRCL_M_KERBEROS &&
 	  (p = strchr(memberstruct->name, '@')))
 	{
 	  char *host = canonicalize_hostname(strdup(++p));
@@ -846,8 +855,8 @@ int main(int argc, char **argv)
 		{
 		  host = strdup(memberstruct->name);
 		  *(strchr(memberstruct->name, '@')) = 0;
-		  if (memberstruct->type == M_STRING)
-		      memberstruct->type = M_ANY;
+		  if (memberstruct->type == MRCL_M_STRING)
+		      memberstruct->type = MRCL_M_ANY;
 		  fprintf(stderr, "Warning: \"%s\" converted to "
 			  "\"%s\" because it is a local name.\n",
 			  host, memberstruct->name);
@@ -867,21 +876,21 @@ int main(int argc, char **argv)
 	}
       switch (memberstruct->type)
 	{
-	case M_ANY:
-	case M_USER:
+	case MRCL_M_ANY:
+	case MRCL_M_USER:
 	  membervec[1] = "USER";
 	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
-	  else if (status != MR_USER || memberstruct->type != M_ANY)
+	  else if (status != MR_USER || memberstruct->type != MRCL_M_ANY)
 	    {
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	      break;
 	    }
-	case M_LIST:
+	case MRCL_M_LIST:
 	  membervec[1] = "LIST";
 	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
@@ -900,16 +909,16 @@ int main(int argc, char **argv)
 		}
 	      break;
 	    }
-	  else if (status != MR_LIST || memberstruct->type != M_ANY)
+	  else if (status != MR_LIST || memberstruct->type != MRCL_M_ANY)
 	    {
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	      break;
 	    }
-	case M_STRING:
+	case MRCL_M_STRING:
 	  status = mrcl_validate_string_member(memberstruct->name);
-	  if (memberstruct->type == M_ANY && status == MRCL_WARN)
+	  if (memberstruct->type == MRCL_M_ANY && status == MRCL_WARN)
 	    {
 	      /* if user is trying to add something which isn't a
 		 remote string, or a list, or a user, and didn't
@@ -938,7 +947,7 @@ int main(int argc, char **argv)
 	      success = 0;
 	    }
 	  break;
-	case M_KERBEROS:
+	case MRCL_M_KERBEROS:
 	  membervec[1] = "KERBEROS";
 	  status = mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
 	  if (mrcl_get_message())
@@ -958,7 +967,7 @@ int main(int argc, char **argv)
 	    }
 	  free(membervec[2]);
 	  break;
-	case M_MACHINE:
+	case MRCL_M_MACHINE:
 	  membervec[1] = "MACHINE";
 	  membervec[2] = canonicalize_hostname(strdup(memberstruct->name));
 	  status = mr_query("add_tagged_member_to_list", 4, membervec,
@@ -986,40 +995,40 @@ int main(int argc, char **argv)
 	}
       switch (memberstruct->type)
 	{
-	case M_ANY:
-	case M_USER:
+	case MRCL_M_ANY:
+	case MRCL_M_USER:
 	  membervec[1] = "USER";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if ((status != MR_USER && status != MR_NO_MATCH) ||
-		   memberstruct->type != M_ANY)
+		   memberstruct->type != MRCL_M_ANY)
 	    {
 	      com_err(whoami, status, "while changing tag on member %s of %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	      break;
 	    }
-	case M_LIST:
+	case MRCL_M_LIST:
 	  membervec[1] = "LIST";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if ((status != MR_LIST && status != MR_NO_MATCH) ||
-		   memberstruct->type != M_ANY)
+		   memberstruct->type != MRCL_M_ANY)
 	    {
 	      com_err(whoami, status, "while changing tag on member %s of %s",
 		      memberstruct->name, listname);
 	      success = 0;
 	      break;
 	    }
-	case M_STRING:
+	case MRCL_M_STRING:
 	  membervec[1] = "STRING";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
-	  if (status == MR_STRING && memberstruct->type == M_ANY)
+	  if (status == MR_STRING && memberstruct->type == MRCL_M_ANY)
 	    {
 	      com_err(whoami, 0, " Unable to find member %s on list %s",
 		      memberstruct->name, listname);
@@ -1032,7 +1041,7 @@ int main(int argc, char **argv)
 	      success = 0;
 	    }
 	  break;
-	case M_KERBEROS:
+	case MRCL_M_KERBEROS:
 	  membervec[1] = "KERBEROS";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
@@ -1058,7 +1067,7 @@ int main(int argc, char **argv)
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
-	case M_MACHINE:
+	case MRCL_M_MACHINE:
 	  membervec[1] = "MACHINE";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
@@ -1143,38 +1152,38 @@ void usage(char **argv)
 
 /* Display the members stored in the queue */
 
-void show_list_member(struct member *memberstruct)
+void show_list_member(struct mrcl_ace_type *memberstruct)
 {
   char *s = "";
 
   switch (memberstruct->type)
     {
-    case M_USER:
+    case MRCL_M_USER:
       if (!showusers)
 	return;
       s = "USER";
       break;
-    case M_LIST:
+    case MRCL_M_LIST:
       if (!showlists)
 	return;
       s = "LIST";
       break;
-    case M_STRING:
+    case MRCL_M_STRING:
       if (!showstrings)
 	return;
       s = "STRING";
       break;
-    case M_KERBEROS:
+    case MRCL_M_KERBEROS:
       if (!showkerberos)
 	return;
       s = "KERBEROS";
       break;
-    case M_MACHINE:
+    case MRCL_M_MACHINE:
       if (!showmachines)
 	return;
       s = "MACHINE";
       break;
-    case M_ANY:
+    case MRCL_M_ANY:
       printf("%s\n", memberstruct->name);
       return;
     }
@@ -1183,14 +1192,14 @@ void show_list_member(struct member *memberstruct)
     printf("%s:%s", s, memberstruct->name);
   else
     {
-      if (memberstruct->type == M_LIST)
+      if (memberstruct->type == MRCL_M_LIST)
 	printf("LIST:%s", memberstruct->name);
-      else if (memberstruct->type == M_KERBEROS)
+      else if (memberstruct->type == MRCL_M_KERBEROS)
 	printf("KERBEROS:%s", memberstruct->name);
-      else if (memberstruct->type == M_STRING &&
+      else if (memberstruct->type == MRCL_M_STRING &&
 	       !strchr(memberstruct->name, '@'))
 	printf("STRING:%s", memberstruct->name);
-      else if (memberstruct->type == M_MACHINE)
+      else if (memberstruct->type == MRCL_M_MACHINE)
 	printf("MACHINE:%s", memberstruct->name);
       else
 	printf("%s", memberstruct->name);
@@ -1262,12 +1271,12 @@ void recursive_display_list_members(void)
 {
   int status, count, savecount;
   struct save_queue *lists, *members;
-  struct member *m, *m1, *data;
+  struct mrcl_ace_type *m, *m1, *data;
 
   lists = sq_create();
   members = sq_create();
-  m = malloc(sizeof(struct member));
-  m->type = M_LIST;
+  m = malloc(sizeof(struct mrcl_ace_type));
+  m->type = MRCL_M_LIST;
   m->name = listname;
   sq_save_data(lists, m);
 
@@ -1281,26 +1290,26 @@ void recursive_display_list_members(void)
 	com_err(whoami, status, "while getting members of list %s", m->name);
       while (sq_get_data(memberlist, &m1))
 	{
-	  if (m1->type == M_LIST)
+	  if (m1->type == MRCL_M_LIST)
 	    unique_add_member(lists, m1);
 	  else
 	    unique_add_member(members, m1);
 	}
     }
   savecount = count = sq_count_elts(members);
-  data = malloc(count * sizeof(struct member));
+  data = malloc(count * sizeof(struct mrcl_ace_type));
   count = 0;
   while (sq_get_data(members, &m))
-    memcpy(&data[count++], m, sizeof(struct member));
-  qsort(data, count, sizeof(struct member), membercmp);
+    memcpy(&data[count++], m, sizeof(struct mrcl_ace_type));
+  qsort(data, count, sizeof(struct mrcl_ace_type), membercmp);
   for (count = 0; count < savecount; count++)
     show_list_member(&data[count]);
 }
 
 
-/* add a struct member to a queue if that member isn't already there. */
+/* add a struct mrcl_ace_type to a queue if that member isn't already there. */
 
-void unique_add_member(struct save_queue *q, struct member *m)
+void unique_add_member(struct save_queue *q, struct mrcl_ace_type *m)
 {
   struct save_queue *qp;
 
@@ -1318,25 +1327,25 @@ void unique_add_member(struct save_queue *q, struct member *m)
 int get_list_members(int argc, char **argv, void *sq)
 {
   struct save_queue *q = sq;
-  struct member *m;
+  struct mrcl_ace_type *m;
 
-  m = malloc(sizeof(struct member));
+  m = malloc(sizeof(struct mrcl_ace_type));
   switch (argv[0][0])
     {
     case 'U':
-      m->type = M_USER;
+      m->type = MRCL_M_USER;
       break;
     case 'L':
-      m->type = M_LIST;
+      m->type = MRCL_M_LIST;
       break;
     case 'S':
-      m->type = M_STRING;
+      m->type = MRCL_M_STRING;
       break;
     case 'K':
-      m->type = M_KERBEROS;
+      m->type = MRCL_M_KERBEROS;
       break;
     case 'M':
-      m->type = M_MACHINE;
+      m->type = MRCL_M_MACHINE;
       break;
     }
   m->name = strdup(argv[1]);
@@ -1354,7 +1363,7 @@ void get_members_from_file(char *filename, struct save_queue *queue)
 {
   FILE *in;
   char buf[BUFSIZ];
-  struct member *memberstruct;
+  struct mrcl_ace_type *memberstruct;
 
   if (!strcmp(filename, "-"))
     in = stdin;
@@ -1370,7 +1379,7 @@ void get_members_from_file(char *filename, struct save_queue *queue)
 
   while (fgets(buf, BUFSIZ, in))
     {
-      memberstruct = parse_member(buf);
+      memberstruct = mrcl_parse_member(buf);
       if (memberstruct)
 	sq_save_data(queue, memberstruct);
       else
@@ -1399,68 +1408,6 @@ int collect(int argc, char **argv, void *l)
   return MR_CONT;
 }
 
-
-/* Parse a line of input, fetching a member.  NULL is returned if a member
- * is not found.  ';' is a comment character.
- */
-
-struct member *parse_member(char *s)
-{
-  struct member *m;
-  char *p, *lastchar;
-
-  while (*s && isspace(*s))
-    s++;
-  lastchar = p = s;
-  while (*p && *p != '\n' && *p != ';')
-    {
-      if (isprint(*p) && !isspace(*p))
-	lastchar = p++;
-      else
-	p++;
-    }
-  lastchar++;
-  *lastchar = '\0';
-  if (p == s || strlen(s) == 0)
-    return NULL;
-
-  if (!(m = malloc(sizeof(struct member))))
-    return NULL;
-  m->tag = strdup("");
-
-  if ((p = strchr(s, ':')))
-    {
-      *p = '\0';
-      m->name = ++p;
-      if (!strcasecmp("user", s))
-	m->type = M_USER;
-      else if (!strcasecmp("list", s))
-	m->type = M_LIST;
-      else if (!strcasecmp("string", s))
-	m->type = M_STRING;
-      else if (!strcasecmp("kerberos", s))
-	m->type = M_KERBEROS;
-      else if (!strcasecmp("machine", s))
-	m->type = M_MACHINE;
-      else if (!strcasecmp("none", s))
-	m->type = M_NONE;
-      else
-	{
-	  m->type = M_ANY;
-	  *(--p) = ':';
-	  m->name = s;
-	}
-      m->name = strdup(m->name);
-    }
-  else
-    {
-      m->name = strdup(s);
-      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
-    }
-  return m;
-}
-
-
 /*
  * This routine two compares members by the following rules:
  * 1.  A USER is less than a LIST
@@ -1473,9 +1420,9 @@ struct member *parse_member(char *s)
 
 int membercmp(const void *mem1, const void *mem2)
 {
-  const struct member *m1 = mem1, *m2 = mem2;
+  const struct mrcl_ace_type *m1 = mem1, *m2 = mem2;
 
-  if (m1->type == M_ANY || m2->type == M_ANY || (m1->type == m2->type))
+  if (m1->type == MRCL_M_ANY || m2->type == MRCL_M_ANY || (m1->type == m2->type))
     return strcmp(m1->name, m2->name);
   else
     return m1->type - m2->type;

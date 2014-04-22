@@ -34,11 +34,6 @@ typedef unsigned long in_addr_t;
 
 RCSID("$HeadURL$ $Id$");
 
-struct owner_type {
-  int type;
-  char *name;
-};
-
 struct mqelem {
   struct mqelem *q_forw;
   struct mqelem *q_back;
@@ -49,12 +44,6 @@ struct string_list {
   char *string;
   struct string_list *next;
 };
-
-#define M_ANY		0
-#define M_USER		1
-#define M_LIST		2
-#define M_KERBEROS	3
-#define M_NONE		4
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -79,7 +68,7 @@ char *os, *location, *contact, *billing_contact, *account_number;
 char *adm_cmt, *op_cmt, *opt, *ttl;
 
 in_addr_t ipaddress;
-struct owner_type *owner;
+struct mrcl_ace_type *owner;
 
 void usage(char **argv);
 int store_host_info(int argc, char **argv, void *hint);
@@ -89,7 +78,6 @@ int show_machine_in_cluster(int argc, char **argv, void *hint);
 int show_machine_in_container(int argc, char **argv, void *hint);
 int show_host_hwaddrs(int argc, char **argv, void *hint);
 int show_dynamic_hostname(int argc, char **argv, void *hint);
-struct owner_type *parse_member(char *s);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
@@ -151,8 +139,8 @@ int main(int argc, char **argv)
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
-	      owner = parse_member(*arg);
-	      if (!owner)
+	      owner = mrcl_parse_member(*arg);
+	      if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE)
 		{
 		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
 		  exit(1);
@@ -361,14 +349,19 @@ int main(int argc, char **argv)
 	    add_dynamic_host_flag++;
             if (arg - argv < argc - 1) {
               arg++;
-              owner = parse_member(*arg);
-	      if (!owner)
+              owner = mrcl_parse_member(*arg);
+	      if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE)
 		{
 		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
 		  exit(1);
 		}
             } else {
-	      owner = parse_member(get_username());
+	      owner = mrcl_parse_member(get_username());
+	      if (!owner)
+		{
+		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    }
 	  }
 	  else if (argis("u", "unformatted"))
@@ -498,19 +491,19 @@ int main(int argc, char **argv)
 	  argv[13] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[12] = "USER";
 	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[12] = "LIST";
 	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[12] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
 	      if (mrcl_get_message())
@@ -520,7 +513,7 @@ int main(int argc, char **argv)
 	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[12] = "NONE";
 	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
@@ -607,19 +600,19 @@ int main(int argc, char **argv)
 	  argv[14] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[13] = "USER";
 	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[13] = "LIST";
 	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[13] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[14], &argv[14]);
 	      if (mrcl_get_message())
@@ -629,7 +622,7 @@ int main(int argc, char **argv)
 	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[13] = "NONE";
 	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
@@ -952,19 +945,19 @@ int main(int argc, char **argv)
     argv[1] = owner->name;
     switch (owner->type)
       {
-      case M_ANY:
-      case M_USER:
+      case MRCL_M_ANY:
+      case MRCL_M_USER:
 	argv[0] = "USER";
 	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
-	if (owner->type != M_ANY || status != MR_USER)
+	if (owner->type != MRCL_M_ANY || status != MR_USER)
 	  break;
 
-      case M_LIST:
+      case MRCL_M_LIST:
 	argv[0] = "LIST";
 	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
 	break;
 
-      case M_KERBEROS:
+      case MRCL_M_KERBEROS:
 	argv[0] = "KERBEROS";
 	status = mrcl_validate_kerberos_member(argv[2], &argv[2]);
 	if (mrcl_get_message())
@@ -974,7 +967,7 @@ int main(int argc, char **argv)
 	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
 	break;
 
-      case M_NONE:
+      case MRCL_M_NONE:
 	argv[0] = "NONE";
 	status = wrap_mr_query("add_dynamic_host_record", 2, argv, show_dynamic_hostname, NULL);
 	break;
@@ -1238,61 +1231,6 @@ int show_host_hwaddrs(int argc, char **argv, void *hint)
   printf("Machine: %-30s Hardware Address: %-25s\n", argv[0], argv[1]);
 
   return MR_CONT;
-}
-
-/* Parse a line of input, fetching a member.  NULL is returned if a member
- * is not found.  ';' is a comment character.
- */
-
-struct owner_type *parse_member(char *s)
-{
-  struct owner_type *m;
-  char *p, *lastchar;
-
-  while (*s && isspace(*s))
-    s++;
-  lastchar = p = s;
-  while (*p && *p != '\n' && *p != ';')
-    {
-      if (isprint(*p) && !isspace(*p))
-	lastchar = p++;
-      else
-	p++;
-    }
-  lastchar++;
-  *lastchar = '\0';
-  if (p == s || strlen(s) == 0)
-    return NULL;
-
-  if (!(m = malloc(sizeof(struct owner_type))))
-    return NULL;
-
-  if ((p = strchr(s, ':')))
-    {
-      *p = '\0';
-      m->name = ++p;
-      if (!strcasecmp("user", s))
-	m->type = M_USER;
-      else if (!strcasecmp("list", s))
-	m->type = M_LIST;
-      else if (!strcasecmp("kerberos", s))
-	m->type = M_KERBEROS;
-      else if (!strcasecmp("none", s))
-	m->type = M_NONE;
-      else
-	{
-	  m->type = M_ANY;
-	  *(--p) = ':';
-	  m->name = s;
-	}
-      m->name = strdup(m->name);
-    }
-  else
-    {
-      m->name = strdup(s);
-      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
-    }
-  return m;
 }
 
 struct string_list *add_to_string_list(struct string_list *old_list, char *s) {

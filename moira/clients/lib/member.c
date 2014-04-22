@@ -136,3 +136,63 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
 
   return MRCL_SUCCESS;
 }
+
+/* Parse a line of input, fetching a member.  NULL is returned if a member
+ * is not found.  ';' is a comment character.
+ */
+
+struct mrcl_ace_type *mrcl_parse_member(char *s)
+{
+  struct mrcl_ace_type *m;
+  char *p, *lastchar;
+  
+  while (*s && isspace(*s))
+    s++;
+  lastchar = p = s;
+  while (*p && *p != '\n' && *p != ';')
+    {
+      if (isprint(*p) && !isspace(*p))
+        lastchar = p++;
+      else
+        p++;
+    }
+  lastchar++;
+  *lastchar = '\0';
+  if (p == s || strlen(s) == 0)
+    return NULL;
+  
+  if (!(m = malloc(sizeof(struct mrcl_ace_type))))
+    return NULL;
+  m->tag = strdup("");
+
+  if ((p = strchr(s, ':')))
+    {
+      *p = '\0';
+      m->name = ++p;
+      if (!strcasecmp("user", s))
+        m->type = MRCL_M_USER;
+      else if (!strcasecmp("list", s))
+        m->type = MRCL_M_LIST;
+      else if (!strcasecmp("string", s))
+        m->type = MRCL_M_STRING;
+      else if (!strcasecmp("kerberos", s))
+        m->type = MRCL_M_KERBEROS;
+      else if (!strcasecmp("machine", s))
+        m->type = MRCL_M_MACHINE;
+      else if (!strcasecmp("none", s))
+        m->type = MRCL_M_NONE;
+      else
+        {
+          m->type = MRCL_M_ANY;
+          *(--p) = ':';
+          m->name = s;
+        }
+      m->name = strdup(m->name);
+    }
+  else
+    {
+      m->name = strdup(s);
+      m->type = strcasecmp(s, "none") ? MRCL_M_ANY : MRCL_M_NONE;
+    }
+  return m;
+}

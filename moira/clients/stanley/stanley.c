@@ -24,21 +24,10 @@
 
 RCSID("$HeadURL$ $Id$");
 
-struct owner_type {
-  int type;
-  char *name;
-};
-
 struct string_list {
   char *string;
   struct string_list *next;
 };
-
-#define M_ANY		0
-#define M_USER		1
-#define M_LIST		2
-#define M_KERBEROS	3
-#define M_NONE		4
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -49,7 +38,7 @@ int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
 
 int count;
 
-struct owner_type *sponsor;
+struct mrcl_ace_type *sponsor;
 struct string_list *reservation_add_queue, *reservation_remove_queue;
 
 char *username, *whoami;
@@ -57,8 +46,6 @@ char *username, *whoami;
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
 char *alternate_email, *alternate_phone;
-
-struct owner_type *parse_member(char *s);
 
 static char *states[] = {
   "Registerable (0)",
@@ -253,8 +240,8 @@ int main(int argc, char **argv)
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
-	      sponsor = parse_member(*arg);
-	      if (!sponsor)
+	      sponsor = mrcl_parse_member(*arg);
+	      if (!sponsor || sponsor->type == MRCL_M_STRING || sponsor->type == MRCL_M_MACHINE)
 		{
 		  com_err(whoami, 0, "Invalid sponsor format. Must be one of USER, LIST, KERBEROS, or NONE.");
 		  exit(1);
@@ -444,19 +431,19 @@ int main(int argc, char **argv)
 	  argv[U_SPONSOR_NAME] = sponsor->name;
 	  switch (sponsor->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[U_SPONSOR_TYPE] = "USER";
 	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
-	      if (sponsor->type != M_ANY || status != MR_USER)
+	      if (sponsor->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[U_SPONSOR_TYPE] = "LIST";
 	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[U_SPONSOR_TYPE] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[U_SPONSOR_NAME],
 						     &argv[U_SPONSOR_NAME]);
@@ -467,7 +454,7 @@ int main(int argc, char **argv)
 	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
 
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[U_SPONSOR_TYPE] = "NONE";
 	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
 	      break;
@@ -564,21 +551,21 @@ int main(int argc, char **argv)
 	  argv[17] = sponsor->name;
 	  switch (sponsor->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[16] = "USER";
 	      status = wrap_mr_query("update_user_account", 21, argv, NULL, 
 				     NULL);
-	      if (sponsor->type != M_ANY || status != MR_USER)
+	      if (sponsor->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[16] = "LIST";
 	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
 				     NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[16] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[17], &argv[17]);
 	      if (mrcl_get_message())
@@ -589,7 +576,7 @@ int main(int argc, char **argv)
 				     NULL);
 	      break;
 
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[16] = "NONE";
 	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
 				     NULL);
@@ -940,58 +927,4 @@ void usage(char **argv)
 	  "-db  | -database host[:port]");
 
   exit(1);
-}
-
-/* Parse a line of input, fetching a member.  NULL is returned if a member
- * is not found.  ';' is a comment character.
- */
-struct owner_type *parse_member(char *s)
-{
-  struct owner_type *m;
-  char *p, *lastchar;
-
-  while (*s && isspace(*s))
-    s++;
-  lastchar = p = s;
-  while (*p && *p != '\n' && *p != ';')
-    {
-      if (isprint(*p) && !isspace(*p))
-	lastchar = p++;
-      else
-	p++;
-    }
-  lastchar++;
-  *lastchar = '\0';
-  if (p == s || strlen(s) == 0)
-    return NULL;
-
-  if (!(m = malloc(sizeof(struct owner_type))))
-    return NULL;
-
-  if ((p = strchr(s, ':')))
-    {
-      *p = '\0';
-      m->name = ++p;
-      if (!strcasecmp("user", s))
-	m->type = M_USER;
-      else if (!strcasecmp("list", s))
-	m->type = M_LIST;
-      else if (!strcasecmp("kerberos", s))
-	m->type = M_KERBEROS;
-      else if (!strcasecmp("none", s))
-	m->type = M_NONE;
-      else
-	{
-	  m->type = M_ANY;
-	  *(--p) = ':';
-	  m->name = s;
-	}
-      m->name = strdup(m->name);
-    }
-  else
-    {
-      m->name = strdup(s);
-      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
-    }
-  return m;
 }

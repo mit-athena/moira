@@ -609,7 +609,7 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
   if (cnt > 0)
     return MR_IN_USE;
 
-  EXEC SQL SELECT COUNT(name) INTO :cnt FROM users
+  EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
     WHERE sponsor_id = :id AND sponsor_type = 'LIST';
   if (cnt > 0)
     return MR_IN_USE;

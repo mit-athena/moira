@@ -57,7 +57,7 @@ void fixaddress(char *address)
     *p = ';';
 }  
 
-void process_entry(struct entry *e, int secure)
+void process_entry(struct entry *e, int secure, int newonly)
 {
   int changed;
   char buf[MAX_FIELD_WIDTH], *from, *to;
@@ -114,6 +114,10 @@ void process_entry(struct entry *e, int secure)
       newuser(e, secure);
       return;
     }
+
+  if (newonly)
+    return;
+
   strtrim(dfirst);
   strtrim(dlast);
   strtrim(dmiddle);

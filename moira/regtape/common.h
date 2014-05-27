@@ -34,7 +34,7 @@ struct entry {
 void fixphone(char *phone);
 void fixaddress(char *address);
 
-void process_entry(struct entry *e, int secure);
+void process_entry(struct entry *e, int secure, int newonly);
 void newuser(struct entry *e, int secure);
 
 int set_next_users_id(void);

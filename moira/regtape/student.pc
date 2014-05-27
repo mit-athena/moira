@@ -82,13 +82,12 @@ EXEC SQL END DECLARE SECTION;
 char *whoami;
 
 struct entry *get_next_entry(FILE *in);
-void process_entry(struct entry *e, int secure);
 
 int main(int argc, char **argv)
 {
   FILE *in;
   struct entry *e;
-  int i, wait = 0;
+  int i, wait = 0, newonly = 0;
   char buf[80], *file = NULL;
   EXEC SQL BEGIN DECLARE SECTION;
   char *db = "moira";
@@ -107,9 +106,11 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
-      if (file)
+      else if (!strcmp(argv[i], "-n"))
+	newonly++;
+      else if (file)
 	{
-	  fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+	  fprintf(stderr, "Usage: %s [-w] [-n] inputfile\n", whoami);
 	  exit(1);
 	}
       else
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
 
   if (!file)
     {
-      fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+      fprintf(stderr, "Usage: %s [-w] [-n] inputfile\n", whoami);
       exit(1);
     }
 
@@ -147,9 +148,9 @@ int main(int argc, char **argv)
        */
       if (!strcmp(e->reg_type, "Cross-Registered") ||
           !strcmp(e->reg_type, "Special"))
-	process_entry(e, 0);   
+	process_entry(e, 0, newonly);   
       else
-	process_entry(e, 1);
+	process_entry(e, 1, newonly);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
 	{

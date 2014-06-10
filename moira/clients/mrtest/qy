@@ -20,6 +20,7 @@ sub usage {
 @auth =    ("a");
 @query =   ();
 @outfields = ();
+@proxy = ();
 
 $debug = 0;
 $short = 0;
@@ -34,7 +35,7 @@ while (@ARGV) {
     @connect = ("c $arg");
   } elsif ($arg eq "-p") {
     $arg = shift(@ARGV) || usage "No argument specified to -p.\n";
-    @connect = ("p $arg");
+    @proxy = ("p $arg mrtest");
   } elsif ($arg eq "-n") {
     @auth = "";
   } elsif ($arg eq "-s") {
@@ -105,6 +106,7 @@ autoflush CMDS 1;
 read_reply;			# wait for the initial 'moira:  ' prompt
 command @connect;		# connect to the server
 command @auth    if @auth;	# authenticate to the server (or not)
+command @proxy   if @proxy;     # proxy as a different user
 
 # get help information on command
 if ($query[0] !~ /^_/) {

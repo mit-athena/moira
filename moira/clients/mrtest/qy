@@ -12,7 +12,7 @@ use Socket;
 
 sub usage {
   my $info = shift(@_) || '';
-  die "Usage: qy query args... [-db database] [-p user] [-n] [-s] [-f field,field,...]\n${info}Aborting";
+  die "${info}\nUsage: qy query args... [-db database] [-p user] [-n] [-s] [-f field,field,...]\n";
 }
 
 # Parse the command-line arguments
@@ -24,6 +24,7 @@ sub usage {
 
 $debug = 0;
 $short = 0;
+$json = 0;
 
 while (@ARGV) {
   my $arg = shift(@ARGV);
@@ -40,6 +41,13 @@ while (@ARGV) {
     @auth = "";
   } elsif ($arg eq "-s") {
     $short = 1;
+  } elsif ($arg eq "-json") {
+    my $rc = eval { require JSON; JSON->import(); 1; };
+    if (!$rc) {
+	usage "JSON support not available. Is the perl JSON module installed?\n";
+    } else {
+	$json = 1;
+    }
   } elsif ($arg eq "-f") {
     $arg = shift(@ARGV);
     @outfields = split(/, */, $arg);
@@ -50,6 +58,10 @@ while (@ARGV) {
   }
 }
 usage "No query specified.\n"           unless @query;
+
+if ($short && $json) {
+    usage "-s and -json arguments are mutually exclusive.\n";
+}
 
 # $reply = read_reply()
 #     Reads the reply from mrtest, up to the next 'moira:  '.
@@ -187,6 +199,16 @@ foreach (@qret) {
 			     } else {
 			       "";
 			     } } @outfields;
+    } elsif ($json) {
+	%outhash = ();
+	foreach (@outfields) {
+	    if (defined $out{$_}) {
+		$outhash{$_} = $out{$_};
+	    } else {
+		$outhash{$_} = "";
+	    }
+	}
+	print encode_json(\%outhash);
     } else {
       @names{@retl} = @fields;
       print join "\n", map { if (defined $out{$_}) {

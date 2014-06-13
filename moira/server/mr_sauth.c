@@ -163,6 +163,8 @@ void do_proxy(client *cl)
     {
       cl->proxy_id = cl->client_id;
       set_client(cl, kname, name, inst, realm);
+      strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
+      cl->entity[sizeof(cl->entity) - 1] = 0;
       com_err(whoami, 0, "Proxy authentication as %s (uid %d cid %d) via %s",
 	      kname, cl->users_id, cl->client_id, cl->req.mr_argv[1]);
       client_reply(cl, MR_SUCCESS);

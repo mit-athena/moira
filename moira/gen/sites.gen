@@ -1,0 +1,142 @@
+#!/moira/bin/perl -Tw
+
+# $Id: $
+
+# Generate a single list, of our active sites, which is to live in /etc/sites/sites.list
+
+use DBI;
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/sites';
+$outfile = '/moira/dcm/sites.out';
+$slistpath = '/etc/sites';
+
+$siteshost = 'SITES.MIT.EDU';
+umask 022;
+
+system("cd $outdir && rm -rf etc") == 0 || exit $MR_OCONFIG;
+
+$outdirtmp = $outdir;
+foreach $s (split('/', $slistpath)) {
+  $outdirtmp .= '/' . $s;
+  mkdir($outdirtmp);
+}
+
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+# Cache the host id we'll need later
+$sth = $dbh->prepare("SELECT m.mach_id FROM machine m WHERE m.name = '" . $siteshost . "'") || exit $MR_DBMS_ERR;
+$sth->execute;
+($nfs_host_id) = $sth->fetchrow_array || exit $MR_OCONFIG;
+
+# Suck in the list of cnames that are possible site names, so
+# that we can check against this list later.
+$sth = $dbh->prepare("SELECT c.name FROM machine m, hostalias c WHERE c.mach_id = m.mach_id AND m.name = '" . $siteshost . "'") || exit $MR_DBMS_ERR;
+$sth->execute;
+@cnames = ();
+while(($c) = $sth->fetchrow_array) {
+  push @cnames, $c;
+}
+
+$sth = $dbh->prepare("SELECT f.type, f.label, f.name, f.mount, u.login, l.name, f.comments " .
+                     "FROM filesys f, users u, list l " .
+		     "WHERE f.lockertype = 'SITE' " .
+		     "AND f.owner = u.users_id " .
+		     "AND f.owners = l.list_id " .
+		     "AND f.type = 'NFS' AND f.mach_id = $nfs_host_id " .
+		     "ORDER BY f.label") || exit $MR_DBMS_ERR;
+$sth->execute;
+
+open(SLIST, ">$outdir$slistpath/sites.list") || exit $MR_OCONFIG;
+
+my @validatedsites = ();
+while(($f_type, $f_label, $f_name, $f_mount, $f_owner, $f_owners, $f_comments) = $sth->fetchrow_array) { 
+
+  $f_label = lc($f_label);
+  $f_label =~ s/\.site//;
+  my $f_hostname = $f_label . '.mit.edu';
+
+  if (scalar grep(m/^$f_hostname/i, @cnames) != 1) {
+    print "$f_hostname not a cname for $siteshost\n";
+    next; 
+  }
+
+  unless ($f_name eq "/site/$f_label") {
+    print "$f_label, $f_name doesn't meet location constraints\n";
+    next; 
+  }
+
+  unless ($f_mount eq "/site/$f_label") {
+    print "$f_label, $f_mount doesn't meet location constraints\n";
+    next; 
+  }
+
+  $f_comments =~ s/\000//;
+
+  print SLIST "$f_label, $f_name, $f_owner, $f_owners, $f_comments\n";
+  push @validatedsites, $f_label;
+}
+
+close(SLIST);
+
+# name is "pack name" in the gui interface
+$sth = $dbh->prepare("SELECT f.type, f.label, f.name, f.mount, u.login, l.name, f.comments " .
+                     "FROM filesys f, users u, list l " .
+		     "WHERE f.lockertype = 'SITE' " .
+		     "AND f.owner = u.users_id " .
+		     "AND f.owners = l.list_id " .
+		     "AND f.type = 'ALIAS' AND f.mach_id = $nfs_host_id " .
+		     "ORDER BY f.label") || exit $MR_DBMS_ERR;
+$sth->execute;
+open(ALIST, ">$outdir$slistpath/sites.aliases.list") || exit $MR_OCONFIG;
+
+while(($f_type, $f_label, $f_name, $f_mount, $f_owner, $f_owners, $f_comments) = $sth->fetchrow_array) { 
+
+  $f_label = lc($f_label);
+  $f_name = lc($f_name);
+  $f_label =~ s/\.site//;
+  my $f_hostname = $f_label . '.mit.edu';
+
+  if (scalar grep(m/^$f_hostname$/i, @cnames) != 1) {
+    print "$f_hostname not a cname for $siteshost, skipping.\n";
+    next; 
+  }
+
+  # We expect $f_name to be like /site/biscuit
+  ($f_dest) = $f_name =~ m;^/site/([a-z0-9-]+)/?$; ;
+  if ($f_dest eq '') {
+    print "site $f_label: must find alias destination in $f_name, skipping.\n";
+    next;
+  }
+
+  if (scalar grep(m/^$f_dest$/, @validatedsites) != 1) {
+    print "site $f_label: site $f_dest (destination of alias) not a valid site, skipping.\n";
+    next;
+  }
+
+  ($f_path) = $f_mount =~ m;^/site/$f_dest(/[a-zA-Z0-9/_-]+)$; ;
+
+  if ((not defined($f_path)) or ($f_path eq '')) {
+    $f_path = '/'
+  }
+
+  $f_comments =~ s/\000//;
+
+  print ALIST "$f_label, $f_dest, $f_path, $f_comments\n";
+
+}
+
+close(ALIST);
+$dbh->disconnect;
+
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
+
+exit 0;

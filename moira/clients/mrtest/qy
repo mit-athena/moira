@@ -6,6 +6,7 @@
 use IPC::Open2;
 use FileHandle;
 use Socket;
+use File::Basename;
 # use vars qw( @connect @auth @query $debug $align );
 # use vars qw( $mrtest @help @argl @retl @fields @qret $i );
 # use strict;
@@ -36,7 +37,13 @@ while (@ARGV) {
     @connect = ("c $arg");
   } elsif ($arg eq "-p") {
     $arg = shift(@ARGV) || usage "No argument specified to -p.\n";
-    @proxy = ("p $arg mrtest");
+    if ($arg =~ /,/) {
+	($proxy_user, $proxy_with) = split(/,/, $arg, 2);
+    } else {
+	$proxy_user = $arg;
+	$proxy_with = basename($0);
+    }
+    @proxy = ("p $proxy_user $proxy_with");
   } elsif ($arg eq "-n") {
     @auth = "";
   } elsif ($arg eq "-s") {

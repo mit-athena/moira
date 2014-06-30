@@ -120,6 +120,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	  id_to_name(id, STRINGS_TABLE, &name);
 	  strcpy(before[12], name);
 	}
+      else if (!strncmp(before[11], "NONE", 4))
+	{
+	  strcpy(before[12], "NONE");
+	}
       id = atoi(before[13]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(before[13], name);
@@ -347,6 +351,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
           id_to_name(id, STRINGS_TABLE, &name);
           strcpy(after[12], name);
         }
+      else if (!strncmp(after[11], "NONE", 4))
+	{
+	  strcpy(after[12], "NONE");
+	}
       id = atoi(after[13]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(after[13], name);

@@ -79,7 +79,7 @@ if ($type eq 'machine') {
 
 if (scalar(@errors)) {
     foreach my $err (@errors) {
-      print $err;
+      print "$myself: $err\n";
     }
     exit(0);
 } else {
@@ -120,11 +120,17 @@ sub mach_to_ib {
      $ttl
     ) = @{$moira_input};
 
+    if ($extensible_attributes->{'moira_owner_id'} eq "0") {
+        $extensible_attributes->{'moira_owner_id'} = "none";
+    }
+
     # retrieve aliases from moira via qy
     my ($laundered_name) = $name =~ /([\w\-\.]+)/;
     my @qy_output = `$qy get_hostalias \\* $laundered_name 2>&1`;
-    if ($qy_output[0] =~ /moira (query): No records in database match query/) {
-        critial_alert('mach_to_ib: invalid moira name ('. $name . ') in moira input', 1);
+    
+    if ($qy_output[0] !~ /^alias:/ &&
+        $qy_output[0] !~ /^moira \(query\): No records in database match query/) {
+        die('mach_to_ib: qy: ' . $qy_output[0]);
     }
     foreach my $alias_line (grep(/^alias:/, @qy_output)) {
         chomp $alias_line;
@@ -137,10 +143,12 @@ sub mach_to_ib {
     $extensible_attributes->{'moira_mach_id'} += 0;
     $extensible_attributes->{'moira_status'} += 0;
 
-    if ($name !~ /^[\w\-]+\.mit\.edu$/i || 
-        $address !~ /^\d{1,3}(\.\d{1,3}){3}$/ ||
+    if (($address !~ /^\d{1,3}(\.\d{1,3}){3}$/ && $address !~ /^unassigned$/i) ||
         $extensible_attributes->{'moira_mach_id'} !~ /^\d+$/) {
         die('mach_to_ib: malformed moira input: ' .
+        join(' ', @${moira_input}));
+    } elsif ($name !~ /^[\w\-]+\.mit\.edu$/i) {
+        push(@errors, 'mach_to_ib: malformed moira input: ' .
         join(' ', @${moira_input}));
     }
 
@@ -179,7 +187,8 @@ sub mach_to_ib {
 sub ib_compare {
     my($new, $existing) = @_;
 
-#print Dumper($new)."\n".Dumper($existing)."\n";
+#print "NEW\n".Dumper($new)."\n";
+#print "EXISTING\n".Dumper($existing)."\n";
 
     if ($new->{'name'} ne $existing->{'name'}) {
         return(1);
@@ -196,16 +205,18 @@ sub ib_compare {
             return(4);
         }
     }
-    if ($existing->{'aliases'} && $new->{'aliases'}) {
-        if (lc(join(' ', sort(@{$existing->{'aliases'}}))) ne
-            lc(join(' ', sort(@{$new->{'aliases'}})))) {
-            return(5);
-        }
-    } elsif ($existing->{'aliases'} && !defined($new->{'aliases'})) {
-      return(6);
-    } elsif (!defined($existing->{'aliases'}) && $new->{'aliases'}) {
-      return(7);
-    }
+
+#    if ($existing->{'aliases'} && $new->{'aliases'}) {
+#        if (lc(join(' ', sort(@{$existing->{'aliases'}}))) ne
+#            lc(join(' ', sort(@{$new->{'aliases'}})))) {
+#            return(5);
+#        }
+#    } elsif ($existing->{'aliases'} && !defined($new->{'aliases'})) {
+#      return(6);
+#    } elsif (!defined($existing->{'aliases'}) && $new->{'aliases'}) {
+#      return(7);
+#    }
+
     foreach my $attr (keys(%{$new->{'extensible_attributes'}})) {
         if (($new->{'extensible_attributes'}->{$attr} &&
              $existing->{'extensible_attributes'}->{$attr}
@@ -300,6 +311,10 @@ sub ib_mach_add {
     my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
     my $name_results    = ib_search_by_name($ib_record->{'name'});
 
+    if ($ib_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
+        print 'ib_mach_add: moira record with mach_id ' . $moira_mach_id . ' has unassigned address, ignoring' . "\n";
+        return;
+    }
     foreach my $view (@views) {
         $ib_record->{'view'} = $view;
 
@@ -326,7 +341,7 @@ sub ib_mach_add {
                 if ($res->content =~ /^\"record:host\//) {
                     print 'ib_mach_add: name:' . $ib_record->{'name'}
                           .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$res->content;
+                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
                 } else {
                     my $ib_response = JSON->new->decode($res->content);
                     if ($ib_response->{'Error'}) {
@@ -385,7 +400,7 @@ sub ib_mach_delete {
                 if ($res->content =~ /^\"record:host\//) {
                     print 'ib_mach_delete: name:' . $ib_record->{'name'} 
                           .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$ib_ref;
+                          .$moira_mach_id. ' ib_ref:'.$ib_ref . "\n";
                 } else {
                     my $ib_response = JSON->new->decode($res->content);
                     if ($ib_response->{'Error'}) {
@@ -423,15 +438,14 @@ sub ib_mach_update {
         $ib_record->{'view'} = $view;
         $updated_record->{'view'} = $view;
 
-        if (lc(join(' ', @{$before})) eq lc(join(' ', @{$after}))) {
-            push(@errors, 'ib_mach_update: moira inputs are identical, not updating');
-            return;
-        }
+#        if (lc(join(' ', @{$before})) eq lc(join(' ', @{$after}))) {
+#            push(@errors, 'ib_mach_update: moira inputs are identical, not updating');
+#            return;
+#        }
         if ($ib_record->{'extensible_attributes'}->{'moira_mach_id'} !=
             $updated_record->{'extensible_attributes'}->{'moira_mach_id'}) {
             die('ib_mach_update: moira mach_id changed, this is impossible', 1);
         }
-        
         if (scalar(@{$name_results->{$view}} &&
             $ib_record->{'name'} ne $updated_record->{'name'})) {
             push(@errors, 'ib_mach_update: IB host record with name '
@@ -439,7 +453,7 @@ sub ib_mach_update {
                          .$view .' view, not updated');
         } elsif (scalar(@{$mach_id_results->{$view}}) == 0) {
             print 'ib_mach_update: no IB record with mach_id ' . $moira_mach_id
-                  .' in view ' . $view . ', adding instead';
+                  .' in view ' . $view . ', adding instead' . "\n";
             ib_mach_add($after);
             return;
         } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
@@ -449,15 +463,20 @@ sub ib_mach_update {
         } elsif (ib_compare($ib_record, $mach_id_result)) {
             push(@errors, 'ib_mach_update: existing IB record with mach_id '
                          .$moira_mach_id . ' in view ' . $view
-                         .' is not identical to moira input (1), not updated');
-        } elsif (!ib_compare($updated_record, $mach_id_result)) {
-            push(@errors, 'ib_mach_update: existing IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view
-                         .' is identical to moira input (2), not updated');
+                         .' is not identical to moira input (1), not updated' . "\n");
+#print "result: ".ib_compare($ib_record, $mach_id_result)."\n";
+#print "IB \n".Dumper($mach_id_result)."\n";
+#        } elsif (!ib_compare($updated_record, $mach_id_result)) {
+#            push(@errors, 'ib_mach_update: existing IB record with mach_id '
+#                         .$moira_mach_id . ' in view ' . $view
+#                         .' is identical to moira input (2), not updated');
         } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
             push(@errors, 'ib_mach_update: existing IB record with mach_id '
-                         .$moira_mach_id . ' ' . Dumper($mach_id_result)
-                         .' in view ' . $view . ' is not moira managed, not updated');
+                         .$moira_mach_id . ' in view ' . $view . ' is not moira managed, not updated');
+        } elsif ($updated_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
+            print 'ib_mach_update: no address in updated record, deleting instead' . "\n";
+            ib_mach_delete($before);
+            return;
         } else {
             my $ib_ref = $mach_id_result->{'_ref'};
             my $ua = LWP::UserAgent->new();
@@ -470,7 +489,7 @@ sub ib_mach_update {
                 if ($res->content =~ /^\"record:host\//) {
                     print 'ib_mach_update: name:' . $ib_record->{'name'}
                           .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$res->content;
+                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
                 } else {
                     my $ib_response = JSON->new->decode($res->content);
                     if ($ib_response->{'Error'}) {
@@ -520,7 +539,7 @@ sub ib_hostalias_add {
                          .'mach_id ' . $moira_mach_id . ' in view ' . $view
                          .', alias not added');
         } elsif ($mach_id_result->{'name'} ne lc($moira_name)) {
-            push(@errors, 'ib_hostalias_add: moira name (' . lc($moira_name)
+            push(@errors, 'ib_hostalias_add: moira record with name (' . lc($moira_name)
                          .') does not match existing record ('
                          .$mach_id_result->{'name'} . ') with mach_id '
                          .$moira_mach_id . ' in view ' . $view
@@ -555,7 +574,7 @@ sub ib_hostalias_add {
                     if ($res->content =~ /^\"record:host\//) {
                         print 'ib_hostalias_add: alias ' . $moira_alias
                               .' added to host ' . $moira_name . ' in view '
-                              .$view;
+                              .$view . "\n";
                     } else {
                         my $ib_response = JSON->new->decode($res->content);
                         if ($ib_response->{'Error'}) {
@@ -588,7 +607,7 @@ sub ib_hostalias_delete {
     if ($moira_name !~ /^[\w\-]+\.mit\.edu$/i ||
         $moira_alias!~ /^[\w\-]+\.mit\.edu$/i ||
         $moira_mach_id !~ /^\d+$/) {
-        die('ib_hostalias_add: malformed Moira input: '
+        die('ib_hostalias_delete: malformed moira input: '
             .join(' ', @${moira_input}));
     }
 
@@ -641,7 +660,7 @@ sub ib_hostalias_delete {
                         if ($res->content =~ /^\"record:host\//) {
                             print 'ib_hostalias_delete: name:' . $moira_name 
                                   .' view:' . $view . ' mach_id:'
-                                  .$moira_mach_id. ' ib_ref:'.$res->content;
+                                  .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
                         } else {
                             my $ib_response = JSON->new->decode($res->content);
                             if ($ib_response->{'Error'}) {

@@ -20285,7 +20285,7 @@ echo "$as_me: error: Unsupported Oracle release" >&2;}
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"

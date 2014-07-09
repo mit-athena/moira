@@ -34,7 +34,6 @@ int main(int argc, char **argv)
   char first_name[USERS_FIRST_SIZE], middle_name[USERS_MIDDLE_SIZE];
   char office_address[USERS_OFFICE_ADDR_SIZE];
   char office_phone[USERS_OFFICE_PHONE_SIZE];
-  char home_address[USERS_HOME_ADDR_SIZE], home_phone[USERS_HOME_PHONE_SIZE];
   char id[USERS_CLEARID_SIZE], type[USERS_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
@@ -61,8 +60,7 @@ int main(int argc, char **argv)
   EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
   EXEC SQL DECLARE x CURSOR FOR SELECT 
-    login, last, first, middle, office_addr, office_phone, 
-    home_addr, home_phone, clearid, type 
+    login, last, first, middle, office_addr, office_phone, clearid, type 
     FROM users WHERE (status = 1 OR status = 10 OR status = 11) AND type != 'SYSTEM' AND type != 'STAFF'
     AND type != 'TEST' AND type != 'REGTEST' AND type != 'SHARED'
     AND type != 'MGMT' AND type != 'DOOMED' AND type NOT LIKE 'GUES%';
@@ -70,8 +68,7 @@ int main(int argc, char **argv)
   while (1)
     {
       EXEC SQL FETCH x INTO :login, :last_name, :first_name, :middle_name,
-	:office_address, :office_phone, :home_address, :home_phone,
-	:id, :type;
+	:office_address, :office_phone, :id, :type;
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
@@ -80,8 +77,6 @@ int main(int argc, char **argv)
       strtrim(middle_name);
       strtrim(office_address);
       strtrim(office_phone);
-      strtrim(home_address);
-      strtrim(home_phone);
       strtrim(id);
       strtrim(type);
 #ifdef notdef
@@ -91,7 +86,7 @@ int main(int argc, char **argv)
 		"Unlisted Account\n", id, last_name, login, last_name,
 		first_name, middle_name, last_name, first_name,
 		middle_name, login, login, office_phone, office_address,
-		home_phone, home_address);
+		"", "");
 #else
       if(isdigit(*id))
 	fprintf(out, "%s^4:p\t24:%s %s\t7:%s, %s %s\t3:%s, %s "

@@ -174,6 +174,8 @@ int DelUserReservation(int argc, char **argv);
 int GetUserByReservation(int argc, char **argv);
 void PrintReservationTypes(void);
 int UserBySponsor(int argc, char **argv);
+int GetVPNGroup(int argc, char **argv);
+int SetVPNGroup(int argc, char **argv);
 
 /* printer.c */
 int GetPrn(int argc, char **argv);

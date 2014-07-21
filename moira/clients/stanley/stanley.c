@@ -35,6 +35,7 @@ struct string_list {
 /* flags from command line */
 int info_flag, update_flag, create_flag, deact_flag, reg_flag;
 int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
+int list_vpn_group_flag, set_vpn_group_flag;
 
 int count;
 
@@ -45,7 +46,7 @@ char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
-char *alternate_email, *alternate_phone;
+char *alternate_email, *alternate_phone, *twofactor_enabled, *vpn_group;
 
 static char *states[] = {
   "Registerable (0)",
@@ -77,6 +78,7 @@ static char *UserState(int state)
 
 void usage(char **argv);
 int save_query_info(int argc, char **argv, void *hint);
+int show_vpn_group(int argc, char **argv, void *hint);
 int show_reservations(int argc, char **argv, void *hint);
 int show_user_info(int argc, char **argv, void *hint);
 int show_user_info_unformatted(int argc, char **argv, void *hint);
@@ -94,9 +96,11 @@ int main(int argc, char **argv)
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = deact_flag = reg_flag = 0;
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
+  list_vpn_group_flag = set_vpn_group_flag = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
   winhomedir = winprofiledir = expiration = alternate_email = alternate_phone = NULL;
+  twofactor_enabled = vpn_group = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   sponsor = NULL;
   whoami = argv[0];
@@ -273,6 +277,25 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("2fa", "twofactor")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      twofactor_enabled = *arg;
+	    } else 
+	      usage(argv);
+	  }
+	  else if (argis("lv", "listvpn")) {
+	    list_vpn_group_flag++;
+	  }
+	  else if (argis("sv", "setvpn")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      vpn_group = *arg;
+	    } else
+	      usage(argv);
+	    set_vpn_group_flag++;
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -322,12 +345,12 @@ int main(int argc, char **argv)
   /* default to info_flag if nothing else was specified */
   if(!(info_flag       || update_flag || create_flag   || \
        deact_flag      || reg_flag    || list_res_flag || \
-       update_res_flag)) {
+       update_res_flag || list_vpn_group_flag || set_vpn_group_flag)) {
     info_flag++;
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 15, !noauth);
+  status = mrcl_connect(server, "stanley", 16, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -426,6 +449,10 @@ int main(int argc, char **argv)
         argv[U_ALT_EMAIL] = alternate_email;
       if (alternate_phone)
         argv[U_ALT_PHONE] = alternate_phone;
+      if (twofactor_enabled)
+	argv[U_TWOFACTOR] = twofactor_enabled;
+      else
+	argv[U_TWOFACTOR] = "0";
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -434,13 +461,13 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[U_SPONSOR_TYPE] = "USER";
-	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 21, argv, NULL, NULL);
 	      if (sponsor->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[U_SPONSOR_TYPE] = "LIST";
-	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 21, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
@@ -451,12 +478,12 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 21, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_NONE:
 	      argv[U_SPONSOR_TYPE] = "NONE";
-	      status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
+	      status = wrap_mr_query("add_user_account", 21, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -465,7 +492,7 @@ int main(int argc, char **argv)
 	  argv[U_SPONSOR_TYPE] = "NONE";
 	  argv[U_SPONSOR_NAME] = "NONE";
 	  
-	  status = wrap_mr_query("add_user_account", 20, argv, NULL, NULL);
+	  status = wrap_mr_query("add_user_account", 21, argv, NULL, NULL);
 	}
 
       if (status)
@@ -510,6 +537,7 @@ int main(int argc, char **argv)
       argv[18] = old_argv[17];
       argv[19] = old_argv[18];
       argv[20] = old_argv[19];
+      argv[21] = old_argv[20];
 
       argv[0] = username;
       if (newlogin)
@@ -546,6 +574,8 @@ int main(int argc, char **argv)
 	argv[19] = alternate_email;
       if (alternate_phone)
 	argv[20] = alternate_phone;
+      if (twofactor_enabled)
+	argv[21] = twofactor_enabled;
       if (sponsor)
 	{
 	  argv[17] = sponsor->name;
@@ -554,14 +584,14 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[16] = "USER";
-	      status = wrap_mr_query("update_user_account", 21, argv, NULL, 
+	      status = wrap_mr_query("update_user_account", 22, argv, NULL, 
 				     NULL);
 	      if (sponsor->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[16] = "LIST";
-	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 22, argv, NULL,
 				     NULL);
 	      break;
 
@@ -572,19 +602,19 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 22, argv, NULL,
 				     NULL);
 	      break;
 
 	    case MRCL_M_NONE:
 	      argv[16] = "NONE";
-	      status = wrap_mr_query("update_user_account", 21, argv, NULL,
+	      status = wrap_mr_query("update_user_account", 22, argv, NULL,
 				     NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_user_account", 21, argv, NULL, NULL);
+	status = wrap_mr_query("update_user_account", 22, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating user.");
@@ -767,6 +797,39 @@ int main(int argc, char **argv)
 	  q = q->next;
 	}
     }
+
+
+  /* list user default vpn group */
+  if (list_vpn_group_flag)
+    {
+      char *args[1];
+
+      args[0] = username;
+      status = wrap_mr_query("get_user_vpn_group", 1, args,
+			     show_vpn_group, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while getting user vpn group.");
+	  exit(1);
+	}
+    }
+
+  if (set_vpn_group_flag)
+    {
+      char *args[2];
+
+      args[0] = username;
+      args[1] = vpn_group;
+
+      status = wrap_mr_query("set_user_vpn_group", 2, args,
+			     NULL, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while setting user vpn group.");
+	  exit(1);
+	}
+    }
+
   /* We're done! */
   mr_disconnect();
   exit(0);
@@ -787,6 +850,13 @@ int save_query_info(int argc, char **argv, void *hint)
 int show_reservations(int argc, char **argv, void *hint)
 {
   printf("Reservation: %s\n", argv[0]);
+
+  return MR_CONT;
+}
+
+int show_vpn_group(int argc, char **argv, void *hint)
+{
+  printf("Login: %s, Default VPN group: %s\n", argv[0], argv[1]);
 
   return MR_CONT;
 }
@@ -845,6 +915,8 @@ int show_user_info(int argc, char **argv, void *hint)
       printf("User %s secure Account Coupon to register\n",
 	      atoi(argv[U_SECURE]) ? "needs" : "does not need");
     }
+  printf("User %s two-factor authentication for Touchstone services.\n",
+	 atoi(argv[U_TWOFACTOR]) ? "requires" : "does not require");
   printf("Comments: %s\n", argv[U_COMMENT]);
   printf("Created  by %s on %s.\n", argv[U_CREATOR], argv[U_CREATED]);
   printf("Last mod by %s at %s with %s.\n", argv[U_MODBY], argv[U_MODTIME],
@@ -881,6 +953,8 @@ int show_user_info_unformatted(int argc, char **argv, void *hint)
   if (status == 0 || status == 2)
     printf("Secure:                  %s secure Account Coupon to register\n",
 	   atoi(argv[U_SECURE]) ? "Needs" : "Does not need");
+  printf("Two-factor:                %s two-factor authentication for Touchstone services\n",
+	 atoi(argv[U_TWOFACTOR]) ? "requires" : "does not require");
   printf("Comments:                  %s\n", argv[U_COMMENT]);
   printf("Created by:                %s\n", argv[U_CREATOR]);
   printf("Created on:                %s\n", argv[U_CREATED]);
@@ -896,35 +970,37 @@ void usage(char **argv)
 #define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s username [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
-  fprintf(stderr, "  %-39s\n", "-i   | -info");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-C   | -create",
-          "-D   | -deact");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r   | -register",
-	  "-R   | -rename newname");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-U   | -uid uid",
-	  "-s   | -shell shell");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-S   | -status status",
-	  "-w   | -winshell winshell");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-F   | -first firstname",
-	  "-L   | -last lastname");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-M   | -middle middlename",
-	  "-I   | -mitid mitid");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-cl  | -class class",
-	  "-c   | -comment comment");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-6   | -secure 0|1",
-	  "-lr  | -listreservation");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ar  | -addreservation reservation",
-	  "-dr  | -deletereservation reservation");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wh  | -winhomedir winhomedir",
-	  "-wp  | -winprofiledir winprofiledir");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i   | -info",
+	  "-C   | -create");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D   | -deact",
+	  "-r   | -register");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-R   | -rename newname",
+	  "-U   | -uid uid");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-s   | -shell shell",
+	  "-S   | -status status");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-w   | -winshell winshell",
+	  "-F   | -first firstname");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-L   | -last lastname",
+	  "-M   | -middle middlename");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-I   | -mitid mitid",
+	  "-cl  | -class class");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-c   | -comment comment",
+	  "-6   | -secure 0|1");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lr  | -listreservation",
+	  "-ar  | -addreservation reservation");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dr  | -deletereservation reservation",
+	  "-wh  | -winhomedir winhomedir");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wp  | -winprofiledir winprofiledir",
+	  "-2fa | -twofactor 0|1");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
 	  "-e   | -expiration expiration date");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ae  | -alternateemail address",
 	  "-ap  | -alternatephone phone number");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lv  | -listvpn",
+          "-sv  | -setvpn listname");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
           "-n   | -noauth");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "-db  | -database host[:port]");
-
   exit(1);
 }

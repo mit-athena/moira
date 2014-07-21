@@ -674,6 +674,24 @@ Menu krbmap_menu = {
   }
 };
 
+Menu vpn_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "User VPN Group Menu",
+  2,
+  {
+    { GetVPNGroup, NULLMENU, 2, {
+	{ "get", "Get User Default VPN Group" },
+	{ "user", "User login name: " },
+    } },
+    { SetVPNGroup, NULLMENU, 3, {
+	{ "set", "Set User Default VPN Group" },
+	{ "user", "User login name: " },
+	{ "list", "List name: " },
+    } },
+  }
+};
+
 /*
  * User Menu
  */
@@ -682,7 +700,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  12,
+  14,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -720,6 +738,7 @@ Menu user_menu = {
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
     SUBMENU("reservations", "User Reservations Menu", &reservations_menu),
+    SUBMENU("vpn", "VPN Group Menu", &vpn_menu),
   }
 };
 

@@ -511,8 +511,7 @@ LIBS="$MR_LIBDEP $KLIBS"
 AC_SUBST(KLIBS)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
-	  clients/lib/Makefile clients/addusr/Makefile \
-	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/lib/Makefile clients/blanche/Makefile clients/chfn/Makefile \
 	  clients/chpobox/Makefile clients/chsh/Makefile \
 	  clients/eunice/Makefile clients/mailmaint/Makefile \
 	  clients/mitch/Makefile clients/moira/Makefile \

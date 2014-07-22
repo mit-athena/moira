@@ -565,7 +565,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
-		char *middle, char *last, char *shell, char *class);
+		char *middle, char *last, char *shell, char *class, int TwoFactorStatus);
 
 void change_to_lower_case(char *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
@@ -1703,10 +1703,11 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   return;
 }
 
-#define U_USER_ID    10
-#define U_HOMEDIR    11
-#define U_PROFILEDIR 12
-#define U_POTYPE     13
+#define U_USER_ID          10
+#define U_HOMEDIR          11
+#define U_PROFILEDIR       12
+#define U_POTYPE           13
+#define U_TWOFACTORSTATUS  14
 
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
              char **before, int beforec, char **after, 
@@ -1843,7 +1844,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 		   after_user_id, atoi(after[U_STATE]),
                    after[U_HOMEDIR], after[U_PROFILEDIR],
 		   after[U_FIRST], after[U_MIDDLE], after[U_LAST], 
-		   after[U_SHELL], after[U_CLASS]);
+		   after[U_SHELL], after[U_CLASS], atoi(after[U_TWOFACTORSTATUS]));
 
   return;
 }
@@ -4130,7 +4131,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *Uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
-		char *middle, char *last, char *shell, char *class)
+		char *middle, char *last, char *shell, char *class,
+		int TwoFactorStatus)
 {
   LDAPMod   *mods[40];
   LDAPMod   *DelMods[40];
@@ -4142,6 +4144,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *mitMoiraId_v[] = {NULL, NULL};
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
+  char *mitMoira2FaStatus_v[] = {NULL, NULL};
   char *uid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
   char *homedir_v[] = {NULL, NULL};
@@ -4183,6 +4186,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char alt_recipient[256];
   char principal[256];
   char status[256];
+  char twofactor_status[256];
   char query_base_dn[256];
   char rbac_policy_link[256];
   char mit_address_list[256];
@@ -4208,6 +4212,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *mit_moira_imap_address_v[] = {NULL, NULL};
   char *deliver_and_redirect_v[] = {NULL, NULL};
   char *recipient_limit_v[] = {NULL, NULL};
+  char *vpn_group_v[] = {NULL, NULL};
   char *c;
 
   dwInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
@@ -6121,6 +6126,51 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		    user_name, ldap_err2string(rc));
 	}
 
+      argv[0] = user_name;
+
+      if (!(rc = mr_query("get_user_vpn_group", 1, argv, save_query_info, save_argv)))
+	{
+	  n = 0;
+	  ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_REPLACE);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+	    rc = LDAP_SUCCESS;
+
+	  if (rc)
+	    com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+		    user_name, ldap_err2string(rc));
+
+	  vpn_group_v[0] = save_argv[1];
+
+	  n = 0;
+	  ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_ADD);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+          if (rc)
+            com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+                    user_name, ldap_err2string(rc));
+	}
+      else if (rc == MR_NO_MATCH)
+	{
+	  n = 0;
+	  ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_REPLACE);
+          mods[n] = NULL;
+          rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+	  
+          if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+          if (rc)
+            com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+                    user_name, ldap_err2string(rc));
+	}
+
       moira_disconnect();
     }
 
@@ -6226,10 +6276,12 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       sprintf(principal, "%s@%s", user_name, PRIMARY_REALM);
       sprintf(status, "%d", State);
+      sprintf(twofactor_status, "%d", TwoFactorStatus);
       principal_v[0] = principal;
       loginshell_v[0] = shell;
       mitMoiraClass_v[0] = class;
       mitMoiraStatus_v[0] = status;
+      mitMoira2FaStatus_v[0] = twofactor_status;
       gid_v[0] = "101";
       ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
       ADD_ATTR("gidNumber", gid_v, LDAP_MOD_REPLACE);
@@ -6237,6 +6289,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_REPLACE);
       ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_REPLACE);
       ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_REPLACE);
+      ADD_ATTR("mitMoira2FaStatus", mitMoira2FaStatus_v, LDAP_MOD_REPLACE);
     }
 
   if ((State != US_NO_PASSWD) && (State != US_REGISTERED))
@@ -6673,6 +6726,7 @@ int user_create(int ac, char **av, void *ptr)
   char *mitMoiraId_v[] = {NULL, NULL};
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
+  char *mitMoira2FaStatus_v[] = {NULL, NULL};
   char *name_v[] = {NULL, NULL};
   char *desc_v[] = {NULL, NULL};
   char *userPrincipalName_v[] = {NULL, NULL};
@@ -6745,6 +6799,7 @@ int user_create(int ac, char **av, void *ptr)
   char *mail_alternate_v[] = {NULL, NULL};
   char *mit_moira_imap_address_v[] = {NULL, NULL};
   char *deliver_and_redirect_v[] = {NULL, NULL};
+  char *vpn_group_v[] = {NULL, NULL};
   char *c;
 
   call_args = ptr;
@@ -7120,12 +7175,14 @@ int user_create(int ac, char **av, void *ptr)
       loginshell_v[0] = av[U_SHELL];
       mitMoiraClass_v[0] = av[U_CLASS];
       mitMoiraStatus_v[0] = av[U_STATE];
+      mitMoira2FaStatus_v[0] = av[U_TWOFACTORSTATUS];
       ADD_ATTR("loginShell", loginshell_v, LDAP_MOD_ADD);
       ADD_ATTR("uid", samAccountName_v, LDAP_MOD_ADD);
       ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
       ADD_ATTR("o", o_v, LDAP_MOD_ADD);
       ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_ADD);
       ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoira2FaStatus", mitMoira2FaStatus_v, LDAP_MOD_ADD);
     }
 
   if (strlen(av[U_UID]) != 0)
@@ -7435,7 +7492,52 @@ int user_create(int ac, char **av, void *ptr)
 		}
 	    }
 	}
-      
+
+      argv[0] = user_name;
+
+      if (!(rc = mr_query("get_user_vpn_group", 1, argv, save_query_info, save_argv)))
+        {
+          n = 0;
+          ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_REPLACE);
+          mods[n] = NULL;
+          rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+
+          if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+          if (rc)
+            com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+                    user_name, ldap_err2string(rc));
+
+          vpn_group_v[0] = save_argv[1];
+
+          n = 0;
+          ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_ADD);
+          mods[n] = NULL;
+          rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+
+          if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+          if (rc)
+            com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+                    user_name, ldap_err2string(rc));
+        }
+      else if (rc == MR_NO_MATCH)
+        {
+          n = 0;
+          ADD_ATTR("mitMoiraVpnGroupDefault", vpn_group_v, LDAP_MOD_REPLACE);
+          mods[n] = NULL;
+          rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+
+          if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+            rc = LDAP_SUCCESS;
+
+          if (rc)
+            com_err(whoami, 0, "Unable to set the MitVpnGroupDefault for %s : %s",
+                    user_name, ldap_err2string(rc));
+        }
+
       moira_disconnect();
     }
 

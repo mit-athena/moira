@@ -133,7 +133,7 @@ static char *gual_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled",
+  "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
@@ -246,7 +246,7 @@ static char *guau_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled",
+  "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
@@ -302,7 +302,7 @@ static char *guan_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled", 
+  "alternate_email", "alternate_phone", "twofactor_status", 
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
@@ -384,7 +384,7 @@ static char *guac_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled", 
+  "alternate_email", "alternate_phone", "twofactor_status", 
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
@@ -440,7 +440,7 @@ static char *guam_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled",
+  "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
@@ -603,7 +603,7 @@ static char *auac_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled",
+  "alternate_email", "alternate_phone", "twofactor_status",
 };
 
 static struct valobj auac2_valobj[] = {
@@ -921,7 +921,7 @@ static char *uuac_fields[] = {
   "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first",
   "middle", "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
-  "alternate_email", "alternate_phone", "twofactor_enabled",
+  "alternate_email", "alternate_phone", "twofactor_status",
 };
 
 static struct valobj uuac2_valobj[] = {
@@ -4892,7 +4892,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_enabled, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     gual_fields,
     29,
     28,
@@ -5018,7 +5018,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_enabled, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     guau_fields,
     29,
     28,
@@ -5144,7 +5144,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_enabled, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     guan_fields,
     30,
     28,
@@ -5270,7 +5270,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_enabled, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     guac_fields,
     29,
     28,
@@ -5396,7 +5396,7 @@ struct query Queries[] = {
     MR_Q_RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_enabled, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     guam_fields,
     29,
     28,
@@ -5720,7 +5720,7 @@ struct query Queries[] = {
     /* We set signature to "NVL(CHR(0), '%s')", which is to say, "CHR(0)",
      * but using up one argv element.
      */
-    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, twofactor_enabled, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %s)",
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, twofactor_status, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %s)",
     auac_fields,
     21,
     21,
@@ -5828,7 +5828,7 @@ struct query Queries[] = {
     MR_Q_APPEND,
     "u",
     USERS_TABLE,
-    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, twofactor_enabled, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %s)",
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, sponsor_type, sponsor_id, expiration, alternate_email, alternate_phone, twofactor_status, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %s)",
     auac_fields,
     18,
     18,
@@ -5960,7 +5960,7 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     /* See comment in auac about signature. */
-    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s, winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0)), twofactor_enabled = %s",
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s, winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0)), twofactor_status = %s",
     uuac_fields,
     22,
     21,   
@@ -6068,7 +6068,7 @@ struct query Queries[] = {
     MR_Q_UPDATE,
     "u",
     USERS_TABLE,
-    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s', winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0)), twofactor_enabled = %s ",
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s', winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)), sponsor_type = '%s', sponsor_id = %d, expiration = NVL('%s', CHR(0)), alternate_email = NVL('%s', CHR(0)), alternate_phone = NVL('%s', CHR(0)), twofactor_status = %s ",
     uuac_fields,
     19,
     18,

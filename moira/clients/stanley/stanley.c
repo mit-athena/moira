@@ -46,7 +46,7 @@ char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
-char *alternate_email, *alternate_phone, *twofactor_enabled, *vpn_group;
+char *alternate_email, *alternate_phone, *twofactor_status, *vpn_group;
 
 static char *states[] = {
   "Registerable (0)",
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
   winhomedir = winprofiledir = expiration = alternate_email = alternate_phone = NULL;
-  twofactor_enabled = vpn_group = NULL;
+  twofactor_status = vpn_group = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   sponsor = NULL;
   whoami = argv[0];
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
-	      twofactor_enabled = *arg;
+	      twofactor_status = *arg;
 	    } else 
 	      usage(argv);
 	  }
@@ -449,8 +449,8 @@ int main(int argc, char **argv)
         argv[U_ALT_EMAIL] = alternate_email;
       if (alternate_phone)
         argv[U_ALT_PHONE] = alternate_phone;
-      if (twofactor_enabled)
-	argv[U_TWOFACTOR] = twofactor_enabled;
+      if (twofactor_status)
+	argv[U_TWOFACTOR] = twofactor_status;
       else
 	argv[U_TWOFACTOR] = "0";
       if (sponsor)
@@ -574,8 +574,8 @@ int main(int argc, char **argv)
 	argv[19] = alternate_email;
       if (alternate_phone)
 	argv[20] = alternate_phone;
-      if (twofactor_enabled)
-	argv[21] = twofactor_enabled;
+      if (twofactor_status)
+	argv[21] = twofactor_status;
       if (sponsor)
 	{
 	  argv[17] = sponsor->name;

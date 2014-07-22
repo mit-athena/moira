@@ -10,7 +10,7 @@ create index i_usr_clearid on users (clearid);
 create index i_usr_resv on users (reservations);
 create index i_usr_sponsor on users (sponsor_id);
 create index i_usr_vpn_group on users (default_vpn_group);
-create index i_usr_twofactor on users (twofactor_enabled);
+create index i_usr_twofactor on users (twofactor_status);
 
 create unique index i_krb_usid on krbmap  (users_id);
 create index i_krb_str on  krbmap (string_id);

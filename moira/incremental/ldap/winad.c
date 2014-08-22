@@ -403,6 +403,7 @@ do {					\
 #define EXCHANGE "EXCHANGE:"
 #define REALM "REALM:"
 #define UPDATE_NAME_INFO "UPDATE_NAME_INFO:"
+#define USER_PRINCIPAL_DOMAIN "USER_PRINCIPAL_DOMAIN:"
 #define ACTIVE_DIRECTORY "ACTIVE_DIRECTORY:"
 #define PORT "PORT:"
 #define PROCESS_MACHINE_CONTAINER "PROCESS_MACHINE_CONTAINER:"
@@ -432,6 +433,7 @@ char *whoami;
 char ldap_domain[256];
 char ldap_realm[256];
 char ldap_port[256];
+char user_principal_domain[256];
 char *ServerList[MAX_SERVER_NAMES];
 char default_server[256];
 char connected_server[128];
@@ -757,6 +759,7 @@ int main(int argc, char **argv)
 
       memset(PrincipalName, '\0', sizeof(PrincipalName));
       memset(ldap_domain, '\0', sizeof(ldap_domain));
+      memset(user_principal_domain, '\0', sizeof(user_principal_domain));
       memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
       memset(default_server, '\0', sizeof(default_server));
       memset(dn_path, '\0', sizeof(dn_path));
@@ -6625,7 +6628,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
     }
 
   name_v[0] = user_name;
-  sprintf(upn, "%s@%s", user_name, ldap_domain);
+  sprintf(upn, "%s@%s", user_name, user_principal_domain);
   userPrincipalName_v[0] = upn;
   principal_v[0] = principal;
   sprintf(temp, "Kerberos:%s@%s", user_name, PRIMARY_REALM);
@@ -6830,7 +6833,7 @@ int user_create(int ac, char **av, void *ptr)
   strcpy(WinHomeDir, av[U_WINHOMEDIR]);
   strcpy(WinProfileDir, av[U_WINPROFILEDIR]);
   strcpy(user_name, av[U_NAME]);
-  sprintf(upn, "%s@%s", user_name, ldap_domain);
+  sprintf(upn, "%s@%s", user_name, user_principal_domain);
   sprintf(sam_name, "%s", av[U_NAME]);
   sprintf(filesys_name, "%s.po", user_name);
 
@@ -10896,6 +10899,16 @@ int ReadConfigFile(char *DomainName)
 		      update_name_info = 0;
 		  }
 	      }
+            else if (!strncmp(temp, USER_PRINCIPAL_DOMAIN,
+                              strlen(USER_PRINCIPAL_DOMAIN)))
+              {
+                if (strlen(temp) > (strlen(USER_PRINCIPAL_DOMAIN)))
+                  {
+                    strcpy(user_principal_domain, 
+			   &temp[strlen(USER_PRINCIPAL_DOMAIN)]);
+                    StringTrim(user_principal_domain);
+                  }
+              }
 	    else
 	      {
 		if (strlen(ldap_domain) != 0)

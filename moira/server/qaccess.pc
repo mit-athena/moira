@@ -273,6 +273,10 @@ int access_list(struct query *q, char *argv[], client *cl)
          !strncasecmp(&newname[strlen(newname)-8], "-service", 8))
        return MR_RESERVED;
 
+      /* Reserved names for CrashPlan Orgs. */
+      if (!strncasecmp(newname, "crashplan-org-", 14))
+       return MR_RESERVED;
+
       EXEC SQL SELECT users_id INTO :users_id FROM users
 	WHERE login = :newname;
       if ((sqlca.sqlcode != SQL_NO_MATCH) && strcmp(strtrim(name), newname) &&

@@ -426,8 +426,6 @@ char  group_ou_root[1024];
 char  group_ou_security[1024];
 char  group_ou_neither[1024];
 char  group_ou_both[1024]; 
-char  orphans_machines_ou[] = "OU=Machines,OU=Orphans";
-char  orphans_other_ou[] = "OU=Other,OU=Orphans";
 char  security_template_ou[] = "OU=security_templates";
 char *whoami;
 char ldap_domain[256];
@@ -504,7 +502,6 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path,
 
 void container_get_dn(char *src, char *dest);
 void container_get_name(char *src, char *dest);
-int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName);
 int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, 
 		     char **before, int afterc, char **after);
 
@@ -951,11 +948,9 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (strlen(MoiraContainerName) == 0)
     {
-      com_err(whoami, 0, "Unable to fine machine %s (alias %s) container "
-	      "in Moira - moving to orphans OU.",
+      com_err(whoami, 0, "Unable to find machine %s (alias %s) container "
+	      "in Moira - skipping.",
 	      OriginalMachineName, MachineName);
-      machine_move_to_ou(ldap_handle, dn_path, MachineName, 
-			 orphans_machines_ou);
       moira_disconnect();
       return;
     }
@@ -9175,11 +9170,8 @@ int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av)
 
   if ((rc = ldap_delete_s(ldap_handle, distinguishedName)) != LDAP_SUCCESS)
     {
-      if (rc == LDAP_NOT_ALLOWED_ON_NONLEAF)
-        container_move_objects(ldap_handle, dn_path, distinguishedName);
-      else
-        com_err(whoami, 0, "Unable to delete container %s from directory : %s",
-                av[CONTAINER_NAME], ldap_err2string(rc));
+      com_err(whoami, 0, "Unable to delete container %s from directory : %s",
+	      av[CONTAINER_NAME], ldap_err2string(rc));
     }
 
   return(rc);
@@ -9603,100 +9595,6 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
     }
   
   return(rc);
-}
-
-int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
-{
-  char      *attr_array[3];
-  LK_ENTRY  *group_base;
-  LK_ENTRY  *pPtr;
-  int       group_count;
-  char      filter[512];
-  char      new_cn[128];
-  char      temp[256];
-  int       rc;
-  int       NumberOfEntries = 10;
-  int       i;
-  int       count;
-
-  rc = ldap_set_option(ldap_handle, LDAP_OPT_SIZELIMIT, &NumberOfEntries);
-
-  for (i = 0; i < 3; i++)
-    {
-      memset(filter, '\0', sizeof(filter));
-
-      if (i == 0)
-        {
-          strcpy(filter, "(!(|(objectClass=computer)"
-		 "(objectClass=organizationalUnit)))");
-          attr_array[0] = "cn";
-          attr_array[1] = NULL;
-        }
-      else if (i == 1)
-        {
-          strcpy(filter, "(objectClass=computer)");
-          attr_array[0] = "cn";
-          attr_array[1] = NULL;
-        }
-      else
-        {
-          strcpy(filter, "(objectClass=organizationalUnit)");
-          attr_array[0] = "ou";
-          attr_array[1] = NULL;
-        }
-
-      while (1)
-        {
-          if ((rc = linklist_build(ldap_handle, dName, filter, attr_array, 
-                                   &group_base, &group_count, 
-				   LDAP_SCOPE_SUBTREE)) != LDAP_SUCCESS)
-	    break;
-
-          if (group_count == 0)
-            break;
-
-          pPtr = group_base;
-
-          while(pPtr)
-            {
-              if (!strcasecmp(pPtr->attribute, "cn"))
-                {
-                  sprintf(new_cn, "cn=%s", pPtr->value);
-
-                  if (i == 0)
-                    sprintf(temp, "%s,%s", orphans_other_ou, dn_path);
-
-                  if (i == 1)
-                    sprintf(temp, "%s,%s", orphans_machines_ou, dn_path);
-
-                  count = 1;
-
-                  while (1)
-                    {
-                      rc = ldap_rename_s(ldap_handle, pPtr->dn, new_cn, temp,
-                                         TRUE, NULL, NULL);
-                      if (rc == LDAP_ALREADY_EXISTS)
-                        {
-                          sprintf(new_cn, "cn=%s_%d", pPtr->value, count);
-                          ++count;
-                        }
-                      else
-                        break;
-                    }
-                }
-              else if (!strcasecmp(pPtr->attribute, "ou"))
-		rc = ldap_delete_s(ldap_handle, pPtr->dn);
-	      
-              pPtr = pPtr->next;
-            }
-
-          linklist_free(group_base);
-          group_base = NULL;
-          group_count = 0;
-        }
-    }
-
-  return(0);
 }
 
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, 

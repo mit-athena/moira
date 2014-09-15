@@ -240,7 +240,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
       status = id_to_name(mid, STRINGS_TABLE, &buf);
       if (status)
 	return status;
-      if (strchr(buf, '/') || strchr(buf, '|') || strchr(buf, ','))
+      if (strchr(buf, '/') || strchr(buf, '|') || strchr(buf, ',') || strchr(buf, '\\'))
 	{
 	  free(buf);
 	  return MR_BAD_CHAR;

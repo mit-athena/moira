@@ -438,11 +438,11 @@ int main(int argc, char **argv)
       if (winhomedir)
 	argv[U_WINHOMEDIR] = winhomedir;
       else
-	argv[U_WINHOMEDIR] = "[DFS]";
+	argv[U_WINHOMEDIR] = "[LOCAL]";
       if (winprofiledir)
 	argv[U_WINPROFILEDIR] = winprofiledir;
       else
-	argv[U_WINPROFILEDIR] = "[DFS]";
+	argv[U_WINPROFILEDIR] = "[LOCAL]";
       if (expiration)
 	argv[U_EXPIRATION] = expiration;
       if (alternate_email)

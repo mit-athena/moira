@@ -50,8 +50,8 @@ create table users
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,
 	creator		INTEGER		DEFAULT 0	NOT NULL,
-	winhomedir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
-	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
+	winhomedir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
+	winprofiledir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
 	sponsor_type	VARCHAR(8) 	DEFAULT 'NONE'	NOT NULL,
 	sponsor_id	INTEGER		DEFAULT 0	NOT NULL,
 	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
@@ -489,8 +489,8 @@ create table userhistory
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,
 	creator		INTEGER		DEFAULT 0	NOT NULL,
-	winhomedir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
-	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
+	winhomedir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
+	winprofiledir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
 	purged		DATE		DEFAULT SYSDATE NOT NULL
 );
 

@@ -47,8 +47,8 @@ struct mqelem *GetUserBySponsor(char *type, char *name);
 #define DEFAULT_CLASS "?"
 
 #define DEFAULT_WINCONSOLESHELL "cmd"
-#define DEFAULT_WINHOMEDIR "[DFS]"
-#define DEFAULT_WINPROFILEDIR "[DFS]"
+#define DEFAULT_WINHOMEDIR "[LOCAL]"
+#define DEFAULT_WINPROFILEDIR "[LOCAL]"
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.

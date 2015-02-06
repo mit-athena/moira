@@ -359,7 +359,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who, '[DFS]', '[DFS]', 'NONE', 0, CHR(0), NVL(:affiliation_basic, CHR(0)),
+	    SYSDATE, :who, '[LOCAL]', '[LOCAL]', 'NONE', 0, CHR(0), NVL(:affiliation_basic, CHR(0)),
 	    NVL(:affiliation_detailed, CHR(0)));
   if (sqlca.sqlcode)
     {

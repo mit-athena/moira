@@ -1,4 +1,4 @@
-/* $Id: staff.pc 4111 2013-05-22 20:26:51Z zacheiss $
+/* $Id: staff.pc 4162 2014-05-27 18:33:33Z zacheiss $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4111 2013-05-22 20:26:51Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4162 2014-05-27 18:33:33Z zacheiss $");
 
 /* File format is:
  *
@@ -59,9 +59,6 @@ RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id:
 #define LOC_EMAIL_ADDRESS (LOC_EMPLOYEE_TYPE + LEN_EMPLOYEE_TYPE)
 #define LEN_EMAIL_ADDRESS 100
 
-struct entry *get_next_entry(FILE *in);
-void process_entry(struct entry *e, int secure);
-
 EXEC SQL BEGIN DECLARE SECTION;
 int who;
 char *prog = "stafload";
@@ -69,11 +66,13 @@ EXEC SQL END DECLARE SECTION;
 
 char *whoami;
 
+struct entry *get_next_entry(FILE *in);
+
 int main(int argc, char **argv)
 {
   FILE *in;
   struct entry *e;
-  int i, wait = 0;
+  int i, wait = 0, newonly = 0;
   char buf[80], *file = NULL;
   EXEC SQL BEGIN DECLARE SECTION;
   char *db = "moira";
@@ -92,9 +91,11 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
+      else if (!strcmp(argv[i], "-n"))
+	newonly++;
       else if (file)
 	{
-	  fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+	  fprintf(stderr, "Usage: %s [-w] [-n] inputfile\n", whoami);
 	  exit(1);
 	}
       else
@@ -103,7 +104,7 @@ int main(int argc, char **argv)
 
   if (!file)
     {
-      fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+      fprintf(stderr, "Usage: %s [-w] [-n] inputfile\n", whoami);
       exit(1);
     }
 
@@ -127,7 +128,7 @@ int main(int argc, char **argv)
 
   while ((e = get_next_entry(in)))
     {
-      process_entry(e, 0);
+      process_entry(e, 0, newonly);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
 	{

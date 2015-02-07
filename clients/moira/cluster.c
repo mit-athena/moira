@@ -1,4 +1,4 @@
-/* $Id: cluster.c 4110 2013-05-09 15:43:17Z zacheiss $
+/* $Id: cluster.c 4152 2013-12-11 14:01:40Z zacheiss $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4110 2013-05-09 15:43:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4152 2013-12-11 14:01:40Z zacheiss $");
 
 void PrintAliases(char **info);
 void PrintTTL(char **info);
@@ -251,6 +251,14 @@ void PrintTTL(char **info)
     }
   else
     Put_message("");
+}
+
+void PrintDynamicHost(char **info)
+{
+  char buf[256];
+
+  sprintf(buf, "Assigned dynamic hostname: %s\n", info[0]);
+  Put_message(buf);
 }
 
 /*	Function Name: PrintMachInfo
@@ -2754,5 +2762,38 @@ int DeleteHWAddr(int argc, char **argv)
   if (stat != MR_SUCCESS)
     com_err(program_name, stat, " in delete_host_hwaddr");
  
+  return DM_NORMAL;
+}
+
+int AddDynamicHost(int argc, char **argv)
+{
+  char buf[BUFSIZ], *type, *name, *args[2];
+  struct mqelem *elem = NULL;
+  int status;
+
+  type = strdup("USER");
+  if (GetTypeFromUser("Type of owner", "search_ace_type", &type) == SUB_ERROR)
+    return DM_NORMAL;
+
+  sprintf(buf, "Name of %s", type);
+  name = strdup(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[0] = type;
+  args[1] = name;
+
+  if ((status = do_mr_query("add_dynamic_host_record", 2, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, status, " in add_dynamic_host_record");
+      return DM_NORMAL;
+    }
+
+  Loop(QueueTop(elem), (void (*)(char **)) PrintDynamicHost);
+  FreeQueue(elem);
+
+  free(type);
+  free(name);
+
   return DM_NORMAL;
 }

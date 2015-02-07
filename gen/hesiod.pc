@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 4132 2013-08-22 15:40:43Z zacheiss $
+/* $Id: hesiod.pc 4171 2014-07-09 19:23:39Z zacheiss $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4132 2013-08-22 15:40:43Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4171 2014-07-09 19:23:39Z zacheiss $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -202,8 +202,7 @@ int do_passwd(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
   char fullname[USERS_FULLNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
-  char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
-  char potype[USERS_POTYPE_SIZE];
+  char op[USERS_OFFICE_PHONE_SIZE], potype[USERS_POTYPE_SIZE];
   int uid, id, pid, iid, eid, mid, status;
   EXEC SQL END DECLARE SECTION;
 
@@ -239,7 +238,7 @@ int do_passwd(void)
   users = create_hash(12001);
   EXEC SQL DECLARE u_cursor CURSOR FOR
     SELECT login, unix_uid, shell, fullname, office_addr,
-    office_phone, home_phone, users_id, potype, pop_id, imap_id, exchange_id,
+    office_phone, users_id, potype, pop_id, imap_id, exchange_id,
     status
     FROM users
     WHERE status = 1 OR status = 2 OR status = 5 OR status = 6 OR status = 10 OR status = 11
@@ -248,14 +247,13 @@ int do_passwd(void)
   while (1)
     {
       EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname,
-	:oa, :op, :hp, :id, :potype, :pid, :iid, :eid, :status;
+	:oa, :op, :id, :potype, :pid, :iid, :eid, :status;
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
       dequote(fullname);
       dequote(oa);
       dequote(op);
-      dequote(hp);
       dequote(shell);
       dequote(potype);
       u = malloc(sizeof(struct user));
@@ -264,9 +262,9 @@ int do_passwd(void)
       hash_store(users, id, u);
       if (status == 1 || status == 2 || status == 10 || status == 11)
 	{
-	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
+	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,:/mit/%s:%s\"\n",
 		  login, HCLASS, HTYPE, login, uid, fullname, oa,
-		  op, hp, login, shell);
+		  op, login, shell);
 	  fprintf(uout, "%d.uid\t%s CNAME %s.passwd\n", uid, HCLASS, login);
 	}
 

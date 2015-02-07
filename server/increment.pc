@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4131 2013-08-16 18:34:32Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/increment.pc $ $Id: increment.pc 4175 2014-07-22 14:19:11Z zacheiss $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -91,9 +91,9 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
 	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
-	      "u.potype FROM users u WHERE %s", qual);
+	      "u.potype, u.twofactor_status FROM users u WHERE %s", qual);
       dosql(before);
-      beforec = 14;
+      beforec = 15;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
@@ -119,6 +119,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	{
 	  id_to_name(id, STRINGS_TABLE, &name);
 	  strcpy(before[12], name);
+	}
+      else if (!strncmp(before[11], "NONE", 4))
+	{
+	  strcpy(before[12], "NONE");
 	}
       id = atoi(before[13]);
       id_to_name(id, STRINGS_TABLE, &name);
@@ -318,9 +322,9 @@ void incremental_after(enum tables table, char *qual, char **argv)
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
 	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
-	      "u.potype FROM users u WHERE %s", qual);
+	      "u.potype, u.twofactor_status FROM users u WHERE %s", qual);
       dosql(after);
-      afterc = 14;
+      afterc = 15;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
@@ -347,6 +351,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
           id_to_name(id, STRINGS_TABLE, &name);
           strcpy(after[12], name);
         }
+      else if (!strncmp(after[11], "NONE", 4))
+	{
+	  strcpy(after[12], "NONE");
+	}
       id = atoi(after[13]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(after[13], name);

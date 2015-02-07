@@ -50,8 +50,8 @@ create table users
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,
 	creator		INTEGER		DEFAULT 0	NOT NULL,
-	winhomedir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
-	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
+	winhomedir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
+	winprofiledir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
 	sponsor_type	VARCHAR(8) 	DEFAULT 'NONE'	NOT NULL,
 	sponsor_id	INTEGER		DEFAULT 0	NOT NULL,
 	expiration	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
@@ -59,7 +59,9 @@ create table users
 	alternate_phone	VARCHAR(24)	DEFAULT CHR(0)	NOT NULL,
 	affiliation_basic	VARCHAR(10)	DEFAULT 'affiliate'	NOT NULL,
 	affiliation_detailed	VARCHAR(40)	DEFAULT 'MIT Affiliate'	NOT NULL,
-	last_krb_pwd_change	DATE		DEFAULT SYSDATE		NOT NULL
+	last_krb_pwd_change	DATE		DEFAULT SYSDATE		NOT NULL,
+	default_vpn_group	INTEGER		DEFAULT 0		NOT NULL,
+	twofactor_status	INTEGER		DEFAULT 0		NOT NULL
 );
 
 create table krbmap
@@ -106,7 +108,7 @@ create table hostalias
 
 create table subnet
 (
-	name		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	snet_id		INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(48) 	DEFAULT CHR(0)	NOT NULL,
 	status		INTEGER		DEFAULT 0	NOT NULL,
@@ -487,8 +489,8 @@ create table userhistory
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,
 	creator		INTEGER		DEFAULT 0	NOT NULL,
-	winhomedir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
-	winprofiledir	VARCHAR(260)	DEFAULT '[DFS]' NOT NULL,
+	winhomedir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
+	winprofiledir	VARCHAR(260)	DEFAULT '[LOCAL]' NOT NULL,
 	purged		DATE		DEFAULT SYSDATE NOT NULL
 );
 

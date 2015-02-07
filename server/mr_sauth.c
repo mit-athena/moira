@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c 4092 2013-01-18 15:36:33Z zacheiss $
+/* $Id: mr_sauth.c 4167 2014-06-13 19:36:39Z zacheiss $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_sauth.c $ $Id: mr_sauth.c 4092 2013-01-18 15:36:33Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_sauth.c $ $Id: mr_sauth.c 4167 2014-06-13 19:36:39Z zacheiss $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
@@ -163,6 +163,8 @@ void do_proxy(client *cl)
     {
       cl->proxy_id = cl->client_id;
       set_client(cl, kname, name, inst, realm);
+      strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
+      cl->entity[sizeof(cl->entity) - 1] = 0;
       com_err(whoami, 0, "Proxy authentication as %s (uid %d cid %d) via %s",
 	      kname, cl->users_id, cl->client_id, cl->req.mr_argv[1]);
       client_reply(cl, MR_SUCCESS);

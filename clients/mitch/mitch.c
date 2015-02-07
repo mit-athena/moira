@@ -1,4 +1,4 @@
-/* $Id: mitch.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: mitch.c 4160 2014-04-22 15:51:03Z zacheiss $
  *
  * Command line oriented Moira containers tool.
  *
@@ -22,12 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mitch/mitch.c $ $Id: mitch.c 3956 2010-01-05 20:56:56Z zacheiss $");
-
-struct owner_type {
-  int type;
-  char *name;
-};
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mitch/mitch.c $ $Id: mitch.c 4160 2014-04-22 15:51:03Z zacheiss $");
 
 struct mqelem {
   struct mqelem *q_forw;
@@ -39,14 +34,6 @@ struct string_list {
   char *string;
   struct string_list *next;
 };
-
-#define M_ANY		0
-#define M_USER		1
-#define M_LIST		2
-#define M_KERBEROS	3
-#define M_NONE		4
-
-char *typename[] = { "ANY", "USER", "LIST", "KERBEROS", "NONE" };
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -62,7 +49,7 @@ char *containername, *whoami;
 
 char *newname, *desc, *location, *contact;
 int public;
-struct owner_type *owner, *memacl;
+struct mrcl_ace_type *owner, *memacl;
 
 void usage(char **argv);
 int store_container_info(int argc, char **argv, void *hint);
@@ -72,7 +59,6 @@ void show_container_info_unformatted(char **argv);
 int show_container_list_unformatted(int argc, char **argv, void *hint);
 int show_machine_in_container(int argc, char **argv, void *hint);
 int show_subcontainers_of_container(int argc, char **argv, void *hint);
-struct owner_type *parse_member(char *s);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
@@ -153,7 +139,12 @@ int main(int argc, char **argv)
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
-	      owner = parse_member(*arg);
+	      owner = mrcl_parse_member(*arg);
+	      if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE)
+		{
+		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    } else
 	      usage(argv);
 	  }
@@ -161,7 +152,12 @@ int main(int argc, char **argv)
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
-	      memacl = parse_member(*arg);
+	      memacl = mrcl_parse_member(*arg);
+	      if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE)
+		{
+		  com_err(whoami, 0, "Invalid memacl format. Must be one of USER, LIST, KERBEROS, or NONE.");
+		  exit(1);
+		}
 	    } else
 	      usage(argv);
 	  }
@@ -252,25 +248,40 @@ int main(int argc, char **argv)
 
       if (memacl)
 	{
-	  if (memacl->type == M_ANY)
+	  argv[CON_MEMACE_NAME] = memacl->name;
+	  switch (memacl->type)
 	    {
+	    case MRCL_M_ANY:
 	      status = wrap_mr_query("get_user_account_by_login", 1,
 				     &memacl->name, NULL, NULL);
 	      if (status == MR_NO_MATCH)
-		memacl->type = M_LIST;
+		argv[CON_MEMACE_TYPE] = "LIST";
 	      else
-		memacl->type = M_USER;
-	    }
-	  argv[CON_MEMACE_TYPE] = typename[memacl->type];
-	  argv[CON_MEMACE_NAME] = memacl->name;
-	  if (memacl->type == M_KERBEROS)
-	    {
+		argv[CON_MEMACE_TYPE] = "USER";
+	      break;
+
+	    case MRCL_M_USER:
+	      argv[CON_MEMACE_TYPE] = "USER";
+	      break;
+
+	    case MRCL_M_LIST:
+	      argv[CON_MEMACE_TYPE] = "LIST";
+	      break;
+
+	    case MRCL_M_KERBEROS:
 	      status = mrcl_validate_kerberos_member(argv[CON_MEMACE_NAME],
 						     &argv[CON_MEMACE_NAME]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
+	      argv[CON_MEMACE_TYPE] = "KERBEROS";
+	      break;
+
+	    case MRCL_M_NONE:
+	      argv[CON_MEMACE_NAME] = argv[CON_MEMACE_TYPE] = "NONE";
+	      break;
+
 	    }
 	}
       else
@@ -281,19 +292,19 @@ int main(int argc, char **argv)
 	  argv[CON_OWNER_NAME] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[CON_OWNER_TYPE] = "USER";
 	      status = wrap_mr_query("add_container", 9, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[CON_OWNER_TYPE] = "LIST";
 	      status = wrap_mr_query("add_container", 9, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[CON_OWNER_TYPE] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[CON_OWNER_TYPE],
 						     &argv[CON_OWNER_TYPE]);
@@ -303,7 +314,7 @@ int main(int argc, char **argv)
 		exit(1);
 	      status = wrap_mr_query("add_container", 9, argv, NULL, NULL);
 	      break;
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[CON_OWNER_TYPE] = argv[CON_OWNER_NAME] = "NONE";
 	      status = wrap_mr_query("add_containr", 9, argv, NULL, NULL);
 	      break;
@@ -360,25 +371,38 @@ int main(int argc, char **argv)
 
       if (memacl)
 	{
-	  if (memacl->type == M_ANY)
+	  argv[CON_MEMACE_NAME + 1] = memacl->name;
+	  switch (memacl->type)
 	    {
+	    case MRCL_M_ANY:
 	      status = wrap_mr_query("get_user_account_by_login", 1,
 				     &memacl->name, NULL, NULL);
 	      if (status == MR_NO_MATCH)
-		memacl->type = M_LIST;
+		argv[CON_MEMACE_TYPE + 1] = "LIST";
 	      else
-		memacl->type = M_USER;
-	    }
-	  argv[CON_MEMACE_TYPE + 1] = typename[memacl->type];
-	  argv[CON_MEMACE_NAME + 1] = memacl->name;
-	  if (memacl->type == M_KERBEROS)
-	    {
+		argv[CON_MEMACE_TYPE + 1] = "USER";
+	      break;
+
+	    case MRCL_M_USER:
+	      argv[CON_MEMACE_TYPE + 1] = "USER";
+	      break;
+
+	    case MRCL_M_LIST:
+	      argv[CON_MEMACE_TYPE + 1] = "LIST";
+	      break;
+
+	    case MRCL_M_KERBEROS:
 	      status = mrcl_validate_kerberos_member(argv[CON_MEMACE_NAME + 1],
 						     &argv[CON_MEMACE_NAME + 1]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
+	      argv[CON_MEMACE_TYPE + 1] = "KERBEROS";
+	      break;
+
+	    case MRCL_M_NONE:
+	      argv[CON_MEMACE_TYPE + 1] = "NONE";
 	    }
 	}
 
@@ -387,19 +411,19 @@ int main(int argc, char **argv)
 	  argv[CON_OWNER_NAME + 1] = owner->name;
 	  switch (owner->type)
 	    {
-	    case M_ANY:
-	    case M_USER:
+	    case MRCL_M_ANY:
+	    case MRCL_M_USER:
 	      argv[CON_OWNER_TYPE + 1] = "USER";
 	      status = wrap_mr_query("update_container", 10, argv, NULL, NULL);
-	      if (owner->type != M_ANY || status != MR_USER)
+	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
-	    case M_LIST:
+	    case MRCL_M_LIST:
 	      argv[CON_OWNER_TYPE + 1] = "LIST";
 	      status = wrap_mr_query("update_container", 10, argv, NULL, NULL);
 	      break;
 
-	    case M_KERBEROS:
+	    case MRCL_M_KERBEROS:
 	      argv[CON_OWNER_TYPE + 1] = "KERBEROS";
 	      status = mrcl_validate_kerberos_member(argv[CON_OWNER_NAME + 1],
 						     &argv[CON_OWNER_NAME + 1]);
@@ -410,7 +434,7 @@ int main(int argc, char **argv)
 	      status = wrap_mr_query("update_container", 10, argv, NULL, NULL);
 	      break;
 	      
-	    case M_NONE:
+	    case MRCL_M_NONE:
 	      argv[CON_OWNER_TYPE + 1] = argv[CON_OWNER_NAME + 1] = "NONE";
 	      status = wrap_mr_query("update_container", 10, argv, NULL, NULL);
 	      break;
@@ -658,61 +682,6 @@ int show_subcontainers_of_container(int argc, char **argv, void *hint)
   printf("Container: %-25s\n", argv[0]);
 
   return MR_CONT;
-}
-
-/* Parse a line of input, fetching a member.  NULL is returned if a member
- * is not found.  ';' is a comment character.
- */
-
-struct owner_type *parse_member(char *s)
-{
-  struct owner_type *m;
-  char *p, *lastchar;
-
-  while (*s && isspace(*s))
-    s++;
-  lastchar = p = s;
-  while (*p && *p != '\n' && *p != ';')
-    {
-      if (isprint(*p) && !isspace(*p))
-	lastchar = p++;
-      else
-	p++;
-    }
-  lastchar++;
-  *lastchar = '\0';
-  if (p == s || strlen(s) == 0)
-    return NULL;
-
-  if (!(m = malloc(sizeof(struct owner_type))))
-    return NULL;
-
-  if ((p = strchr(s, ':')))
-    {
-      *p = '\0';
-      m->name = ++p;
-      if (!strcasecmp("user", s))
-	m->type = M_USER;
-      else if (!strcasecmp("list", s))
-	m->type = M_LIST;
-      else if (!strcasecmp("kerberos", s))
-	m->type = M_KERBEROS;
-      else if (!strcasecmp("none", s))
-	m->type = M_NONE;
-      else
-	{
-	  m->type = M_ANY;
-	  *(--p) = ':';
-	  m->name = s;
-	}
-      m->name = strdup(m->name);
-    }
-  else
-    {
-      m->name = strdup(s);
-      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
-    }
-  return m;
 }
 
 struct string_list *add_to_string_list(struct string_list *old_list, char *s) {

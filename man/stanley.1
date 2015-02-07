@@ -1,5 +1,5 @@
 .TH STANLEY 1 "25 Sep 2001" "MIT Athena"
-\" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/stanley.1 $ $Id: stanley.1 3956 2010-01-05 20:56:56Z zacheiss $
+\" RCSID: $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/man/stanley.1 $ $Id: stanley.1 4174 2014-07-21 22:13:13Z zacheiss $
 .SH NAME
 stanley \- examine and modify information about users in Moira
 .SH SYNOPSIS
@@ -57,6 +57,9 @@ Update the comment for the given user to \fIcomment\fR.
 .IP \fB-secure\ \fI0|1\ \fRor\ \fB-6\ \fI0|1\fR
 Change whether a user requires a secure Account Coupon to register for
 an account.
+.IP \fB-twofactor\ \fI0|1\ \fRor\ \fB-2fa\ \fI0|1\fR
+Change whether a user requires two-factor authentication when
+authenticating to a Touchstone service.
 
 .IP \fB-sponsor\ \fIsponsor\ \fRor\ \fB-sp\ \fIsponsor\fR
 Set the sponsor of the specified user to \fIsponsor\fR.  This field is
@@ -65,6 +68,11 @@ intended to be used for accounts in the GUEST and VOUCH classes.
 Set the expiration date for the specified user to \fIdate\fR.  This
 field is intended to be used for accounts in the GUEST and VOUCH
 classes.
+
+.IP \fB-listvpn\ \fRor\ \fB-lv\fR
+Display the default VPN group for the specified user.
+.IP \fB-setvpn\ \fIlistname\ \fRor\ \fB-sv\ \fIlistname\fR
+Set the default VPN group for the user to the specified list.
 
 .IP \fB-unformatted\ \fRor\ \fB-u\fR
 Display user information with each field on a seperate line, in the 
@@ -101,7 +109,7 @@ initial password.  Status 6 users will be status 1 and have full Athena
 accounts after being registered.
 
 .SH AUTHORS
-Garry Zacheiss, MIT Information Systems.
+Garry Zacheiss, MIT Information Systems & Technology.
 .SH SEE ALSO
 moira(1)
 

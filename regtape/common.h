@@ -1,4 +1,4 @@
-/* $Id: common.h 4111 2013-05-22 20:26:51Z zacheiss $
+/* $Id: common.h 4162 2014-05-27 18:33:33Z zacheiss $
  *
  * Copyright (C) 1987-1999 by the Massachusetts Institute of Technology
  *
@@ -34,7 +34,7 @@ struct entry {
 void fixphone(char *phone);
 void fixaddress(char *address);
 
-void process_entry(struct entry *e, int secure);
+void process_entry(struct entry *e, int secure, int newonly);
 void newuser(struct entry *e, int secure);
 
 int set_next_users_id(void);

@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: nagios-cluster.gen 4054 2011-10-02 15:55:43Z zacheiss $
+# $Id: nagios-cluster.gen 4155 2014-02-20 15:14:07Z zacheiss $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -26,6 +26,7 @@ $sth1 = $dbh->prepare("SELECT m.name FROM machine m, clusters c, mcmap p " .
 $sth1->execute || exit $MR_DBMS_ERR;
 
 my %clusters;
+my @workstations;
 while (($name) = $sth1->fetchrow_array) {
     next if $name eq "[NONE]";
     $name = lc($name);
@@ -33,6 +34,7 @@ while (($name) = $sth1->fetchrow_array) {
     $cluster =~ s/\..*$//;
     $cluster =~ s/\-[^\-]*$//;
 #    print "$name\t$cluster\n";
+    push @workstations, $name;
     push @$cluster, $name;
     $clusters{$cluster}++;
 
@@ -112,6 +114,18 @@ END
     print OUT "\n\t}\n\n";
 }
 
+print OUT <<END;
+define hostgroup {
+	hostgroup_name	workstations
+	alias		workstations
+END
+print OUT "\tmembers\t\t";
+$maybecomma = "";
+foreach $machine (@workstations) {
+    print OUT "$maybecomma$machine";
+    $maybecomma = ",";
+}
+print OUT "\n\t}\n\n";
 
 print OUT "\n### Printers\n\n";
 

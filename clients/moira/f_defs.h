@@ -1,4 +1,4 @@
-/* $Id: f_defs.h 4110 2013-05-09 15:43:17Z zacheiss $
+/* $Id: f_defs.h 4174 2014-07-21 22:13:13Z zacheiss $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -53,6 +53,7 @@ int UpdateMachine(int argc, char **argv);
 int DeleteMachine(int argc, char **argv);
 int SetMachineOpt(int argc, char **argv);
 int SetMachineTTL(int argc, char **argv);
+int AddDynamicHost(int argc, char **argv);
 int MachineToClusterMap(int argc, char **argv);
 int AddMachineToCluster(int argc, char **argv);
 int RemoveMachineFromCluster(int argc, char **argv);
@@ -173,6 +174,8 @@ int DelUserReservation(int argc, char **argv);
 int GetUserByReservation(int argc, char **argv);
 void PrintReservationTypes(void);
 int UserBySponsor(int argc, char **argv);
+int GetVPNGroup(int argc, char **argv);
+int SetVPNGroup(int argc, char **argv);
 
 /* printer.c */
 int GetPrn(int argc, char **argv);

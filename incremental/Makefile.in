@@ -1,4 +1,4 @@
-# $Id: Makefile.in 4127 2013-08-05 12:54:39Z zacheiss $
+# $Id: Makefile.in 4168 2014-06-26 13:19:39Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -19,7 +19,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-SUBDIRS=incr-runner @AFS_SUBDIRS@ @WINAD_SUBDIRS@ @KERBEROS_SUBDIRS@ route-server
+SUBDIRS=incr-runner @AFS_SUBDIRS@ @WINAD_SUBDIRS@ @KERBEROS_SUBDIRS@ route-server infoblox
 
 .SUFFIXES: .pc
 

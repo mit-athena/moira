@@ -1,4 +1,4 @@
-/* $Id: user.c 4122 2013-07-16 17:53:39Z zacheiss $
+/* $Id: user.c 4184 2015-02-06 02:10:18Z zacheiss $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4122 2013-07-16 17:53:39Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/user.c $ $Id: user.c 4184 2015-02-06 02:10:18Z zacheiss $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -47,8 +47,8 @@ struct mqelem *GetUserBySponsor(char *type, char *name);
 #define DEFAULT_CLASS "?"
 
 #define DEFAULT_WINCONSOLESHELL "cmd"
-#define DEFAULT_WINHOMEDIR "[DFS]"
-#define DEFAULT_WINPROFILEDIR "[DFS]"
+#define DEFAULT_WINHOMEDIR "[LOCAL]"
+#define DEFAULT_WINPROFILEDIR "[LOCAL]"
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.
@@ -142,6 +142,9 @@ static void PrintUserInfo(char **info)
 	      atoi(info[U_SECURE]) ? "needs" : "does not need");
       Put_message(buf);
     }
+  sprintf(buf, "User %s two-factor authentication for Touchstone services.",
+	  atoi(info[U_TWOFACTOR]) ? "requires" : "does not require");
+  Put_message(buf);
   sprintf(buf, "Comments: %s", info[U_COMMENT]);
   Put_message(buf);
   sprintf(buf, "Created  by %s on %s.", info[U_CREATOR], info[U_CREATED]);
@@ -181,6 +184,7 @@ static char **SetUserDefaults(char **info)
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
   info[U_AFF_BASIC] = info[U_AFF_DETAILED] = NULL;
+  info[U_TWOFACTOR] = strdup("0");
   return info;
 }
 
@@ -363,6 +367,18 @@ char **AskUserInfo(char **info, Bool name)
 	  free(info[U_SECURE]);
 	  info[U_SECURE] = strdup("1");
 	}
+    }
+
+  if (YesNoQuestion("User requires two-factor authentication for Touchstone",
+		    atoi(info[U_TWOFACTOR]) ? TRUE : FALSE) == FALSE)
+    {
+      free(info[U_TWOFACTOR]);
+      info[U_TWOFACTOR] = strdup("0");
+    }
+  else
+    {
+      free(info[U_TWOFACTOR]);
+      info[U_TWOFACTOR] = strdup("1");
     }
 
   info[U_SIGNATURE] = strdup("");
@@ -1051,6 +1067,44 @@ int DeleteKrbmap(int argc, char **argv)
   if ((stat = do_mr_query("delete_kerberos_user_map", 2, &argv[1],
 			  NULL, NULL)))
     com_err(program_name, stat, " in DeleteKrbMap.");
+  return DM_NORMAL;
+}
+
+int GetVPNGroup(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+
+  if ((stat = do_mr_query("get_user_vpn_group", 1, &argv[1],
+                          StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in GetVPNGroup.");
+      return DM_NORMAL;
+    }
+
+  top = elem = QueueTop(elem);
+  Put_message("");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "User: %-9s Default VPN Group: %s",
+              info[KMAP_USER], info[KMAP_PRINCIPAL]);
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));
+  return DM_NORMAL;
+}
+
+int SetVPNGroup(int argc, char **argv)
+{
+  int stat;
+
+  if ((stat = do_mr_query("set_user_vpn_group", 2, &argv[1],
+                          NULL, NULL)))
+    com_err(program_name, stat, " in SetVPNGroup.");
   return DM_NORMAL;
 }
 

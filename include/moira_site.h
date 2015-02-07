@@ -1,4 +1,4 @@
-/* $Id: moira_site.h 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id: moira_site.h 4174 2014-07-21 22:13:13Z zacheiss $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -383,14 +383,15 @@
 #define U_EXPIRATION 17
 #define U_ALT_EMAIL 18
 #define U_ALT_PHONE 19
-#define U_AFF_BASIC 20
-#define U_AFF_DETAILED 21
-#define U_MODTIME 22
-#define U_MODBY   23
-#define U_MODWITH 24
-#define U_CREATED 25
-#define U_CREATOR 26
-#define U_END     27
+#define U_TWOFACTOR 20
+#define U_AFF_BASIC 21
+#define U_AFF_DETAILED 22
+#define U_MODTIME 23
+#define U_MODBY   24
+#define U_MODWITH 25
+#define U_CREATED 26
+#define U_CREATOR 27
+#define U_END     28
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

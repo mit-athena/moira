@@ -1,4 +1,4 @@
-/* $Id: common.pc 4151 2013-12-04 14:32:04Z zacheiss $
+/* $Id: common.pc 4184 2015-02-06 02:10:18Z zacheiss $
  *
  * Staff/Student load common code
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/common.pc $ $Id: common.pc 4151 2013-12-04 14:32:04Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/common.pc $ $Id: common.pc 4184 2015-02-06 02:10:18Z zacheiss $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -57,7 +57,7 @@ void fixaddress(char *address)
     *p = ';';
 }  
 
-void process_entry(struct entry *e, int secure)
+void process_entry(struct entry *e, int secure, int newonly)
 {
   int changed;
   char buf[MAX_FIELD_WIDTH], *from, *to;
@@ -114,6 +114,10 @@ void process_entry(struct entry *e, int secure)
       newuser(e, secure);
       return;
     }
+
+  if (newonly)
+    return;
+
   strtrim(dfirst);
   strtrim(dlast);
   strtrim(dmiddle);
@@ -355,8 +359,8 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who, '[DFS]', '[DFS]', 'NONE', 0, CHR(0), :affiliation_basic,
-	    :affiliation_detailed);
+	    SYSDATE, :who, '[LOCAL]', '[LOCAL]', 'NONE', 0, CHR(0), NVL(:affiliation_basic, CHR(0)),
+	    NVL(:affiliation_detailed, CHR(0)));
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

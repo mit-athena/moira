@@ -1,0 +1,26 @@
+# $Id: Makefile.in 4137 2013-08-26 15:26:52Z zacheiss $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+mrbindir=@mrbindir@
+
+TARGET=infoblox.incr
+
+all:
+
+clean:
+
+cleandir distclean:
+
+depend:
+
+install:
+	${INSTALL_PROGRAM} ${TARGET} $(DESTDIR)${mrbindir}

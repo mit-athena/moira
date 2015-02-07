@@ -6,13 +6,14 @@
 use IPC::Open2;
 use FileHandle;
 use Socket;
+use File::Basename;
 # use vars qw( @connect @auth @query $debug $align );
 # use vars qw( $mrtest @help @argl @retl @fields @qret $i );
 # use strict;
 
 sub usage {
   my $info = shift(@_) || '';
-  die "Usage: qy query args... [-db database] [-p user] [-n] [-s] [-f field,field,...]\n${info}Aborting";
+  die "${info}\nUsage: qy query args... [-db database] [-p user] [-n] [-s] [-f field,field,...]\n";
 }
 
 # Parse the command-line arguments
@@ -20,9 +21,11 @@ sub usage {
 @auth =    ("a");
 @query =   ();
 @outfields = ();
+@proxy = ();
 
 $debug = 0;
 $short = 0;
+$json = 0;
 
 while (@ARGV) {
   my $arg = shift(@ARGV);
@@ -34,11 +37,24 @@ while (@ARGV) {
     @connect = ("c $arg");
   } elsif ($arg eq "-p") {
     $arg = shift(@ARGV) || usage "No argument specified to -p.\n";
-    @connect = ("p $arg");
+    if ($arg =~ /,/) {
+	($proxy_user, $proxy_with) = split(/,/, $arg, 2);
+    } else {
+	$proxy_user = $arg;
+	$proxy_with = basename($0);
+    }
+    @proxy = ("p $proxy_user $proxy_with");
   } elsif ($arg eq "-n") {
     @auth = "";
   } elsif ($arg eq "-s") {
     $short = 1;
+  } elsif ($arg eq "-json") {
+    my $rc = eval { require JSON; JSON->import(); 1; };
+    if (!$rc) {
+	usage "JSON support not available. Is the perl JSON module installed?\n";
+    } else {
+	$json = 1;
+    }
   } elsif ($arg eq "-f") {
     $arg = shift(@ARGV);
     @outfields = split(/, */, $arg);
@@ -49,6 +65,10 @@ while (@ARGV) {
   }
 }
 usage "No query specified.\n"           unless @query;
+
+if ($short && $json) {
+    usage "-s and -json arguments are mutually exclusive.\n";
+}
 
 # $reply = read_reply()
 #     Reads the reply from mrtest, up to the next 'moira:  '.
@@ -105,6 +125,7 @@ autoflush CMDS 1;
 read_reply;			# wait for the initial 'moira:  ' prompt
 command @connect;		# connect to the server
 command @auth    if @auth;	# authenticate to the server (or not)
+command @proxy   if @proxy;     # proxy as a different user
 
 # get help information on command
 if ($query[0] !~ /^_/) {
@@ -185,6 +206,16 @@ foreach (@qret) {
 			     } else {
 			       "";
 			     } } @outfields;
+    } elsif ($json) {
+	%outhash = ();
+	foreach (@outfields) {
+	    if (defined $out{$_}) {
+		$outhash{$_} = $out{$_};
+	    } else {
+		$outhash{$_} = "";
+	    }
+	}
+	print encode_json(\%outhash);
     } else {
       @names{@retl} = @fields;
       print join "\n", map { if (defined $out{$_}) {

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc 3984 2010-02-18 22:34:45Z zacheiss $
+/* $Id: qrtn.pc 4157 2014-04-08 17:57:00Z zacheiss $
  *
  * Query-processing routines
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qrtn.pc $ $Id: qrtn.pc 3984 2010-02-18 22:34:45Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qrtn.pc $ $Id: qrtn.pc 4157 2014-04-08 17:57:00Z zacheiss $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -45,7 +45,7 @@ extern int QueryCount, max_version;
 extern struct query Queries[];
 
 /* Put this in a variable so that we can patch it if necessary */
-int max_row_count = 8192;
+int max_row_count = 32768;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
 int do_retrieve(struct query *q, char *pqual,
@@ -321,7 +321,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 
       /* execute followup routine */
       if (v->post_rtn)
-	status = (*v->post_rtn)(q, Argv, cl);
+	status = (*v->post_rtn)(q, Argv, cl, action, actarg, cl);
       break;
 
     case MR_Q_DELETE:

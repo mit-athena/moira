@@ -1,0 +1,744 @@
+#!/moira/bin/perl -Tw
+#
+# infoblox.incr
+# Update IB zone data from "machine" and "hostalias" incrementals
+
+$|=1;
+$SIG{__DIE__}  = 'critical_alert';
+$ENV{ 'PATH' } = '/bin:/usr/bin:/usr/local/bin';
+
+use strict;
+use warnings;
+use JSON;
+use LWP::UserAgent;
+use Net::SMTP;
+use File::Basename;
+use POSIX qw(strftime);
+use Sys::Hostname;
+use Data::Dumper;
+
+my $ib_host_file   = '/moira/infoblox/host';
+my $ib_host        = (file($ib_host_file))[0];
+my $ib_api         = 'https://' . $ib_host . '/wapi/v1.0';
+my $ib_args        = '_return_type=json-pretty';
+my $ib_search_args = '_return_fields=ipv4addrs,name,aliases,use_ttl,ttl,disable,extensible_attributes,view';
+my $ib_uri         = $ib_api.'/record:host?'.$ib_args;
+
+my @views          = ('internal','external');
+
+my $myself         = File::Basename::basename($0);
+
+my $moira_log      = '/moira/moira.log';
+my $critical_log   = '/moira/critical.log';
+my $zwrite         = '/usr/local/bin/zwrite';
+my $passwd_file    = '/moira/infoblox/passwd';
+my $qy             = '/moira/bin/qy';
+
+my $ib_user        = 'api';
+my $ib_pass        = (file($passwd_file))[0];
+
+my $smtpserver     = 'outgoing.mit.edu';
+my $subj_prefix    = 'MOIRA->IB INCREMENTAL';
+my $from_addr      = $myself . '@' . hostname;
+my @to_addrs       = ('moira-admin@mit.edu');
+
+my $default_ttl    = 1800;
+
+my @errors;
+my @input = @ARGV;
+
+if (!@ARGV) {
+    die('no moira input received via ARGV')
+}
+
+my $type       = shift(@input);
+my $before_len = shift(@input);
+my $after_len  = shift(@input);
+
+if ($type eq 'machine') {
+    if ($before_len == 0 && $after_len == 19 && scalar(@input) == 19) {
+        ib_mach_add(\@input);
+    } elsif ($before_len == 19 && $after_len == 0 && scalar(@input) == 19) {
+        ib_mach_delete(\@input);
+    } elsif ($before_len == 19 && $after_len == 19 && scalar(@input) == 38) {
+        ib_mach_update(\@input);
+    } else {
+        die('main: malformed moira machine input: ' . join(' ', @ARGV));
+    }
+} elsif ($type eq 'hostalias') {
+    if ($before_len == 0 && $after_len == 3 && scalar(@input) == 3) {
+        ib_hostalias_add(\@input);
+    } elsif ($before_len == 3 && $after_len == 0 && scalar(@input) == 3) {
+        ib_hostalias_delete(\@input);
+    } else {
+        die('main: malformed moira hostalias input: ' . join(' ', @ARGV));
+    }
+} else {
+    die('main: unknown moira input: ' . join(' ', @ARGV));
+}
+
+if (scalar(@errors)) {
+    foreach my $err (@errors) {
+      print "$myself: $err\n";
+    }
+    exit(0);
+} else {
+    exit(0);
+}
+
+# convert Moira record (array of 16 elements) to JSON
+sub mach_to_ib {
+    my ($moira_input) = @_;
+    my $extensible_attributes;
+    my $name;
+    my $address;
+    my $ib_record;
+    my $use;
+    my $inuse;
+    my $ttl;
+    my @moira_aliases;
+
+    (
+     $name,
+     $extensible_attributes->{'moira_mach_id'},
+     $extensible_attributes->{'moira_vendor'},
+     $extensible_attributes->{'moira_model'},
+     $extensible_attributes->{'moira_os'},
+     $extensible_attributes->{'moira_location'},
+     $extensible_attributes->{'moira_contact'},
+     $extensible_attributes->{'moira_billing_contact'},
+     $extensible_attributes->{'moira_account_number'},
+     $extensible_attributes->{'moira_status'},
+     $address,
+     $extensible_attributes->{'moira_owner_type'},
+     $extensible_attributes->{'moira_owner_id'},
+     $extensible_attributes->{'moira_acomment'},
+     $extensible_attributes->{'moira_ocomment'},
+     $extensible_attributes->{'moira_snet_id'},
+     $use,
+     $inuse,
+     $ttl
+    ) = @{$moira_input};
+
+    if ($extensible_attributes->{'moira_owner_id'} eq "0") {
+        $extensible_attributes->{'moira_owner_id'} = "none";
+    }
+
+    # retrieve aliases from moira via qy
+    my ($laundered_name) = $name =~ /([\w\-\.]+)/;
+    my @qy_output = `$qy get_hostalias \\* $laundered_name 2>&1`;
+    
+    if ($qy_output[0] !~ /^alias:/ &&
+        $qy_output[0] !~ /^moira \(query\): No records in database match query/) {
+        die('mach_to_ib: qy: ' . $qy_output[0]);
+    }
+    foreach my $alias_line (grep(/^alias:/, @qy_output)) {
+        chomp $alias_line;
+        my($rhs, $lhs) = split (/\s*:\s*/, $alias_line);
+        push(@moira_aliases, $lhs);
+    }
+
+    # force JSON to treat numbers as numbers
+    $ttl += 0;
+    $extensible_attributes->{'moira_mach_id'} += 0;
+    $extensible_attributes->{'moira_status'} += 0;
+
+    if (($address !~ /^\d{1,3}(\.\d{1,3}){3}$/ && $address !~ /^unassigned$/i) ||
+        $extensible_attributes->{'moira_mach_id'} !~ /^\d+$/) {
+        die('mach_to_ib: malformed moira input: ' .
+        join(' ', @${moira_input}));
+    } elsif ($name !~ /^[\w\-]+\.mit\.edu$/i) {
+        push(@errors, 'mach_to_ib: malformed moira input: ' .
+        join(' ', @${moira_input}));
+    }
+
+    foreach my $extensible_attribute (keys(%{$extensible_attributes})) {
+        if ($extensible_attributes->{$extensible_attribute} eq '') {
+            $extensible_attributes->{$extensible_attribute} = '-';
+        } else {
+            $extensible_attributes->{$extensible_attribute} = 
+            lc($extensible_attributes->{$extensible_attribute});
+        }
+    }
+    $extensible_attributes->{'moira_managed'}   = 1;
+
+    $ib_record->{'ipv4addrs'} = [ {'ipv4addr' => $address } ];
+    $ib_record->{'name'} = lc($name);
+    $ib_record->{'extensible_attributes'} = $extensible_attributes;
+    if ($ttl != $default_ttl) {
+        $ib_record->{'ttl'} = $ttl;
+        $ib_record->{'use_ttl'} = JSON::true;
+    } else {
+        $ib_record->{'use_ttl'} = JSON::false;
+    }
+    if ($ib_record->{'extensible_attributes'}->{'moira_status'} == 1) {
+        $ib_record->{'disable'} = JSON::false;
+    } else {
+        $ib_record->{'disable'} = JSON::true;
+    }
+    if (scalar(@moira_aliases)) {
+        $ib_record->{'aliases'} = \@moira_aliases;
+    }
+    return($ib_record);
+}
+
+# compare two IB records, return 0 if same, 1 if name mismatch,
+# 2 if address mismatch, 3 if extensible_attributes mismatch
+sub ib_compare {
+    my($new, $existing) = @_;
+
+#print "NEW\n".Dumper($new)."\n";
+#print "EXISTING\n".Dumper($existing)."\n";
+
+    if ($new->{'name'} ne $existing->{'name'}) {
+        return(1);
+    }
+    if($new->{'ipv4addrs'}[0]->{'ipv4addr'} ne
+       $existing->{'ipv4addrs'}[0]->{'ipv4addr'}) {
+        return(2);
+    }
+    if ($new->{'disable'} ne $existing->{'disable'}) {
+        return(3);
+    }
+    if ($existing->{'use_ttl'} eq 'true' && $new->{'use_ttl'} eq 'true') {
+        if ($new->{'ttl'} ne $existing->{'ttl'}) {
+            return(4);
+        }
+    }
+
+#    if ($existing->{'aliases'} && $new->{'aliases'}) {
+#        if (lc(join(' ', sort(@{$existing->{'aliases'}}))) ne
+#            lc(join(' ', sort(@{$new->{'aliases'}})))) {
+#            return(5);
+#        }
+#    } elsif ($existing->{'aliases'} && !defined($new->{'aliases'})) {
+#      return(6);
+#    } elsif (!defined($existing->{'aliases'}) && $new->{'aliases'}) {
+#      return(7);
+#    }
+
+    foreach my $attr (keys(%{$new->{'extensible_attributes'}})) {
+        if (($new->{'extensible_attributes'}->{$attr} &&
+             $existing->{'extensible_attributes'}->{$attr}
+            ) &&
+            $new->{'extensible_attributes'}->{$attr} ne
+            $existing->{'extensible_attributes'}->{$attr}
+           ) {
+            return(8);
+        }
+    }
+    return(0);
+}
+
+# search for IB record by name
+sub ib_search_by_name {
+    my ($name) = @_;
+    my $ua = LWP::UserAgent->new();
+    my $req = HTTP::Request->new(GET => $ib_uri . '&' . $ib_search_args);
+    $req->authorization_basic($ib_user, $ib_pass);
+    my $search_obj = { 'name' => $name };
+    my $json_obj = JSON->new->pretty->encode($search_obj);
+    $req->content($json_obj);
+    my $res = $ua->request($req);
+    if ($res->is_success) {
+        my $search_results = JSON->new->decode($res->content);
+        my $search_results_by_view;
+        foreach my $search_result (@{$search_results}) {
+          my $view = $search_result->{'view'};
+          push(@{$search_results_by_view->{$view}}, $search_result);
+        }
+        foreach my $view (@views) {
+            if (!defined($search_results_by_view->{$view})) {
+                my @tmp = ();
+                $search_results_by_view->{$view} = \@tmp;
+            }
+        }
+        return($search_results_by_view);
+    } else {
+        my $ib_response = JSON->new->decode($res->content);
+        if ($ib_response->{'Error'}) {
+            die('ib_search_by_name: ' . $res->status_line . ': ' . 
+                $ib_response->{'Error'});      
+        } else {
+            die('ib_search_by_name: unknown error: '. $ib_response);
+        }
+    }
+}
+
+# search for IB record by mach_id
+sub ib_search_by_mach_id {
+    my ($mach_id) = @_;
+    my $ua = LWP::UserAgent->new();
+    my $req = HTTP::Request->new(GET => $ib_uri . '&' . $ib_search_args);
+    $req->authorization_basic($ib_user, $ib_pass);
+    my $search_obj = { '*moira_mach_id' => $mach_id };
+    my $json_obj = JSON->new->pretty->encode($search_obj);
+    $req->content($json_obj);
+    my $res = $ua->request($req);
+    if ($res->is_success) {
+        my $search_results = JSON->new->decode($res->content);
+        my $search_results_by_view;
+        foreach my $search_result (@{$search_results}) {
+          my $view = $search_result->{'view'};
+          push(@{$search_results_by_view->{$view}}, $search_result);
+        }
+        foreach my $view (@views) {
+            if (!defined($search_results_by_view->{$view})) {
+                my @tmp = ();
+                $search_results_by_view->{$view} = \@tmp;
+            }
+        }
+        return($search_results_by_view);
+    } else {
+        my $ib_response = JSON->new->decode($res->content);
+        if ($ib_response->{'Error'}) {
+            die('ib_search_by_mach_id: ' . $res->status_line . ': ' .
+                $ib_response->{'Error'});
+        } else {
+            die('ib_search_by_mach_id: unknown error: ' .
+                $ib_response);
+        }
+    }
+}
+
+# add IB host record based on moira machine incremental
+sub ib_mach_add {
+    my ($moira_input) = @_;
+
+    my $ib_record       = mach_to_ib($moira_input);
+    my $moira_mach_id   = $ib_record->{'extensible_attributes'}
+                                    ->{'moira_mach_id'};
+    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+    my $name_results    = ib_search_by_name($ib_record->{'name'});
+
+    if ($ib_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
+        print 'ib_mach_add: moira record with mach_id ' . $moira_mach_id . ' has unassigned address, ignoring' . "\n";
+        return;
+    }
+    foreach my $view (@views) {
+        $ib_record->{'view'} = $view;
+
+        if (scalar(@{$name_results->{$view}})) {
+            push(@errors, 'ib_mach_add: IB host record with name '
+                         .$ib_record->{'name'} . ' already exists in ' . $view
+                         .' view, not added');
+        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
+            push(@errors, 'ib_mach_add: more than one IB record with '
+                         .'mach_id ' . $moira_mach_id.' in view ' . $view
+                         .', not added');
+        } elsif (scalar(@{$mach_id_results->{$view}}) == 1) {
+            push(@errors, 'ib_mach_add: IB host record with mach_id '
+                  .$moira_mach_id . ' already exists in ' . $view
+                  .' view, not added');
+        } else {
+            my $ua = LWP::UserAgent->new();
+            my $req = HTTP::Request->new(POST => $ib_uri);
+            $req->authorization_basic($ib_user, $ib_pass);
+            $req->header('Content-Type' => 'application/json');
+            $req->content(JSON->new->pretty->encode($ib_record));
+            my $res = $ua->request($req);
+            if ($res->is_success) {
+                if ($res->content =~ /^\"record:host\//) {
+                    print 'ib_mach_add: name:' . $ib_record->{'name'}
+                          .' view:' . $ib_record->{'view'} . ' mach_id:'
+                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
+                } else {
+                    my $ib_response = JSON->new->decode($res->content);
+                    if ($ib_response->{'Error'}) {
+                        die('ib_mach_add: ' . $res->status_line . ': '
+                           .$ib_response->{'Error'});
+                    } else {
+                        die('ib_mach_add: unknown error: '
+                           .$ib_response);
+                    }
+                }
+            } else {
+                my $ib_response = JSON->new->decode($res->content);
+                die('ib_mach_add: ' . $res->status_line . ': '
+                   .$ib_response->{'Error'});
+            }
+        }
+    }
+}
+
+# delete IB host record based on moira machine incremental
+sub ib_mach_delete {
+    my ($moira_input) = @_;
+  
+    my $ib_record       = mach_to_ib($moira_input);
+    my $moira_mach_id   = $ib_record->{'extensible_attributes'}
+                                     ->{'moira_mach_id'};
+    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+
+    foreach my $view (@views) {
+        my $mach_id_result = $mach_id_results->{$view}->[0];
+        $ib_record->{'view'} = $view;
+
+        if (scalar(@{$mach_id_results->{$view}}) == 0) {
+            push(@errors, 'ib_mach_delete: no IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view
+                         .', not deleted');
+        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
+            push(@errors, 'ib_mach_delete: more than one IB record '
+                         .'with mach_id ' . $moira_mach_id . ' in view '
+                         .$view . ', not deleted');
+        } elsif (ib_compare($ib_record, $mach_id_result)) {
+            push(@errors, 'ib_mach_delete: existing IB record with '
+                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
+                         .' is not identical to moira input, not deleted');
+        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
+            push(@errors, 'ib_mach_delete: existing IB record with '
+                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
+                         .' is not moira managed, not deleted');   
+        } else {
+            my $ib_ref = $mach_id_result->{'_ref'};
+            my $ua = LWP::UserAgent->new();
+            my $req = HTTP::Request->new(DELETE => $ib_api . '/' . $ib_ref);
+            $req->authorization_basic($ib_user, $ib_pass);
+            my $res = $ua->request($req);
+            if ($res->is_success) {
+                if ($res->content =~ /^\"record:host\//) {
+                    print 'ib_mach_delete: name:' . $ib_record->{'name'} 
+                          .' view:' . $ib_record->{'view'} . ' mach_id:'
+                          .$moira_mach_id. ' ib_ref:'.$ib_ref . "\n";
+                } else {
+                    my $ib_response = JSON->new->decode($res->content);
+                    if ($ib_response->{'Error'}) {
+                        die($res->status_line . ': ' . $ib_response->{'Error'});
+                    } else {
+                        die('ib_mach_delete: unknown error: ' . $ib_response);
+                    }
+                }
+            } else {
+                my $ib_response = JSON->new->decode($res->content);
+                die('ib_mach_delete: ' . $res->status_line . ': '
+                   .$ib_response->{'Error'});
+            }
+        }
+    }
+}
+
+# update IB host record based on moira machine incremental
+sub ib_mach_update {
+    my ($moira_input) = @_;
+
+    my $before          = [@$moira_input[0..18]];
+    my $after           = [@$moira_input[19..37]];
+
+    my $ib_record       = mach_to_ib($before);
+    my $updated_record  = mach_to_ib($after);
+
+    my $moira_mach_id   = $ib_record->{'extensible_attributes'}->{'moira_mach_id'};
+    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+
+    my $name_results    = ib_search_by_name($updated_record->{'name'});
+
+    foreach my $view (@views) {
+        my $mach_id_result  = $mach_id_results->{$view}->[0];
+        $ib_record->{'view'} = $view;
+        $updated_record->{'view'} = $view;
+
+#        if (lc(join(' ', @{$before})) eq lc(join(' ', @{$after}))) {
+#            push(@errors, 'ib_mach_update: moira inputs are identical, not updating');
+#            return;
+#        }
+        if ($ib_record->{'extensible_attributes'}->{'moira_mach_id'} !=
+            $updated_record->{'extensible_attributes'}->{'moira_mach_id'}) {
+            die('ib_mach_update: moira mach_id changed, this is impossible', 1);
+        }
+        if (scalar(@{$name_results->{$view}} &&
+            $ib_record->{'name'} ne $updated_record->{'name'})) {
+            push(@errors, 'ib_mach_update: IB host record with name '
+                         .$updated_record->{'name'} . ' already exists in '
+                         .$view .' view, not updated');
+        } elsif (scalar(@{$mach_id_results->{$view}}) == 0) {
+            print 'ib_mach_update: no IB record with mach_id ' . $moira_mach_id
+                  .' in view ' . $view . ', adding instead' . "\n";
+            ib_mach_add($after);
+            return;
+        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
+            push(@errors, 'ib_mach_update: more than one IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view 
+                         .', not updated');
+        } elsif (ib_compare($ib_record, $mach_id_result)) {
+            push(@errors, 'ib_mach_update: existing IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view
+                         .' is not identical to moira input (1), not updated' . "\n");
+#print "result: ".ib_compare($ib_record, $mach_id_result)."\n";
+#print "IB \n".Dumper($mach_id_result)."\n";
+#        } elsif (!ib_compare($updated_record, $mach_id_result)) {
+#            push(@errors, 'ib_mach_update: existing IB record with mach_id '
+#                         .$moira_mach_id . ' in view ' . $view
+#                         .' is identical to moira input (2), not updated');
+        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
+            push(@errors, 'ib_mach_update: existing IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view . ' is not moira managed, not updated');
+        } elsif ($updated_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
+            print 'ib_mach_update: no address in updated record, deleting instead' . "\n";
+            ib_mach_delete($before);
+            return;
+        } else {
+            my $ib_ref = $mach_id_result->{'_ref'};
+            my $ua = LWP::UserAgent->new();
+            my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
+            $req->authorization_basic($ib_user, $ib_pass);
+            $req->header('Content-Type' => 'application/json');
+            $req->content(JSON->new->pretty->encode($updated_record));
+            my $res = $ua->request($req);
+            if ($res->is_success) {
+                if ($res->content =~ /^\"record:host\//) {
+                    print 'ib_mach_update: name:' . $ib_record->{'name'}
+                          .' view:' . $ib_record->{'view'} . ' mach_id:'
+                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
+                } else {
+                    my $ib_response = JSON->new->decode($res->content);
+                    if ($ib_response->{'Error'}) {
+                        die('ib_mach_update: ' . $res->status_line . ': '
+                           .$ib_response->{'Error'});
+                    } else {
+                        die('ib_mach_update: unknown error: ' . $ib_response);
+                    }
+                }
+            } else {
+                my $ib_response = JSON->new->decode($res->content);
+                die('ib_mach_update: ' . $res->status_line . ': '
+                    . $ib_response->{'Error'});
+            }
+        }
+    }
+}
+
+# add alias to IB host record based on moira hostalias incremental
+sub ib_hostalias_add {
+    my ($moira_input) = @_;
+
+    my ( $moira_alias,
+              $moira_name,
+              $moira_mach_id
+          ) = @{$moira_input};
+
+    if ($moira_name !~ /^[\w\-]+\.mit\.edu$/i ||
+        $moira_alias!~ /^[\w\-]+\.mit\.edu$/i ||
+        $moira_mach_id !~ /^\d+$/) {
+        die('ib_hostalias_add: malformed Moira input: '
+            . join(' ', @${moira_input}));
+    }
+
+    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+
+    foreach my $view (@views) {
+    
+        my $mach_id_result  = $mach_id_results->{$view}->[0];
+
+        if (scalar(@{$mach_id_results->{$view}}) == 0) {
+            push(@errors, 'ib_hostalias_add: no IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view 
+                         .', alias not added');
+        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
+            push(@errors, 'ib_hostalias_add: more than one IB record with '
+                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
+                         .', alias not added');
+        } elsif ($mach_id_result->{'name'} ne lc($moira_name)) {
+            push(@errors, 'ib_hostalias_add: moira record with name (' . lc($moira_name)
+                         .') does not match existing record ('
+                         .$mach_id_result->{'name'} . ') with mach_id '
+                         .$moira_mach_id . ' in view ' . $view
+                         .', alias not added');
+        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
+            push(@errors, 'ib_hostalias_add: existing IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view 
+                         .' is not moira managed, alias not added');
+        } else {
+            my @aliases;
+            if (defined($mach_id_result->{'aliases'})) {
+                @aliases = @{$mach_id_result->{'aliases'}};
+            }
+            if (grep(/^$moira_alias$/i, @aliases)) {
+                push(@errors, 'ib_hostalias_add: alias ' . $moira_alias
+                             .' already associated with ' . $moira_name
+                             .' in view ' . $view . ', not added');
+            } else {
+                push(@aliases, $moira_alias);
+
+                my $update;
+                $update->{'aliases'} = \@aliases;
+    
+                my $ib_ref = $mach_id_result->{'_ref'};
+                my $ua = LWP::UserAgent->new();
+                my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
+                $req->authorization_basic($ib_user, $ib_pass);
+                $req->header('Content-Type' => 'application/json');
+                $req->content(JSON->new->pretty->encode($update));
+                my $res = $ua->request($req);
+                if ($res->is_success) {
+                    if ($res->content =~ /^\"record:host\//) {
+                        print 'ib_hostalias_add: alias ' . $moira_alias
+                              .' added to host ' . $moira_name . ' in view '
+                              .$view . "\n";
+                    } else {
+                        my $ib_response = JSON->new->decode($res->content);
+                        if ($ib_response->{'Error'}) {
+                            die('ib_hostalias_add: ' . $res->status_line 
+                               .': ' . $ib_response->{'Error'});
+                        } else {
+                            die('ib_hostalias_add: unknown error: '
+                               .$ib_response);
+                        }
+                    }
+                } else {
+                    my $ib_response = JSON->new->decode($res->content);
+                    die('ib_hostalias_add: ' . $res->status_line . ': '
+                       .$ib_response->{'Error'});
+                }
+            }
+        }
+    }
+}
+
+# delete alias from IB host record based on moira hostalias incremental
+sub ib_hostalias_delete {
+    my ($moira_input) = @_;
+  
+    my ( $moira_alias,
+         $moira_name,
+         $moira_mach_id
+       ) = @{$moira_input};
+
+    if ($moira_name !~ /^[\w\-]+\.mit\.edu$/i ||
+        $moira_alias!~ /^[\w\-]+\.mit\.edu$/i ||
+        $moira_mach_id !~ /^\d+$/) {
+        die('ib_hostalias_delete: malformed moira input: '
+            .join(' ', @${moira_input}));
+    }
+
+    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+
+    foreach my $view (@views) {
+
+        my $mach_id_result  = $mach_id_results->{$view}->[0];
+  
+        if (scalar(@{$mach_id_results->{$view}}) == 0) {
+            push(@errors, 'ib_hostalias_delete: no IB record with mach_id '
+                         .$moira_mach_id . ' in view ' . $view
+                         . ', alias not deleted');
+        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
+            push(@errors, 'ib_hostalias_delete: more than one IB record with '
+                         .'mach_id ' . $moira_mach_id . ' in view ' . $view 
+                         . ', alias not deleted');
+        } elsif ($mach_id_result->{'name'} ne lc($moira_name)) {
+            push(@errors, 'ib_hostalias_delete: moira name does not match '
+                         .'existing record with mach_id ' . $moira_mach_id 
+                         .' in view ' . $view . ', alias not deleted');
+        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
+            push(@errors, 'ib_hostalias_delete: existing IB record with mach_id ' 
+                         .$moira_mach_id . ' in view ' . $view
+                         .' is not moira managed, alias not deleted');
+        } else {
+            my @aliases;
+            if (defined($mach_id_result->{'aliases'})) {
+                my @tmp_aliases = @{$mach_id_result->{'aliases'}};
+                if (!grep(/^$moira_alias$/i, @tmp_aliases)) {
+                    push(@errors, 'ib_hostalias_delete: alias ' . $moira_alias
+                                 .' not associated with host ' . $moira_name
+                                 .' in view ' . $view . ', not deleted');
+                } else {
+                    foreach my $alias (@tmp_aliases) {
+                        push(@aliases, $alias) if ($alias !~ /^$moira_alias$/i);
+                    }
+          
+                    my $update;
+                    $update->{'aliases'} = \@aliases;
+          
+                    my $ib_ref = $mach_id_result->{'_ref'};
+                    my $ua = LWP::UserAgent->new();
+                    my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
+                    $req->authorization_basic($ib_user, $ib_pass);
+                    $req->header('Content-Type' => 'application/json');
+                    $req->content(JSON->new->pretty->encode($update));
+                    my $res = $ua->request($req);
+                    if ($res->is_success) {
+                        if ($res->content =~ /^\"record:host\//) {
+                            print 'ib_hostalias_delete: name:' . $moira_name 
+                                  .' view:' . $view . ' mach_id:'
+                                  .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
+                        } else {
+                            my $ib_response = JSON->new->decode($res->content);
+                            if ($ib_response->{'Error'}) {
+                                die('ib_hostalias_delete: '
+                                   .$res->status_line . ': '
+                                   .$ib_response->{'Error'});
+                            } else {
+                                die('ib_hostalias_delete: unknown error: '
+                                   .$ib_response);
+                            }
+                        }
+                    } else {
+                        my $ib_response = JSON->new->decode($res->content);
+                        die('ib_hostalias_delete: ' . $res->status_line . ': ' 
+                            . $ib_response->{'Error'});
+                    }
+                }
+            } else {
+                push(@errors, 'ib_hostalias_delete: no aliases associated with '
+                             .$moira_name . ' in view ' . $view 
+                             .', not deleted');
+            }
+        }
+    }
+}
+
+sub critical_alert {
+    my ($error) = @_;
+
+    my $logfile = "/moira/critical.log";
+    open(LOG, ">>$logfile");
+    my $tnow = localtime;
+    print LOG "$tnow <$$> $error";
+    close(LOG);
+
+    $error =~ /(.*)/;
+    $error = $1;
+
+    my $zwrite = "/usr/local/bin/zwrite";
+
+    if (-f $zwrite) {
+        #system($zwrite, "-q", "-d", "-n", "-c", "moira", "-i", "incremental", "-m", "$error");
+    }
+    
+    exit 1;
+}
+
+sub mailer {
+    my ($error) = @_;
+    my $date = POSIX::strftime("%m/%d/%y %H:%M:%S", localtime);
+    my $smtp = Net::SMTP->new($smtpserver);
+    if (defined($smtp)){
+        $smtp->mail($from_addr);
+        $smtp->to(@to_addrs);
+        $smtp->data();
+        $smtp->datasend('From: ' . $from_addr . "\n");
+        $smtp->datasend('To: ' . join(",",@to_addrs)."\n");
+        $smtp->datasend('Subject: '.$subj_prefix.': '.$date.': ERROR'."\n");
+        $smtp->datasend("\n");
+        $smtp->datasend($error);
+        $smtp->dataend();
+        $smtp->quit;
+    } else {              
+        die('unable to send via ' . $smtpserver  . ': '. $!);
+    }
+}
+
+sub file {
+    my ($file) = @_;
+    my $fh;        
+    my @lines;
+    open($fh, $file) || error_and_exit("Unable to open $file: $!");
+    while (<$fh>) {          
+        next if ($_ =~ /^\s*[#;]/ || $_ =~ /^\s*$/);
+        chop $_;                 
+        $_ =~ s/\s+$//;       
+        push(@lines, $_);               
+    }
+    close($fh);               
+    return(@lines);
+}

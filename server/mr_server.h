@@ -1,4 +1,4 @@
-/* $Id: mr_server.h 4148 2013-10-28 14:36:29Z zacheiss $
+/* $Id: mr_server.h 4152 2013-12-11 14:01:40Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -111,7 +111,7 @@ int do_for_all_rows(char *query, int count,
 char *build_qual(char *fmt, int argc, char *argv[]);
 
 
-/* prototyoes from qsupport.dc */
+/* prototypes from qsupport.dc */
 int set_pop_usage(int id, int cnt);
 
 /* prototypes from qvalidate.dc */
@@ -161,6 +161,7 @@ int access_service(struct query *q, char *argv[], client *cl);
 int access_filesys(struct query *q, char *argv[], client *cl);
 int access_shot(struct query *q, char *argv[], client *cl);
 int access_host(struct query *q, char *argv[], client *cl);
+int access_adhr(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
 int access_hwaddr(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
@@ -310,6 +311,9 @@ int get_subcontainers_of_container(struct query *q, char **argv, client *cl,
 int get_incremental_queue_length(struct query *q, char **argv, client *cl,
 				 int (*action)(int, char *[], void *),
 				 void *actarg);
+int add_dynamic_host_record(struct query *q, char **argv, client *cl,
+                                 int (*action)(int, char *[], void *),
+                                 void *actarg);
 
 /* prototypes from qvalidate.pc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);

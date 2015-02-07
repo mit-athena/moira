@@ -1,4 +1,4 @@
-/* $Id: menus.c 4110 2013-05-09 15:43:17Z zacheiss $
+/* $Id: menus.c 4174 2014-07-21 22:13:13Z zacheiss $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menus.c $ $Id: menus.c 4110 2013-05-09 15:43:17Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menus.c $ $Id: menus.c 4174 2014-07-21 22:13:13Z zacheiss $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -534,7 +534,7 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  12,
+  13,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show", "Get machine information"},
@@ -573,6 +573,7 @@ Menu machine_menu = {
       {"setttl", "Set DNS TTL for this machine"},
       {"name", "Machine's Name: "},
     } },
+    SIMPLEFUNC("dynamic", "Assign a dynamic host record", AddDynamicHost),
   }
 };
 
@@ -673,6 +674,24 @@ Menu krbmap_menu = {
   }
 };
 
+Menu vpn_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "User VPN Group Menu",
+  2,
+  {
+    { GetVPNGroup, NULLMENU, 2, {
+	{ "get", "Get User Default VPN Group" },
+	{ "user", "User login name: " },
+    } },
+    { SetVPNGroup, NULLMENU, 3, {
+	{ "set", "Set User Default VPN Group" },
+	{ "user", "User login name: " },
+	{ "list", "List name: " },
+    } },
+  }
+};
+
 /*
  * User Menu
  */
@@ -681,7 +700,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  12,
+  14,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -719,6 +738,7 @@ Menu user_menu = {
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
     SUBMENU("reservations", "User Reservations Menu", &reservations_menu),
+    SUBMENU("vpn", "VPN Group Menu", &vpn_menu),
   }
 };
 

@@ -303,7 +303,7 @@ if test "$oracle" != no; then
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
@@ -511,8 +511,7 @@ LIBS="$MR_LIBDEP $KLIBS"
 AC_SUBST(KLIBS)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
-	  clients/lib/Makefile clients/addusr/Makefile \
-	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/lib/Makefile clients/blanche/Makefile clients/chfn/Makefile \
 	  clients/chpobox/Makefile clients/chsh/Makefile \
 	  clients/eunice/Makefile clients/mailmaint/Makefile \
 	  clients/mitch/Makefile clients/moira/Makefile \

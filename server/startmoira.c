@@ -1,4 +1,4 @@
-/* $Id: startmoira.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: startmoira.c 4178 2014-08-27 22:59:23Z zacheiss $
  *
  * This program starts the moira server in a "clean" environment.
  * and then waits for it to exit.
@@ -23,13 +23,16 @@
 #include <unistd.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/startmoira.c $ $Id: startmoira.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/startmoira.c $ $Id: startmoira.c 4178 2014-08-27 22:59:23Z zacheiss $");
 
 #define PROG	"moirad"
+#define MOIRAD_LOG MOIRA_DIR "/moira.log"
 
 int rdpipe[2];
+static volatile int do_reopen;
 char *whoami;
 void cleanup(int signal);
+void reopen_logfile(int signal);
 
 void cleanup(int signal)
 {
@@ -61,6 +64,11 @@ void cleanup(int signal)
   errno = serrno;
 }
 
+void reopen_logfile(int signal)
+{
+  do_reopen = 1;
+}
+
 int main(int argc, char *argv[])
 {
   char buf[BUFSIZ];
@@ -76,13 +84,15 @@ int main(int argc, char *argv[])
   getrlimit(RLIMIT_NOFILE, &rl);
   nfds = rl.rlim_cur;
 
-  action.sa_handler = cleanup;
-  action.sa_flags = 0;
   sigemptyset(&action.sa_mask);
+  action.sa_flags = 0;
+  action.sa_handler = cleanup;
   sigaction(SIGCHLD, &action, NULL);
+  action.sa_flags = SA_RESTART;
+  action.sa_handler = reopen_logfile;
+  sigaction(SIGHUP, &action, NULL);
 
-  sprintf(buf, "%s/moira.log", MOIRA_DIR);
-  logf = open(buf, O_CREAT|O_WRONLY|O_APPEND, 0640);
+  logf = open(MOIRAD_LOG, O_CREAT|O_WRONLY|O_APPEND, 0640);
   if (logf < 0)
     {
       perror(buf);
@@ -135,6 +145,21 @@ int main(int argc, char *argv[])
 
       done = 0;
       errno = 0;
+
+      if (do_reopen)
+        {
+          fclose(log);
+          close(logf);
+          logf = open(MOIRAD_LOG, O_CREAT|O_WRONLY|O_APPEND, 0640);
+          if (logf < 0)
+            {
+              perror(buf);
+              exit(1);
+            }
+          log = fdopen(logf, "w");
+	  do_reopen = 0;
+        }
+
       if (!fgets(buf, BUFSIZ, prog))
 	{
 	  if (errno && errno != EINTR)
@@ -146,6 +171,7 @@ int main(int argc, char *argv[])
 	  else
 	    break;
 	}
+
       time(&now);
       time_s = ctime(&now) + 4;
       time_s[strlen(time_s) - 6] = '\0';

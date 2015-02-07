@@ -1,4 +1,4 @@
-/* $Id: qsubs.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: qsubs.c 4152 2013-12-11 14:01:40Z zacheiss $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsubs.c $ $Id: qsubs.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsubs.c $ $Id: qsubs.c 4152 2013-12-11 14:01:40Z zacheiss $");
 
 extern struct query Queries[];
 extern int QueryCount;
@@ -142,11 +142,16 @@ void help_query(struct query *q, int (*action)(int, char *[], void *),
       sprintf(argr, "%s => %s", argv[--argcount], q->fields[q->argc]);
       argv[argcount++] = argr;
       if (q->vcnt > 1)
-	{
-	  for (i = q->argc + 1; i < q->vcnt + q->argc; i++)
-	    argv[argcount++] = q->fields[i];
-	}
+        {
+          for (i = q->argc + 1; i < q->vcnt + q->argc; i++)
+            argv[argcount++] = q->fields[i];
+        }
     }
+  else if (q->fields_count > (q->argc + q->vcnt))
+    {
+      sprintf(argr, "%s => %s", argv[--argcount], q->fields[q->argc + q->vcnt]);
+      argv[argcount++] = argr;
+    } 
   (*action)(argcount, argv, actarg);
 }
 

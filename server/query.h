@@ -1,4 +1,4 @@
-/* $Id: query.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id: query.h 4152 2013-12-11 14:01:40Z zacheiss $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -21,6 +21,7 @@ struct query
   enum tables rtable;		/* range table */
   char *tlist;			/* target list */
   char **fields;		/* input and output variable names (for help) */
+  int fields_count;		/* length of fields array */
   int  vcnt;			/* variable count */
   char *qual;			/* format string for "where" clause */
   int  argc;			/* number of args for qualifier */

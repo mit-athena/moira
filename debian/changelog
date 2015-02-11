@@ -1,3 +1,9 @@
+debathena-moira (4.0.0-r4149-0debathena2) unstable; urgency=medium
+
+  * Add git-buildpackage configuration
+
+ -- Jonathan Reed <jdreed@mit.edu>  Wed, 11 Feb 2015 09:13:54 -0500
+
 debathena-moira (4.0.0-r4149-0debathena1) unstable; urgency=low
 
   * Snapshot moira at r4149 to pick up changes (Trac: #1420)

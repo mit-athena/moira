@@ -1,3 +1,12 @@
+debathena-moira (4.0.0.1-0debathena1) unstable; urgency=low
+
+  * Snapshot moira at r4184 (Trac: #1549)
+  * This uses the new versioning scheme (4.0.0.1) in preparation for
+    Moira's transition to Git
+  * Stop installing addusr because upstream dropped it
+
+ -- Jonathan Reed <jdreed@mit.edu>  Thu, 12 Feb 2015 13:41:14 -0500
+
 debathena-moira (4.0.0-r4149-0debathena2) unstable; urgency=medium
 
   * Add git-buildpackage configuration

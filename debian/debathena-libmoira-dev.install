@@ -1,8 +1,0 @@
-usr/include/moira/moira.h
-usr/include/moira/mr_et.h
-usr/include/moira/krb_et.h
-usr/include/moira/ureg_err.h
-usr/share/man/man3/*
-usr/lib/libmoira.so
-usr/lib/libmoira.la
-usr/lib/libmoira.a

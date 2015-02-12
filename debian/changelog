@@ -1,3 +1,9 @@
+debathena-moira (4.0.0.1.0-0debathena1) unstable; urgency=low
+
+  * No-change rebuild to bump version number
+
+ -- Jonathan Reed <jdreed@mit.edu>  Thu, 12 Feb 2015 13:54:41 -0500
+
 debathena-moira (4.0.0.1-0debathena1) unstable; urgency=low
 
   * Snapshot moira at r4184 (Trac: #1549)

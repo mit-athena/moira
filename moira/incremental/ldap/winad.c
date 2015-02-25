@@ -2481,56 +2481,57 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_base = NULL;
 	  group_count = 0;
 
-	  if(strcmp(before_group_name, after_group_name)) {
-	    sprintf(search_filter, "(proxyAddresses=smtp:%s)", 
-		    mail);
-	    attr_array[0] = "cn";
-	    attr_array[1] = NULL;
-	    
-	    if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
-				     attr_array, &group_base, &group_count,
-				     LDAP_SCOPE_SUBTREE)) != 0)
-	      {
-		com_err(whoami, 0, "Unable to process group %s : %s",
-			after_group_name, ldap_err2string(rc));
-		return(rc);
-	      }
-	    
-	    if (group_count)
-	      {
-		com_err(whoami, 0, "Object %s already exists with address %s",
-			group_base->dn, mail);
-		MailDisabled++;
-	      }
-	    
-	    linklist_free(group_base);
-	    group_base = NULL;
-	    group_count = 0;
-	    
-	    sprintf(search_filter, "(mailNickname=%s)", after_group_name);
-	    attr_array[0] = "cn";
-	    attr_array[1] = NULL;
-	    
-	    if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
-				     attr_array, &group_base, &group_count,
-				     LDAP_SCOPE_SUBTREE)) != 0)
-	      {
-		com_err(whoami, 0, "Unable to process group %s : %s",
-			after_group_name, ldap_err2string(rc));
-		return(rc);
-	      }
-	
-	    if (group_count)
-	      {
-		com_err(whoami, 0, "Object %s already exists with address %s",
-			group_base->dn, mail);
-		MailDisabled++;
-	      }
-	    
-	    linklist_free(group_base);
-	    group_base = NULL;
-	    group_count = 0;
-	  }
+	  sprintf(search_filter, 
+		  "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))", 
+		  mail);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process group %s : %s",
+		      after_group_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if (group_count)
+	    {
+	      com_err(whoami, 0, "Object %s already exists with address %s",
+		      group_base->dn, mail);
+	      MailDisabled++;
+	    }
+	  
+	  linklist_free(group_base);
+	  group_base = NULL;
+	  group_count = 0;
+	  
+	  sprintf(search_filter, 
+		  "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		  after_group_name);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process group %s : %s",
+		      after_group_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if (group_count)
+	    {
+	      com_err(whoami, 0, "Object %s already exists with address %s",
+		      group_base->dn, mail);
+	      MailDisabled++;
+	    }
+	  
+	  linklist_free(group_base);
+	  group_base = NULL;
+	  group_count = 0;
 	}
     }
 
@@ -2853,61 +2854,61 @@ int group_create(int ac, char **av, void *ptr)
 	      group_base = NULL;
 	      group_count = 0;
 
-	      if(!updateGroup) {
-		sprintf(filter, 
-			"(proxyAddresses=smtp:%s)", mail);
-		attr_array[0] = "cn";
-		attr_array[1] = NULL;
-		
-		if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
-					 filter, attr_array, &group_base, 
-					 &group_count,
-					 LDAP_SCOPE_SUBTREE)) != 0)
-		  {
-		    com_err(whoami, 0, "Unable to process group %s : %s",
-			    av[L_NAME], ldap_err2string(rc));
-		    return(rc);
-		  }
-		
-		if (group_count) 
-		  {
-		    com_err(whoami, 0, 
-			    "Object %s already exists with address %s",
-			    group_base->dn, mail);
-		    MailDisabled++;
-		  }
-		
-		linklist_free(group_base);
-		group_base = NULL;
-		group_count = 0;
-		
-		sprintf(filter, 
-			"(mailNickname=%s)", av[L_NAME]);
-		attr_array[0] = "cn";
-		attr_array[1] = NULL;
-		
-		if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+	      sprintf(filter, 
+		      "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))",
+		      mail);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
 				       filter, attr_array, &group_base, 
-					 &group_count,
-					 LDAP_SCOPE_SUBTREE)) != 0)
-		  {
-		    com_err(whoami, 0, "Unable to process group %s : %s",
-			    av[L_NAME], ldap_err2string(rc));
-		    return(rc);
-		  }
-		
-		if (group_count) 
-		  {
-		    com_err(whoami, 0, 
-			    "Object %s already exists with address %s",
-			    group_base->dn, mail);
-		    MailDisabled++;
-		  }
-		
-		linklist_free(group_base);
-		group_base = NULL;
-		group_count = 0;
-	      }
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count) 
+		{
+		  com_err(whoami, 0, 
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+	      
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	      
+	      sprintf(filter, 
+		      "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		      av[L_NAME]);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+				       filter, attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count) 
+		{
+		  com_err(whoami, 0, 
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+	      
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
 	    }
 
 	  if(atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
@@ -3051,61 +3052,60 @@ int group_create(int ac, char **av, void *ptr)
 	      group_base = NULL;
 	      group_count = 0;
 
-	      if(!updateGroup) {
-		sprintf(filter, 
-			"(proxyAddresses=smtp:%s)", mail);
-		attr_array[0] = "cn";
-		attr_array[1] = NULL;
-		
-		if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
-					 filter, attr_array, &group_base, 
-					 &group_count,
-					 LDAP_SCOPE_SUBTREE)) != 0)
-		  {
-		    com_err(whoami, 0, "Unable to process group %s : %s",
-			    av[L_NAME], ldap_err2string(rc));
-		    return(rc);
-		  }
-		
-		if (group_count) 
-		  {
-		    com_err(whoami, 0, 
-			    "Object %s already exists with address %s",
-			    group_base->dn, mail);
-		    MailDisabled++;
-		  }
-		
-		linklist_free(group_base);
-		group_base = NULL;
-		group_count = 0;
-		
-		sprintf(filter, 
-			"(mailNickname=%s)", mail);
-		attr_array[0] = "cn";
-		attr_array[1] = NULL;
-		
-		if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
-					 filter, attr_array, &group_base, 
-					 &group_count,
-					 LDAP_SCOPE_SUBTREE)) != 0)
-		  {
-		    com_err(whoami, 0, "Unable to process group %s : %s",
-			    av[L_NAME], ldap_err2string(rc));
-		    return(rc);
-		  }
-		
-		if (group_count) 
-		  {
-		    com_err(whoami, 0, 
-			    "Object %s already exists with address %s",
-			    group_base->dn, mail);
-		    MailDisabled++;
-		  }
+	      sprintf(filter,
+		      "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))",
+		      mail);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
 
-		linklist_free(group_base);
-		group_base = NULL;
-		group_count = 0;
-	      }
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1],
+				       filter, attr_array, &group_base,
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+
+	      if (group_count)
+		{
+		  com_err(whoami, 0,
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+
+	      sprintf(filter,
+		      "(&(objectClass=publicFolder)(mailNickname=%s))", mail);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1],
+				       filter, attr_array, &group_base,
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+
+	      if (group_count)
+		{
+		  com_err(whoami, 0,
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
 	    }
 
 	  if (atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
@@ -4179,7 +4179,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	
 	  sprintf(filter, 
-		  "(proxyAddresses=smtp:%s)", mail);
+		  "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))", 
+		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4204,7 +4205,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 
 	  sprintf(filter, 
-		  "(mailNickname=%s)", unqualified_user_name);
+		  "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		  unqualified_user_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 

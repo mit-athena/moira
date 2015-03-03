@@ -220,8 +220,10 @@ int validate_id(struct query *q, char *argv[], struct valobj *vo)
 
 int validate_name(char *argv[], struct valobj *vo)
 {
-  char *name, *namefield;
+  char *name, *namefield, *qual;
   char *c;
+  char **qual_argv;
+  int qual_argc = 3;
 
   name = argv[vo->index];
   namefield = vo->namefield;
@@ -235,9 +237,19 @@ int validate_name(char *argv[], struct valobj *vo)
     }
   if (!*name)
     return MR_RESERVED;
-  sprintf(stmt_buf, "SELECT DISTINCT COUNT(*) FROM %s WHERE %s.%s = '%s'",
-	  table_name[vo->table], table_name[vo->table], namefield, name);
+
+  qual_argv = xmalloc(qual_argc * sizeof(char *));
+  qual_argv[0] = table_name[vo->table];
+  qual_argv[1] = namefield;
+  qual_argv[2] = name;
+
+  qual = build_qual("%s.%s = '%s'", qual_argc, qual_argv);
+
+  sprintf(stmt_buf, "SELECT DISTINCT COUNT(*) FROM %s WHERE %s",
+          table_name[vo->table], qual);
   dosql(sqlbuffer);
+  free(qual);
+  free(qual_argv);
 
   if (dbms_errno)
     return mr_errcode;
@@ -251,7 +263,9 @@ int validate_rename(char *argv[], struct valobj *vo)
   int id;
   EXEC SQL END DECLARE SECTION;
   int status;
-  char *c;
+  char *c, *qual;
+  char **qual_argv;
+  int qual_argc = 2;
 
   status = validate_chars(argv, vo);
   if (status != MR_EXISTS)
@@ -275,9 +289,18 @@ int validate_rename(char *argv[], struct valobj *vo)
     {
       if (!strcmp(argv[vo->index], argv[vo->index - 1]))
 	return MR_EXISTS;
-      sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s = '%s'",
-	      namefield, table_name[vo->table], namefield, name);
+
+      qual_argv = xmalloc(qual_argc * sizeof(char *));
+      qual_argv[0] = namefield;
+      qual_argv[1] = name;
+
+      qual = build_qual("%s = '%s'", qual_argc, qual_argv);
+
+      sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s",
+	      namefield, table_name[vo->table], qual);
       dosql(sqlbuffer);
+      free(qual);
+      free(qual_argv);
 
       if (dbms_errno)
 	return mr_errcode;

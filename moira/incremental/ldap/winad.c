@@ -6578,7 +6578,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 		}  
 	    }
 	}
-      else
+      else if(rc==MR_NO_MATCH)
 	{
 	  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) &&
 	      (State != US_SUSPENDED)) 

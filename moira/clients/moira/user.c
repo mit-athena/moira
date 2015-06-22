@@ -142,7 +142,7 @@ static void PrintUserInfo(char **info)
 	      atoi(info[U_SECURE]) ? "needs" : "does not need");
       Put_message(buf);
     }
-  sprintf(buf, "User %s two-factor authentication for Touchstone services.",
+  sprintf(buf, "User %s two-factor authentication for all two-factor enabled services.",
 	  atoi(info[U_TWOFACTOR]) ? "requires" : "does not require");
   Put_message(buf);
   sprintf(buf, "Comments: %s", info[U_COMMENT]);
@@ -369,7 +369,7 @@ char **AskUserInfo(char **info, Bool name)
 	}
     }
 
-  if (YesNoQuestion("User requires two-factor authentication for Touchstone",
+  if (YesNoQuestion("User requires two-factor authentication for all two-factor enabled services",
 		    atoi(info[U_TWOFACTOR]) ? TRUE : FALSE) == FALSE)
     {
       free(info[U_TWOFACTOR]);

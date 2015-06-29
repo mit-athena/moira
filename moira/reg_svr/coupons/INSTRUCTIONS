@@ -1,4 +1,4 @@
-$Id: INSTRUCTIONS 3956 2010-01-05 20:56:56Z zacheiss $
+$Id$
 
 The executables are in /moira/bin/ on the moira server, with sources in
 /mit/moiradev/src/reg_svr/.  Most of the commands are run on the Moira

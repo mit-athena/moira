@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/student.pc $ $Id: student.pc 4162 2014-05-27 18:33:33Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /* File format is:
 

@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dbck/dbck.h $ $Id: dbck.h 3956 2010-01-05 20:56:56Z zacheiss $
+/* $HeadURL$ $Id$
  *
  * Declarations for Moira database consistancy checker
  *

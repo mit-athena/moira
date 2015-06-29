@@ -1,4 +1,4 @@
-/* $Id: namespace.c 4077 2012-05-07 16:53:10Z zacheiss $
+/* $Id$
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/namespace.c $ $Id: namespace.c 4077 2012-05-07 16:53:10Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);

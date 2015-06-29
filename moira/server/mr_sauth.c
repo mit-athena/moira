@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c 4167 2014-06-13 19:36:39Z zacheiss $
+/* $Id$
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_sauth.c $ $Id: mr_sauth.c 4167 2014-06-13 19:36:39Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami, *host;
 extern int proxy_acl;

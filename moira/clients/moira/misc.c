@@ -1,4 +1,4 @@
-/* $Id: misc.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  *	This is the file misc.c for the Moira Client, which allows a naieve
  *      to quickly and easily maintain most parts of the Moira database.
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/misc.c $ $Id: misc.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void PrintStats(char **info);
 void PrintClients(char **info);

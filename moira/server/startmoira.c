@@ -1,4 +1,4 @@
-/* $Id: startmoira.c 4178 2014-08-27 22:59:23Z zacheiss $
+/* $Id$
  *
  * This program starts the moira server in a "clean" environment.
  * and then waits for it to exit.
@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/startmoira.c $ $Id: startmoira.c 4178 2014-08-27 22:59:23Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #define PROG	"moirad"
 #define MOIRAD_LOG MOIRA_DIR "/moira.log"

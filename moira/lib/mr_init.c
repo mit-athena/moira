@@ -1,4 +1,4 @@
-/* $Id: mr_init.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Initialize libmoira
  *
@@ -11,7 +11,7 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_init.c $ $Id: mr_init.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 int mr_inited = 0;
 

@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id$
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];

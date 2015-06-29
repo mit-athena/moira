@@ -1,7 +1,7 @@
 #!/bin/sh 
 # This script performs postoffice updates.
 #
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/postoffice.sh $ $Id: postoffice.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH

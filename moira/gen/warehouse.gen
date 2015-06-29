@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 #
-# $Id: warehouse.gen 4120 2013-07-01 17:38:05Z zacheiss $
+# $Id$
 # Generate a database extract from the users table for the MIT Data Warehouse.
 $MR_DBMS_ERR = 47836421;
 $MR_OCONFIG = 47836460;

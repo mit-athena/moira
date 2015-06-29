@@ -1,4 +1,4 @@
-/* $Id: mr_server.h 4152 2013-12-11 14:01:40Z zacheiss $
+/* $Id$
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file

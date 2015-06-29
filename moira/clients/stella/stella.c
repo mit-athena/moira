@@ -1,4 +1,4 @@
-/* $Id: stella.c 4160 2014-04-22 15:51:03Z zacheiss $
+/* $Id$
  *
  * Command line oriented Moira host tool.
  *
@@ -32,7 +32,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stella/stella.c $ $Id: stella.c 4160 2014-04-22 15:51:03Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 struct mqelem {
   struct mqelem *q_forw;

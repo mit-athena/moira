@@ -1,4 +1,4 @@
-/* $Id: stanley.c 4184 2015-02-06 02:10:18Z zacheiss $
+/* $Id$
  *
  * Command line oriented Moira users tool.
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/stanley/stanley.c $ $Id: stanley.c 4184 2015-02-06 02:10:18Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 struct string_list {
   char *string;
@@ -915,7 +915,7 @@ int show_user_info(int argc, char **argv, void *hint)
       printf("User %s secure Account Coupon to register\n",
 	      atoi(argv[U_SECURE]) ? "needs" : "does not need");
     }
-  printf("User %s two-factor authentication for Touchstone services.\n",
+  printf("User %s two-factor authentication for all two-factor enabled services.\n",
 	 atoi(argv[U_TWOFACTOR]) ? "requires" : "does not require");
   printf("Comments: %s\n", argv[U_COMMENT]);
   printf("Created  by %s on %s.\n", argv[U_CREATOR], argv[U_CREATED]);
@@ -953,7 +953,7 @@ int show_user_info_unformatted(int argc, char **argv, void *hint)
   if (status == 0 || status == 2)
     printf("Secure:                  %s secure Account Coupon to register\n",
 	   atoi(argv[U_SECURE]) ? "Needs" : "Does not need");
-  printf("Two-factor:                %s two-factor authentication for Touchstone services\n",
+  printf("Two-factor:                %s two-factor authentication for all two-factor enabled services\n",
 	 atoi(argv[U_TWOFACTOR]) ? "requires" : "does not require");
   printf("Comments:                  %s\n", argv[U_COMMENT]);
   printf("Created by:                %s\n", argv[U_CREATOR]);

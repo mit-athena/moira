@@ -1,4 +1,4 @@
-/* $Id: hash.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/hash.c $ $Id: hash.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #define hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
 

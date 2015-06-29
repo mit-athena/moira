@@ -1,4 +1,4 @@
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs_utils.pl $ $Id: afs_utils.pl 4079 2012-05-23 22:42:25Z jweiss $
+# $HeadURL$ $Id$
 
 use Fcntl;
 

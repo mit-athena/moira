@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/backup/report.pl $ $Id: report.pl 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$
 
 chdir($ARGV[0]);
 

@@ -1,4 +1,4 @@
-/* $Id: eunice.c 4051 2011-09-08 18:46:37Z zacheiss $
+/* $Id$
  *
  * Command line oriented Moira print queue tool.
  *
@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/eunice/eunice.c $ $Id: eunice.c 4051 2011-09-08 18:46:37Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 struct member {
   int type;

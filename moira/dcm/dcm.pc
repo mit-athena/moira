@@ -1,4 +1,4 @@
-/* $Id: dcm.pc 3970 2010-01-31 05:52:04Z zacheiss $
+/* $Id$
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dcm/dcm.pc $ $Id: dcm.pc 3970 2010-01-31 05:52:04Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);

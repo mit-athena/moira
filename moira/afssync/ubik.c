@@ -1,4 +1,4 @@
-/* $Id: ubik.c 3956 2010-01-05 20:56:56Z zacheiss $ */
+/* $Id$ */
 
 #include <sys/types.h>
 #include <netinet/in.h>

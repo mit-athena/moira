@@ -1,4 +1,4 @@
-# $Id: Makefile.in 3958 2010-01-05 21:27:04Z zacheiss $
+# $Id$
 
 SHELL=/bin/sh
 

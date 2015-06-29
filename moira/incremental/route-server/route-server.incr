@@ -6,6 +6,7 @@ $ENV{'PATH'} = "";
 $MR_ARGV_LEN = 19;
 $ADDRESS_POS = 10;
 $OPT_POS = 16;
+$SNET_ID_POS = 15;
 
 @URLS = ('https://hostsec-rs-1.mit.edu/cgi-bin/route.pl', 'https://hostsec-rs-2.mit.edu/cgi-bin/route.pl');
 $STOP_FILE = "/moira/route-server/noroute";
@@ -41,7 +42,7 @@ my $after_len  = shift(@input);
 
 if ($type eq "machine") {
     if ($before_len == 0 && $after_len == $MR_ARGV_LEN) {
-	# machine add, do nothing.
+	do_machine(@input);
 	exit 0;
     } elsif ($before_len == $MR_ARGV_LEN && $after_len == $MR_ARGV_LEN) {
 	do_machine(@input);
@@ -84,9 +85,39 @@ sub do_machine {
     my (@moira_input) = @_;
 
     $before_address = $moira_input[$ADDRESS_POS];
+    $before_snet_id = $moira_input[$SNET_ID_POS];
 
-    if ($after_len == 0) {
+    if ($before_len == 0) {
+	# machine creation
+	$after_address = $moira_input[$ADDRESS_POS];
+	$after_option = $moira_input[$OPT_POS];
+	$after_snet_id = $moira_input[$SNET_ID_POS];
+
+	if ($after_snet_id =~ /quarantine/i) {
+	    print "do_machine: quarantined host, ignoring\n";
+	    return;
+	}
+	
+	if ($after_option == 0) {
+	    $after_state = "none";
+	} elsif ($after_option == 1 || $after_option == 2) {
+	    $after_state = "optout";
+	} elsif ($after_option == 3) {
+	    $after_state = "blackhole";
+	} else {
+	    critical_alert("$whoami: Unexpected machine opt $after_option");
+	}
+
+	if ($after_address ne "unassigned") {
+	    update_route_server($after_state, $after_address);
+	}
+    } elsif ($after_len == 0) {
 	# machine deletion
+	if ($before_snet_id =~ /quarantine/i) {
+	    print "do_machine: quarantined host, ignoring\n";
+	    return;
+	}
+
 	if ($before_address ne "unassigned") {
 	    update_route_server("none", $before_address);
 	}
@@ -94,6 +125,12 @@ sub do_machine {
 
 	$after_address = $moira_input[$after_len + $ADDRESS_POS];
 	$after_option = $moira_input[$after_len + $OPT_POS];
+	$after_snet_id = $moira_input[$after_len + $SNET_ID_POS];
+
+	if ($after_snet_id =~ /quarantine/i) {
+	    print "do_machine: quarantined host, ignoring\n";
+	    return;
+	}
 
 	if ($after_option == 0) {
 	    $after_state = "none";
@@ -144,7 +181,7 @@ sub update_route_server {
     }
 
     foreach $URL (@URLS) {
-	print "POSTing to $URL: $state $prevstate $address\n";
+	print "POSTing to $URL: $state $address\n";
 
 	my $req = HTTP::Request->new('POST', $URL);
 	$req->header( 'Content-Type' => 'application/json' );

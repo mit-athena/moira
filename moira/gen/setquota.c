@@ -1,4 +1,4 @@
-/*      $Id: setquota.c 3956 2010-01-05 20:56:56Z zacheiss $
+/*      $Id$
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/setquota.c $ $Id: setquota.c 3956 2010-01-05 20:56:56Z zacheiss $";
+static char *rcsid_setquota_c = "$HeadURL$ $Id$";
 #endif lint
 
 #include <stdio.h>

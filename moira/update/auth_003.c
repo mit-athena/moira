@@ -1,4 +1,4 @@
-/* $Id: auth_003.c 4092 2013-01-18 15:36:33Z zacheiss $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -22,7 +22,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/auth_003.c $ $Id: auth_003.c 4092 2013-01-18 15:36:33Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 static char service[] = "host";
 static char master[] = "sms";

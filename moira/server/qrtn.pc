@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc 4157 2014-04-08 17:57:00Z zacheiss $
+/* $Id$
  *
  * Query-processing routines
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qrtn.pc $ $Id: qrtn.pc 4157 2014-04-08 17:57:00Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;

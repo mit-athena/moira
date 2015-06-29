@@ -1,4 +1,4 @@
-/* $Id: dump_db.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * 	This program dumps the Moira database to a series of output files
  * which can be later read back into Moira in the event of a crash.
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/backup/dump_db.pc $ $Id: dump_db.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *db = "moira";

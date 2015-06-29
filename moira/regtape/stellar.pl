@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: stellar.pl 4037 2011-04-21 16:18:33Z zacheiss $
+# $Id$
 
 $db = "";
 $mrtest = "mrtest";

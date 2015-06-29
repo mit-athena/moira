@@ -1,4 +1,4 @@
-/* $Id: update_test.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Test client for update_server protocol.
  *
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/update_test.c $ $Id: update_test.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void usage(void);
 

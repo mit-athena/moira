@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/afssync/utils.c $ $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $";
+static char rcsid[] = "$HeadURL$ $Id$";
 #endif
 
 /*	

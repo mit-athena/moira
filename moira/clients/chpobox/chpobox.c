@@ -1,4 +1,4 @@
-/* $Id: chpobox.c 4073 2012-02-28 17:02:47Z zacheiss $
+/* $Id$
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -38,7 +38,7 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/chpobox/chpobox.c $ $Id: chpobox.c 4073 2012-02-28 17:02:47Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 int get_pobox(int argc, char **argv, void *callarg);
 void usage(void);

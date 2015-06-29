@@ -1,4 +1,4 @@
-/* $Id: cups-print.pc 4092 2013-01-18 15:36:33Z zacheiss $
+/* $Id$
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -30,7 +30,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/cups-print.pc $ $Id: cups-print.pc 4092 2013-01-18 15:36:33Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "cups-print.gen";
 char *db = "moira/moira";

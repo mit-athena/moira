@@ -20,7 +20,7 @@
 static const char copyright[] =
     "Copyright 1987,1988 by MIT Student Information Processing Board";
 
-static const char rcsid[] = "$Id: compile_et.c 3956 2010-01-05 20:56:56Z zacheiss $";
+static const char rcsid[] = "$Id$";
 
 enum lang {
     lang_C,			/* ANSI C (default) */

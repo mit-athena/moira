@@ -1,4 +1,4 @@
-/* $Id: ndb.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * This generates the msql database for the network tables.
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/ndb.pc $ $Id: ndb.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "ndb.gen";
 char *db = "moira/moira";

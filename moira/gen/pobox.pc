@@ -1,4 +1,4 @@
-/* $Id: pobox.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/pobox.pc $ $Id: pobox.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";

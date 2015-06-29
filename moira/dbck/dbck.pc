@@ -1,4 +1,4 @@
-/* $Id: dbck.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dbck/dbck.pc $ $Id: dbck.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 int debug = 0;
 int mode = MODE_ASK;

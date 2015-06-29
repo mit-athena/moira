@@ -1,0 +1,437 @@
+\documentstyle[fullpage]{article}
+\begin{document}
+
+\begin{center}
+{\Large Moira Server Internals}
+\end{center}
+
+\section{Basic Operation}
+
+On startup, {\tt main()} initializes the com\_err library and
+(assuming no {\it /etc/smsdown\/}) the connection to the DBMS. It
+sets up signal handlers for {\tt SIGTERM}, {\tt SIGUSR1}, {\tt
+SIGUSR2}, {\tt SIGCHLD}, and {\tt SIGHUP}, opens the journal file, and
+finally opens a listening connection. It then loops forever,
+processing requests and timing out idle connections.
+
+A semaphore file, {\it /etc/smsdown}, and the signals {\tt SIGUSR1}
+and {\tt SIGUSR2} control the availability of the database. If the
+semaphore exists when the server is first started, or when the last
+active client connection is closed, then the database will be closed.
+This means that it disconnects from the DBMS backend, and no queries
+will be answered. The contents of the semaphore file are returned as
+the Message of the Day while it is present, even if the database is
+still open. This will cause most clients to disconnect, although the
+protocol doesn't require this. If the semaphore is no longer there
+when a new client connects to the server, the database will be opened
+again. Rather than wait until the last client disconnects or first
+client connects to close and open the database, {\tt SIGUSR1} or {\tt
+SIGUSR2} may be sent to the server to cause this to happen as soon as
+the current query finishes executing, regardless of how many clients
+are currently connected. Closing and opening the database also flushes
+the name to ID cache.
+
+For each connection, the server creates a client structure. The client
+structure contains connection state, authentication information, and
+the array of tuples currently waiting to be sent back to the client.
+
+The operations supported are {\bf noop, auth, motd, query, access,
+proxy} and {\bf version}. In {\tt server/mr\_scall.c(client\_read)},
+these operations are decoded and dispatched. (If the database is
+closed, only the {\bf noop} and {\bf motd} operations are allowed.)
+
+The {\bf auth} and {\bf proxy} operations are taken care of in {\tt
+server/mr\_sauth.c}. {\bf Auth} requires the client to send a Kerberos
+ticket for {\bf moira}.{\it servername\/}@{\it localrealm}. It will
+extract the client's principal name, and use that for later
+authentication purposes. To speed up later access checking, it will
+also resolve the principal name to the {\it users\_id} of that person
+in the Moira database. If the Kerberos principal does not correspond
+to a user in the database, but does correspond to a Kerberos principal
+in the {\it strings\/} table, then that {\it string\_id\/} will be
+stored in the client record. The {\bf auth} request also takes the
+name of the client program used to connect, which is recorded in the
+{\it modwith\/} field of data that the client modifies.
+
+The {\bf proxy} operation checks that the user is on the ``proxy''
+{\it capacl\/} entry, and if so, changes the user that the client is
+authenticated as. Proxied users are not allowed to do certain
+operations, as explained later.
+
+The {\bf motd} operation checks for a Message of the Day (in {\it
+/etc/smsdown\/}), and returns it if it exists. Clients should check
+the motd before doing anything else, and exit if it exists.
+
+When a {\bf query} is requested, {\tt server/mr\_scall.c(do\_retr)} is
+called. It first checks to see if the query is {\bf \_list\_users},
+and calls {\tt list\_users} if so. Otherwise, it calls {\tt
+server/qrtn.pc(mr\_process\_query)} to do the actual work. For each
+tuple to be returned, {\tt server/mr\_scall.c(retr\_callback)} will be
+called, and will in turn call {\tt
+server/mr\_scall.c(client\_return\_tuple)} to queue the data to be
+returned in the client structure. Finally, {\tt
+server/mr\_scall.c(client\_reply)} is called to set the return value
+of the query.
+
+The {\bf access} operation works similarly, calling {\tt
+server/mr\_qrtn.pc(mr\_check\_access)} to run the query's
+access-checking routines without executing the query.
+
+The {\bf version} operation tells the server what the highest query
+version the client knows about it. If no {\bf version} call is made,
+the server assumes the client is using query version 2. Passing ``-1''
+for the version parameter tells the server to use the highest-known
+query version by default.
+
+\subsection{Query processing}
+
+A query has at most 5 phases:
+
+\begin{description}
+\item[Validation]---The number, size, and type of the query arguments
+are checked. Most queries that update or look up objects make sure
+that the named objects exist during this step, and most queries that
+add new objects to the database or update existing objects check the
+object's name(s) or ID for uniqueness in this step.
+
+\item[Access Check]---First the query is looked up in the {\bf
+capacls} table. If an entry is found, the server checks if the client
+is on the indicated list. If so, the {\it priviliged\/} flag is set,
+and the access check phase is done. Otherwise, the query-specific
+access routine, if any, is run. If the query has no access routine and
+the client is not on the capacl, the server returns {\tt MR\_PERM}.
+
+\item[Setup]---If the query has a setup routine, it is run next.
+Queries that delete objects use this step to make sure the object to
+be deleted is no longer referenced in the database. Other queries use
+it to perform argument validation that is more complicated than the
+validation step allows.
+
+\item[Main Processing]---For most queries, this will be a single SQL
+statement, defined in the query definition, but for very complicated
+queries, this will be a C routine (which also doubles as the followup
+step).
+
+\item[Followup]---Much of the followup phase is an artifact of Ingres.
+Most of the queries only select data out of a single table, and the
+resolve the cross-references in followup routines. Some newer ones
+actually just do multiple-table selects in the main processing step.
+However, followup routines are always needed to parse type/ID
+combinations (like ACLs), and modby fields. This is also the step
+where the modby/modwith/modtime fields are set by queries that change
+the database.
+\end{description}
+
+{\tt mr\_process\_query} is the heart of the server. First it catches
+the special queries {\bf \_list\_queries} and {\bf \_help}. If the
+query is not one of those, it looks it up in the query dispatch table.
+Next, the query is validated with {\tt mr\_verify\_query}. This takes
+care of the validation and access checking steps. If the validation
+passes, {\tt mr\_process\_query} will perform any specified setup
+routine. Then it saves the `before' copy of the data for use in
+incremental updates. Next, the actual query is performed, followed by
+the followup routine if specified. Then, the `after' copy of the data
+is saved for possible incremental updates. If the server modified the
+database and everything was successful, it commits the transaction,
+begins any necessary incremental updates and logs it all in the
+journal. If the query was not successful, it rolls back the
+transaction.
+
+An access operation is like an actual query, except that it only does
+the query validation.
+
+Incremental updates are handled as a queue of pairs of `before' and
+`after' argument vectors. Each query saves these vectors as it
+executes, and if the transaction is committed, then
+incremental\_update() is called begin any updates. A given database
+change only starts an incremental update if the `incremental' table in
+the database indicates that a service has interest in that table and
+the program /moira/bin//{\it service}.{\bf incr} exists.
+
+\subsection{Logging}
+
+The server itself logs to standard output.  However, it is normally
+started with the {\tt startmoira} program, which will direct the logs into
+{\tt /moira/moira.log}.
+
+\section{Source Organization}
+
+Most of the server sources are in the server\footnote{All paths are
+given as relative to the root of the Moira source tree.} subdirectory.
+The {\bf mr\_*.c} files deal with the operations of the server that
+don't directly interact with the DBMS:
+
+\begin{description}
+\item[mr\_main.c]	Initialization and top-level dispatch routines.
+
+\item[mr\_scall.c]	Deals with most of the protocol processing
+
+\item[mr\_sauth.c]	Performs the {\bf auth} and {\bf proxy} operations.
+
+\item[mr\_shutdown.c]	Catches the no-longer-supported shutdown operation.
+
+\item[mr\_util.c]	Various utility routines needed within the server.
+\end{description}
+
+The {\bf q*.pc} and {\bf q*.c} files implement the queries, and should be
+the only part of the server that depends on the DBMS.
+
+\begin{description}
+\item[qrtn.qc]		This has the routines to interpret the query
+			dispatch table and execute queries.  It also
+			handles opening and closing the database, and
+			catching DBMS errors.
+
+\item[qsubs.c]		This has subroutines needed by the query
+			software which are in pure C code without
+			embedded SQL.
+
+\item[queries2.c]	This is the dispatch table for version 2 of
+			the protocol. The structures used here are
+			defined in {\bf query.h}.
+
+\item[qvalidate.pc]	Generic query validation routines, to check
+			the arguments of queries.
+
+\item[qaccess.pc]	This contains the routines used to check
+			access to specific queries.
+
+\item[qsetup.pc]	Setup routines for specific queries.
+
+\item[qsupport.pc]	Code to implement complicated queries that
+			can't be done in a single line of SQL.
+
+\item[qfollow.pc]	Followup routines for queries, to set the
+			modtime fields, reformat data, etc.
+
+\item[increment.pc]	Routines to handle incremental updates.  This
+			touches the database so that it can capture
+			the before and after images of the data.
+
+\item[cache.pc]		The name-to-id cache used to cut down on
+			database accesses.
+\end{description}
+
+The server also links against the moira library for some common
+routines, the zephyr library for error notices, the Kerberos and DES
+libraries for authentication, the com\_err library for error reporting
+and logging, and lots of other libraries needed by the DBMS.
+
+
+\section{Query Dispatch Table}
+
+The query table consists of an array of records, one for each query.
+
+\begin{verbatim}
+/* Query Definition Structure */
+
+struct query
+{
+    char *name;			/* query name */
+    char *shortname;		/* abbreviated query name */
+    int  version;		/* query version */
+    enum query_type type;	/* query type */
+    char *rvar;			/* range variable */
+    enum tables rtable;		/* range table */
+    char *tlist;		/* target list */
+    char **fields;		/* input and output field names */
+    int  vcnt;			/* variable count */
+    char *qual;			/* format string for `where' clause */
+    int  argc;			/* number of args for qualifier */
+    char *sort;			/* fields to sort on */
+    struct validate *validate;	/* validation support */
+};
+\end{verbatim}
+
+The {\it name\/} is the full name of the query, as in
+`get\_user\_account\_by\_login'.
+
+The {\it shortname\/} is a 4 character abbreviation of the name.  It is
+important that this be exactly 4 characters long, and must be unique
+among all of the queries in the table.
+
+The {\it version\/} indicates the version number of the query.
+Multiple versions of a query can be defined, but it is important that
+the appear in the Queries table in order from oldest to newest.
+
+Note that versions behave like timestamps, in that the ``highest-known
+query version'' is a global value. When a query interface is changed,
+it should get a new version number which is 1 larger than the highest
+existing query version number, {\em not\/} necessarily a version
+number which is 1 larger than its own previous version number.
+
+The {\it type\/} is one of:
+
+\begin{verbatim}
+/* Query Types */
+enum query_type {RETRIEVE, UPDATE, APPEND, DELETE, SPECIAL};
+\end{verbatim}
+
+The {\it rvar\/} specifies the range variable to be used in this
+query, in a range statement in conjunction with rtable. It should be
+the same variable (if any) used in the {\it tlist}, if any. If the
+query is implemented with a special routine (in {\tt qsupport.pc}),
+this field should be left blank.
+
+The {\it rtable\/} specifies the table to be operated on in this
+query. For special queries, this field may be left blank. If this is
+filled in, the statistics for that table will be updated when the
+query is processed.
+
+{\it tlist\/} is the target list to be used in the query about to be
+executed. This specifies the variables to be retrieved or stored
+during the query. This is used to contruct the SQL query. Queries
+implemented with C routines can have this left blank.
+
+{\it fields\/} lists input and output field names displayed by the
+{\it \_help\/} query. Help is the only thing they are used for.
+
+The variable count ({\it vcnt\/}) is the total number of arguments for an
+append, update or delete, or the number of return values for a
+retrieve.
+
+{\it qual\/} is the format string for the qualifier. This will be used
+in the where clause of the SQL query, and should have \%s and/or \%d
+in it to insert values from the query arguments. (Note that \%d can
+only be used when a query setup or validation routine has replaced one
+of the original string arguments with a number.)
+
+{\it argc\/} is the number of args that will be used in the qualifier, as
+described above.
+
+\bigskip
+
+\noindent Validation support: if {\it validate\/} is non-null, it
+points to a validation structure:
+
+\begin{verbatim}
+/* Query Validation Structure */
+struct validate
+{
+    /* object validation (e.g., user, filesys, type) */
+    struct valobj *valobj;	/* object validation descriptors */
+    int objcnt;			/* size of array */
+    /* row validation: retrieve (exists=any(rvar.field where qual)) */
+    char *field;		/* field to check for */
+    char *qual;			/* format string for `where' clause */
+    int  argc;			/* number of args used in qual */
+    /* values field containing current max object id */
+    char *object_id;
+    /* routine to verify access permission on objects */
+    int (*acs_rtn)(struct query *q, char *Argv[], client *cl);
+    /* pre-processing routine (var setup only) */
+    int (*pre_rtn)(struct query *q, char *Argv[], client *cl);
+    /* post-processing routine */
+    int (*post_rtn)();
+};
+\end{verbatim}
+
+{\it valobj\/} is a pointer to an array of validation objects. (See
+below.) There will be one entry in this array for each argument that
+needs to be validated. This pointer may be NULL if {\it objcnt\/} is
+zero.
+
+{\it objcnt\/} is the count of entries in the valobj array. (Many {\it
+valobj\/}s are used by multiple validation structures, but with
+different {\it objcnt\/}s.)
+
+{\it field}, {\it qual}, and {\it argc\/} are used together for row
+validation (verifying that a specified row already exists in the
+table). {\it field\/} names the field to look for, {\it qual\/} is a
+format string for the `where' clause of the query that does the row
+validation. It is like the {\it qual\/} field in the main dispatch
+table. {\it argc\/} is the count of arguments used in the qualifier.
+(You must use the arguments from the query in order.)
+
+{\it object\_id\/} is the name of the ID field in the record being updated.
+It has two purposes:  it is used to allocate new IDs automatically
+for appends, and it is used to find the proper row to set the modtime
+information after an append or update.
+
+The {\it acs\_rtn\/} is the access routine. This is called if the
+client is not on the query ACL to determine if they will be allowed to
+perform the query. (Clients on the query ACL are permitted to perform
+the query without the {\it acs\_rtn\/} being called.)
+
+The {\it pre\_rtn\/} is the query setup routine. If non-NULL, this
+will be called after the validation and before performing the actual
+query.
+
+The {\it post\_rtn\/} is the query followup routine or, for queries
+with no {\it rvar\/}, the actual query routine. Currently, there are
+two different kinds of {\it post\_rtn\/}s, called by {\it
+mr\_process\_query} with different arguments in different
+circumstances. This will probably be changing in a later release of
+Moira.
+
+\bigskip
+
+\noindent Validation objects are defined as follows:
+
+\begin{verbatim}
+/* Validated Object Types */
+enum vo_type {V_NAME, V_ID, V_TYPE, V_TYPEDATA, V_RENAME, V_CHAR,
+	      V_LEN, V_NUM};
+
+/* Validated Object Definition */
+struct valobj
+{
+  enum vo_type type;
+  int index;			/* index of object to validate */
+  enum tables table;     	/* table containing object */
+  char *namefield;		/* table's fieldname for object */
+  char *idfield;		/* table's corresponding id field (if any) */
+  int error;
+};
+\end{verbatim}
+
+{\it type\/} gives the type of validation to be performed. {\it
+index\/} tells which query argument should be checked. {\it table},
+{\it namefield}, and {\it idfield\/} are used to identify a table and
+a name field, and ID field within that table. {\it error\/} gives an
+error to return if validation fails.
+
+The validation types are:
+
+\begin{description}
+\item[V\_NAME]---Used by {\tt APPEND} queris to verify that the
+indicated argument does not have the same name (as indicated by the
+{\it namefield\/}) as any other existing row. Also checks that the
+name fits in the given table field.
+
+\item[V\_ID]---Verifies that the named argument exists in the table,
+and replaces the char * pointing to the name in the query argv with
+an int * pointing to its ID (meaning the query {\it tlist\/} will use
+a {\tt \%d} to refer to it).
+
+\item[V\_TYPE]---Verifies that the argument is one of the values in the
+{\it alias\/} table with name indicated by {\it namefield} and type
+``TYPE''. (E.g., if the {\it namefield} contains the string
+``boolean'', the argument must be one of ``TRUE'', ``FALSE'', and
+``DONTCARE''.)
+
+\item[V\_TYPEDATA]---Must follow a {\bf V\_TYPE} validation. Checks
+that the argument matches the kind of data indicated for the given
+type in the {\it alias\/} table, and replaces it with an ID, as with
+{\bf V\_ID} above. For example, if the {\bf V\_TYPE} was ``member'',
+and the argument was ``LIST'', the {\bf V\_TYPEDATA} must be a list
+(the value of the {\it alias} entry with name ``LIST'' and type
+``TYPEDATA''), and the validation will translate the list name into a
+{\it list\_id}.
+
+\item[V\_RENAME]---Like {\bf V\_NAME}, but for {\tt UPDATE} queries.
+Checks that the new name is either unique, or the same as the old
+name. (It assumes the old name is the query argument immediately
+before the new name.)
+
+\item[V\_CHAR]---Verifies that the argument consists only of
+``reasonable'' characters, and fits in the given table field.
+
+\item[V\_LEN]---Verifies only that the argument fits into the given
+table field.
+
+\item[V\_INT]---Verifies that the argument is a number.
+
+\end{description}
+
+\end{document}

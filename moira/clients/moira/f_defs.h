@@ -1,4 +1,4 @@
-/* $Id: f_defs.h 4174 2014-07-21 22:13:13Z zacheiss $
+/* $Id$
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.

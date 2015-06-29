@@ -1,4 +1,4 @@
-/* $Id: sync.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 #include <ctype.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/afssync/sync.pc $ $Id: sync.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 EXEC SQL INCLUDE sqlca;
 

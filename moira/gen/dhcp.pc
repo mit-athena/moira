@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc 4051 2011-09-08 18:46:37Z zacheiss $
+/* $Id$
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/dhcp.pc $ $Id: dhcp.pc 4051 2011-09-08 18:46:37Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";

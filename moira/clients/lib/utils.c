@@ -1,4 +1,4 @@
-/* $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Random client utilities.
  *
@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/lib/utils.c $ $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami;
 extern krb5_context context;

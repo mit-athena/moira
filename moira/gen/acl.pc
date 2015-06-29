@@ -1,4 +1,4 @@
-/* $Id: acl.pc 4171 2014-07-09 19:23:39Z zacheiss $
+/* $Id$
  *
  * This generates acl files for various servers.
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/acl.pc $ $Id: acl.pc 4171 2014-07-09 19:23:39Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "acl.gen";
 char *db = "moira/moira";

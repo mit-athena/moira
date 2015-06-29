@@ -1,4 +1,4 @@
-/* $Id: afs.c 4143 2013-09-20 23:37:06Z zacheiss $
+/* $Id$
  *
  * Do AFS incremental updates
  *
@@ -43,7 +43,7 @@
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 4143 2013-09-20 23:37:06Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami;
 

@@ -1,0 +1,41 @@
+Building Moira:
+
+0) Ensure this repo is up to date and you're on the master branch.
+
+1) Add the Moira repo as a remote (if it's not already):
+
+   git add remote upstream git@github.mit.edu:ops/moira.git
+
+   Clobber the push URL to avoid doing something dumb:
+
+   git remote set-url --push upstream file:///dev/null
+
+2) Fetch master and the tags from upstream:
+
+   git fetch upstream master
+   git fetch upstream <upstream_tag_name_here>
+
+3) Get the new changes:
+
+   cd <root_level_of_moira_submodule>
+   git checkout <upstream_tag_name_here> -- .
+
+4) Make sure they look sane and check them in.
+
+5) Delete the upstream tag.  This step is only necessary
+   because upstream is using the same tag names we are.
+
+   git tag -d <upstream_tag_name_here>
+
+6) Tag as you would any non-native package.
+
+7) Checkout debian and merge master into it, ensuring you pass --no-ff
+   to force a merge commit.
+
+8) Make any packaging changes necessary, and update the changelog.
+
+9) Build as you would any non-native package.
+
+[...]
+
+32768) Update these directions if anything has changed.

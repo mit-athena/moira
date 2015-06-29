@@ -1,3 +1,10 @@
+debathena-moira (4.0.0.2-0debathena1) unstable; urgency=low
+
+  * Release 4.0.0.2
+  * Update patches for new directory layout
+
+ -- Jonathan Reed <jdreed@mit.edu>  Mon, 29 Jun 2015 08:53:44 -0400
+
 debathena-moira (4.0.0.1.0-0debathena1) unstable; urgency=low
 
   * No-change rebuild to bump version number

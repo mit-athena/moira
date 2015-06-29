@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc 4113 2013-05-28 14:29:10Z zacheiss $
+/* $Id$
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -39,7 +39,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/reg_svr.pc $ $Id: reg_svr.pc 4113 2013-05-28 14:29:10Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami, *hostname, *shorthostname;
 

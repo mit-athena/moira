@@ -1,4 +1,4 @@
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/Doc/Makefile $ $Id: Makefile 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$
 
 all: internal.PS
 

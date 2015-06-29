@@ -1,4 +1,4 @@
-/* $Id: queries2.c 4175 2014-07-22 14:19:11Z zacheiss $
+/* $Id$
  *
  * This file defines the query dispatch table
  *
@@ -13,7 +13,7 @@
 
 #include "mr_et.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/queries2.c $ $Id: queries2.c 4175 2014-07-22 14:19:11Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they

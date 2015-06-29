@@ -1,4 +1,4 @@
-/* $Id: cluster.c 4152 2013-12-11 14:01:40Z zacheiss $
+/* $Id$
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/cluster.c $ $Id: cluster.c 4152 2013-12-11 14:01:40Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void PrintAliases(char **info);
 void PrintTTL(char **info);

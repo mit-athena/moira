@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc 4179 2014-09-09 14:50:45Z zacheiss $
+/* $Id$
  *
  * Check access to queries
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qaccess.pc $ $Id: qaccess.pc 4179 2014-09-09 14:50:45Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;

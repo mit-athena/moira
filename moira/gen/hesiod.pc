@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc 4171 2014-07-09 19:23:39Z zacheiss $
+/* $Id$
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.pc $ $Id: hesiod.pc 4171 2014-07-09 19:23:39Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #ifndef HTYPE
 #define HTYPE "TXT"

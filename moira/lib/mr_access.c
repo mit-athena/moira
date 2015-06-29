@@ -1,4 +1,4 @@
-/* $Id: mr_access.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Check access to a Moira query
  *
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/lib/mr_access.c $ $Id: mr_access.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /*
  * Check access to a named query.

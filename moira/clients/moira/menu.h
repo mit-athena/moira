@@ -1,4 +1,4 @@
-/* $Id: menu.h 3956 2010-01-05 20:56:56Z zacheiss $ */
+/* $Id$ */
 
 #define MAX_ARGC 16		/* Maximum argument count per line */
 #define MAX_ARGLEN 128		/* Maximum length of an argument */

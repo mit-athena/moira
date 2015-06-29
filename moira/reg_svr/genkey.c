@@ -1,4 +1,4 @@
-/* $Id: genkey.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Utility program to generate a public/private key pair
  *
@@ -25,7 +25,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/genkey.c $ $Id: genkey.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void printhex(FILE *out, unsigned char *buf, int len);
 

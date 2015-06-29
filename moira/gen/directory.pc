@@ -1,4 +1,4 @@
-/* $Id: directory.pc 4171 2014-07-09 19:23:39Z zacheiss $
+/* $Id$
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/directory.pc $ $Id: directory.pc 4171 2014-07-09 19:23:39Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "directory.gen";
 char *db = "moira/moira";

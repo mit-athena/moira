@@ -1,4 +1,4 @@
-/* $Id: menu.c 4102 2013-03-06 22:58:55Z zacheiss $
+/* $Id$
  *
  * Generic menu system module.
  *
@@ -36,7 +36,7 @@
 typedef int mode_t;
 #endif /* _WIN32 */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/menu.c $ $Id: menu.c 4102 2013-03-06 22:58:55Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #ifdef MAX
 #undef MAX

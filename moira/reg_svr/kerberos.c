@@ -1,4 +1,4 @@
-/* $Id: kerberos.c 4091 2013-01-18 15:35:41Z zacheiss $
+/* $Id$
  *
  * Kerberos routines for registration server
  *
@@ -38,7 +38,7 @@
 krb5_context context;
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/kerberos.c $ $Id: kerberos.c 4091 2013-01-18 15:35:41Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *hostname, *shorthostname;
 

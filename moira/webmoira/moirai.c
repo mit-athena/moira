@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/webmoira/moirai.c $ $Id: moirai.c 3956 2010-01-05 20:56:56Z zacheiss $ */
+/* $HeadURL$ $Id$ */
 #include "mit_moira_MoiraConnectInternal.h"
 #include <moira.h>
 #include <mr_et.h>

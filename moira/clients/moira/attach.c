@@ -1,4 +1,4 @@
-/* $Id: attach.c 4145 2013-09-25 00:20:53Z zacheiss $
+/* $Id$
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/attach.c $ $Id: attach.c 4145 2013-09-25 00:20:53Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);

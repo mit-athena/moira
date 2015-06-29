@@ -1,4 +1,4 @@
-/* $Id: genacl.pc 4092 2013-01-18 15:36:33Z zacheiss $
+/* $Id$
  *
  * Utility functions for outputting ACLs
  *
@@ -25,7 +25,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/genacl.pc $ $Id: genacl.pc 4092 2013-01-18 15:36:33Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 static char *defaultrealm = NULL;
 

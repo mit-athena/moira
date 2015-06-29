@@ -1,4 +1,4 @@
-/* $Id: words.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * 6 Magic Words generation
  *
@@ -24,7 +24,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/reg_svr/words.c $ $Id: words.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /* One-Time Password dictionary, as specified by RFC 1938 */
 

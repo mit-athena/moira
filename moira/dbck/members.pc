@@ -1,4 +1,4 @@
-/* $Id: members.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  */
 
@@ -7,7 +7,7 @@
 #include <string.h>
 #include <moira.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dbck/members.pc $ $Id: members.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #define FIXERRORS
 

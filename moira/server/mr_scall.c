@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Do RPC
  *
@@ -25,7 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/mr_scall.c $ $Id: mr_scall.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern int nclients;
 extern client **clients;

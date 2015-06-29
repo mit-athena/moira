@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc 4161 2014-04-24 13:44:03Z zacheiss $
+/* $Id$
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/server/qsetup.pc $ $Id: qsetup.pc 4161 2014-04-24 13:44:03Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;

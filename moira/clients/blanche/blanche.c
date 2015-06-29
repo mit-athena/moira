@@ -1,4 +1,4 @@
-/* $Id: blanche.c 4160 2014-04-22 15:51:03Z zacheiss $
+/* $Id$
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/blanche/blanche.c $ $Id: blanche.c 4160 2014-04-22 15:51:03Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))

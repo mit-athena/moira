@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/hesiod.sh $ $Id: hesiod.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

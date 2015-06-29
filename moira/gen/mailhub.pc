@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc 3976 2010-02-09 19:30:24Z zacheiss $
+/* $Id$
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/mailhub.pc $ $Id: mailhub.pc 3976 2010-02-09 19:30:24Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";

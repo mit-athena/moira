@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: nagios-cluster.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id$
 
 # The following exit codes are defined and MUST BE CONSISTENT with
 # error codes the library uses:

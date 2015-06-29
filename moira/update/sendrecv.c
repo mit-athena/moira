@@ -1,4 +1,4 @@
-/* $Id: sendrecv.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * socket layer for update_server
  *
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/sendrecv.c $ $Id: sendrecv.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #define putlong(cp, l) { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; }
 #define getlong(cp, l) l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]

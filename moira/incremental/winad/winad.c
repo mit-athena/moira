@@ -1,4 +1,4 @@
-/* $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/winad/winad.c $ $Id: winad.c 3956 2010-01-05 20:56:56Z zacheiss $ */
+/* $HeadURL$ $Id$ */
 /* winad.incr arguments example
  *
  * arguments when moira creates the account - ignored by winad.incr since the 

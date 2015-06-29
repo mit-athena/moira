@@ -1,4 +1,4 @@
-/* $Id: fix.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * User interface routines for dbck (Moira database consistency checker)
  *
@@ -16,7 +16,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/dbck/fix.pc $ $Id: fix.pc 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *_table;

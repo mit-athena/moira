@@ -1,4 +1,4 @@
-/* $Id: mrtest.c 4077 2012-05-07 16:53:10Z zacheiss $
+/* $Id$
  *
  * Bare-bones Moira client
  *
@@ -43,7 +43,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/mrtest/mrtest.c $ $Id: mrtest.c 4077 2012-05-07 16:53:10Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;

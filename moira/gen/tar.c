@@ -1,4 +1,4 @@
-/* $Id: tar.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Utility routines for writing tar files.
  *
@@ -17,7 +17,7 @@
 
 #include "util.h"
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/tar.c $ $Id: tar.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 static char tar_zeros[512];
 

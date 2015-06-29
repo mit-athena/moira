@@ -1,4 +1,4 @@
-/* $Id: moira_site.h 4174 2014-07-21 22:13:13Z zacheiss $
+/* $Id$
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines

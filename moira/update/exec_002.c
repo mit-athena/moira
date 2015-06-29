@@ -1,4 +1,4 @@
-/* $Id: exec_002.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/exec_002.c $ $Id: exec_002.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void exec_002(int conn, char *str)
 {

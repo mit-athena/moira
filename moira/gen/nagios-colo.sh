@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: nagios-colo.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id$
 
 file=/var/nagios/etc/moira-colo-hosts.cfg
 

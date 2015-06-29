@@ -1,4 +1,4 @@
-/* $Id: common.pc 4184 2015-02-06 02:10:18Z zacheiss $
+/* $Id$
  *
  * Staff/Student load common code
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/common.pc $ $Id: common.pc 4184 2015-02-06 02:10:18Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;

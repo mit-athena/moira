@@ -1,4 +1,4 @@
-/* $Id: staff.pc 4162 2014-05-27 18:33:33Z zacheiss $
+/* $Id$
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/regtape/staff.pc $ $Id: staff.pc 4162 2014-05-27 18:33:33Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /* File format is:
  *

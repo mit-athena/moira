@@ -1,4 +1,4 @@
-#	$Id: db2rest.awk 4140 2013-09-06 00:04:24Z zacheiss $
+#	$Id$
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.

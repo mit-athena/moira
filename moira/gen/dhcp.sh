@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: dhcp.sh 4058 2011-11-16 21:32:41Z zacheiss $
+# $Id$
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1

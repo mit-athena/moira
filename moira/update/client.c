@@ -1,4 +1,4 @@
-/* $Id: client.c 4077 2012-05-07 16:53:10Z zacheiss $
+/* $Id$
  *
  * This code handles the actual distribution of data files
  * to servers in the Moira server-update program.
@@ -23,7 +23,7 @@
 #endif
 #include <krb5.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/update/client.c $ $Id: client.c 4077 2012-05-07 16:53:10Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 #ifdef HAVE_KRB4
 extern des_cblock session;

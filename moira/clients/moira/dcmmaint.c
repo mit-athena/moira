@@ -1,4 +1,4 @@
-/* $Id: dcmmaint.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * DCM-related functions for Moira client
  *
@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/dcmmaint.c $ $Id: dcmmaint.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 extern char *whoami;
 static char buf[BUFSIZ];

@@ -1,6 +1,6 @@
 #!/bin/sh
 # 
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/ip-billing.sh $ $Id: ip-billing.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$
 
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
 

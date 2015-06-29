@@ -9,7 +9,7 @@
 
 static const char copyright[] =
     "Copyright 1987,1988 by Student Information Processing Board, Massachusetts Institute of Technology";
-static const char rcsid_et[] = "$Id: et_name.c 3956 2010-01-05 20:56:56Z zacheiss $";
+static const char rcsid_et[] = "$Id$";
 
 static const char char_set[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";

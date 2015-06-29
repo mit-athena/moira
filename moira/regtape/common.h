@@ -1,4 +1,4 @@
-/* $Id: common.h 4162 2014-05-27 18:33:33Z zacheiss $
+/* $Id$
  *
  * Copyright (C) 1987-1999 by the Massachusetts Institute of Technology
  *

@@ -1,4 +1,4 @@
-/* $Id: dump_db.h 3956 2010-01-05 20:56:56Z zacheiss $ */
+/* $Id$ */
 
 #include <stdio.h>
 #include <moira.h>

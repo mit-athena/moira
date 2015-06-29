@@ -1,4 +1,4 @@
-/* $Id: confluence.pc 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  * (c) Copyright 2007 by the Massachusetts Institute of Technology.
  */

@@ -85,7 +85,7 @@ description	:	QUOTED_STRING
 #include <sys/time.h>
 #include "error_table.h"
 
-static const char rcsid[] = "$Id: error_table.y 3956 2010-01-05 20:56:56Z zacheiss $";
+static const char rcsid[] = "$Id$";
 
 #include "et_lex.lex.c"
 

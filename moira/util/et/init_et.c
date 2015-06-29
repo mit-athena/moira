@@ -1,4 +1,4 @@
-/* $Id: init_et.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  * 
  * Copyright 1986, 1987, 1988 by MIT Information Systems and
  *	the MIT Student Information Processing Board.
@@ -12,7 +12,7 @@
 #include "error_table.h"
 #include "mit-sipb-copyright.h"
 
-static const char rcsid[] = "$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/util/et/init_et.c $ $Id: init_et.c 3956 2010-01-05 20:56:56Z zacheiss $";
+static const char rcsid[] = "$HeadURL$ $Id$";
 
 struct foobar {
     struct et_list etl;

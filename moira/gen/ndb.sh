@@ -23,4 +23,4 @@ fi
 rm -f $0
 exit 0 
 
-# $HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/gen/ndb.sh $ $Id: ndb.sh 3956 2010-01-05 20:56:56Z zacheiss $
+# $HeadURL$ $Id$

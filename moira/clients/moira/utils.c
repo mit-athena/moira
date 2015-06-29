@@ -1,4 +1,4 @@
-/* $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -34,7 +34,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/utils.c $ $Id: utils.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue

@@ -1,4 +1,4 @@
-/* $Id: acl.c 3956 2010-01-05 20:56:56Z zacheiss $
+/* $Id$
  *
  *	This is the file acl.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/clients/moira/acl.c $ $Id: acl.c 3956 2010-01-05 20:56:56Z zacheiss $");
+RCSID("$HeadURL$ $Id$");
 
 void RealDeleteACL(char **info, Bool one_item);
 void ChangeACL(char **info, Bool one_item);

@@ -1,0 +1,132 @@
+\documentclass{article}
+\usepackage{fullpage}
+\begin{document}
+\begin{center}
+{\Large The DCM}
+\end{center}
+
+The Data Control Manager, or DCM, is the part of Moira that keeps all
+of the system servers updated with current data from the Moira
+database. It is run by the cron daemon at some time when the database
+is not busy. Its operation may be controlled external to Moira by the
+presence of {\it /etc/nodcm}, or through Moira by the value of {\bf
+dcm\_enable} in the database.
+
+\section{Options}
+
+In normal operation, the DCM will be invoked by {\it startdcm}, which
+redirects all logging to {\it /moira/dcm.log}. When invoked by {\it
+startdcm}, the DCM checks all services.
+
+Alternately, services can be specified on the command line, in which
+case, only those services will be checked.
+
+\section{Operation}
+
+If started with no services specified on the command line, the DCM
+first checks for the existence of {\it /etc/nodcm}; if this file
+exists, it exits. Next it connects to the database and retrieves the
+value of {\bf dcm\_enable} from the values relation of the database; if
+this value is zero, it will also exit.
+
+It then scans each of the services which:
+
+\begin{itemize}
+\item are {\it enable\/}d
+\item do not have {\it hard\_error\/}s
+\item the {\it update\_interval\/} is non-zero
+\item {\it /moirabin/{\bf service}.gen\/} exists
+\end{itemize}
+
+It first compares {\it dfcheck\/} and the {\it update\_interval\/}
+against the current time. If it is time for an update, it will run
+{\it /moira/bin/{\bf service}.gen}, instructing it to produce {\it
+/moira/dcm/{\bf service}.out}. If this finishes without error, {\it
+dfgen} and {\it dfcheck} are updated to the current time. If it exits
+indicating that nothing has changed, only {\it dfcheck} is updated to
+the current time. If there is a soft error (an expected error that
+might go away if we try again) then the {\it error\_message} is
+updated to reflect this, and nothing else is changed. If there is a
+hard error, {\it hard\_error} and {\it error\_message} are set, and a
+Zephyr message is sent to class {\bf MOIRA} instance {\bf DCM}.
+
+For each of the services which pass the 4 checks above, regardless of
+the result of attempting to build data files, or even if it was not
+time to build data files, the hosts will be scanned. The DCM forks off
+a separate process to deal with scanning the hosts and propagating the
+data to them. (The original DCM process continues scanning the
+services.) The hosts are scanned to find those which:
+
+\begin{itemize}
+\item are {\it enable\/}d
+
+\item do not have {\it hosterror\/}s
+
+\item have not been successfully updated since the data files were generated
+\end{itemize}
+
+For each of these hosts, an update is attempted. First, the data files
+are sent to all of the updatable hosts. If it fails to update any
+host, it sets the {\it hosterrmsg\/} and {\it ltt\/} (last time tried)
+for that host, plus {\it hosterror\/} if a hard error occurred. If the
+service is of {\it type\/} {\bf UNIQUE} or {\bf DISTRIB}uted, the DCM
+will then continue trying to send the data files to the remaining
+hosts. If it is of {\it type\/} {\bf REPLICAT}ed, it will stop there.
+
+After sucessfully sending the data files to all of the hosts (or to
+some subset for a {\bf UNIQUE} or {\bf DISTRIB}uted service), the DCM
+will attempt to send and run the service {\it script\/} on each host
+that received the new data. If it succeeds, it will update the {\it
+lts\/} (last time successful) flag for the host, and proceed to the
+next. If it fails, it will update {\it hosterrmsg\/} (and, for a hard
+failure, it will set {\it hosterror\/} and send a Zephyr warning).
+
+If an error occurs at any point when updating hosts for a {\bf
+REPLICAT}ed service, the {\it hosterrmsg\/} and {\it hosterror\/}
+values are copied to the service's {\it errmsg\/} and {\it
+harderror}, so that the service will be disabled until the error
+condition is fixed.
+
+
+\section{Files}
+
+The source is primarily in {\it dcm/dcm.pc}. The routines to perform a
+server update are in {\it update/client.c} and associated files in
+that directory.
+
+
+\section{Data File Generators}
+
+There must be one of these for each service that is supported. Each
+generator is an executable program stored in {\it /moira/bin/{\bf
+service}.gen}, where {\bf service} is the service name in lower case.
+For {\bf UNIQUE} and {\bf REPLICAT}ed services, the DCM will invoke
+the generator with one argument, the name of the output file it should
+produce. Most of them will write to standard output if no output file
+is specified, although this is not required. For {\bf DISTRIB}uted
+services, the argument is ignored: they always output files to the
+directory {\it /moira/dcm/{\bf service}\/}: one file for each server
+to be updated.
+
+The generator exit status should be a value from {\em
+$\langle$mr\_et.h$\rangle$}. It must be a value from this set, because
+only the least significant 8 bits of the return code are available to
+the parent process, so the com\_err table identifier is lost. In
+particular, if nothing has changed and the files do not need to be
+re-generated, MR\_NO\_CHANGE is returned.
+
+Each generator is different, although there are some conventions.
+Most of them check the mod-time on the target file, and compare this
+with the mod-times in the tblstats relation in the database for each
+table that affects that file.  This determines if the data files need
+to be regenerated.  Some of the generators produce a tar file
+containing several other files.  These have their working directory
+hard-coded in, usually {\it /moira/dcm/{\bf service}}.  Each file that is
+produced is written to a different name (usually the desired name with
+a twiddle appended), then a rename is performed if the file is
+produced successfully.  In this way, if part of the generation fails,
+whatever is left should be a set of complete files.
+
+The source to the generators lives in the {\it gen\/} directory.
+
+\end{document}

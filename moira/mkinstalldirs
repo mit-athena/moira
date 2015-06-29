@@ -4,7 +4,7 @@
 # Created: 1993-05-16
 # Public domain
 
-# $Id: mkinstalldirs 3956 2010-01-05 20:56:56Z zacheiss $
+# $Id$
 
 errstatus=0
 

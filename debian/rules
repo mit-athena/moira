@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 %:
-	dh $@
+	dh -Dmoira $@
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
@@ -25,4 +25,4 @@ override_dh_install:
 # Why does distclean not deal with these two makefiles?
 override_dh_clean:
 	dh_clean
-	rm -f util/rsaref/Makefile incremental/kerberos/Makefile
+	rm -f moira/util/rsaref/Makefile moira/incremental/kerberos/Makefile

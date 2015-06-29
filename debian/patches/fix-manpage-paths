@@ -1,7 +1,7 @@
-Index: moira/man/update_server.8
+Index: moira/moira/man/update_server.8
 ===================================================================
---- moira.orig/man/update_server.8	2010-01-04 21:12:54.000000000 -0500
-+++ moira/man/update_server.8	2010-01-04 22:03:58.000000000 -0500
+--- moira.orig/moira/man/update_server.8	2010-01-04 21:12:54.000000000 -0500
++++ moira/moira/man/update_server.8	2010-01-04 22:03:58.000000000 -0500
 @@ -14,7 +14,7 @@
  it is needed.
  .SH OPTIONS
@@ -21,10 +21,10 @@ Index: moira/man/update_server.8
 +/etc/srvtab \- It must be able to get rcmd Kerberos tickets.
  .SH "SEE ALSO"
  The Project Athena Technical Plan section on Moira.
-Index: moira/man/moira.3
+Index: moira/moira/man/moira.3
 ===================================================================
---- moira.orig/man/moira.3	2010-01-04 22:04:05.000000000 -0500
-+++ moira/man/moira.3	2010-01-04 22:04:20.000000000 -0500
+--- moira.orig/moira/man/moira.3	2010-01-04 22:04:05.000000000 -0500
++++ moira/moira/man/moira.3	2010-01-04 22:04:20.000000000 -0500
 @@ -239,9 +239,9 @@
  except that it uses strcmp on the elements rather than comparing the
  addresses directly.

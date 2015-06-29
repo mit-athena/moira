@@ -1,0 +1,73 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+AFS_CPPFLAGS=@AFS_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+AFS_PRO_C_INCLUDES=@AFS_PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES) $(AFS_PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+AFS_LIBS=@AFS_LIBS@
+AFS_DIR=@AFS_DIR@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+BSDCOMPAT_PROC_INCLUDE=INCLUDE=$(SRCTOP)/util/bsd-compat
+BSDCOMPAT_INCLUDE=-I$(SRCTOP)/util/bsd-compat
+BSDCOMPAT_LIB=$(BUILDTOP)/util/bsd-compat/bsdcompat.a
+
+SYNC_OBJS=sync.lo ptutils.lo utils.lo ubik.lo
+UTIL_OBJS=pt_util.lo ptutils.lo utils.lo ubik.lo
+
+CFILES=sync.c
+
+TARGET=afssync pt_util
+
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) $(BSDCOMPAT_PROC_INCLUDE) INAME=$< ONAME=$@
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $(BSDCOMPAT_INCLUDE) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(SYNC_OBJS) $(UTIL_OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) afssync $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) pt_util $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
+
+afssync: $(SYNC_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(SQL_LIBS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil
+
+pt_util: $(UTIL_OBJS) $(MR_LIBDEP) $(BSDCOMPAT_LIB)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) $(BSDCOMPAT_LIB) -llwp -lprot -lcom_err -lafsutil

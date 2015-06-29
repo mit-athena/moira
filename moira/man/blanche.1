@@ -1,0 +1,175 @@
+.TH BLANCHE 1 "31 Jul 2012" "Project Athena"
+\" RCSID: $HeadURL$ $Id$
+.SH NAME
+blanche \- examine and modify memberships in Moira lists
+.SH SYNOPSIS
+.B blanche listname [options]
+.SH DESCRIPTION
+.I Blanche
+is a tool for maintaining the membership of Moira lists.  It is more
+limited than the menu-oriented listmaint, but has a more traditional
+unix user interface which makes it easier to use in scripts.  It can
+also read a set of list members from a file and synchronize the list
+in Moira to that file.
+
+Whenever a member is specified, it may be specified explicitly, as
+user:username, list:listname, string:string_text, or
+kerberos:principal_name; or the type may
+be left off if the member name is non ambiguous.  A member having
+punctuation characters (such as at-sign) in it is immediately assumed
+to be a string.  Otherwise,
+.B blanche
+will try first as a user, and if that fails will try the member as a
+list, and finally fall back to string if both of those fail.
+
+The default output mode is similar, in that usernames are displayed
+without any identifying type, lists are always displayed as
+list:listname, and strings will only be labeled as a string if they do
+not have any punctuation characters in them.  Kerberos members will
+always have the type displayed.
+.SH OPTIONS
+.IP \fB-add\ \fImember\ \fRor\ \fB-a\ \fImember\fR
+This will add the specified member to the target list.  This option
+may be specified multiple times with different members on the same
+command line.
+.IP \fB-delete\ \fImember\ \fRor\ \fB-d\ \fImember\fR
+This will delete the specified member from the target list.  This
+option may be specified multiple times with different members on the
+same command line.
+.IP \fB-file\ \fIfilename\ \fRor\ \fB-f\ \fIfilename\fR
+This will read a list of members from the named file, and make those
+members be the membership of the target list.  It will do this by
+extracting the current membership of the target list from Moira, then
+diff these two sets of members, and determine who has to be added and
+deleted from the list so it will match the contents of the file.
+
+The file contains one member per line.  It may have blank lines.
+Anything following a semicolon is considered a comment.  If the 
+.I filename
+is "-",
+.B blanche
+will read from standard input.
+.IP \fB-info\ \fRor\ \fB-i\fR
+Display other information about the target list besides the
+membership.  This includes the description, flags, maillist and group
+status, owner, and last modification.
+.IP \fB-addlist\ \fIfilename\ \fRor\ \fB-al\ \fIfilename\fR
+This will read a list of members from the named file, and add those
+members to the target list.  The file format is specified above.
+.IP \fB-deletelist\ \fIfilename\ \fRor\ \fB-dl\ \fIfilename\fR
+This will read a list of members from the named file, and delete those
+members from the target list.  The file format is specified above.
+.IP \fB-members\ \fRor\ \fB-m\fR
+Display the membership of the target list.  This is the default if no
+other options are specified.
+.IP \fB-users\ \fRor\ \fB-u\fR
+Only display list members that are users (not lists or strings).  If
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
+of them will be displayed.
+.IP \fB-lists\ \fRor\ \fB-l\fR
+Only display list members that are lists (not users or strings).  If
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
+of them will be displayed.
+.IP \fB-strings\ \fRor\ \fB-s\fR
+Only display list members that are strings (not users or lists).  If
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
+of them will be displayed.
+.IP \fB-kerberos\ \fRor\ \fB-k\fR
+Only display list members that are Kerberos principals (not users,
+lists, or strings).  If
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is
+specified, then all of them will be displayed.
+.IP \fB-recursive\ \fRor\ \fB-r\fR
+When displaying the membership of the target list, recursively track
+down all lists that are members of the target, and get their
+membership.  Only the user and string members will be displayed, not
+the intermediate lists.
+.IP \fB-verbose\ \fRor\ \fB-v\fR
+Give more information.  With the info flag, it will also display the
+number of members on the list.  With the members flag, it will display
+the type of each member, not just those that are ambiguous.  When
+changing the membership of a list, it will print a message for each
+member added or deleted.
+.IP \fB-noauth\ \fRor\ \fB-n\fR
+Do not attempt to perform Kerberos authentication with the Moira server.
+Retrieval operations on not-hidden lists are still possible without
+tickets.
+.IP \fB-database\ \fIhost:port\ \fRor\ \fB-db\ \fIhost:port\fR
+Use the specified host and port to contact the Moira database instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+database chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
+.IP \fB-create\ \fRor\ \fB-C\fR
+Create the named list (assuming you have list-creation priviliges in
+Moira.) By default it will be active, private, visible, a mailing
+list, and not a group, although this can be changed with the flags
+below.
+.IP \fB-rename\ \fInewname\ \fRor\ \fB-R\ \fInewname\fR
+Rename the list to the new name.
+.IP \fB-public\ \fR(\fB-P\fR)\ \fRor\ \fB-private\ \fR(\fB-NP\fR)
+Make the list public or private. (Users can add themselves to public
+lists.)
+.IP \fB-active\ \fR(\fB-A\fR)\ \fRor\ \fB-inactive\ \fR(\fB-I\fR)
+Make the list active or inactive. (Inactive lists are not propagated
+to the mailhubs and fileservers.)
+.IP \fB-visible\ \fR(\fB-V\fR)\ \fRor\ \fB-hidden\ \fR(\fB-H\fR)
+Make the list visible or hidden. (Hidden lists are harder to find the
+membership and admistrators of.)
+.IP \fB-mail\ \fR(\fB-M\fR)\ \fRor\ \fB-notmail\ \fR(\fB-NM\fR)
+Toggle whether or not the list is a mailing list.
+.IP \fB-group\ \fR(\fB-G\fR)\ \fRor\ \fB-notgroup\ \fR(\fB-NG\fR)
+Toggle whether or not the list is a group. (Groups can be used on the
+ACLs of directories in AFS.)
+.IP \fB-nfs\ \fR(\fB-N\fR)\ \fRor\ \fB-notnfs\ \fR(\fB-NN\fR)
+Toggle whether or not the list is an NFS group.  (NFS groups are
+included in a user's hesiod group list and in Moira-generated NFS
+credentials file, and can be used for controlling access to NFS exported
+filesystems.)
+.IP \fB-desc\ \fIdescription\ \fRor\ \fB-D\ \fIdescription\fR
+Set the description of the list.
+.IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR
+Set the owner of the list. The owner is specified like a list member,
+except that list owners can never be strings.
+.IP \fB-memacl\ \fImembership_acl\ \fRor\ \fB-MA\ \fImembership_acl\fR
+Set the mebership acl of the list; members of this acl will be allowed
+to add and remove members of the list, but not update any other
+characteristics. The membership acl is specified like a list member,
+except that it can never be a string.
+To return a list to having default membership access control
+conditions, set the membership acl to "NONE".
+.IP \fB-tags\ \fRor\ \fB-t\fR
+Display 'tags' in parentheses next to each entry, where applicable.
+Tags are used when converting lists to Athena 9 access files or Discuss
+meeting ACLs.
+.IP \fB-addtagged\ \fImember\ tag\ \fRor\ \fB-at\ \fImember\ tag\fR
+This will add the specified member to the target list with the
+specified tag.  
+.IP \fB-changetag\ \fImember\ tag\ \fRor\ \fB-ct\ \fImember\ tag\fR
+This will change the specified member's tag to the specified tag.  You
+may specify an empty string to clear an existing tag.
+.IP \fB-mailman\ \fR(\fB-mm\fR)\ \fRor\ \fB-notmailman\ \fR(\fB-nmm\fR)
+Toggle whether or not the list is a Mailman list.  Mailman lists cannot
+also be used as groups or NFS groups.
+.IP \fB-mailman_server\ \fIserver\ \fRor\ \fB-ms\ \fIserver\fR
+Use the specified server instead of the default when making a list a
+mailman list.
+
+.SH AUTHORS
+Mark Rosenstein and Jay Berkenbilt.
+.SH SEE ALSO
+listmaint(1)
+
+.SH DIAGNOSTICS
+The exit status from blanche is not as useful as you might hope. An
+exit status of 2 indicates a problem contacting the server or reading
+an input file. An exit status of 1 indicates that at least one add or
+delete failed, and an exit status of 0 indicates that all adds and
+deletes succeeded. If you need the exit status to be meaningful, you
+should only do one add or delete at a time.
+
+.SH NOTES
+The listname doesn't actually have to be the first argument, but if
+you put it anywhere else, it's easy to get the other arguments in the
+wrong order and do something other than what you intended.

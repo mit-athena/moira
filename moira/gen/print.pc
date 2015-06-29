@@ -1,0 +1,330 @@
+/* $Id$
+ *
+ * This generates printcaps and other files for Athena print servers
+ *
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$HeadURL$ $Id$");
+
+char *whoami = "print.gen";
+char *db = "moira/moira";
+
+void do_host(char *host);
+void sqlerr(void);
+#ifndef MAX
+#define MAX(a, b) ( (a) > (b) ? (a) : (b) )
+#endif
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  init_acls();
+
+  EXEC SQL CONNECT :db;
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+
+  EXEC SQL DECLARE csr_hosts CURSOR FOR
+    SELECT m.name FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND sh.enable = 1;
+  EXEC SQL OPEN csr_hosts;
+  while (1)
+    {
+      EXEC SQL FETCH csr_hosts INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      do_host(name);
+    }
+  EXEC SQL CLOSE csr_hosts;
+
+  exit(MR_SUCCESS);
+}
+
+void do_host(char *host)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char rp[PRINTERS_RP_SIZE], name[PRINTERS_NAME_SIZE];
+  char duplexname[PRINTERS_DUPLEXNAME_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char hwtype[PRINTERS_HWTYPE_SIZE], lowerhwtype[PRINTERS_HWTYPE_SIZE];
+  char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE], hostname[MACHINE_NAME_SIZE];
+  char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT, *p;
+  int ka, pc, ac, lpc_acl, banner, rm;
+  EXEC SQL END DECLARE SECTION;
+  TARFILE *tf;
+  FILE *out;
+  char filename[MAXPATHLEN], *duptc;
+  time_t mtime, now = time(NULL);
+
+  EXEC SQL SELECT mach_id INTO :rm FROM machine
+    WHERE name = :spoolhost;
+
+  sprintf(filename, "%s/print/%s", DCM_DIR, host);
+  tf = tarfile_open(filename);
+
+  /* printcap */
+  out = tarfile_start(tf, "/etc/printcap.moira", 0644, 0, 0,
+		      "root", "root", now);
+
+  EXEC SQL DECLARE csr_printcap CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, pr.banner, pr.location, pr.contact
+    FROM printers pr, machine m
+    WHERE pr.rm = :rm AND m.mach_id = pr.mach_id
+    AND (pr.status = 1 OR pr.status = 2) AND m.status != 3
+    AND pr.type != 'ALIAS'
+    AND ( pr.hwtype LIKE 'HP%' OR pr.hwtype LIKE 'LPR%' );
+  EXEC SQL OPEN csr_printcap;
+  while (1)
+    {
+      EXEC SQL FETCH csr_printcap INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :banner, :location, :contact;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(location);
+      strtrim(contact);
+      strcpy(lowerhwtype, hwtype);
+      for (p = lowerhwtype; *p; p++)
+	*p = tolower(*p);
+
+      if (location[0])
+	fprintf(out, "# %s: %s\n", name, location);
+      else
+	fprintf(out, "# %s\n", name);
+      if (strcmp(location, contact))
+	fprintf(out, "# contact: %s\n", contact);
+
+      fprintf(out, "%s\n\t:server:cm=%s %s\n\t", rp, hwtype, location);
+      if (banner == PRN_BANNER_NONE)
+	fprintf(out, ":sh");
+      else if (banner == PRN_BANNER_LAST)
+	fprintf(out, ":hl");
+
+      if (!strncmp(hwtype, "HP", 2))
+	{
+	  fprintf(out, ":lp=%s%%9100:ifhp=model=%s:tc=.hp\n\n",
+		  hostname, lowerhwtype);
+	  duptc = ".hp2";
+	}
+      else if (!strncmp(hwtype, "LPR", 3))
+	{
+	  fprintf(out, ":lp=raw@%s:tc=.apple\n\n", hostname);
+	  duptc = ".apple2";
+	}
+
+      if (*duplexname)
+	{
+	  fprintf(out, "%s\n\t:server:bq=%s:cm=%s duplex queue\n\t", 
+		  duplexname, rp, rp);
+	  if (!strncmp(hwtype, "HP", 2))
+	    fprintf(out, ":ifhp=model=%s", lowerhwtype);
+	  fprintf(out, ":tc=%s\n\n", duptc);
+	}
+    }
+  EXEC SQL CLOSE csr_printcap;
+  tarfile_end(tf);
+
+  /* lpd.perms */
+  out = tarfile_start(tf, "/etc/lpd.perms", 0755, 1, 1,
+		      "daemon", "daemon", now);
+  fprintf(out, "# Allow anybody to connect, get status, list queue, or "
+	  "print (once a\n# job is spooled)\n");
+  fprintf(out, "ACCEPT SERVICE=X,S,Q,P\nACCEPT LPC=status,lpq,printcap\n\n");
+
+  fprintf(out, "# Only trust certain host keys to forward jobs/commands\n");
+  fprintf(out, "REJECT SERVICE=R AUTHFROM=?* "
+	  "PRINTER=</var/spool/printer/queues.secure "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow FORWARD\n");
+  fprintf(out, "REJECT SERVICE=R AUTHFROM=?* AUTHJOB "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow FORWARD\n\n");
+
+  fprintf(out, "# Allow root to control and remove jobs\n");
+  fprintf(out, "ACCEPT SERVICE=C,R SERVER REMOTEUSER=root\n\n");
+
+  fprintf(out, "# Allow admins to control and remove jobs\n");
+  fprintf(out, "ACCEPT SERVICE=C,R AUTH=USER AUTHUSER=</var/spool/printer/lpcaccess.top\n\n");
+
+  fprintf(out, "# Printer-specific LPC ACLs\n");
+  EXEC SQL DECLARE csr_lpc CURSOR FOR
+    SELECT pr.rp, pr.duplexname FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.lpc_acl != 0
+    AND (pr.status = 1 OR pr.status = 2) and pr.mach_id = m.mach_id AND m.status !=3;
+  EXEC SQL OPEN csr_lpc;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lpc INTO :name, :duplexname;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      strtrim(duplexname);
+      fprintf(out, "ACCEPT SERVICE=C,R PRINTER=%s%s%s AUTH=USER "
+	      "AUTHUSER=</var/spool/printer/%s/lpcaccess\n",
+	      name, *duplexname ? "," : "", duplexname, name);
+    }
+  EXEC SQL CLOSE csr_lpc;
+  fprintf(out, "\n");
+
+  fprintf(out, "# Reject jobs from unauthorized users to restricted queues\n");
+  EXEC SQL DECLARE csr_ac CURSOR FOR
+    SELECT pr.rp, pr.duplexname, pr.ka FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.ac != 0
+    AND (pr.status = 1 OR pr.status = 2) and pr.mach_id = m.mach_id AND m.status !=3;
+  EXEC SQL OPEN csr_ac;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ac INTO :name, :duplexname, ka;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      strtrim(duplexname);
+      fprintf(out, "REJECT SERVICE=R PRINTER=%s%s%s NOT "
+	      "%sUSER=</var/spool/printer/%s/restrict.list\n",
+	      name, *duplexname ? "," : "", duplexname,
+	      ka ? "AUTH" : "", name);
+    }
+  EXEC SQL CLOSE csr_ac;
+  fprintf(out, "\n");
+
+  fprintf(out, "# Allow us to lock out users\n");
+  fprintf(out, "REJECT SERVICE=R USER=</var/spool/printer/users.deny\n");
+  fprintf(out, "# Accept authenticated jobs to all other printers\n");
+  fprintf(out, "ACCEPT SERVICE=R AUTH=USER,FWD\n");
+  fprintf(out, "# Allow authenticated users to lprm their jobs\n");
+  fprintf(out, "ACCEPT SERVICE=M AUTH=USER,FWD AUTHJOB AUTHSAMEUSER\n\n");
+
+  fprintf(out, "# Reject unauthentic print/lprm requests to authenticated queues\n");
+  fprintf(out, "REJECT SERVICE=R,M NOT AUTH "
+	  "PRINTER=</var/spool/printer/queues.secure\n\n");
+
+  fprintf(out, "# Reject unauthentic print requests from off MITnet\n");
+  fprintf(out, "REJECT SERVICE=R NOT REMOTEIP=</var/spool/printer/masks.allow\n\n\n");
+
+  fprintf(out, "# Accept unauthentic print requests if same user and on MITnet\n");
+  fprintf(out, "ACCEPT SERVICE=M NOT AUTHJOB SAMEUSER REMOTEIP=</var/spool/printer/masks.allow\n\n");
+  
+  fprintf(out, "# Reject any other lpc, or lprm. Accept all else\n");
+  fprintf(out, "REJECT SERVICE=C,M\n");
+  fprintf(out, "DEFAULT ACCEPT\n");
+  tarfile_end(tf);
+
+  /* list of kerberized queues */
+  out = tarfile_start(tf, "/var/spool/printer/queues.secure", 0755, 1, 1,
+		     "daemon", "daemon", now);
+  EXEC SQL DECLARE csr_kq CURSOR FOR
+    SELECT pr.rp, pr.duplexname FROM printers pr, machine m
+    WHERE pr.rm = :rm AND pr.ka = 1
+    AND (pr.status = 1 OR pr.status = 2) AND pr.mach_id = m.mach_id AND m.status !=3;
+  EXEC SQL OPEN csr_kq;
+  while (1)
+    {
+      EXEC SQL FETCH csr_kq INTO :name, :duplexname;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      strtrim(duplexname);
+      fprintf(out, "%s\n", name);
+      if (*duplexname)
+	fprintf(out, "%s\n", duplexname);
+    }
+  tarfile_end(tf);
+
+  /* restrict lists and lpcaccess files */
+  EXEC SQL DECLARE csr_spool CURSOR FOR
+    SELECT UNIQUE pr.rp, pr.ka, pr.ac, pr.lpc_acl
+    FROM printers pr, machine m
+    WHERE pr.rm = :rm AND ( pr.ac != 0 OR pr.lpc_acl != 0)
+    AND (pr.status = 1 OR pr.status = 2) AND pr.mach_id = m.mach_id AND m.status !=3;
+  EXEC SQL OPEN csr_spool;
+  while (1)
+    {
+      EXEC SQL FETCH csr_spool INTO :name, :ka, :ac, :lpc_acl;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      sprintf(filename, "/var/spool/printer/%s", name);
+      tarfile_mkdir(tf, filename, 0755, 1, 1, "daemon", "daemon", now);
+
+      /* The ac and lpc_acl lists may have sublists, and changes to those
+       * won't affect the superlist's modtime. So we just set the modtime
+       * to now.
+       */
+
+      /* Access-control list. */
+      if (ac)
+	{
+	  sprintf(filename, "/var/spool/printer/%s/restrict.list", name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      now);
+	  if (ka)
+	    dump_krb_acl(out, "LIST", ac, 5);
+	  else
+	    dump_user_list(out, "LIST", ac);
+	  tarfile_end(tf);
+	}
+
+      /* printer-specific lpc access. */
+      if (lpc_acl)
+	{
+	  sprintf(filename, "/var/spool/printer/%s/lpcaccess", name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      now);
+	  dump_krb_acl(out, "LIST", lpc_acl, 5);
+	  tarfile_end(tf);
+	}
+    }
+
+  /* lpcaccess.top */
+  EXEC SQL SELECT ps.lpc_acl INTO :lpc_acl
+    FROM printservers ps, machine m
+    WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
+  if (!sqlca.sqlcode && lpc_acl)
+    {
+      out = tarfile_start(tf, "/var/spool/printer/lpcaccess.top",
+			  0755, 1, 1, "daemon", "daemon", now);
+      dump_krb_acl(out, "LIST", lpc_acl, 5);
+      tarfile_end(tf);
+    }
+
+  EXEC SQL CLOSE csr_spool;
+
+  tarfile_close(tf);
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+}

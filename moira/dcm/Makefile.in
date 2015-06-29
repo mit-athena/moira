@@ -1,0 +1,66 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+DCM_OBJS=dcm.lo
+UPDATE_OBJS=../update/checksum.lo ../update/client.lo ../update/send_file.lo \
+	../update/ticket.lo ../update/sendrecv.lo
+START_OBJS=startdcm.lo
+
+CFILES=dcm.c
+
+TARGET=dcm startdcm
+
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(DCM_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) dcm $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) startdcm $(DESTDIR)$(mrbindir)
+
+dcm: $(DCM_OBJS) $(UPDATE_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(DCM_OBJS) $(UPDATE_OBJS) $(SQL_LIBS) $(LIBS)
+
+startdcm: $(START_OBJS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)

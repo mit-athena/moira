@@ -1,0 +1,94 @@
+.TH CHPOBOX 1 "5 Feb 1988" "Project Athena"
+\" RCSID: $HeadURL$ $Id$"
+.SH NAME
+chpobox \- change address at which user receives mail
+.SH SYNOPSIS
+.TP 8
+chpobox [ username ]
+.TP 8
+chpobox [ \-s address | \-S address | \-p ] [ \-u username ]
+.SH DESCRIPTION
+Your post office box is what determines where you will receive
+mail.  It can be of several types: 
+.I POP, IMAP, SMTP, SPLIT
+or
+.IR NONE .
+
+In the first use of this command, the post office box of the
+user whose name corresponds to the single argument
+.I username
+(or your own name if 
+.I username
+is not specified) is displayed.
+
+In the second use, this command sets the 
+actual address that will receive mail sent to 
+.I username@MIT.EDU
+(where 
+.I username
+is your own name if you have not specified it on the command line).
+It should be used if you want to change where you will 
+receive mail.  
+
+The 
+.I chpobox 
+command is used instead of the file
+.I .forward,
+which would be used with standard UNIX mail. 
+
+In order to change the address that receives mail sent to 
+.I username@MIT.EDU,
+use the 
+.B -s
+option.  Specifically, to reroute your mail to
+the address 
+.I name@host,
+you would issue the command
+
+.nf
+.nj
+chpobox -s name@host
+.fi
+
+To split mail between your local post office box and a remote address,
+use the
+.B -S
+option.
+
+To restore your post office box to its original Athena default,
+use the 
+.B -p
+flag.  This will set your mailbox to the last POP or IMAP server
+it was using.
+.PP
+
+Only one of 
+.B -p
+or
+.B -s
+or
+.B -S
+may be used at a time.
+
+Note that the actual change may take up to a day to 
+propogate to the mail hub.
+
+.SH NOTE
+
+When a mailbox is stored in the central database, any host mentioned
+will have its name canonicalized to a standard form.  If for some
+reason you don't want to have the hostname canonicalized, put
+.B just the hostname
+in double-quotes.  For example, the command
+.nf
+.nj
+	chpobox -s jrhacker@\\"cd.mit.edu\\"
+.fi
+will not be canonicalized to jrhacker@ls.mit.edu, as it would
+otherwise.  Also note that the double-quotes were preceded by
+backslashes to get them past the shell.
+
+.SH SEE ALSO
+moira(1),
+
+Moira Section of the Project Athena Technical Plan.

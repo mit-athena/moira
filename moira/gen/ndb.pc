@@ -1,0 +1,200 @@
+/* $Id$
+ *
+ * This generates the msql database for the network tables.
+ *
+ * Copyright 1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+
+#include <sys/stat.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$HeadURL$ $Id$");
+
+char *whoami = "ndb.gen";
+char *db = "moira/moira";
+
+void users(FILE *out);
+void hosts(FILE *out);
+
+int main(int argc, char **argv)
+{
+  FILE *out = stdout;
+  char *outf = NULL, outft[MAXPATHLEN];
+  struct stat sb;
+  int flag;
+
+  EXEC SQL CONNECT :db;
+
+  if (argc == 2)
+    {
+      outf = argv[1];
+      sprintf(outft, "%s~", outf);
+      if (!(out = fopen(outft, "w")))
+	{
+	  fprintf(stderr, "unable to open %s for output\n", outf);
+	  exit(MR_OCONFIG);
+	}
+    }
+  else if (argc != 1)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+  else
+    outf = NULL;
+
+  EXEC SQL COMMIT;
+
+  fprintf(stderr, "users...\n");
+  users(out); 
+  fprintf(stderr, "hosts...\n");
+  hosts(out);
+
+  if (fclose(out) < 0)
+    {
+      perror("close failed");
+      exit(MR_CCONFIG);
+    }
+
+  if (outf)
+    fix_file(outf);
+  exit(MR_SUCCESS);
+}
+
+void users(FILE *out)
+{
+  char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[USERS_LOGIN_SIZE], id[USERS_CLEARID_SIZE];
+  char first[USERS_FIRST_SIZE], middle[USERS_MIDDLE_SIZE];
+  char last[USERS_LAST_SIZE], type[USERS_TYPE_SIZE];
+  int status, users_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE users1 CURSOR FOR
+    SELECT login, clearid, users_id, type, status, first, middle, last
+    FROM users WHERE clearid != '0' 
+    AND login NOT LIKE '#%';
+  EXEC SQL OPEN users1;
+  while (1)
+    {
+      EXEC SQL FETCH users1 INTO :login, :id, :users_id, :type, :status,
+	:first, :middle, :last;
+
+      if (sqlca.sqlcode)
+	break;
+      strtrim(login);
+      strtrim(id);
+      strtrim(type);
+      strtrim(first);
+      strtrim(middle);
+      strtrim(last);
+      if (!*id)
+	continue;
+      fprintf(out, "user,%d,%s,%s,%s,%d,%s,%s,%s\n", users_id, id, login,
+	      type, status, first, middle, last);
+    }
+
+  EXEC SQL CLOSE users1;
+
+  EXEC SQL COMMIT;
+
+  return;
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}
+
+void hosts(FILE *out)
+{
+  struct hash *users;
+  char *p;
+  int i;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE], owner_type[MACHINE_OWNER_TYPE_SIZE];
+  char addr[MACHINE_ADDRESS_SIZE];
+  int id, use, status, owner;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  fprintf(stderr, "aliases...\n");
+
+  EXEC SQL DECLARE hosts1 CURSOR FOR SELECT
+    mach_id, name FROM hostalias;
+  EXEC SQL OPEN hosts1;
+
+  while (1)
+    {
+      EXEC SQL FETCH hosts1 INTO :id, :name;
+      if (sqlca.sqlcode)
+	break;
+      if (id == 0)
+	continue;
+      if (!*strtrim(name))
+	continue;
+      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
+	{
+	  fprintf(stderr, "Name %s not in MIT domain\n", name);
+	  continue;
+        }
+      fprintf(out, "host_alias,%d,%s\n", id, name);
+    }
+
+  EXEC SQL CLOSE hosts1;
+
+  EXEC SQL COMMIT;
+
+  fprintf(stderr, "hosts (for real)...\n");
+
+  EXEC SQL DECLARE hosts3 CURSOR FOR SELECT 
+    name, mach_id, address, use, status, owner_type, owner_id
+    FROM machine;
+  EXEC SQL OPEN hosts3;
+  while (1)
+    {
+      EXEC SQL FETCH hosts3 INTO :name, :id, :addr, :use, :status,
+	:owner_type, :owner;
+      if (sqlca.sqlcode)
+	break;
+      if (id == 0)
+	continue;
+      if (!*strtrim(name))
+	continue;
+      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
+	continue;
+      strtrim(addr);
+      strtrim(owner_type);
+      fprintf(out, "host,%d,%s,%s,%d,0,%d", id, name, addr, use, status);
+      if (!strcmp(owner_type, "USER")) 
+	fprintf(out, ",USER,%d\n", owner);
+      else
+	fprintf(out, ",NONE,0\n");
+    }
+
+  EXEC SQL CLOSE hosts3;
+
+  EXEC SQL COMMIT;
+
+  return;
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}
+
+

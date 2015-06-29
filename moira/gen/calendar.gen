@@ -1,0 +1,36 @@
+#!/moira/bin/perl -Tw
+
+# $Id$
+
+# The following exit codes are defined and MUST BE CONSISTENT withh the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$outfile = '/moira/dcm/calendar.out';
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+$sth = $dbh->prepare("SELECT UNIQUE u.clearid, u.login, u.first, u.middle, " .
+		     "u.last FROM users u, list l, imembers i " .
+		     "WHERE l.name = 'calendar-acl' " .
+		     "AND l.list_id = i.list_id AND l.list_id = i.list_id " .
+		     "AND i.member_type='USER' AND i.member_id = u.users_id")
+    || exit $MR_DBMS_ERR;
+$sth->execute || exit $MR_DBMS_ERR;
+
+umask 022;
+open(OUT, ">$outfile") || exit $MR_OCONFIG;
+
+while (($clearid, $login, $first, $middle, $last) = $sth->fetchrow_array) {
+    $row = "$clearid|$login^UID=$login/S=$last/G=$first/I=$middle/";
+    $row .= "OU1=/JOB-TITLE=/PHONE=/LOC=/EMAIL=$login\@mit.edu\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+close(OUT);
+$dbh->disconnect;
+exit 0;

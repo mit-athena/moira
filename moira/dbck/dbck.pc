@@ -1,0 +1,218 @@
+/* $Id$
+ *
+ * Moira database consistency checker
+ *
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "dbck.h"
+
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlda;
+
+RCSID("$HeadURL$ $Id$");
+
+int debug = 0;
+int mode = MODE_ASK;
+int fast = 0;
+int warn = 1;
+int abort_p = 0;
+struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
+struct hash *strings, *members, *subnets, *string_dups, *printservers;
+struct hash *containers;
+EXEC SQL BEGIN DECLARE SECTION;
+int dcmenable;
+EXEC SQL END DECLARE SECTION;
+struct save_queue *modtables;
+SQLDA *mr_sqlda;
+
+void interrupt(int signal);
+extern SQLDA *sqlald(int, int, int);
+extern void sqlglm(char *, unsigned int *, unsigned int *);
+
+int main(int argc, char **argv)
+{
+  char **arg = argv;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *database;
+  EXEC SQL END DECLARE SECTION;
+  struct sigaction sa;
+
+  database = "moira";
+  setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+
+  while (++arg - argv < argc)
+    {
+      if (**arg == '-')
+	{
+	  switch ((*arg)[1])
+	    {
+	    case 'd':
+	      debug = atoi((*arg)[2] ? *arg + 2 : *++arg);
+	      break;
+	    case 'n':
+	      mode = MODE_NO;
+	      break;
+	    case 'y':
+	      mode = MODE_YES;
+	      break;
+	    case 'p':
+	      mode = MODE_PREEN;
+	      break;
+	    case 'a':
+	      mode = MODE_ASK;
+	      break;
+	    case 'f':
+	      fast++;
+	      break;
+	    case 'w':
+	      warn = 0;
+	      break;
+	    default:
+	      printf("Usage: %s [-d level] [-n] [-y] [-p] [-a] [-f] [-w] [database]\n",
+		     argv[0]);
+	      exit(1);
+	    }
+	}
+      else
+	database = *arg;
+    }
+  if (fast)
+    printf("Doing fast version (skipping some checks)\n");
+  if (mode == MODE_NO)
+    printf("Will NOT modify the database\n");
+  else if (mode == MODE_PREEN)
+    printf("Will fix simple things without asking\n");
+  else if (mode == MODE_YES)
+    printf("Will fix everything without asking\n");
+  if (debug)
+    printf("Debug level is %d\n", debug);
+
+  sa.sa_handler = interrupt;
+  sa.sa_flags = 0;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGHUP, &sa, NULL);
+  sigaction(SIGQUIT, &sa, NULL);
+  sigaction(SIGINT, &sa, NULL);
+
+  modtables = sq_create();
+  mr_sqlda = sqlald(1, 255, 0);
+
+  EXEC SQL WHENEVER SQLERROR DO dbmserr();
+  printf("Opening database %s...", database);
+  fflush(stdout);
+  EXEC SQL CONNECT :database IDENTIFIED BY :database;
+  printf("done\n");
+  if (mode != MODE_NO)
+    {
+      EXEC SQL SELECT value INTO :dcmenable FROM numvalues
+	WHERE name = 'dcm_enable';
+      dprintf("DCM disabled (was %d)\n", dcmenable);
+      EXEC SQL UPDATE numvalues SET value = 0 WHERE name = 'dcm_enable';
+    }
+
+  /* Begin transaction here. */
+
+  phase1();
+  EXEC SQL COMMIT WORK;
+  phase2();
+  EXEC SQL COMMIT WORK;
+  phase3();
+  EXEC SQL COMMIT WORK;
+  phase4();
+  EXEC SQL COMMIT WORK;
+
+  if (mode != MODE_NO)
+    cleanup();
+  printf("Done.\n");
+  exit(0);
+}
+
+void dbmserr(void)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char buf[256];
+  EXEC SQL END DECLARE SECTION;
+  int bufsize = 256, msglength = 0;
+
+  if (sqlca.sqlcode == 1403)
+    return;
+  printf("A DBMS error occurred, code %ld\n", sqlca.sqlcode);
+  sqlglm(buf, &bufsize, &msglength);
+  buf[msglength] = '\0';
+  printf("%s\n", buf);
+  printf("Aborting...\n");
+  if (!abort_p)
+    {
+      abort_p++;
+      EXEC SQL ROLLBACK WORK;
+    }
+  exit(1);
+}
+
+
+void interrupt(int signal)
+{
+  printf("Signal caught\n");
+  if (prompt("Save database changes"))
+    {
+      EXEC SQL COMMIT WORK;
+      cleanup();
+      exit(0);
+    }
+  printf("Aborting transaction\n");
+  if (!abort_p)
+    {
+      abort_p++;
+      EXEC SQL ROLLBACK WORK;
+    }
+
+  EXEC SQL UPDATE numvalues SET value = :dcmenable
+    WHERE name = 'dcm_enable';
+
+  exit(0);
+}
+
+
+void modified(char *table)
+{
+  sq_save_unique_string(modtables, table);
+}
+
+void cleanup(void)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *tab;
+  EXEC SQL END DECLARE SECTION;
+
+  while (sq_get_data(modtables, &tab))
+    {
+      EXEC SQL UPDATE tblstats SET modtime = SYSDATE
+	WHERE table_name = :tab;
+    }
+  EXEC SQL UPDATE numvalues SET value = :dcmenable
+    WHERE name = 'dcm_enable';
+}
+
+
+void out_of_mem(char *msg)
+{
+  fprintf(stderr, "Out of memory while %s\n", msg);
+  if (prompt("Save database changes"))
+    {
+      EXEC SQL COMMIT WORK;
+      cleanup();
+      exit(1);
+    }
+  printf("Aborting transaction\n");
+  EXEC SQL ROLLBACK WORK;
+  exit(1);
+}

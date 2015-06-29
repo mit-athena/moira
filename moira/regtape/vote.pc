@@ -1,0 +1,134 @@
+/* $Id$
+ *
+ * Copyright (C) 1993-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$HeadURL$ $Id$");
+
+struct entry {
+  char *line;
+  char id[19];
+  char login[9];
+};
+
+char *whoami;
+int debug;
+
+struct entry *get_next_entry(FILE *in);
+int process_entry(struct entry *e);
+
+int main(int argc, char **argv)
+{
+  FILE *in;
+  struct entry *e;
+  int i, wait = 0;
+  char buf[BUFSIZ], *file = NULL, *p, *p1, *db = "moira";
+
+  debug = 0;
+  whoami = strrchr(argv[0], '/');
+  if (whoami)
+    whoami++;
+  else
+    whoami = argv[0];
+
+  setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+  setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+
+  for (i = 1; i < argc; i++)
+    {
+      if (!strcmp(argv[i], "-w"))
+	wait++;
+      else if (!strcmp(argv[i], "-d"))
+	debug = 1;
+      else if (file)
+	fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
+      else
+	file = argv[i];
+    }
+
+  in = fopen(file, "r");
+  if (!in)
+    {
+      fprintf(stderr, "Unable to open %s for input\n", file);
+      exit(1);
+    }
+
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  if (sqlca.sqlcode)
+    {
+      com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+      exit(1);
+    }
+
+  while ((e = get_next_entry(in)))
+    {
+      i = process_entry(e);
+      EXEC SQL COMMIT WORK;
+      if (i == 0)
+	{
+	  p = &(e->line[0]);
+	  for (p1 = e->login; *p1; p1++)
+	    *p++ = *p1;
+	  for (; p < &(e->line[10]); p++)
+	    *p = ' ';
+	  fputs(e->line, stdout);
+	}
+      if (wait)
+	{
+	  printf("Next");
+	  fflush(stdout);
+	  fgets(buf, sizeof(buf), stdin);
+	}
+    }
+
+  exit(0);
+}
+
+struct entry *get_next_entry(FILE *in)
+{
+  static struct entry e;
+  static char buf[BUFSIZ];
+
+  if (!fgets(buf, sizeof(buf), in))
+    return NULL;
+
+  e.line = &buf[0];
+  strncpy(e.id, &buf[0], 9);
+  e.id[9] = '\0';
+  e.login[0] = '\0';
+  return &e;
+}
+
+int process_entry(struct entry *e)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *id, *login;
+  EXEC SQL VAR login is STRING(9);
+  EXEC SQL END DECLARE SECTION;
+
+  id = e->id;
+  login = e->login;
+  EXEC SQL SELECT login INTO :login FROM users WHERE clearid = :id;
+  if (sqlca.sqlcode)
+    {
+      fprintf(stderr, "Error %ld on %s\n", sqlca.sqlcode, e->line);
+      return -1;
+    }
+  strncpy(e->login, login, 8);
+  e->login[8] = 0;
+  if (debug)
+    printf("Got username %s\n", login);
+  return 0;
+}

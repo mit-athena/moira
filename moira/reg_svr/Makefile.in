@@ -1,0 +1,76 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @RSAREF_CPPFLAGS@ @REG_SVR_INCLUDES@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@ @REG_SVR_DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+LIBS=@RSAREF_LIBS@ @REG_SVR_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+RSAREF_LIBDEP=@RSAREF_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+REG_OBJS=	kerberos.lo protocol.lo reg_svr.lo words.lo
+START_OBJS=	startreg.lo
+GENKEY_OBJS=	genkey.lo
+GENWORDS_OBJS=	genwords.lo words.lo
+
+CFILES=		reg_svr.c genwords.c
+
+TARGET=		reg_svr startreg genkey genwords
+
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(REG_OBJS) $(START_OBJS) $(GENKEY_OBJS) $(GENWORDS_OBJS) \
+		$(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: $(CFILES)
+
+install:
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) reg_svr $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) startreg $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) genkey $(DESTDIR)$(mrbindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) genwords $(DESTDIR)$(mrbindir)
+
+reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(REG_OBJS) $(LIBS) $(SQL_LIBS)
+
+startreg: $(START_OBJS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)
+
+genkey: $(GENKEY_OBJS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(GENKEY_OBJS) $(LIBS)
+
+genwords: $(GENWORDS_OBJS)
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(GENWORDS_OBJS) $(LIBS) $(SQL_LIBS)

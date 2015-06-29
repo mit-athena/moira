@@ -1,0 +1,41 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=../..
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: moira_schema.h moira_schema.c moira_schema.lo
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f moira_schema.h moira_schema.c moira_schema.lo
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend: moira_schema.c moira_schema.h
+
+install:
+
+moira_schema.h: $(srcdir)/schema.sql
+	tr '[a-z]' '[A-Z]' < $(srcdir)/schema.sql | \
+		awk -f $(srcdir)/doschema.awk > moira_schema.h
+
+moira_schema.c: schema.sql
+	awk -f $(srcdir)/doschema.awk < $(srcdir)/schema.sql > moira_schema.c

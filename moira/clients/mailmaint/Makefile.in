@@ -1,0 +1,50 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+LDFLAGS=@LDFLAGS@
+LIBS=../lib/libmrclient.la @CURSES_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+OBJS=mailmaint.lo
+
+TARGET=mailmaint
+
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) mailmaint $(DESTDIR)$(bindir)
+
+$(TARGET): $(OBJS) ../lib/libmrclient.la $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

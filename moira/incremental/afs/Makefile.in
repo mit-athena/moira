@@ -1,0 +1,57 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+AFS_CPPFLAGS=@AFS_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+LDFLAGS=@LDFLAGS@
+AFS_LIBS=@AFS_LIBS@
+AFS_DIR=@AFS_DIR@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=../..
+mrbindir=@mrbindir@
+
+AFS_OBJS=afs.lo
+
+TARGET=afs.incr
+
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(AFS_OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install:
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) afs.incr $(DESTDIR)$(mrbindir)
+	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mrbindir); done
+
+afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
+	-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit \
+	$(AFS_DIR)/lib/afs/util.a $(LIBS)

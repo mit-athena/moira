@@ -1,0 +1,44 @@
+# $Id$
+
+SHELL=/bin/sh
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBTOOL=@LIBTOOL@
+INSTALL=@INSTALL@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+top_builddir=@top_builddir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+
+OBJS=error.lo mail.lo member.lo pobox.lo utils.lo
+
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: libmrclient.la
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) libmrclient.la
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(LIBTOOL) --mode=install $(INSTALL) libmrclient.la $(DESTDIR)$(libdir)/libmrclient.la
+
+libmrclient.la: $(OBJS)
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $(OBJS) -rpath $(libdir) -version-info 0:0:0

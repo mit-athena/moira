@@ -1,0 +1,64 @@
+# $Id$
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CURSES_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+LDFLAGS=@LDFLAGS@
+LIBS=../lib/libmrclient.la @CURSES_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+MOBJS=	acl.lo attach.lo cluster.lo delete.lo globals.lo lists.lo main.lo menu.lo \
+	menus.lo nfs.lo pobox.lo quota.lo user.lo utils.lo dcmmaint.lo printer.lo \
+	misc.lo zephyr.lo
+NOBJS=	namespace.lo globals.lo lists.lo menu.lo pobox.lo user.lo utils.lo misc.lo
+OBJS=	${MOBJS} ${NOBJS}
+
+TARGET=moira namespace
+
+.SUFFIXES: .lo
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	$(LIBTOOL) --mode=clean rm -f $(OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) namespace $(DESTDIR)$(bindir)
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) moira $(DESTDIR)$(bindir)
+	rm -f $(DESTDIR)$(bindir)/listmaint
+	ln -s moira $(DESTDIR)$(bindir)/listmaint
+	rm -f $(DESTDIR)$(bindir)/dcmmaint
+	ln -s moira $(DESTDIR)$(bindir)/dcmmaint
+	rm -f $(DESTDIR)$(bindir)/usermaint
+	ln -s moira $(DESTDIR)$(bindir)/usermaint
+
+moira: $(MOBJS) ../lib/libmrclient.la $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
+
+namespace: $(NOBJS) ../lib/libmrclient.la $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

@@ -1,0 +1,25 @@
+# $Id$
+
+SHELL=/bin/sh
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+
+prefix=@prefix@
+includedir=@includedir@
+INSTALL=@INSTALL@
+
+all:
+
+clean:
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install:
+	$(SRCTOP)/mkinstalldirs $(DESTDIR)$(includedir)/moira
+	$(INSTALL) moira.h mrclient.h $(DESTDIR)$(includedir)/moira

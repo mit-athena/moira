@@ -1,0 +1,79 @@
+#!/moira/bin/perl -Tw
+
+# $Id$
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/winstats';
+$outfile = '/moira/dcm/winstats.out';
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+umask 022;
+
+# mcntmap table
+$sth = $dbh->prepare("SELECT mach_id, cnt_id FROM mcntmap")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+open(OUT, ">$outdir/mcntmap") || exit $MR_OCONFIG;
+
+while (($mach_id, $cnt_id) = $sth->fetchrow_array) {
+    $row = "$mach_id\t$cnt_id\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+close(OUT);
+
+# machine table
+$sth = $dbh->prepare("SELECT m.name, m.mach_id FROM machine m, " .
+		    "mcntmap mc WHERE m.mach_id = mc.mach_id")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+open(OUT, ">$outdir/machine") || exit $MR_OCONFIG;
+
+while (($name, $mach_id) = $sth->fetchrow_array) {
+    $row = "$name\t$mach_id\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+close(OUT);
+
+# containers table
+$sth = $dbh->prepare("SELECT name, cnt_id, list_id, publicflg, description, " .
+		     "location, contact, acl_type, acl_id, memacl_type, memacl_id, " .
+		     "modtime, modby, modwith FROM containers")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+open(OUT, ">$outdir/containers") || exit $MR_OCONFIG;
+
+while (($name, $cnt_id, $list_id, $publicflg, $description, $location, $contact,
+	$acl_type, $acl_id, $memacl_type, $memacl_id, $modtime, $modby, $modwith)
+       = $sth->fetchrow_array) {
+    $row = "$name\t$cnt_id\t$list_id\t$publicflg\t$description\t$location\t$contact\t$acl_type\t$acl_id\t$memacl_type\t$memacl_id\t$modtime\t$modby\t$modwith\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+close(OUT);
+
+# generate tar file
+
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
+
+$dbh->disconnect;
+
+exit 0;
+

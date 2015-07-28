@@ -34,18 +34,10 @@ while (($login, $potype, $exchange_id, $imap_id, $pop_id) = $sth->fetchrow_array
     $login =~ tr/a-z/A-Z/;
 
     if ($exchange_id != 0) {
-	$imap_filesystem = lc($login) . ".po";
-	($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM filesys " .
-					   "WHERE label = " . $dbh->quote($imap_filesystem) .
-					   "AND type = 'IMAP'");
+	($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM machine WHERE " .
+					   "name = 'IMAP.EXCHANGE.MIT.EDU'");
 	if (defined($mach_id)) {
 	    $pop_id = $mach_id;
-	} else {
-	    ($mach_id) = $dbh->selectrow_array("SELECT mach_id FROM machine WHERE " .
-					       "name = 'IMAP.EXCHANGE.MIT.EDU'");
-	    if (defined($mach_id)) {
-		$pop_id = $mach_id;
-	    }
 	}
     }
 

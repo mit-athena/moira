@@ -557,10 +557,6 @@ int access_shot(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
 
-  /* opt must be zero or one for non-query owner */
-  if (atoi(argv[1]) != 0 && atoi(argv[1]) != 1)
-    return MR_PERM;
-
   EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
     s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid, :status
     FROM machine m, subnet s WHERE m.mach_id = :id AND m.snet_id = s.snet_id;
@@ -571,6 +567,10 @@ int access_shot(struct query *q, char *argv[], client *cl)
 
   /* If we're not the subnet owner, don't allow this for certain types of networks */
   if (status == SNET_STATUS_RESERVED || status == SNET_STATUS_INFRASTRUCTURE)
+    return MR_PERM;
+
+  /* opt must be zero or one for non-query, non-subnet owner */
+  if (atoi(argv[1]) != 0 && atoi(argv[1]) != 1)
     return MR_PERM;
 
   /* host owner? */

@@ -538,6 +538,7 @@ int access_filesys(struct query *q, char *argv[], client *cl)
 }
 
 /* access_shot - successful if:
+ *  - existing opt is not 3 and new one isn't 3 (blackhole).
  *  - opt is 0 or 1.
  *  - user is owner of subnet containing host.
  *  - user is owner of host and network isn't RESERVED / INFRASTRUCTURE.
@@ -547,7 +548,7 @@ int access_filesys(struct query *q, char *argv[], client *cl)
 int access_shot(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid, sid, status;
+  int muse, mid, sid, status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
   char login[USERS_LOGIN_SIZE], affiliation[USERS_AFFILIATION_DETAILED_SIZE];
@@ -557,9 +558,13 @@ int access_shot(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
 
-  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
-    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid, :status
+  EXEC SQL SELECT m.use, m.owner_type, m.owner_id, m.account_number, s.owner_type,
+    s.owner_id, s.status INTO :muse, :mtype, :mid, :account_number, :stype, :sid, :status
     FROM machine m, subnet s WHERE m.mach_id = :id AND m.snet_id = s.snet_id;
+
+  /* Only query owner can set opt to 3 or change it once it's set to 3. */
+  if (muse == 3 || atoi(argv[1]) == 3)
+    return MR_PERM;
   
   /* subnet owner? */
   if (find_member(stype, sid, cl))

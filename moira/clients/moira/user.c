@@ -378,7 +378,10 @@ char **AskUserInfo(char **info, Bool name)
   else
     {
       free(info[U_TWOFACTOR]);
-      info[U_TWOFACTOR] = strdup("1");
+      if (!name || state == 0 || state == 2)
+	info[U_TWOFACTOR] = strdup("2");
+      else
+	info[U_TWOFACTOR] = strdup("1");
     }
 
   info[U_SIGNATURE] = strdup("");

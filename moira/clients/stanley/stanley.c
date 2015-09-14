@@ -452,7 +452,10 @@ int main(int argc, char **argv)
       if (twofactor_status)
 	argv[U_TWOFACTOR] = twofactor_status;
       else
-	argv[U_TWOFACTOR] = "0";
+	if (!strcmp(class, "G") || !strncmp(class, "20", 2))
+	  argv[U_TWOFACTOR] = "0";
+        else
+	  argv[U_TWOFACTOR] = "2";
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;

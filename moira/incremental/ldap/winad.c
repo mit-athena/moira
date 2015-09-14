@@ -6901,6 +6901,8 @@ int user_create(int ac, char **av, void *ptr)
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
   char *mitMoira2FaStatus_v[] = {NULL, NULL};
+  char *affiliation_v[] = {NULL, NULL};
+  char *scoped_affiliation_v[] = {NULL, NULL};
   char *name_v[] = {NULL, NULL};
   char *desc_v[] = {NULL, NULL};
   char *userPrincipalName_v[] = {NULL, NULL};
@@ -7341,6 +7343,26 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_ADD);
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
+
+  if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN"))
+    {
+      affiliation_v[0] = "staff";
+      scoped_affiliation_v[0] = "staff@mit.edu";
+    }
+  else if (!strcmp(av[U_CLASS], "G") || !strncmp(av[U_CLASS], "20", 2))
+    {
+      affiliation_v[0] = "student";
+      scoped_affiliation_v[0] = "student@mit.edu";
+    }
+  else
+    {
+      affiliation_v[0] = "affiliate";
+      scoped_affiliation_v[0] = "affiliate@mit.edu";
+    }
+
+  ADD_ATTR("eduPersonAffiliation", affiliation_v, LDAP_MOD_ADD);
+  ADD_ATTR("eduPersonPrimaryAffiliation", affiliation_v, LDAP_MOD_ADD);
+  ADD_ATTR("eduPersonScopedAffiliation", scoped_affiliation_v, LDAP_MOD_ADD);
 
   if(!ActiveDirectory)
     {

@@ -307,6 +307,7 @@ void newuser(struct entry *e, int secure)
   int issecure = secure, users_id, uid, st, xnlen = USERS_XNAME_SIZE - 1;
   int oadlen = USERS_OFFICE_ADDR_SIZE - 1;
   int ophlen = USERS_OFFICE_PHONE_SIZE - 1; 
+  int twofactor_status;
   char login[USERS_LOGIN_SIZE];
   char *id, *last, *first, *middle, *type;
   char *name, *dept, *haddr, *hphone, *oaddr, *ophone;
@@ -338,7 +339,13 @@ void newuser(struct entry *e, int secure)
   xphone2 = e->xphone2;
   affiliation_basic = e->affiliation_basic;
   affiliation_detailed = e->affiliation_detailed;
-  
+
+  /* If student, don't require two-fsctor */
+  if (!strcmp(e->type, "G") || !strncmp(e->type, "20", 2))
+    twofactor_status = 0;
+  else
+    twofactor_status = 2;
+
   com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 
   EXEC SQL INSERT INTO users
@@ -348,7 +355,7 @@ void newuser(struct entry *e, int secure)
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
      created, creator, winhomedir, winprofiledir, sponsor_type,
-     sponsor_id, expiration, affiliation_basic, affiliation_detailed)
+     sponsor_id, expiration, affiliation_basic, affiliation_detailed, twofactor_status)
     VALUES (:login, :users_id, :uid, '/bin/athena/bash', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
@@ -360,7 +367,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
 	    SYSDATE, :who, '[LOCAL]', '[LOCAL]', 'NONE', 0, CHR(0), NVL(:affiliation_basic, CHR(0)),
-	    NVL(:affiliation_detailed, CHR(0)));
+	    NVL(:affiliation_detailed, CHR(0)), :twofactor_status);
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

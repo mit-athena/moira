@@ -7344,7 +7344,7 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
 
-  if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN"))
+  if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN") || !strcmp(av[U_CLASS], "FACULTY"))
     {
       affiliation_v[0] = "staff";
       scoped_affiliation_v[0] = "staff@mit.edu";

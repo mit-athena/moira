@@ -991,7 +991,7 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dr  | -deletereservation reservation",
 	  "-wh  | -winhomedir winhomedir");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wp  | -winprofiledir winprofiledir",
-	  "-2fa | -twofactor 0|1");
+	  "-2fa | -twofactor status");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
 	  "-e   | -expiration expiration date");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ae  | -alternateemail address",

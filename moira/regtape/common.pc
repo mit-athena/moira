@@ -75,6 +75,7 @@ void process_entry(struct entry *e, int secure, int newonly)
   char mit_email[USERS_LOGIN_SIZE + 9]; /* strlen("@mit.edu") + 1; */
   char alternate_email[USERS_ALTERNATE_EMAIL_SIZE];
   int id, status, fmodby, xnlen = USERS_XNAME_SIZE - 1;
+  int dept_num;
   EXEC SQL END DECLARE SECTION;
 
   sid = e->id;
@@ -92,10 +93,10 @@ void process_entry(struct entry *e, int secure, int newonly)
   /* Get user info */
   EXEC SQL SELECT users_id, login||'@mit.edu', first, last, middle, type, office_addr,
     office_phone, home_addr, home_phone, department, status, fmodby,
-    affiliation_basic, affiliation_detailed, alternate_email
+    affiliation_basic, affiliation_detailed, alternate_email, unit_id
     INTO :id, :mit_email, :dfirst, :dlast, :dmiddle, :type, :oaddr,
     :ophone, :haddr, :hphone, :dept, :status, :fmodby,
-    :affiliation_basic, :affiliation_detailed, :alternate_email
+    :affiliation_basic, :affiliation_detailed, :alternate_email, :dept_num
     FROM users
     WHERE clearid = :sid AND status != 3;
   if (sqlfail())
@@ -216,6 +217,23 @@ void process_entry(struct entry *e, int secure, int newonly)
 	}
     }
 
+  if (atoi(e->dept_num) != dept_num)
+    {
+      com_err(whoami, 0, "Department number for %s %s changed from \"%d\" to \"%s\"",
+	      first, last, dept_num, e->dept_num);
+
+      dept_num = atoi(e->dept_num);
+
+      EXEC SQL UPDATE users SET unit_id = :dept_num, modby = :who, modwith = :prog,
+	modtime = SYSDATE
+	WHERE users_id = :id;
+      if (sqlca.sqlcode)
+	{
+	  dbmserr("updating department number", sqlca.sqlcode);
+	  exit(1);
+	}
+    }
+
   /* Update finger info fields if they have changed and the user
    * didn't set them blank.
    */
@@ -313,6 +331,7 @@ void newuser(struct entry *e, int secure)
   char *name, *dept, *haddr, *hphone, *oaddr, *ophone;
   char *xtitle, *xaddress, *xphone1, *xphone2;
   char *affiliation_basic, *affiliation_detailed;
+  int dept_num;
   EXEC SQL END DECLARE SECTION;
 
   users_id = set_next_users_id();
@@ -339,6 +358,7 @@ void newuser(struct entry *e, int secure)
   xphone2 = e->xphone2;
   affiliation_basic = e->affiliation_basic;
   affiliation_detailed = e->affiliation_detailed;
+  dept_num = atoi(e->dept_num);
 
   /* If student, don't require two-fsctor */
   if (!strcmp(e->type, "G") || !strncmp(e->type, "20", 2))
@@ -355,7 +375,7 @@ void newuser(struct entry *e, int secure)
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
      created, creator, winhomedir, winprofiledir, sponsor_type,
-     sponsor_id, expiration, affiliation_basic, affiliation_detailed, twofactor_status)
+     sponsor_id, expiration, affiliation_basic, affiliation_detailed, twofactor_status, unit_id)
     VALUES (:login, :users_id, :uid, '/bin/athena/bash', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
@@ -367,7 +387,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
 	    SYSDATE, :who, '[LOCAL]', '[LOCAL]', 'NONE', 0, CHR(0), NVL(:affiliation_basic, CHR(0)),
-	    NVL(:affiliation_detailed, CHR(0)), :twofactor_status);
+	    NVL(:affiliation_detailed, CHR(0)), :twofactor_status, :dept_num);
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

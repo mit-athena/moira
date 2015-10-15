@@ -61,7 +61,8 @@ create table users
 	affiliation_detailed	VARCHAR(40)	DEFAULT 'MIT Affiliate'	NOT NULL,
 	last_krb_pwd_change	DATE		DEFAULT SYSDATE		NOT NULL,
 	default_vpn_group	INTEGER		DEFAULT 0		NOT NULL,
-	twofactor_status	INTEGER		DEFAULT 0		NOT NULL
+	twofactor_status	INTEGER		DEFAULT 0		NOT NULL,
+	unit_id			INTEGER		DEFAULT 0		NOT NULL
 );
 
 create table krbmap

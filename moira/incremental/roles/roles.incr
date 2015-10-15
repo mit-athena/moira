@@ -1,0 +1,164 @@
+#!/moira/bin/perl -Tw
+
+use DBI;
+use File::Basename;
+
+$ENV{'PATH'} = "";
+
+$USER_LOGIN_POS = 0;
+$USER_LNAME_POS = 4;
+$USER_FNAME_POS = 5;
+$USER_STATUS_POS = 7;
+$USER_MITID_POS = 8;
+$USER_AFFILIATION_POS = 15;
+$USER_HR_ORG_ID_POS = 16;
+
+$STOP_FILE = "/moira/roles/noroles";
+$CRED_FILE = "/moira/roles/creds";
+
+my @input = @ARGV;
+
+$whoami = basename($0);
+print "$whoami @ARGV\n";
+
+# Support a stop file.                                                                                                                                                                                                                                                                                                                                                                                                                   
+$i = 0;
+while (-e $STOP_FILE) {
+    sleep 60;
+    if ($i > 30) {
+        critical_alert("$whoami: incremental failed ($STOP_FILE exists");
+    }
+    $i++;
+}
+
+my $type       = shift(@input);
+my $before_len = shift(@input);
+my $after_len  = shift(@input);
+
+if (!defined($type)) {
+    exit 0;
+}
+
+if ($type eq "users") {
+    if ($before_len == 0 && $after_len > 0) {
+	# don't need to handle this case.
+	exit 0;
+    } elsif ($before_len > 0 && $after_len > 0) {
+	do_user(@input);
+	exit 0;
+    } elsif ($before_len > 0 && $after_len == 0) {
+	# user deletion, don't need to handle.
+	exit 0;
+    } else {
+	critical_alert("$whoami: malformed $type incremental arguments");
+    }
+} else {
+    critical_alert("$whoami: called on unexpected table $type");
+}
+
+exit 0;
+
+sub critical_alert {
+    my ($error) = @_;
+
+    my $logfile = "/moira/critical.log";
+    open(LOG, ">>$logfile");
+    $tnow = localtime;
+    print LOG "$tnow <$$> $error\n";
+    close(LOG);
+
+    $error =~ /(.*)/;
+    $error = $1;
+
+    my $zwrite = "/usr/local/bin/zwrite";
+
+    if (-f $zwrite) {
+        system($zwrite, "-q", "-d", "-n", "-c", "moira", "-i", "incremental", "-m", "$error");
+    }
+
+    exit 1;
+}
+
+sub do_user {
+    my (@moira_input) = @_;
+
+    my $before_status = $moira_input[$USER_STATUS_POS];
+    my $after_status = $moira_input[$after_len + $USER_STATUS_POS];
+    my $login = $moira_input[$after_len + $USER_LOGIN_POS];
+
+    if ($before_status == 2 || $before_status == 10 || $before_status == 11) {
+	$before_status = 1;
+    }
+
+    if ($after_status == 2 || $after_status == 10 || $after_status == 11) {
+	$after_status = 1;
+    }
+
+    if ($before_status == 0 && $after_status == 1) {
+	open(CREDS, $CRED_FILE) or critical_alert("$whoami: Unable to open credentials file");
+	while (<CREDS>) {
+	    chomp(($db, $pass) = split(/:/));
+	    last;
+	}
+	close(CREDS);
+
+	$roles = DBI->connect("dbi:Oracle:$db", "moira_incremental", "$pass",
+			      { RaiseError => 1});
+
+	$mit_id = $moira_input[$after_len + $USER_MITID_POS];
+	$lname = uc($moira_input[$after_len + $USER_LNAME_POS]);
+	$fname = uc($moira_input[$after_len + $USER_FNAME_POS]);
+	$login = uc($moira_input[$after_len + $USER_LOGIN_POS]);
+	$email = $login . "\@MIT.EDU";
+	$dept_code = $moira_input[$after_len + $USER_HR_ORG_ID_POS];
+	$affiliation = $moira_input[$after_len + $USER_AFFILIATION_POS];
+	if ($affiliation eq "staff" or $affiliation eq "faculty") {
+	    $primary_person_type = "E";
+	} elsif ($affiliation eq "student") {
+	    $primary_person_type = "S";
+	} else {
+	    $primary_person_type = "O";
+	}
+	$status_code = "A";
+
+	print "mit_id = $mit_id\n";
+	print "lname = $lname\n";
+	print "fname = $fname\n";
+	print "login = $login\n";
+	print "email = $email\n";
+	print "dept_code = $dept_code\n";
+	print "affiliation = $affiliation\n";
+	print "primary_person_type = $primary_person_type\n";
+	print "status_code = $status_code\n";
+
+	# Does this user already exist?
+	$sth = $roles->prepare("SELECT COUNT(*) FROM person WHERE kerberos_name = '$login'")
+	    or critical_alert("Couldn't prepare query: " . $dbh->errstr);
+
+	$sth->execute or critical_alert("Couldn't execute query: " . $sth->errstr);
+	my ($count) = $sth->fetchrow_array;
+	if ($count > 0) {
+	    print "$whoami: User $login already exists in Roles.\n";
+	    return;
+	}
+
+	# Create user.
+	# DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.
+	$sth = $roles->prepare("INSERT INTO person (mit_id, last_name, first_name, " .
+			       "kerberos_name, email_addr, dept_code, primary_person_type, " .
+			       "status_code) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
+			       "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code')")
+	    or critical_alert("Couldn't prepare query: " . $dbh->errstr);
+
+	$sth->execute or critical_alert("Couldn't execute query: " . $sth->errstr);
+
+	# Completed successfully.
+	print "$whoami: Inserted row for user $login\n";
+	return;
+
+    } else {
+	print "$whoami: Skipping user $login with before status = $before_status, after state = $after_status\n";
+	return;
+    }
+}
+

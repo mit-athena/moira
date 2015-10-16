@@ -95,16 +95,7 @@ sub do_user {
     }
 
     if ($before_status == 0 && $after_status == 1) {
-	open(CREDS, $CRED_FILE) or critical_alert("$whoami: Unable to open credentials file");
-	while (<CREDS>) {
-	    chomp(($db, $pass) = split(/:/));
-	    last;
-	}
-	close(CREDS);
-
-	$roles = DBI->connect("dbi:Oracle:$db", "moira_incremental", "$pass",
-			      { RaiseError => 1});
-
+	
 	$mit_id = $moira_input[$after_len + $USER_MITID_POS];
 	$lname = uc($moira_input[$after_len + $USER_LNAME_POS]);
 	$fname = uc($moira_input[$after_len + $USER_FNAME_POS]);
@@ -120,7 +111,7 @@ sub do_user {
 	    $primary_person_type = "O";
 	}
 	$status_code = "A";
-
+	
 	print "mit_id = $mit_id\n";
 	print "lname = $lname\n";
 	print "fname = $fname\n";
@@ -130,32 +121,45 @@ sub do_user {
 	print "affiliation = $affiliation\n";
 	print "primary_person_type = $primary_person_type\n";
 	print "status_code = $status_code\n";
+	
+	open(CREDS, $CRED_FILE) or critical_alert("$whoami: Unable to open credentials file");
+	while (<CREDS>) {
+	    chomp(($db, $pass) = split(/:/));
 
-	# Does this user already exist?
-	$sth = $roles->prepare("SELECT COUNT(*) FROM person WHERE kerberos_name = '$login'")
-	    or critical_alert("Couldn't prepare query: " . $dbh->errstr);
+            $roles = DBI->connect("dbi:Oracle:$db", "moira_incremental", "$pass",
+                                  { RaiseError => 1});
 
-	$sth->execute or critical_alert("Couldn't execute query: " . $sth->errstr);
-	my ($count) = $sth->fetchrow_array;
-	if ($count > 0) {
-	    print "$whoami: User $login already exists in Roles.\n";
-	    return;
+
+	    # Does this user already exist?
+	    $sth = $roles->prepare("SELECT COUNT(*) FROM person WHERE kerberos_name = '$login'");
+	    $sth->execute;
+
+	    my ($count) = $sth->fetchrow_array;
+	    $sth->finish;
+	    if ($count > 0) {
+		print "$whoami: User $login already exists in $db.\n";
+		$roles->disconnect;
+		next;
+	    }
+
+	    # Create user.
+	    # DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.
+	    $sth = $roles->prepare("INSERT INTO person (mit_id, last_name, first_name, " .
+				   "kerberos_name, email_addr, dept_code, primary_person_type, " .
+				   "status_code) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
+				   "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code')");
+
+	    
+	    $sth->execute;
+	    $sth->finish;
+
+	    # Completed successfully.
+	    print "$whoami: Inserted row for user $login in $db\n";
+	    $roles->disconnect;
 	}
-
-	# Create user.
-	# DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.
-	$sth = $roles->prepare("INSERT INTO person (mit_id, last_name, first_name, " .
-			       "kerberos_name, email_addr, dept_code, primary_person_type, " .
-			       "status_code) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
-			       "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code')")
-	    or critical_alert("Couldn't prepare query: " . $dbh->errstr);
-
-	$sth->execute or critical_alert("Couldn't execute query: " . $sth->errstr);
-
-	# Completed successfully.
-	print "$whoami: Inserted row for user $login\n";
+	close(CREDS);
 	return;
-
+	
     } else {
 	print "$whoami: Skipping user $login with before status = $before_status, after state = $after_status\n";
 	return;

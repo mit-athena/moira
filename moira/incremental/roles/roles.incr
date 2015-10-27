@@ -146,8 +146,8 @@ sub do_user {
 	    # DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.
 	    $sth = $roles->prepare("INSERT INTO person (mit_id, last_name, first_name, " .
 				   "kerberos_name, email_addr, dept_code, primary_person_type, " .
-				   "status_code) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
-				   "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code')");
+				   "status_code, created_date) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
+				   "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code', SYSDATE)");
 
 	    
 	    $sth->execute;

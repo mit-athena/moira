@@ -52,7 +52,7 @@ int access_user(struct query *q, char *argv[], client *cl)
 int access_update_user(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int users_id, unix_uid, status, comments, secure, sponsor_id;
+  int users_id, unix_uid, status, comments, secure, sponsor_id, twofactor_status;
   char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
   char winconsoleshell[USERS_WINCONSOLESHELL_SIZE], last[USERS_LAST_SIZE];
   char first[USERS_FIRST_SIZE], middle[USERS_MIDDLE_SIZE];
@@ -76,9 +76,10 @@ int access_update_user(struct query *q, char *argv[], client *cl)
   EXEC SQL SELECT u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last,
     u.first, u.middle, u.status, u.clearid, u.type, u.comments, u.signature,
     u.secure, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email,
-    u.alternate_phone INTO :login, :unix_uid, :shell, :winconsoleshell, :last, :first,
-    :middle, :status, :clearid, :type, :comments, :signature, :secure, :sponsor_type,
-    :sponsor_id, :expiration, :alternate_email, :alternate_phone
+    u.alternate_phone, u.twofactor_status INTO :login, :unix_uid, :shell,
+    :winconsoleshell, :last, :first, :middle, :status, :clearid, :type, :comments,
+    :signature, :secure, :sponsor_type, :sponsor_id, :expiration, :alternate_email,
+    :alternate_phone, :twofactor_status
     FROM USERS u WHERE u.users_id = :users_id;
 
   /* None of these things can have changed. */
@@ -111,6 +112,13 @@ int access_update_user(struct query *q, char *argv[], client *cl)
     {
       if (strcmp(argv[19], strtrim(alternate_email)) ||
 	  strcmp(argv[20], strtrim(alternate_phone)))
+	return MR_PERM;
+    }
+
+  /* This field was added in version 16 of the query. */
+  if (q->version >= 16)
+    {
+      if (twofactor_status != atoi(argv[21]))
 	return MR_PERM;
     }
 

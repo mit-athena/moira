@@ -1607,7 +1607,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	  if(!strncasecmp(&member[strlen(member) - 6], ".LOCAL", 6)) 
 	    return;
 	}
-      
+
       if (contact_create(ldap_handle, dn_path, ptr[LM_MEMBER], 
 			 contact_ou))
         return;
@@ -2482,8 +2482,34 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 
 	  sprintf(search_filter, 
-		  "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))", 
+		  "(proxyAddresses=smtp:%s)", 
 		  mail);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, search_filter, 
+				   attr_array, &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process group %s : %s",
+		      after_group_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+	  
+	  if (group_count)
+	    {
+	      com_err(whoami, 0, "Object %s already exists with address %s",
+		      group_base->dn, mail);
+	      MailDisabled++;
+	    }
+
+	  linklist_free(group_base);
+	  group_base = NULL;
+	  group_count = 0;
+
+	  sprintf(search_filter, 
+		  "(proxyAddresses=smtp:%s@mit.edu)", 
+		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 	  
@@ -2508,7 +2534,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 	  
 	  sprintf(search_filter, 
-		  "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		  "(mailNickname=%s)", 
 		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -2820,7 +2846,7 @@ int group_create(int ac, char **av, void *ptr)
       ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_ADD);
       ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
       ADD_ATTR("name", name_v, LDAP_MOD_ADD);
-
+    
       if (Exchange)
 	{
 	  if(atoi(av[L_MAILLIST])) 
@@ -2855,8 +2881,36 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter, 
-		      "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))",
+		      "(proxyAddresses=smtp:%s)",
 		      mail);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], 
+				       filter, attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count) 
+		{
+		  com_err(whoami, 0, 
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+
+	      sprintf(filter, 
+		      "(proxyAddresses=smtp:%s@mit.edu)",
+		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2883,7 +2937,7 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      
 	      sprintf(filter, 
-		      "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		      "(mailNickname=%s)", 
 		      av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
@@ -3053,7 +3107,7 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter,
-		      "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))",
+		      "(proxyAddresses=smtp:%s)",
 		      mail);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
@@ -3081,7 +3135,35 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter,
-		      "(&(objectClass=publicFolder)(mailNickname=%s))", mail);
+		      "(proxyAddresses=smtp:%s@mit.edu)",
+		      av[L_NAME]);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+
+	      if ((rc = linklist_build((LDAP *)call_args[0], call_args[1],
+				       filter, attr_array, &group_base,
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0, "Unable to process group %s : %s",
+			  av[L_NAME], ldap_err2string(rc));
+		  return(rc);
+		}
+
+	      if (group_count)
+		{
+		  com_err(whoami, 0,
+			  "Object %s already exists with address %s",
+			  group_base->dn, mail);
+		  MailDisabled++;
+		}
+
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+
+	      sprintf(filter,
+		      "(mailNickname=%s)", mail);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 
@@ -3741,7 +3823,8 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   LK_ENTRY    *group_base;
   ULONG       rc;
   char        *s;
-
+  char        search_filter[1024];
+  
   if (max_group_members && (group_members < max_group_members))
     return(0);
 
@@ -3778,14 +3861,48 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   group_count = 0;
 
   if(ActiveDirectory)
-    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-  else
+    {
+      if(Exchange) 
+	{
+	  if(!strcmp(UserOu, contact_ou)) 
+	    {
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	      
+	      sprintf(search_filter, 
+		      "(proxyAddresses=smtp:%s)", user_name);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build(ldap_handle, dn_path, 
+				       search_filter, 
+				       attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0,
+			  "Unable to search for STRING object %s: %s",
+			  user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count)
+		{
+		  sprintf(temp, "%s", group_base->dn);
+		}
+	    }
+	}
+      else {
+	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+      }
+    }
+  else 
     {
       if(!strcmp(UserOu, user_ou))
 	sprintf(temp, "uid=%s,%s,%s", user_name, UserOu, dn_path);
       else
-	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-    }
+	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    }
 
   modvalues[0] = temp;
   modvalues[1] = NULL;
@@ -3826,6 +3943,8 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
   LDAPMod     *mods[20];
   LK_ENTRY    *group_base;
   ULONG       rc;
+  char        search_filter[1024];
+  char        *attr_array[3];
 
   if (max_group_members && (group_members < max_group_members))
     return(0);
@@ -3863,14 +3982,48 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
   group_count = 0;
 
   if(ActiveDirectory)
-    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+    {
+      if(Exchange) 
+	{
+	  if(!strcmp(UserOu, contact_ou)) 
+	    {
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	      
+	      sprintf(search_filter, 
+		      "(proxyAddresses=smtp:%s)", user_name);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build(ldap_handle, dn_path, 
+				       search_filter, 
+				       attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0,
+			  "Unable to search for STRING object %s: %s",
+			  user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count)
+		{
+		  sprintf(temp, "%s", group_base->dn);
+		}
+	    }
+	}
+      else {
+	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+      }
+    }
   else 
     {
       if(!strcmp(UserOu, user_ou))
 	sprintf(temp, "uid=%s,%s,%s", user_name, UserOu, dn_path);
       else
-	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);
-    }
+	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    }
 
   modvalues[0] = temp;
   modvalues[1] = NULL;
@@ -4099,7 +4252,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with name %s",
 		      group_base->dn, user);
-	      return(1);
+	      return(0);
 	    }
 
 	  linklist_free(group_base);
@@ -4123,7 +4276,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with name %s",
 		      group_base->dn, user);
-	      return(1);
+	      return(0);
 	    }
   
 	  linklist_free(group_base);
@@ -4147,7 +4300,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with name %s",
 		      group_base->dn, user);
-	      return(1);
+	      return(0);
 	    }
 	
 	  linklist_free(group_base);
@@ -4171,7 +4324,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with name %s",
 		      group_base->dn, user);
-	      return(1);
+	      return(0);
 	    }
 	  
 	  linklist_free(group_base);
@@ -4179,7 +4332,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	
 	  sprintf(filter, 
-		  "(&(objectClass=publicFolder)(proxyAddresses=smtp:%s))", 
+		  "(proxyAddresses=smtp:%s)", 
 		  mail);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -4197,15 +4350,15 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with address %s",
 		      group_base->dn, mail);
-	      return(1);
+	      return(0);
 	    }
 
 	  linklist_free(group_base);
 	  group_base = NULL;
 	  group_count = 0;
-
+	
 	  sprintf(filter, 
-		  "(&(objectClass=publicFolder)(mailNickname=%s))", 
+		  "(proxyAddresses=smtp:%s@mit.edu)", 
 		  unqualified_user_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -4223,7 +4376,33 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	    {
 	      com_err(whoami, 0, "Object %s already exists with address %s",
 		      group_base->dn, mail);
-	      return(1);
+	      return(0);
+	    }
+
+	  linklist_free(group_base);
+	  group_base = NULL;
+	  group_count = 0;
+
+	  sprintf(filter, 
+		  "(mailNickname=%s)", 
+		  unqualified_user_name);
+	  attr_array[0] = "cn";
+	  attr_array[1] = NULL;
+
+	  if ((rc = linklist_build(ld, bind_path, filter, attr_array,
+				   &group_base, &group_count, 
+				   LDAP_SCOPE_SUBTREE)) != 0) 
+	    {
+	      com_err(whoami, 0, "Unable to process contact %s : %s", 
+		      user, ldap_err2string(rc));
+	      return(rc);
+	    }
+      
+	  if (group_count) 
+	    {
+	      com_err(whoami, 0, "Object %s already exists with address %s",
+		      group_base->dn, mail);
+	      return(0);
 	    }
 
 	  linklist_free(group_base);
@@ -6374,6 +6553,43 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       strcat(displayName, last);
     }
 
+  /* Handling code for updating exchange display name */
+  group_count = 0;
+  group_base = NULL;
+    
+  sprintf(filter_exp, "(sAMAccountName=%s)", user_name);
+
+  attr_array[0] = "eduPersonAffiliation";
+  attr_array[1] = NULL;
+  
+  if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, 
+			   attr_array, &group_base, &group_count, 
+			   LDAP_SCOPE_SUBTREE)) != 0) 
+    {
+      com_err(whoami, 0, "Unable to locate user %s affiliation : %s", 
+	      user_name, ldap_err2string(rc));
+      return(1);
+    }
+
+  /* Do not update displayName information for users who have data 
+   * populating via the warehouse.
+   */
+
+  if (group_count) 
+    {
+      if(!strcmp(group_base->value, "staff") || 
+	 !strcmp(group_base->value, "student")) 
+	{
+	  update_name_info = 1;
+	}
+    }
+  
+  linklist_free(group_base);
+  group_count = 0;
+  group_base = NULL;
+
+  /* End of name handling code */
+
   if(update_name_info) 
     {
       if(strlen(displayName))
@@ -7344,7 +7560,8 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
 
-  if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN") || !strcmp(av[U_CLASS], "FACULTY"))
+  if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN") || 
+      !strcmp(av[U_CLASS], "FACULTY"))
     {
       affiliation_v[0] = "staff";
       scoped_affiliation_v[0] = "staff@mit.edu";
@@ -8474,6 +8691,10 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   char      *save_argv[U_END];
   char      machine_ou[256];
   char      NewMachineName[1024];
+  char      *attr_array[3];
+  char      search_filter[1024];
+  LK_ENTRY  *group_base;
+  int       group_count;
 
   com_err(whoami, 0, "Populating group %s", group_name);
   av[0] = group_name;
@@ -8624,14 +8845,45 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 			dn_path);
 	    }
           else if (!strcasecmp(ptr->type, "STRING"))
-            {
-              if (contact_create(ldap_handle, dn_path, ptr->member,
+            {	      
+	      if (contact_create(ldap_handle, dn_path, ptr->member,
 				 contact_ou))
                 return(3);
 
-              pUserOu = contact_ou;
-	      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
-		      pUserOu, dn_path);
+	      if(Exchange) 
+		{
+		  linklist_free(group_base);
+		  group_base = NULL;
+		  group_count = 0;
+		  
+		  sprintf(search_filter, 
+			  "(proxyAddresses=smtp:%s)", ptr->member);
+		  attr_array[0] = "cn";
+		  attr_array[1] = NULL;
+		  
+		  if ((rc = linklist_build(ldap_handle, dn_path, 
+					   search_filter, 
+					   attr_array, &group_base, 
+					   &group_count,
+					   LDAP_SCOPE_SUBTREE)) != 0)
+		    {
+		      com_err(whoami, 0,
+			      "Unable to search for STRING object %s: %s",
+			      ptr->member, ldap_err2string(rc));
+		      return(rc);
+		    }
+		  
+		  if (group_count)
+		    {
+		      sprintf(member, "%s", group_base->dn);
+		    }
+		}
+	      else 
+		{
+		  pUserOu = contact_ou;
+		  sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
+			  pUserOu, dn_path);
+		}
             }
           else if (!strcasecmp(ptr->type, "KERBEROS"))
             {
@@ -11488,8 +11740,46 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
   int          rc;
   char         temp[256];
 
+  group_base = NULL;
+  group_count = 0;
+
   if(ActiveDirectory)
-    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+    {
+      if(Exchange) 
+	{
+	  if(!strcmp(UserOu, contact_ou)) 
+	    {
+	      linklist_free(group_base);
+	      group_base = NULL;
+	      group_count = 0;
+	      
+	      sprintf(search_filter, 
+		      "(proxyAddresses=smtp:%s)", user_name);
+	      attr_array[0] = "cn";
+	      attr_array[1] = NULL;
+	      
+	      if ((rc = linklist_build(ldap_handle, dn_path, 
+				       search_filter, 
+				       attr_array, &group_base, 
+				       &group_count,
+				       LDAP_SCOPE_SUBTREE)) != 0)
+		{
+		  com_err(whoami, 0,
+			  "Unable to search for STRING object %s: %s",
+			  user_name, ldap_err2string(rc));
+		  return(rc);
+		}
+	      
+	      if (group_count)
+		{
+		  sprintf(temp, "%s", group_base->dn);
+		}
+	    }
+	}
+      else {
+	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+      }
+    }
   else
     {
       if(!strcmp(UserOu, user_ou))

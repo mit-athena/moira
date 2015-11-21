@@ -1566,7 +1566,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 		group_name);
       
       moira_disconnect();
-
+    
       if (rc = member_remove(ldap_handle, dn_path, group_name,
                              group_ou, group_membership, 
 			     escape_string(ptr[LM_MEMBER]),
@@ -3864,6 +3864,12 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
     {
       if(Exchange) 
 	{
+	  if(!strcmp(UserOu, user_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	  
+	  if(!strcmp(UserOu, kerberos_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	  
 	  if(!strcmp(UserOu, contact_ou)) 
 	    {
 	      linklist_free(group_base);
@@ -3893,16 +3899,18 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 	    }
 	}
-      else {
-	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-      }
+      else 
+	{
+	  sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	}
     }
   else 
     {
       if(!strcmp(UserOu, user_ou))
 	sprintf(temp, "uid=%s,%s,%s", user_name, UserOu, dn_path);
       else
-	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    }
+	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    
+    }
 
   modvalues[0] = temp;
   modvalues[1] = NULL;
@@ -3985,6 +3993,12 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
     {
       if(Exchange) 
 	{
+	  if(!strcmp(UserOu, user_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+
+	  if(!strcmp(UserOu, kerberos_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+
 	  if(!strcmp(UserOu, contact_ou)) 
 	    {
 	      linklist_free(group_base);
@@ -4014,16 +4028,18 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 	    }
 	}
-      else {
-	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-      }
+      else 
+	{
+	  sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	}
     }
   else 
     {
       if(!strcmp(UserOu, user_ou))
 	sprintf(temp, "uid=%s,%s,%s", user_name, UserOu, dn_path);
       else
-	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    }
+	sprintf(temp, "cn=%s,%s,%s", user_name, UserOu, dn_path);    
+    }
 
   modvalues[0] = temp;
   modvalues[1] = NULL;
@@ -11747,6 +11763,12 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
     {
       if(Exchange) 
 	{
+	  if(!strcmp(UserOu, user_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+
+	  if(!strcmp(UserOu, kerberos_ou)) 
+	    sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	  
 	  if(!strcmp(UserOu, contact_ou)) 
 	    {
 	      linklist_free(group_base);
@@ -11776,9 +11798,10 @@ int contains_member(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 	    }
 	}
-      else {
-	sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
-      }
+      else 
+	{
+	  sprintf(temp, "CN=%s,%s,%s", user_name, UserOu, dn_path);
+	}
     }
   else
     {

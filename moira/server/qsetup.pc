@@ -64,6 +64,14 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
+  /* Don't allow adding new users with caps in the username
+     or renaming accounts to something containing caps */
+  for (p = argv[row - 1]; *p; p++)
+    {
+      if (isupper(*p))
+	return MR_BAD_CHAR;
+    }
+
   if (q->version > 2)
     {
       if (strlen(argv[row + 3]) + strlen(argv[row + 4]) +
@@ -116,12 +124,6 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
 
   if (!strcmp(argv[0], UNIQUE_LOGIN) || atoi(argv[row]) == -1)
     sprintf(argv[0], "#%s", argv[row]);
-
-  for (p = argv[0]; *p; p++)
-    {
-      if (isupper(*p))
-	return MR_BAD_CHAR;
-    }
 
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
     return mr_errcode;

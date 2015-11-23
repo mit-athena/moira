@@ -404,6 +404,7 @@ do {					\
 #define REALM "REALM:"
 #define UPDATE_NAME_INFO "UPDATE_NAME_INFO:"
 #define USER_PRINCIPAL_DOMAIN "USER_PRINCIPAL_DOMAIN:"
+#define OFFICE365_MAIL_DOMAIN "OFFICE365_MAIL_DOMAIN:"
 #define ACTIVE_DIRECTORY "ACTIVE_DIRECTORY:"
 #define PORT "PORT:"
 #define PROCESS_MACHINE_CONTAINER "PROCESS_MACHINE_CONTAINER:"
@@ -432,6 +433,7 @@ char ldap_domain[256];
 char ldap_realm[256];
 char ldap_port[256];
 char user_principal_domain[256];
+char office365_mail_domain[256];
 char *ServerList[MAX_SERVER_NAMES];
 char default_server[256];
 char connected_server[128];
@@ -559,12 +561,13 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
                 char *u_name, char *MoiraId);
 
 int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name, 
-                char *user_name);
+                char *user_name, int State);
 
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
-		char *middle, char *last, char *shell, char *class, int TwoFactorStatus);
+		char *middle, char *last, char *shell, char *class, 
+		int TwoFactorStatus);
 
 void change_to_lower_case(char *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
@@ -757,6 +760,7 @@ int main(int argc, char **argv)
       memset(PrincipalName, '\0', sizeof(PrincipalName));
       memset(ldap_domain, '\0', sizeof(ldap_domain));
       memset(user_principal_domain, '\0', sizeof(user_principal_domain));
+      memset(office365_mail_domain, '\0', sizeof(office365_mail_domain));
       memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
       memset(default_server, '\0', sizeof(default_server));
       memset(dn_path, '\0', sizeof(dn_path));
@@ -1194,8 +1198,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           com_err(whoami, 0, "Creating group %s", after[L_NAME]);
 
           if (rc = process_group(ldap_handle, dn_path, list_id, after[L_NAME], 
-                                  group_ou, group_membership, 
-                                  security_flag, CHECK_GROUPS,
+				 group_ou, group_membership, 
+				 security_flag, CHECK_GROUPS,
 				 after[L_MAILLIST], after[L_LIST_NFSGROUP]))
             {
               if (rc != AD_NO_GROUPS_FOUND)
@@ -1232,7 +1236,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         }
 
       ProcessGroup = 0;
-
+    
       if (ProcessAce(ldap_handle, dn_path, after[L_NAME], "LIST", 0, 
 		     &ProcessGroup, after[L_MAILLIST], after[L_LIST_NFSGROUP]))
         return;
@@ -1464,7 +1468,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       
       com_err(whoami, 0, "creating group %s", group_name);
       ProcessGroup = 0;
-
+    
       if (ProcessAce(ldap_handle, dn_path, ptr[LM_LIST], "LIST", 0, 
 		     &ProcessGroup, ptr[LM_EXTRA_MAILLIST],
 		     ptr[LM_EXTRA_NFSGROUP]))
@@ -1830,7 +1834,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                   before[U_NAME], after[U_NAME]);
 
           if ((rc = user_rename(ldap_handle, dn_path, before[U_NAME], 
-                                after[U_NAME])) != LDAP_SUCCESS)
+                                after[U_NAME], 
+				atoi(after[U_STATE]))) != LDAP_SUCCESS)
 	    return;
         }
     }
@@ -2396,6 +2401,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      mail[256];
   char      mail_nickname[256];
   char      proxy_address[256];
+  char      proxy_address_mit[256];
+  char      proxy_address_office365[256];
   char      address_book[256];
   char      *attr_array[3];
   char      *mitMoiraId_v[] = {NULL, NULL};
@@ -2403,7 +2410,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      *samAccountName_v[] = {NULL, NULL};
   char      *groupTypeControl_v[] = {NULL, NULL};
   char      *mail_v[] = {NULL, NULL};
-  char      *proxy_address_v[] = {NULL, NULL};
+  char      *proxy_address_v[] = {NULL, NULL, NULL, NULL};
   char      *mail_nickname_v[] = {NULL, NULL};
   char      *report_to_originator_v[] = {NULL, NULL};
   char      *address_book_v[] = {NULL, NULL};
@@ -2442,10 +2449,13 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 
   sprintf(new_dn_path, "%s,%s", after_group_ou, dn_path);
   sprintf(new_dn, "cn=%s", after_group_name);
-  sprintf(mail, "%s@%s", after_group_name, lowercase(ldap_domain));
+  sprintf(mail, "%s@mit.edu", after_group_name);
   sprintf(contact_mail, "%s@mit.edu", after_group_name); 
-  sprintf(proxy_address, "SMTP:%s@%s", after_group_name, 
+  sprintf(proxy_address, "smtp:%s@%s", after_group_name, 
 	  lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", after_group_name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", after_group_name,
+	  lowercase(office365_mail_domain));
 
   sprintf(mail_nickname, "%s", after_group_name);
 
@@ -2482,8 +2492,9 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 
 	  sprintf(search_filter, 
-		  "(proxyAddresses=smtp:%s)", 
-		  mail);
+		  "(&(proxyAddresses=smtp:%s@%s)"
+		  "(!(&(cn=%s)(objectClass=group))))",
+		  after_group_name, lowercase(ldap_domain));
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 	  
@@ -2498,8 +2509,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  
 	  if (group_count)
 	    {
-	      com_err(whoami, 0, "Object %s already exists with address %s",
-		      group_base->dn, mail);
+	      com_err(whoami, 0, "Object %s already exists with address %s@%s",
+		      group_base->dn, mail, lowercase(ldap_domain));
 	      MailDisabled++;
 	    }
 
@@ -2508,7 +2519,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  group_count = 0;
 
 	  sprintf(search_filter, 
-		  "(proxyAddresses=smtp:%s@mit.edu)", 
+		  "(&(proxyAddresses=smtp:%s@mit.edu)"
+		  "(!(&(cn=%s)(objectClass=group))))",
 		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -2524,17 +2536,18 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  
 	  if (group_count)
 	    {
-	      com_err(whoami, 0, "Object %s already exists with address %s",
-		      group_base->dn, mail);
+	      com_err(whoami, 0, "Object %s already exists with address "
+		      "%s@mit.edu",
+		      group_base->dn, after_group_name);
 	      MailDisabled++;
 	    }
-	  
+	
 	  linklist_free(group_base);
 	  group_base = NULL;
 	  group_count = 0;
 	  
 	  sprintf(search_filter, 
-		  "(mailNickname=%s)", 
+		  "(&(mailNickname=%s)(!(&(cn=%s)(objectClass=group))))",
 		  after_group_name);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
@@ -2550,8 +2563,9 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  
 	  if (group_count)
 	    {
-	      com_err(whoami, 0, "Object %s already exists with address %s",
-		      group_base->dn, mail);
+	      com_err(whoami, 0, "Object %s already exists with mail " 
+		      "nickname  %s",
+		      group_base->dn, after_group_name);
 	      MailDisabled++;
 	    }
 	  
@@ -2663,6 +2677,8 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	{
 	  mail_nickname_v[0] = mail_nickname;
 	  proxy_address_v[0] = proxy_address;
+	  proxy_address_v[1] = proxy_address_mit;
+	  proxy_address_v[2] = proxy_address_office365;
 	  mail_v[0] = mail;
 	  report_to_originator_v[0] = "TRUE";
 
@@ -2733,6 +2749,8 @@ int group_create(int ac, char **av, void *ptr)
   char contact_mail[256];
   char mail_nickname[256];
   char proxy_address[256];
+  char proxy_address_mit[256];
+  char proxy_address_office365[256];
   char address_book[256];
   char *cn_v[] = {NULL, NULL};
   char *objectClass_v[] = {"top", "group", NULL};
@@ -2752,7 +2770,7 @@ int group_create(int ac, char **av, void *ptr)
   char *mitMoiraNFSGroup_v[] = {NULL, NULL};
   char *groupTypeControl_v[] = {NULL, NULL};
   char *mail_v[] = {NULL, NULL};
-  char *proxy_address_v[] = {NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
   char *report_to_originator_v[] = {NULL, NULL};
   char *address_book_v[] = {NULL, NULL};
@@ -2788,7 +2806,7 @@ int group_create(int ac, char **av, void *ptr)
       return(AD_INVALID_NAME);
     }
 
-  updateGroup = (int)(long)call_args[4];
+  updateGroup = atoi(call_args[4]);
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -2798,8 +2816,13 @@ int group_create(int ac, char **av, void *ptr)
   strcpy(new_group_name, av[L_NAME]);
   sprintf(new_dn, "cn=%s,%s,%s", new_group_name, group_ou, call_args[1]);
   sprintf(contact_mail, "%s@mit.edu", av[L_NAME]);
-  sprintf(mail, "%s@%s", av[L_NAME], lowercase(ldap_domain));
+  sprintf(mail, "%s@mit.edu", av[L_NAME]);
   sprintf(mail_nickname, "%s", av[L_NAME]);
+  sprintf(proxy_address, "smtp:%s@%s", av[L_NAME],
+          lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", av[L_NAME]);
+  sprintf(proxy_address_office365, "smtp:%s@%s", av[L_NAME],
+          lowercase(office365_mail_domain));
 
   if (security_flag)
     groupTypeControl |= ADS_GROUP_TYPE_SECURITY_ENABLED;
@@ -2881,8 +2904,9 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter, 
-		      "(proxyAddresses=smtp:%s)",
-		      mail);
+		      "(&(proxyAddresses=smtp:%s@%s)"
+		      "(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], lowercase(ldap_domain), av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2899,8 +2923,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count) 
 		{
 		  com_err(whoami, 0, 
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with address %s@%s",
+			  group_base->dn, av[L_NAME], lowercase(ldap_domain));
 		  MailDisabled++;
 		}
 
@@ -2909,8 +2933,9 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter, 
-		      "(proxyAddresses=smtp:%s@mit.edu)",
-		      av[L_NAME]);
+		      "(&(proxyAddresses=smtp:%s@mit.edu)"
+		      "(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2927,8 +2952,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count) 
 		{
 		  com_err(whoami, 0, 
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with address %s@mit.edu",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 	      
@@ -2937,8 +2962,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 	      
 	      sprintf(filter, 
-		      "(mailNickname=%s)", 
-		      av[L_NAME]);
+		      "(&(mailNickname=%s)(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 	      
@@ -2955,8 +2980,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count) 
 		{
 		  com_err(whoami, 0, 
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with mail nickname %s",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 	      
@@ -2968,9 +2993,15 @@ int group_create(int ac, char **av, void *ptr)
 	  if(atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
+	      proxy_address_v[0] = proxy_address;
+	      proxy_address_v[1] = proxy_address_mit;
+	      proxy_address_v[2] = proxy_address_office365;
 	      report_to_originator_v[0] = "TRUE";
+	      mail_v[0] = mail;
 
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+	      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+	      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_ADD);
 	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
 		       LDAP_MOD_ADD);
 	    }
@@ -2990,7 +3021,7 @@ int group_create(int ac, char **av, void *ptr)
 		}
 	    }
 	}
-      
+    
       if (strlen(av[L_DESC]) != 0)
 	{
 	  desc_v[0] = av[L_DESC];
@@ -3107,8 +3138,9 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter,
-		      "(proxyAddresses=smtp:%s)",
-		      mail);
+		      "(&(proxyAddresses=smtp:%s@%s)"
+		      "(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], lowercase(ldap_domain), av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 
@@ -3125,8 +3157,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count)
 		{
 		  com_err(whoami, 0,
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with address %s@%s",
+			  group_base->dn, av[L_NAME], lowercase(ldap_domain));
 		  MailDisabled++;
 		}
 
@@ -3135,8 +3167,9 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter,
-		      "(proxyAddresses=smtp:%s@mit.edu)",
-		      av[L_NAME]);
+		      "(&(proxyAddresses=smtp:%s@mit.edu)"
+		      "(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 
@@ -3153,8 +3186,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count)
 		{
 		  com_err(whoami, 0,
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with address %s@mit.edu",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 
@@ -3163,7 +3196,8 @@ int group_create(int ac, char **av, void *ptr)
 	      group_count = 0;
 
 	      sprintf(filter,
-		      "(mailNickname=%s)", mail);
+		      "(&(mailNickname=%s)(!(&(cn=%s)(objectClass=group))))",
+		      av[L_NAME], av[L_NAME]);
 	      attr_array[0] = "cn";
 	      attr_array[1] = NULL;
 
@@ -3180,8 +3214,8 @@ int group_create(int ac, char **av, void *ptr)
 	      if (group_count)
 		{
 		  com_err(whoami, 0,
-			  "Object %s already exists with address %s",
-			  group_base->dn, mail);
+			  "Object %s already exists with mail nickname %s",
+			  group_base->dn, av[L_NAME]);
 		  MailDisabled++;
 		}
 
@@ -3193,9 +3227,15 @@ int group_create(int ac, char **av, void *ptr)
 	  if (atoi(av[L_MAILLIST]) && !MailDisabled && email_isvalid(mail)) 
 	    {
 	      mail_nickname_v[0] = mail_nickname;
+	      proxy_address_v[0] = proxy_address;
+	      proxy_address_v[1] = proxy_address_mit;
+	      proxy_address_v[2] = proxy_address_office365;
 	      report_to_originator_v[0] = "TRUE";
+	      mail_v[0] = mail;
 
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE);
+	      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("reportToOriginator", report_to_originator_v, 
 		       LDAP_MOD_REPLACE);
 	    }
@@ -4510,6 +4550,10 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char distinguished_name[512];
   char displayName[256];
   char address_book[1024];
+  char proxy_address[256];
+  char proxy_address_mit[256];
+  char proxy_address_office365[256];
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
   char *mitMoiraId_v[] = {NULL, NULL};
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
@@ -4618,11 +4662,20 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   sprintf(all_users_address_list, "%s%s", ALL_USERS_ADDRESS_LIST_PREFIX, 
 	  dn_path);
 
+  sprintf(proxy_address, "smtp:%s@%s", user_name,
+          lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", user_name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", user_name,
+          lowercase(office365_mail_domain));
+  
   address_book_v[3] = all_users_address_list;
   mail_nickname_v[0] = user_name;
+  proxy_address_v[0] = proxy_address;
+  proxy_address_v[1] = proxy_address_mit;
+  proxy_address_v[2] = proxy_address_office365;
 
   memset(mail, '\0', sizeof(mail));
-  sprintf(mail, "%s@%s", user_name, lowercase(ldap_domain));
+  sprintf(mail, "%s@mit.edu", user_name);
   memset(alt_recipient, '\0', sizeof(alt_recipient));
   sprintf(alt_recipient, "cn=%s@exchange-forwarding.mit.edu,%s,%s", user_name,
 	  contact_ou, dn_path);
@@ -4699,8 +4752,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       group_base = NULL;
     
       sprintf(filter_exp, 
-	      "(&(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))"
-	      "(!(samaccountname=%s)))", mail, mail, user_name, user_name);
+	      "(&(|(mail=%s@%s)(proxyaddresses=smtp:%s@%s)(mailnickname=%s))"
+	      "(!(samaccountname=%s)))", user_name, lowercase(ldap_domain), 
+	      user_name, lowercase(ldap_domain), user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -4715,8 +4769,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object %s already exists with mail %s",
-		  group_base->dn, mail);
+	  com_err(whoami, 0, "Object %s already exists with mail %s@%s",
+		  group_base->dn, user_name, lowercase(ldap_domain));
 	  MailDisabled++;
 	}
       
@@ -4803,6 +4857,9 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
 	      ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_REPLACE);
 	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+	      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_ADD);
+	      mail_v[0] = mail;
+	      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
 	      ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
 	      mdbUseDefaults_v[0] = "TRUE";
 	      ADD_ATTR("mdbUseDefaults", mdbUseDefaults_v, LDAP_MOD_ADD);
@@ -6940,7 +6997,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 }
 
 int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name, 
-                char *user_name)
+                char *user_name, int State)
 {
   LDAPMod *mods[20];
   char new_dn[256];
@@ -6950,6 +7007,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   char contact_mail[256];
   char proxy_address[256];
   char proxy_address_mit[256];
+  char proxy_address_office365[256];
   char proxy_address_x500[256];
   char query_base_dn[256];
   char temp[256];
@@ -6959,14 +7017,19 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   char *samAccountName_v[] = {NULL, NULL};
   char *mail_v[] = {NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
-  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL, NULL};
   char *query_base_dn_v[] = {NULL, NULL};
   char *principal_v[] = {NULL, NULL};
   char principal[256];
+  char filter_exp[1024];
+  char *attr_array[3];
   int  n;
   int  rc;
   int  i;
-
+  int  group_count;
+  int  MailDisabled = 0;
+  LK_ENTRY     *group_base;
+  
   if (!check_string(before_user_name))
     {
       com_err(whoami, 0, 
@@ -6993,7 +7056,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   else
     sprintf(new_dn, "uid=%s", user_name);
 
-  sprintf(mail, "%s@%s", user_name, lowercase(ldap_domain));
+  sprintf(mail, "%s@mit.edu", user_name);
 
   if(Exchange)
     sprintf(contact_mail, "%s@exchange-forwarding.mit.edu", user_name);
@@ -7002,6 +7065,8 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   sprintf(proxy_address, "smtp:%s@%s", user_name, lowercase(ldap_domain));
   sprintf(proxy_address_mit, "SMTP:%s@mit.edu", user_name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", user_name,
+	  lowercase(office365_mail_domain));
   sprintf(proxy_address_x500, "%s/cn=%s?mit.edu", X500_PREFIX, user_name);
   sprintf(principal, "%s@%s", user_name, PRIMARY_REALM);
 
@@ -7040,8 +7105,9 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   samAccountName_v[0] = user_name;
   mail_v[0] = mail;
   mail_nickname_v[0] = user_name;
-  proxy_address_v[0] = proxy_address_mit; 
-  proxy_address_v[1] = proxy_address;
+  proxy_address_v[0] = proxy_address; 
+  proxy_address_v[1] = proxy_address_mit;
+  proxy_address_v[2] = proxy_address_office365;
   query_base_dn_v[0] = query_base_dn;
 
   n = 0;
@@ -7060,9 +7126,98 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   if (Exchange)
     {
-      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE); 
-      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE); 
-      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE); 
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(&(|(mail=%s@%s)(proxyaddresses=smtp:%s@%s)(mailnickname=%s))"
+	      "(!(samaccountname=%s)))", user_name, lowercase(ldap_domain), 
+	      user_name, lowercase(ldap_domain), user_name, user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build(ldap_handle, dn_path, filter_exp,
+			       attr_array, &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0) 
+	{
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
+	}
+      
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object %s already exists with mail %s@%s",
+		  group_base->dn, user_name, lowercase(ldap_domain));
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
+      
+      sprintf(filter_exp, 
+	      "(&(|(mail=%s@mit.edu)(proxyaddresses=smtp:%s@mit.edu)"
+	      "(mailnickname=%s))(!(samaccountname=%s)))", user_name,
+	      user_name, user_name, user_name);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+      
+      if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, 
+			       attr_array, &group_base, &group_count, 
+			       LDAP_SCOPE_SUBTREE)) != 0) 
+	{
+	  com_err(whoami, 0, "Unable to create user %s : %s", 
+		  user_name, ldap_err2string(rc));
+	  return(1);
+	}
+
+      if (group_count) 
+	{
+	  com_err(whoami, 0, "Object %s already exists with mail %s@mit.edu",
+		  group_base->dn, user_name);
+	  MailDisabled++;
+	}
+      
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+
+      if ((State != US_NO_PASSWD) &&
+	  (State != US_REGISTERED) &&
+	  (State != US_SUSPENDED)) 
+	MailDisabled++;
+
+      if ((State == US_NO_PASSWD) || (State == US_REGISTERED) ||
+	  (State == US_SUSPENDED))
+        {
+	  group_count = 0;
+	  group_base = NULL;
+	  
+	  sprintf(filter_exp,
+		  "(&(objectClass=user)(homeMDB=*)(sAMAccountName=%s))",
+		  before_user_name);
+	  
+	  attr_array[0] = "homeMDB";
+	  attr_array[1] = NULL;
+	  
+	  if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, 
+				   attr_array,
+				   &group_base, &group_count,
+				   LDAP_SCOPE_SUBTREE)) != 0)
+	    {
+	      com_err(whoami, 0, "Unable to process user %s : %s",
+		      user_name, ldap_err2string(rc));
+	      return(rc);
+	    }
+
+	  if(group_count == 1 && !MailDisabled) 
+	    {
+	      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_REPLACE); 
+	      ADD_ATTR("mail", mail_v, LDAP_MOD_REPLACE); 
+	      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_REPLACE); 
+	    }
+	}
     }
   else
     {
@@ -7105,6 +7260,8 @@ int user_create(int ac, char **av, void *ptr)
   char mail[256];
   char contact_mail[256];
   char proxy_address[256];
+  char proxy_address_mit[256];
+  char proxy_address_office365[256];
   char mail_nickname[256];
   char query_base_dn[256];
   char rbac_policy_link[256];
@@ -7151,7 +7308,7 @@ int user_create(int ac, char **av, void *ptr)
   char *sn_v[] = {NULL, NULL};
   char *initials_v[] = {NULL, NULL};
   char *displayName_v[] = {NULL, NULL};
-  char *proxy_address_v[] = {NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
   char *mail_nickname_v[] = {NULL, NULL};
   char *query_base_dn_v[] = {NULL, NULL};
   char *rbac_policy_link_v[] = {NULL, NULL};
@@ -7270,7 +7427,12 @@ int user_create(int ac, char **av, void *ptr)
   sprintf(userAccountControlStr, "%ld", userAccountControl);
   userAccountControl_v[0] = userAccountControlStr;
   userPrincipalName_v[0] = upn;
-  sprintf(mail,"%s@%s", user_name, lowercase(ldap_domain));
+  sprintf(mail, "%s@mit.edu", user_name);
+  sprintf(proxy_address, "smtp:%s@%s", user_name, 
+	  lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", user_name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", user_name,
+	  lowercase(office365_mail_domain));
 
   if(ActiveDirectory)
     cn_v[0] = user_name;
@@ -7292,6 +7454,9 @@ int user_create(int ac, char **av, void *ptr)
 
   displayName_v[0] = displayName;
   mail_nickname_v[0] = user_name;
+  proxy_address_v[0] = proxy_address;
+  proxy_address_v[1] = proxy_address_mit;
+  proxy_address_v[2] = proxy_address_office365;
   o_v[0] = "Massachusetts Institute of Technology";
 
   sprintf(temp, "Kerberos:%s@%s", user_name, PRIMARY_REALM);
@@ -7336,8 +7501,9 @@ int user_create(int ac, char **av, void *ptr)
       group_base = NULL;
       
       sprintf(filter_exp, 
-	      "(&(|(mail=%s)(proxyaddresses=smtp:%s)(mailnickname=%s))"
-	      "(!(samaccountname=%s)))", mail, mail, user_name, user_name);
+	      "(&(|(mail=%s@%s)(proxyaddresses=smtp:%s@%s)(mailnickname=%s))"
+	      "(!(samaccountname=%s)))", user_name, lowercase(ldap_domain), 
+	      user_name, lowercase(ldap_domain), user_name, user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       
@@ -7353,8 +7519,8 @@ int user_create(int ac, char **av, void *ptr)
       
       if (group_count) 
 	{
-	  com_err(whoami, 0, "Object %s already exists with mail %s",
-		  group_base->dn, mail);
+	  com_err(whoami, 0, "Object %s already exists with mail %s@%s",
+		  group_base->dn, user_name, lowercase(ldap_domain));
 	  MailDisabled++;
 	}
       
@@ -7459,6 +7625,8 @@ int user_create(int ac, char **av, void *ptr)
       ADD_ATTR("msExchRBACPolicyLink", rbac_policy_link_v, LDAP_MOD_ADD);
       ADD_ATTR("showInAddressBook", address_book_v, LDAP_MOD_ADD);
       ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_ADD);
+      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
       ADD_ATTR("homeMDB", homeMDB_v, LDAP_MOD_ADD);
       mdbUseDefaults_v[0] = "TRUE";
       ADD_ATTR("mdbUseDefaults", mdbUseDefaults_v, LDAP_MOD_ADD);
@@ -8652,13 +8820,16 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   int  group_count;
   char filter[128];
   char *attr_array[3];
+  char temp[256];
+
+  sprintf(temp, "%d", updateGroup);
 
   av[0] = group_name;
   call_args[0] = (char *)ldap_handle;
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
-  call_args[4] = (char *)(long)updateGroup;
+  call_args[4] = temp;
   call_args[5] = MoiraId;
   call_args[6] = "0";
   call_args[7] = NULL;
@@ -11264,6 +11435,16 @@ int ReadConfigFile(char *DomainName)
                     strcpy(user_principal_domain, 
 			   &temp[strlen(USER_PRINCIPAL_DOMAIN)]);
                     StringTrim(user_principal_domain);
+                  }
+              }
+            else if (!strncmp(temp, OFFICE365_MAIL_DOMAIN,
+                              strlen(OFFICE365_MAIL_DOMAIN)))
+              {
+                if (strlen(temp) > (strlen(OFFICE365_MAIL_DOMAIN)))
+                  {
+                    strcpy(office365_mail_domain, 
+			   &temp[strlen(OFFICE365_MAIL_DOMAIN)]);
+                    StringTrim(office365_mail_domain);
                   }
               }
 	    else

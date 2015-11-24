@@ -66,10 +66,13 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
 
   /* Don't allow adding new users with caps in the username
      or renaming accounts to something containing caps */
-  for (p = argv[row - 1]; *p; p++)
+  if (strcmp(argv[row - 1], UNIQUE_LOGIN))
     {
-      if (isupper(*p))
-	return MR_BAD_CHAR;
+      for (p = argv[row - 1]; *p; p++)
+	{
+	  if (isupper(*p))
+	    return MR_BAD_CHAR;
+	}
     }
 
   if (q->version > 2)

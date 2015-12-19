@@ -4066,6 +4066,12 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
 		{
 		  sprintf(temp, "%s", group_base->dn);
 		}
+	      else
+		{
+		  com_err(whoami, 0, 
+			  "Unable to locate STRING object %s", user_name);
+		  return(rc);
+		}
 	    }
 	}
       else 
@@ -4414,34 +4420,8 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  group_count = 0;
 	
 	  sprintf(filter, 
-		  "(proxyAddresses=smtp:%s@mit.edu)", 
-		  unqualified_user_name);
-	  attr_array[0] = "cn";
-	  attr_array[1] = NULL;
-
-	  if ((rc = linklist_build(ld, bind_path, filter, attr_array,
-				   &group_base, &group_count, 
-				   LDAP_SCOPE_SUBTREE)) != 0) 
-	    {
-	      com_err(whoami, 0, "Unable to process contact %s : %s", 
-		      user, ldap_err2string(rc));
-	      return(rc);
-	    }
-      
-	  if (group_count) 
-	    {
-	      com_err(whoami, 0, "Object %s already exists with address %s",
-		      group_base->dn, mail);
-	      return(0);
-	    }
-
-	  linklist_free(group_base);
-	  group_base = NULL;
-	  group_count = 0;
-
-	  sprintf(filter, 
 		  "(mailNickname=%s)", 
-		  unqualified_user_name);
+		  mail_nickname);
 	  attr_array[0] = "cn";
 	  attr_array[1] = NULL;
 
@@ -4457,7 +4437,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 	  if (group_count) 
 	    {
 	      com_err(whoami, 0, "Object %s already exists with address %s",
-		      group_base->dn, mail);
+		      group_base->dn, mail_nickname);
 	      return(0);
 	    }
 

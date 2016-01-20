@@ -6633,7 +6633,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       if(!strcmp(group_base->value, "staff") || 
 	 !strcmp(group_base->value, "student")) 
 	{
-	  update_name_info = 1;
+	  update_name_info = 0;
 	}
     }
   

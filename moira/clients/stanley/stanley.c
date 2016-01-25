@@ -672,7 +672,7 @@ int main(int argc, char **argv)
 	    argv[i + 1] = argv[i];
 	  argv[1] = username;
 	  argv[FS_TYPE + 1] = "ERR";
-	  argv[FS_COMMENTS + 1] = "Locker disabled; call 3-1325 for help";
+	  argv[FS_COMMENTS + 1] = "Locker disabled; call 3-1101 for help";
 	  
 	  status = wrap_mr_query("update_filesys", 12, argv, NULL, NULL);
 	  if (status)

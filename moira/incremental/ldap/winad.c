@@ -4791,7 +4791,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 	MailDisabled++;
       
       if ((State == US_NO_PASSWD) || (State == US_REGISTERED) ||
-	  (State == US_SUSPENDED))
+	  (State == US_REGISTERED_KERBEROS_ONLY) || (State == US_SUSPENDED))
         {
 	  group_count = 0;
 	  group_base = NULL;
@@ -6735,7 +6735,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       ADD_ATTR("mitMoira2FaStatus", mitMoira2FaStatus_v, LDAP_MOD_REPLACE);
     }
 
-  if ((State != US_NO_PASSWD) && (State != US_REGISTERED))
+  if ((State != US_NO_PASSWD) && (State != US_REGISTERED) && (State != US_REGISTERED_KERBEROS_ONLY))
     {
       userAccountControl |= UF_ACCOUNTDISABLE;
 
@@ -7169,7 +7169,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 	MailDisabled++;
 
       if ((State == US_NO_PASSWD) || (State == US_REGISTERED) ||
-	  (State == US_SUSPENDED))
+	  (State == US_REGISTERED_KERBEROS_ONLY) || (State == US_SUSPENDED))
         {
 	  group_count = 0;
 	  group_base = NULL;
@@ -7401,7 +7401,8 @@ int user_create(int ac, char **av, void *ptr)
   samAccountName_v[0] = sam_name;
 
   if ((atoi(av[U_STATE]) != US_NO_PASSWD) && 
-      (atoi(av[U_STATE]) != US_REGISTERED))
+      (atoi(av[U_STATE]) != US_REGISTERED) &&
+      (atoi(av[U_STATE]) != US_REGISTERED_KERBEROS_ONLY))
     userAccountControl |= UF_ACCOUNTDISABLE;
   
   sprintf(userAccountControlStr, "%ld", userAccountControl);

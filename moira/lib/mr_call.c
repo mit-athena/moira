@@ -136,7 +136,7 @@ int mr_receive(int fd, struct mr_params *reply)
 
 int mr_cont_receive(int fd, struct mr_params *reply)
 {
-  u_long length, data;
+  u_long length, data, arglen, padded_arglen;
   int size, more;
   char *p, *end;
   int i;
@@ -149,9 +149,9 @@ int mr_cont_receive(int fd, struct mr_params *reply)
       if (size != 4)
 	return size ? MR_ABORTED : MR_NOT_CONNECTED;
       getlong(lbuf, length);
-      if (length > 8192)
+      if (length < 16 || length > 8192 || length % 4 != 0)
 	return MR_INTERNAL;
-      reply->mr_flattened = malloc(length);
+      reply->mr_flattened = malloc(length + 1);
       if (!reply->mr_flattened)
 	return ENOMEM;
       memcpy(reply->mr_flattened, lbuf, 4);
@@ -174,6 +174,9 @@ int mr_cont_receive(int fd, struct mr_params *reply)
 
   if (reply->mr_filled != length)
     return -1;
+
+  /* Terminate buffer so arguments can safely be used as C strings. */
+  reply->mr_flattened[length] = '\0';
 
   getlong(reply->mr_flattened + 4, data);
   if (data != MR_VERSION_2)
@@ -199,13 +202,15 @@ int mr_cont_receive(int fd, struct mr_params *reply)
 
   p = (char *)reply->mr_flattened + 16;
   end = (char *)reply->mr_flattened + length;
-  for (i = 0; i < reply->mr_argc && p + 4 <= end; i++)
+  for (i = 0; i < reply->mr_argc && end - p >= 4; i++)
     {
-      getlong(p, reply->mr_argl[i]);
-      if (p + 4 + reply->mr_argl[i] > end)
+      getlong(p, arglen);
+      padded_arglen = arglen + (4 - arglen) % 4;
+      if (padded_arglen > end - (p + 4))
 	break;
       reply->mr_argv[i] = p + 4;
-      p += 4 + reply->mr_argl[i] + (4 - reply->mr_argl[i] % 4) % 4;
+      reply->mr_argl[i] = arglen;
+      p += 4 + padded_arglen;
     }
 
   if (i != reply->mr_argc)

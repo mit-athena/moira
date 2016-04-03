@@ -1284,6 +1284,33 @@ static char *gupi_fields[] = {
   "pin",
 };
 
+static char *gupo_fields[] = {
+  "login",
+  "options",
+};
+
+static char *supo_fields[] = {
+  "login",
+  "options",
+};
+
+static struct valobj supo_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_NUM, 1},
+};
+
+static struct validate supo_validate = {
+  supo_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
 static char *suvg_fields[] = {
   "login",
   "listname",
@@ -6219,6 +6246,42 @@ struct query Queries[] = {
     "u.login = '%s' AND u.default_vpn_group = l.list_id",
     1,
     NULL,
+    NULL,
+  },
+
+  {
+    /* Q_SUPO - SET_USER_PWD_CHANGE_OPTIONS */
+    "set_user_pwd_change_options",
+    "supo",
+    2,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET pwd_change_options = %s",
+    supo_fields,
+    2,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &supo_validate,
+  },
+
+  {
+    /* Q_GUPO - GET_USER_PWD_CHANGE_OPTIONS */
+    "get_user_pwd_change_options",
+    "gupo",
+    2,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.pwd_change_options FROM users u",
+    gupo_fields,
+    2,
+    1,
+    "u.login = '%s'",
+    1,
+    "u.login",
     NULL,
   },
 

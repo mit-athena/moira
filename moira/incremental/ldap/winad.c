@@ -567,7 +567,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
 		char *middle, char *last, char *shell, char *class, 
-		int TwoFactorStatus);
+		int TwoFactorStatus, int PwdChangeOptions);
 
 void change_to_lower_case(char *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
@@ -1705,11 +1705,14 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   return;
 }
 
-#define U_USER_ID          10
-#define U_HOMEDIR          11
-#define U_PROFILEDIR       12
-#define U_POTYPE           13
-#define U_TWOFACTORSTATUS  14
+#define U_USER_ID            10
+#define U_HOMEDIR            11
+#define U_PROFILEDIR         12
+#define U_POTYPE             13
+#define U_TWOFACTORSTATUS    14
+#define U_AFFILIATION_BASIC  15
+#define U_UNIT_ID            16
+#define U_PWD_CHANGE_OPTIONS 17
 
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
              char **before, int beforec, char **after, 
@@ -1847,7 +1850,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 		   after_user_id, atoi(after[U_STATE]),
                    after[U_HOMEDIR], after[U_PROFILEDIR],
 		   after[U_FIRST], after[U_MIDDLE], after[U_LAST], 
-		   after[U_SHELL], after[U_CLASS], atoi(after[U_TWOFACTORSTATUS]));
+		   after[U_SHELL], after[U_CLASS], atoi(after[U_TWOFACTORSTATUS]),
+		   atoi(after[U_PWD_CHANGE_OPTIONS]));
 
   return;
 }
@@ -4521,7 +4525,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
                 char *Uid, char *MitId, char *MoiraId, int State,
                 char *WinHomeDir, char *WinProfileDir, char *first,
 		char *middle, char *last, char *shell, char *class,
-		int TwoFactorStatus)
+		int TwoFactorStatus, int PwdChangeOptions)
 {
   LDAPMod   *mods[40];
   LDAPMod   *DelMods[40];
@@ -4538,6 +4542,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
   char *mitMoira2FaStatus_v[] = {NULL, NULL};
+  char *mitMoiraPwdChangeOpt_v[] = {NULL, NULL};
   char *uid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
   char *homedir_v[] = {NULL, NULL};
@@ -4580,6 +4585,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char principal[256];
   char status[256];
   char twofactor_status[256];
+  char pwd_change_options[256];
   char query_base_dn[256];
   char rbac_policy_link[256];
   char mit_address_list[256];
@@ -6704,11 +6710,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   uid_v[0] = Uid;
 
   sprintf(status, "%d", State);
+  sprintf(pwd_change_options, "%d", PwdChangeOptions);
   mitMoiraStatus_v[0] = status;
   mitMoiraClass_v[0] = class;
+  mitMoiraPwdChangeOpt_v[0] = pwd_change_options;
   ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_REPLACE);
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_REPLACE);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_REPLACE);
+  ADD_ATTR("mitMoiraPwdChangeOpt", mitMoiraPwdChangeOpt_v, LDAP_MOD_REPLACE);
 
   if(ActiveDirectory)
     {
@@ -7270,6 +7279,7 @@ int user_create(int ac, char **av, void *ptr)
   char *mitMoiraClass_v[] = {NULL, NULL};
   char *mitMoiraStatus_v[] = {NULL, NULL};
   char *mitMoira2FaStatus_v[] = {NULL, NULL};
+  char *mitMoiraPwdChangeOpt_v[] = {NULL, NULL};
   char *affiliation_v[] = {NULL, NULL};
   char *scoped_affiliation_v[] = {NULL, NULL};
   char *name_v[] = {NULL, NULL};
@@ -7721,9 +7731,11 @@ int user_create(int ac, char **av, void *ptr)
 
   mitMoiraClass_v[0] = av[U_CLASS];
   mitMoiraStatus_v[0] = av[U_STATE];
+  mitMoiraPwdChangeOpt_v[0] = av[U_PWD_CHANGE_OPTIONS];
   ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_ADD);
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
+  ADD_ATTR("mitMoiraPwdChangeOpt", mitMoiraPwdChangeOpt_v, LDAP_MOD_ADD);
 
   if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN") || 
       !strcmp(av[U_CLASS], "FACULTY"))

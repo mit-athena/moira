@@ -91,9 +91,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
 	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
-	      "u.potype, u.twofactor_status, u.affiliation_basic, u.unit_id FROM users u WHERE %s", qual);
+	      "u.potype, u.twofactor_status, u.affiliation_basic, u.unit_id, "
+	      "u.pwd_change_options FROM users u WHERE %s", qual);
       dosql(before);
-      beforec = 17;
+      beforec = 18;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
@@ -322,9 +323,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
       sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, "
 	      "u.winconsoleshell, u.last, u.first, u.middle, u.status, "
 	      "u.clearid, u.type, u.users_id, u.winhomedir, u.winprofiledir, "
-	      "u.potype, u.twofactor_status, u.affiliation_basic, u.unit_id FROM users u WHERE %s", qual);
+	      "u.potype, u.twofactor_status, u.affiliation_basic, u.unit_id, "
+	      "u.pwd_change_options FROM users u WHERE %s", qual);
       dosql(after);
-      afterc = 17;
+      afterc = 18;
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "

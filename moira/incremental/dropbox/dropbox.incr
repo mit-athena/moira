@@ -15,7 +15,7 @@ def log(msg):
 
 
 # Write a message to critical.log and send a zephyr message to -c moira.
-def critical(msg):
+def critical_log(msg):
     log('critical error: ' + msg)
     timestr = ctime()[4:-5]
     with open('/moira/critical.log', 'a') as f:
@@ -24,6 +24,11 @@ def critical(msg):
     if os.path.exists(zwrite):
         call([zwrite, '-q', '-d', '-n', '-c', 'moira', '-i', 'incremental',
               '-m', 'dropbox.incr: ' + msg])
+
+
+# Log a critical error and exit the script.
+def critical(msg):
+    critical_log(msg)
     sys.exit(1)
 
 
@@ -49,16 +54,28 @@ def check_req(url, data):
 # group_external_id.  Dropbox does not let us select groups by name,
 # so we will use the external ID to refer to it in future requests.
 def dropbox_create_group(name, id):
+    create_url = 'https://api.dropboxapi.com/2/team/groups/create'
     log('creating group %s with id %s' % (name, id))
     data = json.dumps({'group_name': name, 'group_external_id': id})
     try:
-        dropbox_req('https://api.dropboxapi.com/2/team/groups/create', data)
+        dropbox_req(create_url, data)
     except HTTPError as e:
         # Dropbox users can manually create groups which might
-        # conflict with Moira groups.  Log a distinctive error if we
-        # see a conflict for this reason.
+        # conflict with Moira groups.
         if e.code == 409 and 'group_name_already_used' in str(e):
-            critical('conflicting dropbox group: ' + name)
+            # Try to create the group with a suffix.  Since we refer
+            # to groups by external ID after creation, the
+            # variant-named group will receive membership updates from
+            # the Moira list.  When the conflicting is addressed, the
+            # group can be manually renamed to match the list name.
+            newname = name + '.' + os.urandom(2).encode('hex')
+            critical_log('conflicting dropbox group; creating %s as %s' %
+                         (name, newname))
+            data = json.dumps({'group_name': newname, 'group_external_id': id})
+            try:
+                dropbox_req(create_url, data)
+            except HTTPError as e:
+                critical('dropbox error: ' + str(e))
         else:
             critical('dropbox error: ' + str(e))
 

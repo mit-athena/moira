@@ -26,6 +26,11 @@ def critical_log(msg):
               '-m', 'dropbox.incr: ' + msg])
 
 
+# Generate a Dropbox external group ID for a Moira list name.
+def name2id(name):
+    return 'moira:' + name
+
+
 # Log a critical error and exit the script.
 def critical(msg):
     critical_log(msg)
@@ -50,12 +55,12 @@ def check_req(url, data):
         critical('dropbox error: ' + str(e))
 
 
-# Create a Dropbox group, setting id (the Moira list_id) as the
-# group_external_id.  Dropbox does not let us select groups by name,
-# so we will use the external ID to refer to it in future requests.
-def dropbox_create_group(name, id):
+# Create a Dropbox group, setting an external ID which we can use in
+# future requests.
+def dropbox_create_group(name):
+    log('creating group ' + name)
     create_url = 'https://api.dropboxapi.com/2/team/groups/create'
-    log('creating group %s with id %s' % (name, id))
+    id = name2id(name)
     data = json.dumps({'group_name': name, 'group_external_id': id})
     try:
         dropbox_req(create_url, data)
@@ -80,29 +85,31 @@ def dropbox_create_group(name, id):
             critical('dropbox error: ' + str(e))
 
 
-# Delete the Dropbox group with the specified id.
-def dropbox_delete_group(id, listname):
-    log('deleting group %s (%s)' % (listname, id))
+# Delete a Dropbox group.
+def dropbox_delete_group(listname):
+    log('deleting group ' + listname)
+    id = name2id(listname)
     data = json.dumps({'.tag': 'group_external_id', 'group_external_id': id})
     check_req('https://api.dropboxapi.com/2/team/groups/delete', data)
 
 
-# Rename the Dropbox group with the specified id.
-def dropbox_rename_group(id, old_name, new_name):
-    log('renaming group %s from %s to %s' % (id, old_name, new_name))
+# Rename a Dropbox group.
+def dropbox_rename_group(old_name, new_name):
+    log('renaming group %s to %s' % (old_name, new_name))
     data = json.dumps({'group': {'.tag': 'group_external_id',
-                                 'group_external_id': id},
+                                 'group_external_id': name2id(old_name)},
                        'return_members': False,
-                       'new_group_name': new_name})
+                       'new_group_name': new_name,
+                       'new_group_external_id': name2id(new_name)})
     check_req('https://api.dropboxapi.com/2/team/groups/update', data)
 
 
-# Add username to the Dropbox group with the specified id.
-def dropbox_add_member(id, listname, username):
-    log('adding %s to group %s (%s)' % (username, listname, id))
+# Add username to a Dropbox group.
+def dropbox_add_member(listname, username):
+    log('adding %s to group %s' % (username, listname))
     email = username + '@mit.edu'
     data = json.dumps({'group': {'.tag': 'group_external_id',
-                                 'group_external_id': id},
+                                 'group_external_id': name2id(listname)},
                        'members': [{'user': {'.tag': 'email', 'email': email},
                                     'access_type': {'.tag': 'member'}}],
                        'return_members': False})
@@ -118,11 +125,11 @@ def dropbox_add_member(id, listname, username):
 
 
 # Remove username from the Dropbox group with the specified id.
-def dropbox_remove_member(id, listname, username):
-    log('removing %s from group %s (%s)' % (username, listname, id))
+def dropbox_remove_member(listname, username):
+    log('removing %s from group %s' % (username, listname))
     email = username + '@mit.edu'
     data = json.dumps({'group': {'.tag': 'group_external_id',
-                                 'group_external_id': id},
+                                 'group_external_id': name2id(listname)},
                        'users': [{'.tag': 'email', 'email': email}],
                        'return_members': False})
     try:
@@ -143,19 +150,19 @@ def dropbox_remove_member(id, listname, username):
 # Propagate a list metadata change to Dropbox.
 def propagate_list_change(before, after):
     if before == []:
-        dropbox_create_group(after[0], after[10])
+        dropbox_create_group(after[0])
     elif after == []:
-        dropbox_delete_group(before[10], before[0])
+        dropbox_delete_group(before[0])
     elif before[0] != after[0]:
-        dropbox_rename_group(before[10], before[0], after[0])
+        dropbox_rename_group(before[0], after[0])
 
 
 # Propagate a membership change to Dropbox.
 def propagate_member_change(before, after):
     if before == [] and after[1] == 'USER':
-        dropbox_add_member(after[11], after[0], after[2])
+        dropbox_add_member(after[0], after[2])
     elif after == [] and before[1] == 'USER':
-        dropbox_remove_member(before[11], before[0], before[2])
+        dropbox_remove_member(before[0], before[2])
 
 
 print 'dropbox.incr ' + ' '.join(sys.argv[1:])

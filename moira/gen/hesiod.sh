@@ -10,7 +10,7 @@ fi
 
 set -x 
 
-PATH=/etc:/bin:/usr/bin:/usr/etc:/usr/athena/etc
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
 export PATH
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
@@ -25,12 +25,12 @@ umask 022
 # File that will contain the necessary information to be updated
 TARFILE=/var/tmp/hesiod.out
 # Directory into which we will empty the tarfile
-SRC_DIR=/etc/athena/_nameserver
+SRC_DIR=/var/named/data/_hesiod
 # Directory into which we will put the final product
-DEST_DIR=/etc/athena/nameserver
+DEST_DIR=/var/named/data/hesiod
 
-INIT=/etc/init.d/athena-bind
-NAMED_PID=/var/athena/named.pid
+INIT="service named"
+NAMED_PID=/var/run/named/named.pid
 
 # Create the destination directory if it doesn't exist
 if test ! -d $DEST_DIR
@@ -49,8 +49,8 @@ then
 	set -P
 
 	cd $DEST_DIR
-	mkdir ../_nameserver
-	cd ../_nameserver
+	mkdir ../_hesiod
+	cd ../_hesiod
 	if test $SRC_DIR != `pwd`
 	then
 		ln -s `pwd` $SRC_DIR
@@ -58,7 +58,7 @@ then
 fi
 
 # make sure SRC_DIR is empty
-/bin/rm -rf $SRC_DIR/*
+rm -rf $SRC_DIR/*
 
 # Alert if tarfile doesn't exist
 if test ! -r $TARFILE 
@@ -95,7 +95,7 @@ done
 # existance as evidence that named as has been successfully restarted.
 
 # First, get statistics
-/usr/athena/etc/rndc stats
+rndc stats
 sleep 1
 $INIT stop
 rm -f $NAMED_PID

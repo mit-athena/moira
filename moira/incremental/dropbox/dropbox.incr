@@ -1,0 +1,188 @@
+#!/moira/bin/python
+
+# Propagate list and list membership changes to Dropbox groups.
+
+import json
+import os
+import sys
+from subprocess import call
+from time import sleep, ctime
+from urllib2 import HTTPError, Request, urlopen
+
+# Display an informational message to incr-runner.log.
+def log(msg):
+    print 'dropbox.incr: ' + msg
+
+
+# Write a message to critical.log and send a zephyr message to -c moira.
+def critical_log(msg):
+    log('critical error: ' + msg)
+    timestr = ctime()[4:-5]
+    with open('/moira/critical.log', 'a') as f:
+        f.write('%s <%d>dropbox.incr: %s\n' % (timestr, os.getpid(), msg))
+    zwrite = '/usr/local/bin/zwrite'
+    if os.path.exists(zwrite):
+        call([zwrite, '-q', '-d', '-n', '-c', 'moira', '-i', 'incremental',
+              '-m', 'dropbox.incr: ' + msg])
+
+
+# Generate a Dropbox external group ID for a Moira list name.
+def name2id(name):
+    return 'moira:' + name
+
+
+# Log a critical error and exit the script.
+def critical(msg):
+    critical_log(msg)
+    sys.exit(1)
+
+
+# Make a Dropbox API request, ignoring the output.  Failures will
+# raise HTTPError.
+def dropbox_req(url, data):
+    with open('/moira/dropbox/creds') as f:
+        token = f.read().rstrip('\r\n')
+    headers={'Content-Type': 'application/json',
+             'Authorization': 'Bearer ' + token}
+    urlopen(Request(url=url, data=data, headers=headers)).close()
+
+
+# Make a Dropbox API request and log a critical error if it fails.
+def check_req(url, data):
+    try:
+        dropbox_req(url, data)
+    except HTTPError as e:
+        critical('dropbox error: ' + str(e))
+
+
+# Create a Dropbox group, setting an external ID which we can use in
+# future requests.
+def dropbox_create_group(name):
+    log('creating group ' + name)
+    create_url = 'https://api.dropboxapi.com/2/team/groups/create'
+    id = name2id(name)
+    data = json.dumps({'group_name': name, 'group_external_id': id})
+    try:
+        dropbox_req(create_url, data)
+    except HTTPError as e:
+        # Dropbox users can manually create groups which might
+        # conflict with Moira groups.
+        if e.code == 409 and 'group_name_already_used' in str(e):
+            # Try to create the group with a suffix.  Since we refer
+            # to groups by external ID after creation, the
+            # variant-named group will receive membership updates from
+            # the Moira list.  When the conflicting is addressed, the
+            # group can be manually renamed to match the list name.
+            newname = name + '.' + os.urandom(2).encode('hex')
+            critical_log('conflicting dropbox group; creating %s as %s' %
+                         (name, newname))
+            data = json.dumps({'group_name': newname, 'group_external_id': id})
+            try:
+                dropbox_req(create_url, data)
+            except HTTPError as e:
+                critical('dropbox error: ' + str(e))
+        else:
+            critical('dropbox error: ' + str(e))
+
+
+# Delete a Dropbox group.
+def dropbox_delete_group(listname):
+    log('deleting group ' + listname)
+    id = name2id(listname)
+    data = json.dumps({'.tag': 'group_external_id', 'group_external_id': id})
+    check_req('https://api.dropboxapi.com/2/team/groups/delete', data)
+
+
+# Rename a Dropbox group.
+def dropbox_rename_group(old_name, new_name):
+    log('renaming group %s to %s' % (old_name, new_name))
+    data = json.dumps({'group': {'.tag': 'group_external_id',
+                                 'group_external_id': name2id(old_name)},
+                       'return_members': False,
+                       'new_group_name': new_name,
+                       'new_group_external_id': name2id(new_name)})
+    check_req('https://api.dropboxapi.com/2/team/groups/update', data)
+
+
+# Add username to a Dropbox group.
+def dropbox_add_member(listname, username):
+    log('adding %s to group %s' % (username, listname))
+    email = username + '@mit.edu'
+    data = json.dumps({'group': {'.tag': 'group_external_id',
+                                 'group_external_id': name2id(listname)},
+                       'members': [{'user': {'.tag': 'email', 'email': email},
+                                    'access_type': {'.tag': 'member'}}],
+                       'return_members': False})
+    try:
+        dropbox_req('https://api.dropboxapi.com/2/team/groups/members/add',
+                    data)
+    except HTTPError as e:
+        if e.code == 409 and ('members_not_in_team' in str(e) or
+                              'users_not_found' in str(e)):
+            log('ignoring unregistered user %s' % username)
+        else:
+            critical('dropbox error: ' + str(e))
+
+
+# Remove username from the Dropbox group with the specified id.
+def dropbox_remove_member(listname, username):
+    log('removing %s from group %s' % (username, listname))
+    email = username + '@mit.edu'
+    data = json.dumps({'group': {'.tag': 'group_external_id',
+                                 'group_external_id': name2id(listname)},
+                       'users': [{'.tag': 'email', 'email': email}],
+                       'return_members': False})
+    try:
+        dropbox_req('https://api.dropboxapi.com/2/team/groups/members/remove',
+                    data)
+    except HTTPError as e:
+        # Ignore errors from removing unregistered users.  Currently
+        # Dropbox returns an internal error in this case; also ignore
+        # members_not_in_team in case they fix that.
+        if ((e.code == 500 and 'Internal Server Error' in str(e)) or
+            (e.code == 409 and ('members_not_in_team' in str(e) or
+                                'users_not_found' in str(e)))):
+            log('ignoring error for unregistered user %s' % username)
+        else:
+            critical('dropbox error: ' + str(e))
+
+
+# Propagate a list metadata change to Dropbox.
+def propagate_list_change(before, after):
+    if before == []:
+        dropbox_create_group(after[0])
+    elif after == []:
+        dropbox_delete_group(before[0])
+    elif before[0] != after[0]:
+        dropbox_rename_group(before[0], after[0])
+
+
+# Propagate a membership change to Dropbox.
+def propagate_member_change(before, after):
+    if before == [] and after[1] == 'USER':
+        dropbox_add_member(after[0], after[2])
+    elif after == [] and before[1] == 'USER':
+        dropbox_remove_member(before[0], before[2])
+
+
+print 'dropbox.incr ' + ' '.join(sys.argv[1:])
+
+# Pause for up to half an hour while the stop file exists.
+stop_file = '/moira/dropbox/nodropbox'
+stop_check_count = 0
+while os.path.exists(stop_file):
+    sleep(60)
+    if stop_check_count > 30:
+        critical('incremental failed (%s exists)' % stop_file)
+    stop_check_count += 1
+
+table = sys.argv[1]
+beforec = int(sys.argv[2])
+afterc = int(sys.argv[3])
+before = sys.argv[4:4+beforec]
+after = sys.argv[4+beforec:4+beforec+afterc]
+
+if table == 'list':
+    propagate_list_change(before, after)
+elif table == 'imembers':
+    propagate_member_change(before, after)

@@ -646,7 +646,7 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
     return MR_IN_USE;
 
   EXEC SQL SELECT COUNT(name) INTO :cnt FROM printers
-    WHERE lpc_acl = :id OR ac = :id;
+    WHERE lpc_acl = :id OR ac = :id OR report_list = :id;
   if (cnt > 0)
     return MR_IN_USE;
 

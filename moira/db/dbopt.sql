@@ -99,4 +99,5 @@ create index i_mcntmap_cntid on mcntmap (cnt_id);
 create index i_hwaddrmap_machid on hwaddrmap (mach_id);
 create index i_hwaddrmap_hwaddr on hwaddrmap (hwaddr);
 
+create index i_incr_queue_ts on incremental_queue (timestamp);
 create sequence incremental_seq increment by 1 start with 1 minvalue 1 maxvalue 2147483648 cycle nocache;

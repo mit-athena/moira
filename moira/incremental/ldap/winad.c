@@ -1726,6 +1726,7 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   char  *av[7];
   char  after_user_id[32];
   char  before_user_id[32];
+  char  pwd_change_options[256];
   char  *call_args[7];
   char  *save_argv[U_END];
 
@@ -1734,12 +1735,16 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   memset(after_user_id, '\0', sizeof(after_user_id));
   memset(before_user_id, '\0', sizeof(before_user_id));
+  memset(pwd_change_options, '\0', sizeof(pwd_change_options));
 
   if (beforec > U_USER_ID)
     strcpy(before_user_id, before[U_USER_ID]);
 
   if (afterc > U_USER_ID)
     strcpy(after_user_id, after[U_USER_ID]);
+
+  if (afterc > U_PWD_CHANGE_OPTIONS)
+    strcpy(pwd_change_options, after[U_PWD_CHANGE_OPTIONS]);
 
   if ((beforec == 0) && (afterc == 0)) /*this case should never happen */
     return;
@@ -1795,7 +1800,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       call_args[0] = (char *)ldap_handle;
       call_args[1] = dn_path;
       call_args[2] = after_user_id;
-      call_args[3] = NULL;
+      call_args[3] = pwd_change_options;
+      call_args[4] = NULL;
       callback_rc = 0;
 
       if (rc = mr_query("get_user_account_by_login", 1, av,
@@ -7731,11 +7737,16 @@ int user_create(int ac, char **av, void *ptr)
 
   mitMoiraClass_v[0] = av[U_CLASS];
   mitMoiraStatus_v[0] = av[U_STATE];
-  mitMoiraPwdChangeOpt_v[0] = av[U_PWD_CHANGE_OPTIONS];
+
+  if (strlen(call_args[3]) != 0)
+    {
+      mitMoiraPwdChangeOpt_v[0] = call_args[3];
+      ADD_ATTR("mitMoiraPwdChangeOpt", mitMoiraPwdChangeOpt_v, LDAP_MOD_ADD);
+    }
+
   ADD_ATTR("mitMoiraClass", mitMoiraClass_v, LDAP_MOD_ADD);
   ADD_ATTR("mitMoiraStatus", mitMoiraStatus_v, LDAP_MOD_ADD);
   ADD_ATTR("eduPersonPrincipalName", mail_v, LDAP_MOD_ADD);
-  ADD_ATTR("mitMoiraPwdChangeOpt", mitMoiraPwdChangeOpt_v, LDAP_MOD_ADD);
 
   if (!strcmp(av[U_CLASS], "MITS") || !strcmp(av[U_CLASS], "LINCOLN") || 
       !strcmp(av[U_CLASS], "FACULTY"))

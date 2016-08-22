@@ -20,6 +20,7 @@
 #define file_exists(file) (access((file), F_OK) == 0)
 
 #define MOIRA_SVR_PRINCIPAL "sms"
+#define MAX_TRIES 3
 
 RCSID("$HeadURL: svn+ssh://svn.mit.edu/moira/trunk/moira/incremental/afs/afs.c $ $Id: afs.c 3973 2010-02-02 19:15:44Z zacheiss $");
 
@@ -31,7 +32,7 @@ static char tbl_buf[1024];
 
 int main(int argc, char **argv)
 {
-  int beforec, afterc, i, astate = 0, bstate = 0, activate;
+  int beforec, afterc, i, astate = 0, bstate = 0, tries = 0, activate;
   char *table, **before, **after;
   long status;
 
@@ -92,7 +93,14 @@ int main(int argc, char **argv)
   else
     exit(0);
 
-  status = modify_kerberos(after[U_NAME], activate);
+  while (status = modify_kerberos(after[U_NAME], activate))
+    {
+      if (++tries > MAX_TRIES)
+	break;
+
+      sleep(30);
+    }
+
   if (status)
     {
       com_err(whoami, status, "while modifying Kerberos principal for user %s", after[U_NAME]);

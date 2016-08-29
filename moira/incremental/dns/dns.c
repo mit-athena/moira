@@ -39,6 +39,9 @@
 #define INTERNAL_KEY_NAME "moira_internal"
 #define EXTERNAL_KEY_NAME "moira_external"
 
+#define DEFAULT_PTR_ZONE "18.IN-ADDR.ARPA"
+#define DEFAULT_ZONE "MIT.EDU"
+
 #define MAX_SERVERS 32
 #define MAX_RESULTS 32
 
@@ -87,9 +90,12 @@ int alias_add(char *after_alias, char *after_name,
 void do_machine(char **before, int beforec, char **after, int afterc);
 void do_hostalias(char **before, int beforec, char **after, int afterc);
 char *reverse_ip(char *ip);
+int initialize_hmac_keys(void);
 
 char *whoami;
-static char tbl_buf[1024];
+static char tbl_buf[BUFSIZ];
+
+ns_tsig_key *internal_tkey, *external_tkey;
 
 int main(int argc, char **argv)
 {
@@ -147,6 +153,12 @@ int main(int argc, char **argv)
 
   com_err(whoami, 0, "%s", tbl_buf);
 
+  if (!initialize_hmac_keys())
+    {
+      critical_alert(whoami, "incremental", "Unable to initialize HMAC keys");
+      exit(1);
+    }
+
   if (!strcmp(table, "machine"))
     do_machine(before, beforec, after, afterc);
   if (!strcmp(table, "hostalias"))
@@ -161,10 +173,6 @@ void do_machine(char **before, int beforec, char **after, int afterc)
     *after_model, *before_os, *after_os, *before_address, *after_address;
   int before_mach_id, after_mach_id, before_status, after_status, 
     before_ttl, after_ttl;
-  char *hmac_key;
-  int len;
-  u_char *stream;
-  ns_tsig_key *internal_tkey, *external_tkey;
 
   if (afterc > MACH_NAME_POS) 
     after_name = after[MACH_NAME_POS];
@@ -201,94 +209,6 @@ void do_machine(char **before, int beforec, char **after, int afterc)
 
   check_dns();
 
- /* 
-  * Load internal HMAC key so we can make signed DNS queries
-  */
-  
-  if (!get_hmac_key(HMAC_INTERNAL_KEY_FILE, &hmac_key)) 
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to retrieve internal hmac key");
-      return;
-    }
-  
-  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
-  if (!stream)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for hmac_key stream");
-      return;
-    }
-
-  len = b64_pton (hmac_key, stream, strlen(hmac_key));
-  
-  internal_tkey = malloc(sizeof *internal_tkey);
-  if (!internal_tkey)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for internal tkey");
-      return;
-    }
-  
-  memset (internal_tkey, 0, sizeof *internal_tkey);
-  internal_tkey->data = malloc(len * sizeof(char));
-  
-  if (!internal_tkey->data)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for internal tkey data");
-      return;
-    }
-  
-  strcpy(internal_tkey->name, INTERNAL_KEY_NAME);
-  strcpy(internal_tkey->alg, "HMAC-MD5.SIG-ALG.REG.INT");
-  memcpy(internal_tkey->data, stream, len);
-  internal_tkey->len = len;
-
- /* 
-  * Load external HMAC key so we can make signed DNS queries
-  */
-  
-  if (!get_hmac_key(HMAC_EXTERNAL_KEY_FILE, &hmac_key)) 
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to retrieve external hmac key");
-      return;
-    }
-
-  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
-  if (!stream)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for hmac_key stream");
-      return;
-    }
-
-  len = b64_pton (hmac_key, stream, strlen(hmac_key));
-
-  external_tkey = malloc(sizeof *external_tkey);
-  if (!external_tkey)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for external tkey");
-      return;
-    }
-  
-  memset (external_tkey, 0, sizeof *external_tkey);
-  external_tkey->data = malloc(len * sizeof(char));
-  
-  if (!external_tkey->data)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for external tkey data");
-      return;
-    }
-  
-  strcpy(external_tkey->name, EXTERNAL_KEY_NAME);
-  strcpy(external_tkey->alg, "HMAC-MD5.SIG-ALG.REG.INT");
-  memcpy(external_tkey->data, stream, len);
-  external_tkey->len = len;
-  
   if (beforec == 0) 
     {
       if (strcmp(after_address, "unassigned"))
@@ -465,10 +385,6 @@ void do_hostalias(char **before, int beforec, char **after, int afterc)
 {
   char *before_name, *after_name, *before_alias, *after_alias;
   int before_mach_id, after_mach_id;
-  char *hmac_key;
-  int len;
-  u_char *stream;
-  ns_tsig_key *internal_tkey, *external_tkey;
 
   if (afterc > ALIAS_POS) 
     after_alias = after[ALIAS_POS];
@@ -485,94 +401,6 @@ void do_hostalias(char **before, int beforec, char **after, int afterc)
 
   check_dns();
 
- /* 
-  * Load internal HMAC key so we can make signed DNS queries
-  */
-  
-  if (!get_hmac_key(HMAC_INTERNAL_KEY_FILE, &hmac_key)) 
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to retrieve internal hmac key");
-      return;
-    }
-  
-  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
-  if (!stream)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for hmac_key stream");
-      return;
-    }
-
-  len = b64_pton (hmac_key, stream, strlen(hmac_key));
-  
-  internal_tkey = malloc(sizeof *internal_tkey);
-  if (!internal_tkey)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for internal tkey");
-      return;
-    }
-  
-  memset (internal_tkey, 0, sizeof *internal_tkey);
-  internal_tkey->data = malloc(len * sizeof(char));
-  
-  if (!internal_tkey->data)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for internal tkey data");
-      return;
-    }
-  
-  strcpy(internal_tkey->name, INTERNAL_KEY_NAME);
-  strcpy(internal_tkey->alg, "HMAC-MD5.SIG-ALG.REG.INT");
-  memcpy(internal_tkey->data, stream, len);
-  internal_tkey->len = len;
-
- /* 
-  * Load external HMAC key so we can make signed DNS queries
-  */
-  
-  if (!get_hmac_key(HMAC_EXTERNAL_KEY_FILE, &hmac_key)) 
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to retrieve external hmac key");
-      return;
-    }
-
-  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
-  if (!stream)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for hmac_key stream");
-      return;
-    }
-  
-  len = b64_pton (hmac_key, stream, strlen(hmac_key));
-
-  external_tkey = malloc(sizeof *external_tkey);
-  if (!external_tkey)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for external tkey");
-      return;
-    }
-  
-  memset (external_tkey, 0, sizeof *external_tkey);
-  external_tkey->data = malloc(len * sizeof(char));
-  
-  if (!external_tkey->data)
-    {
-      critical_alert(whoami, "incremental", 
-		     "Unable to allocate memory for external tkey data");
-      return;
-    }
-  
-  strcpy(external_tkey->name, EXTERNAL_KEY_NAME);
-  strcpy(external_tkey->alg, "HMAC-MD5.SIG-ALG.REG.INT");
-  memcpy(external_tkey->data, stream, len);
-  external_tkey->len = len;
-  
   if (beforec == 0) 
     {
       com_err(whoami, 0, "Adding hostalias %s for %s", after_alias, 
@@ -713,7 +541,10 @@ int do_update(char *host, char *data, char *vendor, char *model, char *os,
   struct hostent *he;
   struct in_addr **addr_list;
   struct sockaddr_in addr;
-  char ip[INET_ADDRSTRLEN], mitMoiraId[1024], hinfo[1024];
+  char ip[INET_ADDRSTRLEN];
+  /* + strlen("mitMoiraId:") */
+  char mitMoiraId[MACHINE_MACH_ID_SIZE + 12];
+  char hinfo[MACHINE_VENDOR_SIZE + MACHINE_MODEL_SIZE + MACHINE_OS_SIZE + 3];
   int len;
 
   memset(&res, 0, sizeof(res));
@@ -725,7 +556,7 @@ int do_update(char *host, char *data, char *vendor, char *model, char *os,
 
   if ((he = gethostbyname(server)) == NULL) 
     {
-      com_err(whoami, 0, "Gethostbyname unable to resolve %s", server);
+      com_err(whoami, 0, "gethostbyname unable to resolve %s", server);
       return 0;
     }
 
@@ -822,11 +653,11 @@ int do_update(char *host, char *data, char *vendor, char *model, char *os,
 
   if (type == T_PTR)
     {
-      rrecp = res_mkupdrec(S_ZONE, "18.IN-ADDR.ARPA", class, T_SOA, 0);
+      rrecp = res_mkupdrec(S_ZONE, DEFAULT_PTR_ZONE, class, T_SOA, 0);
     }
   else
     {
-      rrecp = res_mkupdrec(S_ZONE, "MIT.EDU", class, T_SOA, 0);
+      rrecp = res_mkupdrec(S_ZONE, DEFAULT_ZONE, class, T_SOA, 0);
     }
 
   PREPEND(updqueue, rrecp, r_glink);
@@ -874,7 +705,7 @@ int do_query(char *host, char *server, int class, int type, char **result,
 
   if ((he = gethostbyname(server)) == NULL) 
     {
-      com_err(whoami, 0, "Gethostbyname unable to resolve %s", server);
+      com_err(whoami, 0, "gethostbyname unable to resolve %s", server);
       return 0;
     }
 
@@ -1137,7 +968,7 @@ int host_update(char *before_name, char *before_address, char *before_vendor,
 
       /* Lets check if its a ptr record we are managing */
       
-      if(!strncmp(before_address, "18.", 3))
+      if(!strncmp(before_address, DEFAULT_PTR_ZONE, 3))
 	{
 	  memset(mitMoiraId, 0, sizeof(mitMoiraId));
 
@@ -1315,7 +1146,7 @@ int host_update(char *before_name, char *before_address, char *before_vendor,
 
       /* Lets check if its a ptr record we are managing */
       
-      if(!strncmp(after_address, "18.", 3))
+      if(!strncmp(after_address, DEFAULT_PTR_ZONE, 3))
 	{
 	  memset(mitMoiraId, 0, sizeof(mitMoiraId));
 
@@ -1561,7 +1392,7 @@ int host_add(char *after_name, char *after_address,
 
       /* Check if the ip address is one we should be managing */
       
-      if(!strncmp(after_address, "18.", 3)) 
+      if(!strncmp(after_address, DEFAULT_PTR_ZONE, 3)) 
 	{
 	  memset(mitMoiraId, 0, sizeof(mitMoiraId));
 	  
@@ -1668,7 +1499,7 @@ int host_add(char *after_name, char *after_address,
           return 0;
 	}
 
-      if(!strncmp(after_address, "18.", 3)) 
+      if(!strncmp(after_address, DEFAULT_PTR_ZONE, 3)) 
 	{
 	  if (!do_update(after_ptr_name, after_name, after_vendor, 
 			 after_model, after_os, after_ttl, after_mach_id, 
@@ -1969,7 +1800,7 @@ int host_delete(char *before_name, char *before_address,
 
       /* Lets check if its a ptr record under our management */
 
-      if(!strncmp(before_address, "18.", 3))
+      if(!strncmp(before_address, DEFAULT_PTR_ZONE, 3))
 	{
 	  memset(mitMoiraId, 0, sizeof(mitMoiraId));
 
@@ -2075,7 +1906,7 @@ int host_delete(char *before_name, char *before_address,
           return 0;
 	}
 
-      if(!strncmp(before_address, "18.", 3))
+      if(!strncmp(before_address, DEFAULT_PTR_ZONE, 3))
 	{
 	  if (!do_update(before_ptr_name, "", "", "", "", 0, 0, servers[i], 
 			 C_IN, T_PTR, tkey))
@@ -2249,3 +2080,86 @@ int alias_delete(char *before_alias, char *before_name,
       free(servers[i]);
     }
 }
+
+int initialize_hmac_keys(void)
+{
+  char *hmac_key;
+  u_char *stream;
+  int len;
+
+  if (!get_hmac_key(HMAC_INTERNAL_KEY_FILE, &hmac_key))
+    {
+      com_err(whoami, 0, "Unable to retrieve internal HMAC key");
+      return 0;
+    }
+
+  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
+  if (!stream)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for internal hmac_key stream");
+      return 0;
+    }
+
+  len = b64_pton(hmac_key, stream, strlen(hmac_key));
+
+  internal_tkey = malloc(sizeof *internal_tkey);
+  if (!internal_tkey)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for internal_tkey");
+      return 0;
+    }
+
+  memset(internal_tkey, 0, sizeof(*internal_tkey));
+
+  internal_tkey->data = malloc(len * sizeof(char));
+  if (!internal_tkey->data)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for internal_tkey->data");
+      return 0;
+    }
+
+  strcpy(internal_tkey->name, INTERNAL_KEY_NAME);
+  strcpy(internal_tkey->alg, NS_TSIG_ALG_HMAC_MD5);
+  memcpy(internal_tkey->data, stream, len);
+  internal_tkey->len = len;
+
+  if (!get_hmac_key(HMAC_EXTERNAL_KEY_FILE, &hmac_key))
+    {
+      com_err(whoami, 0, "Unable to retrieve external HMAC key");
+      return 0;
+    }
+
+  stream = malloc(sizeof(char *) * strlen(hmac_key) + 1);
+  if (!stream)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for external hmac_key stream");
+      return 0;
+    }
+
+  len = b64_pton(hmac_key, stream, strlen(hmac_key));
+
+  external_tkey = malloc(sizeof *external_tkey);
+  if (!external_tkey)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for external_tkey");
+      return 0;
+    }
+
+  memset(external_tkey, 0, sizeof(*external_tkey));
+
+  external_tkey->data = malloc(len * sizeof(char));
+  if (!external_tkey->data)
+    {
+      com_err(whoami, 0, "Unable to allocate memory for external_tkey->data");
+      return 0;
+    }
+
+  strcpy(external_tkey->name, EXTERNAL_KEY_NAME);
+  strcpy(external_tkey->alg, NS_TSIG_ALG_HMAC_MD5);
+  memcpy(external_tkey->data, stream, len);
+  external_tkey->len = len;
+
+  return 1;
+}      
+
+		 

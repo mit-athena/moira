@@ -95,6 +95,7 @@ int initialize_hmac_keys(void);
 int moira_connect(void);
 int moira_disconnect(void);
 int save_hostaliases(int argc, char **argv, void *sq);
+int store_host_info(int argc, char **argv, void *sq);
 int delete_hostaliases(char *before_name, char *after_name, int before_mach_id);
 int add_hostaliases(char *before_nane, char *after_name, int after_mach_id);
 
@@ -504,8 +505,12 @@ void do_machine(char **before, int beforec, char **after, int afterc)
 
  void do_hostalias(char **before, int beforec, char **after, int afterc)
  {
-   char *before_name, *after_name, *before_alias, *after_alias;
+   char *before_name = NULL, *after_name = NULL;
+   char *before_alias = NULL, *after_alias = NULL;
    int before_mach_id, after_mach_id;
+   char *args[5];
+   char *argv[30];
+   int rc, status;
 
    if (afterc > ALIAS_POS) 
      after_alias = after[ALIAS_POS];
@@ -521,6 +526,37 @@ void do_machine(char **before, int beforec, char **after, int afterc)
      before_name = before[ALIAS_NAME_POS];
 
    check_dns();
+
+   /* Check status of parent host; no action required if it's not status 1. */
+   if (rc = moira_connect())
+     {
+       critical_alert(whoami, "incremental", "Error contacting Moira server: %s",
+                      error_message(rc));
+       return;
+     }
+
+   if (after_name)
+     args[0] = after_name;
+   else
+     args[0] = before_name;
+
+   args[1] = args[2] = args[3] = "*";
+   rc = mr_query("get_host", 4, args, store_host_info, argv);
+   if (rc)
+     {
+       critical_alert(whoami, 0, "Unable to retrieve host information for %s: %s", args[0], error_message(rc));
+       moira_disconnect();
+       return;
+     }
+
+   moira_disconnect();
+
+   status = atoi(argv[MACH_STATUS_POS]);
+   if (status != 1)
+     {
+       com_err(whoami, 0, "Skipping alias processing on non-active host %s, status %d", args[0], status);
+       return;
+     }
 
    if (beforec == 0) 
      {
@@ -1365,11 +1401,25 @@ void do_machine(char **before, int beforec, char **after, int afterc)
 
        com_err(whoami, 0, "Updating server %s", servers[i]);
 
+       if (!do_update(before_name, "", "", "", "", 0, 0, servers[i], C_IN,
+		      T_A, tkey))
+	 {
+	   com_err(whoami, 0, "Error removing A record for %s", before_name);
+	   return 0;
+	 }
+
        if (!do_update(after_name, after_address, after_vendor, after_model, 
 		      after_os, after_ttl, after_mach_id, servers[i], C_IN, 
 		      T_A, tkey))
 	 {
 	   com_err(whoami, 0, "Error updating A record for %s", after_name);
+	   return 0;
+	 }
+
+       if (!do_update(before_ptr_name, "", "", "", "", 0, 0, servers[i],
+		      C_IN, T_PTR, tkey))
+	 {
+	   com_err(whoami, 0, "Error removing PTR record for %s", before_ptr_name);
 	   return 0;
 	 }
 
@@ -2303,6 +2353,8 @@ void do_machine(char **before, int beforec, char **after, int afterc)
        uname(&uts);
        code = mr_connect(uts.nodename);
        /* Note we don't authenticate */
+       if (!code)
+	 code = mr_version(-1);
        return code;
      }
    return 0;
@@ -2349,11 +2401,20 @@ void do_machine(char **before, int beforec, char **after, int afterc)
        return 0;
      }
 
-   if (rc = mr_query("get_hostalias", 2, args, save_hostaliases, host_aliases))
+   rc = mr_query("get_hostalias", 2, args, save_hostaliases, host_aliases);
+   if (rc)
      {
-       com_err(whoami, 0, "Unable to retrieve aliases for %s", after_name);
-       moira_disconnect();
-       return 0;
+       if (rc != MR_NO_MATCH)
+	 {
+	   com_err(whoami, 0, "Unable to retrieve aliases for %s: %s", after_name, error_message(rc));
+	   moira_disconnect();
+	   return 0;
+	 }
+       else
+	 {
+	   moira_disconnect();
+	   return 1;
+	 }
      }
 
    moira_disconnect();
@@ -2405,11 +2466,20 @@ void do_machine(char **before, int beforec, char **after, int afterc)
       return 0;
     }
 
-  if (rc = mr_query("get_hostalias", 2, args, save_hostaliases, host_aliases))
+  rc = mr_query("get_hostalias", 2, args, save_hostaliases, host_aliases);
+  if (rc)
     {
-      com_err(whoami, 0, "Unable to retrieve aliases for %s", after_name);
-      moira_disconnect();
-      return 0;
+      if (rc != MR_NO_MATCH)
+	{
+	  com_err(whoami, 0, "Unable to retrieve aliases for %s: %s", after_name, error_message(rc));
+	  moira_disconnect();
+	  return 0;
+	}
+      else
+	{
+	  moira_disconnect();
+	  return 1;
+	}
     }
 
   moira_disconnect();
@@ -2440,4 +2510,15 @@ void do_machine(char **before, int beforec, char **after, int afterc)
 
   sq_destroy(host_aliases);
   return 1;
+}
+
+int store_host_info(int argc, char **argv, void *hint)
+{
+  int i;
+  char **nargv = hint;
+
+  for(i=0; i<argc; i++)
+    nargv[i] = strdup(argv[i]);
+
+  return MR_CONT;
 }

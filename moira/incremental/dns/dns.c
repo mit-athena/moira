@@ -98,6 +98,7 @@ int save_hostaliases(int argc, char **argv, void *sq);
 int store_host_info(int argc, char **argv, void *sq);
 int delete_hostaliases(char *before_name, char *after_name, int before_mach_id);
 int add_hostaliases(char *before_nane, char *after_name, int after_mach_id);
+int strend(char *s, char *suffix);
 
 char *whoami;
 static char tbl_buf[BUFSIZ];
@@ -557,6 +558,16 @@ void do_machine(char **before, int beforec, char **after, int afterc)
        com_err(whoami, 0, "Skipping alias processing on non-active host %s, status %d", args[0], status);
        return;
      }
+
+   /* If machine is status 1 but address is unassigned, only create CNAME record for hosts 
+      not ending in DEFAULT_ZONE.
+   */
+   if (!strcmp(argv[12], "unassigned") && strend(args[0], DEFAULT_ZONE))
+     {
+       com_err(whoami, 0, "Skipping alias processing for active %s host %s with unassigned address", DEFAULT_ZONE, args[0]);
+       return;
+     }
+   
 
    if (beforec == 0) 
      {
@@ -2521,4 +2532,20 @@ int store_host_info(int argc, char **argv, void *hint)
     nargv[i] = strdup(argv[i]);
 
   return MR_CONT;
+}
+
+int strend(char *s, char *suffix)
+{
+  int ls, lsuffix;
+
+  ls = strlen(s);
+  lsuffix = strlen(suffix);
+
+  if (ls < lsuffix)
+    return 0;
+
+  if (!memcmp(suffix, s + (ls - lsuffix), lsuffix))
+    return 1;
+
+  return 0;
 }

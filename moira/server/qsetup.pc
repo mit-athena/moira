@@ -1515,7 +1515,7 @@ int setup_dcon(struct query *q, char *argv[], client *cl)
     WHERE cnt_id = :id; 
 
   /* trim off the trailing spaces */
-   strcpy(containername, strtrim(containername));
+   strmove(containername, strtrim(containername));
 
   EXEC SQL SELECT COUNT(cnt_id) INTO :cnt FROM containers
     WHERE LOWER(name) LIKE LOWER(:containername || '/' || '%');

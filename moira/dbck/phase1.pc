@@ -381,7 +381,7 @@ void phase1(void)
       u = malloc(sizeof(struct user));
       if (!u)
 	out_of_mem("storing users");
-      strcpy(u->login, strtrim(login));
+      strmove(u->login, strtrim(login));
       u->potype = potype[0];
       sprintf(nbuf, "%s, %s", strtrim(last), strtrim(first));
       u->fullname = strdup(nbuf);

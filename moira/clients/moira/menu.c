@@ -569,7 +569,7 @@ int Prompt_input(char *prompt, char *buf, int buflen)
       refresh_ms(cur_ms);
       *p = '\0';
       Start_paging();
-      strcpy(buf, strtrim(buf));
+      strmove(buf, strtrim(buf));
       return 1;
     }
   else

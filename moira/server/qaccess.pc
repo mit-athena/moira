@@ -1138,7 +1138,7 @@ int access_container(struct query *q, char *argv[], client *cl)
     return MR_INTERNAL;
 
    /* trim off the trailing spaces */
-   strcpy(name, strtrim(name));
+   strmove(name, strtrim(name));
 
   /* Only dbadmin can rename containers. */
   if (!strcmp(q->shortname, "ucon"))

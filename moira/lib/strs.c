@@ -16,6 +16,13 @@
 RCSID("$HeadURL$ $Id$");
 
 /*
+ * memmove for strings.
+ */
+char *strmove(char *dest, char *src) {
+  return memmove(dest, src, strlen(src)+1);
+}
+
+/*
  * Trim whitespace off both ends of a string.
  */
 char *strtrim(char *save)

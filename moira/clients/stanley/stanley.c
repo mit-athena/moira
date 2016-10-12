@@ -452,7 +452,10 @@ int main(int argc, char **argv)
       if (twofactor_status)
 	argv[U_TWOFACTOR] = twofactor_status;
       else
-	argv[U_TWOFACTOR] = "0";
+	if (!strcmp(class, "G") || !strncmp(class, "20", 2))
+	  argv[U_TWOFACTOR] = "0";
+        else
+	  argv[U_TWOFACTOR] = "2";
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -669,7 +672,7 @@ int main(int argc, char **argv)
 	    argv[i + 1] = argv[i];
 	  argv[1] = username;
 	  argv[FS_TYPE + 1] = "ERR";
-	  argv[FS_COMMENTS + 1] = "Locker disabled; call 3-1325 for help";
+	  argv[FS_COMMENTS + 1] = "Locker disabled; call 3-1101 for help";
 	  
 	  status = wrap_mr_query("update_filesys", 12, argv, NULL, NULL);
 	  if (status)
@@ -991,7 +994,7 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dr  | -deletereservation reservation",
 	  "-wh  | -winhomedir winhomedir");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wp  | -winprofiledir winprofiledir",
-	  "-2fa | -twofactor 0|1");
+	  "-2fa | -twofactor status");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-sp  | -sponsor sponsor",
 	  "-e   | -expiration expiration date");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ae  | -alternateemail address",

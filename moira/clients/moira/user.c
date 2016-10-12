@@ -378,7 +378,10 @@ char **AskUserInfo(char **info, Bool name)
   else
     {
       free(info[U_TWOFACTOR]);
-      info[U_TWOFACTOR] = strdup("1");
+      if (!name || state == 0 || state == 2)
+	info[U_TWOFACTOR] = strdup("2");
+      else
+	info[U_TWOFACTOR] = strdup("1");
     }
 
   info[U_SIGNATURE] = strdup("");
@@ -826,7 +829,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
       free(args[FS_TYPE]);
       args[FS_TYPE] = strdup("ERR");
       free(args[FS_COMMENTS]);
-      args[FS_COMMENTS] = strdup("Locker disabled; call 3-1325 for help");
+      args[FS_COMMENTS] = strdup("Locker disabled; call 3-1101 for help");
       FreeAndClear(&args[FS_MODTIME], TRUE);
       FreeAndClear(&args[FS_MODBY], TRUE);
       FreeAndClear(&args[FS_MODWITH], TRUE);

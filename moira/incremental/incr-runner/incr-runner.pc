@@ -202,9 +202,9 @@ void do_service(char *name)
 	critical_alert(whoami, "incr-runner", "incremental timeout on pid %d", inc_pid);
 
       EXEC SQL SELECT table_name, beforec, afterc, before, after, incremental_id INTO
-	:table, :beforec, :afterc, :encoded_before, :encoded_after, :incremental_id FROM
-	(SELECT * FROM incremental_queue WHERE service = :name ORDER BY timestamp)
-	WHERE rownum = 1;
+	:table, :beforec, :afterc, :encoded_before, :encoded_after, :incremental_id
+	FROM incremental_queue WHERE service = :name AND
+	timestamp = (SELECT MIN(timestamp) FROM incremental_queue WHERE service = :name);
 
       /* No matching rows */
       if (sqlca.sqlerrd[2] == 0)
@@ -298,7 +298,7 @@ void do_service(char *name)
 	}
 
     sleep:
-      sleep(1);
+      usleep(250000);
     }
 
   EXEC SQL COMMIT RELEASE;

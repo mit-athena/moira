@@ -463,8 +463,9 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
+ac_subdirs_all="$ac_subdirs_all util/bind"
 ac_subdirs_all="$ac_subdirs_all util/et"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os SO_LDFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB EGREP LN_S ECHO AR ac_ct_AR STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL SET_MAKE mrbindir subdirs COM_ERR_SUBDIR COMPILE_ET target target_cpu target_vendor target_os REG_SVR_DEFS REG_SVR_INCLUDES REG_SVR_LIBS KERBEROS_SUBDIRS RSAREF_CPPFLAGS RSAREF_LIBS RSAREF_SUBDIRS RSAREF_LIBDEP PRO_C PRO_C_DEFS PRO_C_INCLUDES PRO_C_OPTS SQL_LIBS SVRSUBDIRS JAVA_CPPFLAGS WEBMOIRA_SUBDIRS LDAP_CPPFLAGS LDAP_LIBS WINAD_SUBDIRS AFS_CPPFLAGS AFS_PRO_C_INCLUDES AFS_LIBS AFS_DIR AFS_SUBDIRS AFS_SYNCDIR READLINE_CPPFLAGS READLINE_LIBS CURSES_CPPFLAGS CURSES_LIBS CURSES_SUBDIRS MR_LIBDEP KLIBS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os SO_LDFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB EGREP LN_S ECHO AR ac_ct_AR STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL SET_MAKE mrbindir subdirs COM_ERR_SUBDIR COMPILE_ET target target_cpu target_vendor target_os KERBEROS_SUBDIRS PRO_C PRO_C_DEFS PRO_C_INCLUDES PRO_C_OPTS SQL_LIBS SVRSUBDIRS JAVA_CPPFLAGS WEBMOIRA_SUBDIRS LDAP_CPPFLAGS LDAP_LIBS WINAD_SUBDIRS AFS_CPPFLAGS AFS_PRO_C_INCLUDES AFS_LIBS AFS_DIR AFS_SUBDIRS AFS_SYNCDIR READLINE_CPPFLAGS READLINE_LIBS CURSES_CPPFLAGS CURSES_LIBS CURSES_SUBDIRS MR_LIBDEP KLIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1043,7 +1044,6 @@ Optional Packages:
   --with-openssl=PREFIX	Specify location of openssl
   --with-hesiod=PREFIX    Specify location of Hesiod
   --with-zephyr=PREFIX    Specify location of Zephyr
-  --with-rsaref=PREFIX      Specify location of RSAREF
   --with-oracle=PREFIX    Specify location of Oracle (for server)
  --with-java=PREFIX       Specify location of Java libs and headers
   --with-ldap=PREFIX      Specify location of LDAP libs (for server)
@@ -19208,6 +19208,12 @@ fi
 fi
 
 
+# configure / build libbind
+
+
+subdirs="$subdirs util/bind"
+
+
 # com_err (required, but can be built)
 echo "$as_me:$LINENO: checking for com_err" >&5
 echo $ECHO_N "checking for com_err... $ECHO_C" >&6
@@ -19687,10 +19693,7 @@ fi;
 echo "$as_me:$LINENO: result: $krb5" >&5
 echo "${ECHO_T}$krb5" >&6
 if test "$krb5" != no; then
-    REG_SVR_DEFS=-DKRB5
     if test "$krb5" != yes; then
-	REG_SVR_INCLUDES=-I$krb5/include
-	REG_SVR_LIBS=-L$krb5/lib
 
 
     case $CPPFLAGS in
@@ -19725,12 +19728,8 @@ _ACEOF
 
 
     KRB5_LIBS="-lkrb5 -l${crypto} -lcom_err -lresolv"
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb5 -l${crypto} -lresolv"
     KERBEROS_OUTPUT_FILES="incremental/kerberos/Makefile"
     KERBEROS_SUBDIRS="kerberos"
-else
-    REG_SVR_DEFS=-DKRB4
-    REG_SVR_LIBS=-lkadm
 fi
 if test "$KRB5_LIBS" != "" ; then
 
@@ -19753,8 +19752,6 @@ echo "$as_me:$LINENO: result: $openssl" >&5
 echo "${ECHO_T}$openssl" >&6
 if test "$openssl" != no; then
    if test "$openssl" != yes; then
-      REG_SVR_INCLUDES=-I$openssl/include
-      REG_SVR_LIBS=-L$openssl/lib
 
     case $PRO_C_INCLUDES in
 	*-I$openssl/include*) ;;
@@ -19762,7 +19759,6 @@ if test "$openssl" != no; then
     esac
 
    else
-      REG_SVR_INCLUDES=-I/usr/include/openssl
 
     case $PRO_C_INCLUDES in
 	*INCLUDE=/usr/include/openssl*) ;;
@@ -19770,11 +19766,7 @@ if test "$openssl" != no; then
     esac
 
    fi
-   REG_SVR_LIBS="$REG_SVR_LIBS -lssl -lcrypto"
 fi
-
-
-
 
 
 
@@ -20191,54 +20183,6 @@ _ACEOF
 
 fi
 
-# RSAREF support (default: build util/rsaref if present)
-echo "$as_me:$LINENO: checking for RSAREF" >&5
-echo $ECHO_N "checking for RSAREF... $ECHO_C" >&6
-
-# Check whether --with-rsaref or --without-rsaref was given.
-if test "${with_rsaref+set}" = set; then
-  withval="$with_rsaref"
-  rsaref="$withval"
-     RSAREF_CPPFLAGS="-I$rsaref/include"
-     RSAREF_LIBS="$rsaref/lib/rsaref.a"
-else
-  RSAREF_SUBDIRS=reg_svr
-    if test -d $srcdir/util/rsaref; then
-         rsaref=$srcdir/util/rsaref
-	 RSAREF_SUBDIRS="util/rsaref reg_svr"
-	 RSAREF_OUTPUT_FILES="util/rsaref/Makefile"
-	 # autoconf can't deal with creating util/rsaref if util doesn't exist
-	 if test ! -d util; then
-	     mkdir util
-	 fi
-	 RSAREF_CPPFLAGS='-I$(SRCTOP)/util/rsaref'
-	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
-	 RSAREF_LIBDEP='$(BUILDTOP)/util/rsaref/rsaref.a'
-     else
-         rsaref=no
-     fi
-fi;
-echo "$as_me:$LINENO: result: $rsaref" >&5
-echo "${ECHO_T}$rsaref" >&6
-if test "$rsaref" != no; then
-
-    cat >>confdefs.h <<\_ACEOF
-#define HAVE_RSAREF 1
-_ACEOF
-
-
-    case $PRO_C_DEFS in
-	*DEFINE=HAVE_RSAREF*) ;;
-	*) PRO_C_DEFS=$PRO_C_DEFS\ DEFINE=HAVE_RSAREF ;;
-    esac
-
-
-fi
-
-
-
-
-
 # Oracle (default: yes, if $ORACLE_HOME is set)
 echo "$as_me:$LINENO: checking for Oracle" >&5
 echo $ECHO_N "checking for Oracle... $ECHO_C" >&6
@@ -20285,7 +20229,7 @@ echo "$as_me: error: Unsupported Oracle release" >&2;}
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/dns/Makefile incremental/dropbox/Makefile incremental/route-server/Makefile incremental/roles/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
@@ -22360,14 +22304,7 @@ s,@target@,$target,;t t
 s,@target_cpu@,$target_cpu,;t t
 s,@target_vendor@,$target_vendor,;t t
 s,@target_os@,$target_os,;t t
-s,@REG_SVR_DEFS@,$REG_SVR_DEFS,;t t
-s,@REG_SVR_INCLUDES@,$REG_SVR_INCLUDES,;t t
-s,@REG_SVR_LIBS@,$REG_SVR_LIBS,;t t
 s,@KERBEROS_SUBDIRS@,$KERBEROS_SUBDIRS,;t t
-s,@RSAREF_CPPFLAGS@,$RSAREF_CPPFLAGS,;t t
-s,@RSAREF_LIBS@,$RSAREF_LIBS,;t t
-s,@RSAREF_SUBDIRS@,$RSAREF_SUBDIRS,;t t
-s,@RSAREF_LIBDEP@,$RSAREF_LIBDEP,;t t
 s,@PRO_C@,$PRO_C,;t t
 s,@PRO_C_DEFS@,$PRO_C_DEFS,;t t
 s,@PRO_C_INCLUDES@,$PRO_C_INCLUDES,;t t

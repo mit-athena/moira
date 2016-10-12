@@ -90,6 +90,9 @@ AC_CHECK_FUNC(socket, :,
 					LIBS="-lsocket -lnsl $LIBS", :,
 					-lnsl)))
 
+# configure / build libbind
+AC_CONFIG_SUBDIRS(util/bind)
+
 # com_err (required, but can be built)
 AC_MSG_CHECKING(for com_err)
 AC_ARG_WITH(com_err,
@@ -155,21 +158,14 @@ AC_ARG_WITH(krb5,
     [krb5="$withval"], [krb5=no])
 AC_MSG_RESULT($krb5)
 if test "$krb5" != no; then
-    REG_SVR_DEFS=-DKRB5
     if test "$krb5" != yes; then
-	REG_SVR_INCLUDES=-I$krb5/include
-	REG_SVR_LIBS=-L$krb5/lib
 	MR_INCLUDE($krb5/include)
 	MR_LIBS($krb5/lib)
     fi
     MR_DEFINE(HAVE_KRB5)
     KRB5_LIBS="-lkrb5 -l${crypto} -lcom_err -lresolv"
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -lkrb5 -l${crypto} -lresolv"
     KERBEROS_OUTPUT_FILES="incremental/kerberos/Makefile"
     KERBEROS_SUBDIRS="kerberos"
-else
-    REG_SVR_DEFS=-DKRB4
-    REG_SVR_LIBS=-lkadm
 fi
 if test "$KRB5_LIBS" != "" ; then
     AC_CANONICAL_TARGET
@@ -185,19 +181,12 @@ AC_ARG_WITH(openssl,
 AC_MSG_RESULT($openssl)
 if test "$openssl" != no; then
    if test "$openssl" != yes; then
-      REG_SVR_INCLUDES=-I$openssl/include
-      REG_SVR_LIBS=-L$openssl/lib
       MR_EXTEND(PRO_C_INCLUDES, -I$openssl/include)
    else
-      REG_SVR_INCLUDES=-I/usr/include/openssl
       MR_EXTEND(PRO_C_INCLUDES, INCLUDE=/usr/include/openssl)
    fi
-   REG_SVR_LIBS="$REG_SVR_LIBS -lssl -lcrypto"
 fi
 
-AC_SUBST(REG_SVR_DEFS)
-AC_SUBST(REG_SVR_INCLUDES)
-AC_SUBST(REG_SVR_LIBS)
 AC_SUBST(KERBEROS_SUBDIRS)
 
 # Hesiod support
@@ -236,37 +225,6 @@ if test "$zephyr" != no; then
     MR_DEFINE(HAVE_ZEPHYR)
 fi
 
-# RSAREF support (default: build util/rsaref if present)
-AC_MSG_CHECKING(for RSAREF)
-AC_ARG_WITH(rsaref,
-    [  --with-rsaref=PREFIX      Specify location of RSAREF],
-    [rsaref="$withval"
-     RSAREF_CPPFLAGS="-I$rsaref/include"
-     RSAREF_LIBS="$rsaref/lib/rsaref.a"],
-     RSAREF_SUBDIRS=reg_svr
-    [if test -d $srcdir/util/rsaref; then
-         rsaref=$srcdir/util/rsaref
-	 RSAREF_SUBDIRS="util/rsaref reg_svr"
-	 RSAREF_OUTPUT_FILES="util/rsaref/Makefile"
-	 # autoconf can't deal with creating util/rsaref if util doesn't exist
-	 if test ! -d util; then
-	     mkdir util
-	 fi
-	 RSAREF_CPPFLAGS='-I$(SRCTOP)/util/rsaref'
-	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
-	 RSAREF_LIBDEP='$(BUILDTOP)/util/rsaref/rsaref.a'
-     else
-         rsaref=no
-     fi])
-AC_MSG_RESULT($rsaref)
-if test "$rsaref" != no; then
-    MR_DEFINE(HAVE_RSAREF)
-fi
-AC_SUBST(RSAREF_CPPFLAGS)
-AC_SUBST(RSAREF_LIBS)
-AC_SUBST(RSAREF_SUBDIRS)
-AC_SUBST(RSAREF_LIBDEP)
-
 # Oracle (default: yes, if $ORACLE_HOME is set)
 AC_MSG_CHECKING(for Oracle)
 AC_ARG_WITH(oracle,
@@ -303,7 +261,7 @@ if test "$oracle" != no; then
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/route-server/Makefile reg_svr/Makefile regtape/Makefile util/bsd-compat/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/dns/Makefile incremental/dropbox/Makefile incremental/route-server/Makefile incremental/roles/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"

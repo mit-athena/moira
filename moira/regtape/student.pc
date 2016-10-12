@@ -40,6 +40,7 @@ RCSID("$HeadURL$ $Id$");
 235-254	office phone
 255-304 registration type
 305-364 email address
+365-370 department number
 
 */
 
@@ -73,6 +74,8 @@ RCSID("$HeadURL$ $Id$");
 #define LEN_REG_TYPE 50
 #define LOC_EMAIL_ADDRESS (LOC_REG_TYPE + LEN_REG_TYPE)
 #define LEN_EMAIL_ADDRESS 60
+#define LOC_DEPT_NUM (LOC_EMAIL_ADDRESS + LEN_EMAIL_ADDRESS)
+#define LEN_DEPT_NUM 6
 
 EXEC SQL BEGIN DECLARE SECTION;
 int who;
@@ -184,6 +187,7 @@ struct entry *get_next_entry(FILE *in)
   static char zip[LEN_ZIP + 1], oaddr[LEN_OADDR + 1];
   static char reg_type[LEN_REG_TYPE + 1];
   static char email_address[LEN_EMAIL_ADDRESS + 1];
+  static char dept_num[LEN_DEPT_NUM + 1];
   static int nyear = 0;
   int ends_jr, ends_iii, ends_iv, ends_sr, ends_ii, ends_v;
   char *p;
@@ -233,6 +237,8 @@ struct entry *get_next_entry(FILE *in)
   strtrim(reg_type);
   strlcpy(email_address, &buf[LOC_EMAIL_ADDRESS], LEN_EMAIL_ADDRESS + 1);
   strtrim(email_address);
+  strlcpy(dept_num, &buf[LOC_DEPT_NUM], LEN_DEPT_NUM + 1);
+  strtrim(dept_num);
 
   e.first = first;
   e.last = last;
@@ -268,6 +274,7 @@ struct entry *get_next_entry(FILE *in)
   e.affiliation_basic = "student";
 
   e.dept = course;
+  e.dept_num = dept_num;
 
   /* Used to detect cross-registered students. */
   e.reg_type = reg_type;

@@ -86,8 +86,8 @@ int main(int argc, char **argv)
       EXEC SQL FETCH csr_spool INTO :host, :types;
       if (sqlca.sqlcode)
 	sqlerr();
-      strcpy(allowlist[i].host, strtrim(host));
-      strcpy(allowlist[i].types, strtrim(types));
+      strmove(allowlist[i].host, strtrim(host));
+      strmove(allowlist[i].types, strtrim(types));
     }
   EXEC SQL CLOSE csr_spool;
 

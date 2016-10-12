@@ -270,21 +270,10 @@ int do_passwd(void)
 
       if (eid != 0)
 	{
-	  /* Check for IMAP.  Can't use iid because it should be zero. */
-	  EXEC SQL SELECT mach_id INTO :mid FROM filesys
-	    WHERE label = :login || '.po' AND type = 'IMAP';
+	  EXEC SQL SELECT mach_id INTO :eid FROM machine
+	    WHERE name = 'IMAP.EXCHANGE.MIT.EDU';
 	  if (sqlca.sqlcode == 0)
-	    pid = mid;
-	  else
-	    {
-	      /* EXCHANGE user with no IMAP filesystem.  Give them
-	       * IMAP.EXCHANGE.MIT.EDU instead of EXCHANGE.MIT.EDU.
-	       */
-	      EXEC SQL SELECT mach_id INTO :eid FROM machine
-		WHERE name = 'IMAP.EXCHANGE.MIT.EDU';
-	      if (sqlca.sqlcode == 0)
-		pid = eid;
-	    }
+	    pid = eid;
 	}
 
       if (iid != 0)
@@ -412,7 +401,7 @@ int do_groups(void)
 	  if (sqlca.sqlcode)
 	    break;
 	  u = malloc(sizeof(struct user));
-	  strcpy(u->name, strtrim(name));
+	  strmove(u->name, strtrim(name));
 	  u->lists = NULL;
 	  hash_store(users, id, u);
 	}

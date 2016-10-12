@@ -1,0 +1,29 @@
+#!/moira/bin/perl -Tw
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+
+$outfile = '/moira/dcm/tableau.out';
+umask 022;
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira") || exit $MR_DBMS_ERR;
+
+$sth = $dbh->prepare("SELECT name FROM list WHERE active = 1 AND grouplist = 1 " .
+		     "AND hidden = 0 ORDER BY name");
+$sth->execute;
+open(OUT, ">$outfile");
+
+while (($name) = $sth->fetchrow_array) {
+    $row = "$name\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+
+close OUT;
+$dbh->disconnect;
+
+exit 0;
+

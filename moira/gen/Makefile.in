@@ -50,8 +50,8 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh asa-db.gen ca.gen calendar.gen \
 	ip-billing.sh ldap.gen mailhosts.gen mailhub.sh mailman.gen mailman.sh \
 	nagios-cluster.gen nagios-cluster.sh nagios-colo.gen nagios-colo.sh \
 	ndb.sh null.sh postoffice.sh print.sh print-accounting.gen printer-list.gen \
-        sapprint.gen sapprint.sh sites.gen sites.sh spwatch.gen tsm.gen tsm.sh \
-	ua-elect.gen warehouse.gen warehouse.sh winstats.gen winstats.sh zephyr.sh
+        sapprint.gen sapprint.sh sites.gen sites.sh spwatch.gen tableau.gen tableau.sh \
+	tsm.gen tsm.sh ua-elect.gen warehouse.gen warehouse.sh winstats.gen winstats.sh zephyr.sh
 
 .SUFFIXES: .pc .gen .lo
 

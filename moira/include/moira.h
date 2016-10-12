@@ -137,6 +137,7 @@ int sq_empty(struct save_queue *sq);
 void sq_destroy(struct save_queue *sq);
 
 /* prototypes from strs.c */
+char *strmove(char *dest, char *src);
 char *strtrim(char *s);
 char *uppercase(char *s);
 char *lowercase(char *s);

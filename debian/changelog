@@ -1,3 +1,11 @@
+debathena-moira (4.0.0.3+51+g65d55c5-0debathena1) unstable; urgency=medium
+
+  * New upstream snapshot.  (The version string is given by
+    ‘git describe --tags master | tr - +’.)
+    + Fix chsh.  (Trac: #1582)
+
+ -- Anders Kaseorg <andersk@mit.edu>  Wed, 12 Oct 2016 03:37:48 -0400
+
 debathena-moira (4.0.0.2-0debathena1) unstable; urgency=low
 
   * Release 4.0.0.2

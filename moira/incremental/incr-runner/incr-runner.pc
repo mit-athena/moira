@@ -29,12 +29,6 @@
 #define MAXARGC 20
 #define INC_TIMEOUT (3 * 60)        /* 3 minutes */
 
-int inc_pid = 0;
-int inc_running = 0;
-time_t inc_started;
-int child_exited_abnormally = 0;
-int child_pid, child_signal, child_status;
-
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 void dbmserr(void);
@@ -42,6 +36,7 @@ void *xmalloc(size_t);
 void do_service(char *name);
 void free_argv(char **argv, int argc);
 void reapchild(int x);
+void nothing(int x);
 
 RCSID("$HeadURL$ $Id$");
 
@@ -153,7 +148,7 @@ void do_service(char *name)
   char *argv[MAXARGC * 2 + 4], prog[MAXPATHLEN], cbefore[3], cafter[3];
   int i, length = 0;
   EXEC SQL BEGIN DECLARE SECTION;
-  int beforec, afterc, incremental_id;
+  int beforec, afterc, incremental_id, status;
   char table[INCREMENTAL_QUEUE_TABLE_NAME_SIZE];
   char encoded_before[INCREMENTAL_QUEUE_BEFORE_SIZE];
   char encoded_after[INCREMENTAL_QUEUE_AFTER_SIZE];
@@ -161,14 +156,23 @@ void do_service(char *name)
   void *flattened_before = NULL, *flattened_after = NULL;
   char **before_argv = NULL, **after_argv = NULL;
   sigset_t sigs;
-  time_t now;
   struct sigaction action;
+  pid_t inc_pid, pid;
 
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
   action.sa_flags = 0;
   sigemptyset(&action.sa_mask);
-  
+
+  /* Allow SIGALRM to interrupt waitpid(), but do nothing when it fires. */
+  action.sa_handler = nothing;
+  if (sigaction(SIGALRM, &action, NULL) < 0)
+    {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+  /* Set up a handler to reap timed-out incremental processes. */
   action.sa_handler = reapchild;
   sigaddset(&action.sa_mask, SIGCHLD);
   if (sigaction(SIGCHLD, &action, NULL) < 0)
@@ -186,21 +190,6 @@ void do_service(char *name)
 	  exit(1);
 	}
 
-      if (child_exited_abnormally)
-        {
-          critical_alert(whoami, "incr-runner", "%d: child exits with signal %d status %d",
-                         child_pid, child_signal, child_status);
-          child_exited_abnormally = 0;
-        }
-
-      time(&now);
-
-      if (inc_running && now - inc_started < INC_TIMEOUT)
-	goto sleep;
-
-      if (inc_running)
-	critical_alert(whoami, "incr-runner", "incremental timeout on pid %d", inc_pid);
-
       EXEC SQL SELECT table_name, beforec, afterc, before, after, incremental_id INTO
 	:table, :beforec, :afterc, :encoded_before, :encoded_after, :incremental_id
 	FROM incremental_queue WHERE service = :name AND
@@ -208,7 +197,10 @@ void do_service(char *name)
 
       /* No matching rows */
       if (sqlca.sqlerrd[2] == 0)
-	goto sleep;
+	{
+	  sleep(1);
+	  continue;
+	}
       
       sprintf(prog, "%s/%s.incr", BIN_DIR, name);
       argv[0] = prog;
@@ -270,8 +262,20 @@ void do_service(char *name)
 	  critical_alert(whoami, "incr-runner", "Failed to start incremental update %s", prog);
 	  break;
 	default:
-	  inc_running = 1;
-	  inc_started = now;
+	  break;
+	}
+
+      alarm(INC_TIMEOUT);
+      pid = waitpid(inc_pid, &status, 0);
+      alarm(0);
+      if (pid == -1 && errno == EINTR)
+	critical_alert(whoami, "incr-runner", "incremental timeout on pid %d", (int) inc_pid);
+      else if (pid == -1)
+	critical_alert(whoami, "incr-runner", "error in waitpid");
+      else if (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0)
+	{
+          critical_alert(whoami, "incr-runner", "%d: child exits with signal %d status %d",
+                         (int) inc_pid, WTERMSIG(status), WEXITSTATUS(status));
 	}
 
       sigprocmask(SIG_UNBLOCK, &sigs, NULL);
@@ -296,9 +300,6 @@ void do_service(char *name)
 	  free_argv(after_argv, afterc);
 	  after_argv = NULL;
 	}
-
-    sleep:
-      usleep(250000);
     }
 
   EXEC SQL COMMIT RELEASE;
@@ -339,18 +340,12 @@ void free_argv(char **argv, int argc)
 
 void reapchild(int x)
 {
-  int status, pid;
+  int status;
 
-  while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
-    {
-      if (pid == inc_pid)
-        inc_running = 0;
-      if (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0)
-        {
-          child_exited_abnormally = 1;
-          child_pid = pid;
-          child_signal = WTERMSIG(status);
-          child_status = WEXITSTATUS(status);
-        }
-    }
+  while (waitpid(-1, &status, WNOHANG) > 0)
+    ;
+}
+
+void nothing(int x)
+{
 }

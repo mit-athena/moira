@@ -36,7 +36,7 @@ SQLDA *mr_sqlda;
 
 void interrupt(int signal);
 extern SQLDA *sqlald(int, int, int);
-extern void sqlglm(char *, unsigned int *, unsigned int *);
+extern void sqlglm(char *, size_t *, size_t *);
 
 int main(int argc, char **argv)
 {
@@ -141,7 +141,7 @@ void dbmserr(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char buf[256];
   EXEC SQL END DECLARE SECTION;
-  int bufsize = 256, msglength = 0;
+  size_t bufsize = 256, msglength = 0;
 
   if (sqlca.sqlcode == 1403)
     return;

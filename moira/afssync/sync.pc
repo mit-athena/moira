@@ -305,7 +305,7 @@ void do_groups(void)
 void sqlerr(void)
 {
     char buf[256];
-    int size=256, len=0;
+    size_t size=256, len=0;
 
     sqlglm(buf, &size, &len);
     buf[len]='\0';

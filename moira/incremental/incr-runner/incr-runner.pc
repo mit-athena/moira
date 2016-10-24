@@ -30,7 +30,7 @@
 #define INC_TIMEOUT (3 * 60)        /* 3 minutes */
 
 EXEC SQL INCLUDE sqlca;
-void sqlglm(char *, unsigned int *, unsigned int *);
+void sqlglm(char *, size_t *, size_t *);
 void dbmserr(void);
 void *xmalloc(size_t);
 void do_service(char *name);
@@ -310,7 +310,7 @@ void dbmserr(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char err_msg[256];
   EXEC SQL END DECLARE SECTION;
-  int bufsize = 256, msglength = 0;
+  size_t bufsize = 256, msglength = 0;
 
   sqlglm(err_msg, &bufsize, &msglength);
   err_msg[msglength] = '\0';

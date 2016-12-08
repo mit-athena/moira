@@ -97,7 +97,7 @@ int main(int argc, char **argv)
   if (sqlca.sqlcode)
     {
       char err_msg[256];
-      int bufsize = 256, msglength = 0;
+      size_t bufsize = 256, msglength = 0;
 
       sqlglm(err_msg, &bufsize, &msglength);
       err_msg[msglength] = 0;

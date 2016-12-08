@@ -514,3 +514,7 @@ create table incremental_queue
 	incremental_id	INTEGER		DEFAULT 0	NOT NULL
 );
 	
+create table incremental_pipe
+(
+	service		VARCHAR(16)	DEFAULT CHR (0)	NOT NULL
+);

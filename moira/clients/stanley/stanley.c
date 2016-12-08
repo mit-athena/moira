@@ -35,7 +35,7 @@ struct string_list {
 /* flags from command line */
 int info_flag, update_flag, create_flag, deact_flag, reg_flag;
 int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
-int list_vpn_group_flag, set_vpn_group_flag;
+int list_vpn_group_flag, set_vpn_group_flag, set_twofactor_status_flag;
 
 int count;
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = deact_flag = reg_flag = 0;
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
-  list_vpn_group_flag = set_vpn_group_flag = 0;
+  list_vpn_group_flag = set_vpn_group_flag = set_twofactor_status_flag = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
   winhomedir = winprofiledir = expiration = alternate_email = alternate_phone = NULL;
@@ -284,6 +284,7 @@ int main(int argc, char **argv)
 	      twofactor_status = *arg;
 	    } else 
 	      usage(argv);
+	    set_twofactor_status_flag++;
 	  }
 	  else if (argis("lv", "listvpn")) {
 	    list_vpn_group_flag++;
@@ -345,7 +346,8 @@ int main(int argc, char **argv)
   /* default to info_flag if nothing else was specified */
   if(!(info_flag       || update_flag || create_flag   || \
        deact_flag      || reg_flag    || list_res_flag || \
-       update_res_flag || list_vpn_group_flag || set_vpn_group_flag)) {
+       update_res_flag || list_vpn_group_flag || set_vpn_group_flag || \
+       set_twofactor_status_flag)) {
     info_flag++;
   }
 
@@ -449,13 +451,7 @@ int main(int argc, char **argv)
         argv[U_ALT_EMAIL] = alternate_email;
       if (alternate_phone)
         argv[U_ALT_PHONE] = alternate_phone;
-      if (twofactor_status)
-	argv[U_TWOFACTOR] = twofactor_status;
-      else
-	if (!strcmp(class, "G") || !strncmp(class, "20", 2))
-	  argv[U_TWOFACTOR] = "0";
-        else
-	  argv[U_TWOFACTOR] = "2";
+      argv[U_TWOFACTOR] = "2";
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -577,8 +573,6 @@ int main(int argc, char **argv)
 	argv[19] = alternate_email;
       if (alternate_phone)
 	argv[20] = alternate_phone;
-      if (twofactor_status)
-	argv[21] = twofactor_status;
       if (sponsor)
 	{
 	  argv[17] = sponsor->name;
@@ -829,6 +823,22 @@ int main(int argc, char **argv)
       if (status)
 	{
 	  com_err(whoami, status, "while setting user vpn group.");
+	  exit(1);
+	}
+    }
+
+  if (set_twofactor_status_flag)
+    {
+      char *args[2];
+
+      args[0] = username;
+      args[1] = twofactor_status;
+
+      status = wrap_mr_query("set_user_twofactor_status", 2, args,
+			     NULL, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while setting user twofactor status.");
 	  exit(1);
 	}
     }

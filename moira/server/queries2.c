@@ -1311,6 +1311,28 @@ static struct validate supo_validate = {
   set_modtime_by_id,
 };
 
+static char *sutf_fields[] = {
+  "login",
+  "twofactor_status",
+};
+
+static struct valobj sutf_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_NUM, 1},
+};
+
+static struct validate sutf_validate = {
+  sutf_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
 static char *suvg_fields[] = {
   "login",
   "listname",
@@ -6283,6 +6305,24 @@ struct query Queries[] = {
     1,
     "u.login",
     NULL,
+  },
+
+  {
+    /* Q_SUTF - SET_USET_TWOFACTOR_STATUS */
+    "set_user_twofactor_status",
+    "sutf",
+    2,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET twofactor_status = %s",
+    sutf_fields,
+    2,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &sutf_validate,
   },
 
   {

@@ -9,6 +9,7 @@ JAVA_CPPFLAGS=@JAVA_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(JAVA_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 SO_LDFLAGS=@SO_LDFLAGS@
 LIBS=@LIBS@
@@ -20,6 +21,7 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 BUILDTOP=..
+top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
@@ -32,13 +34,13 @@ JHEADER= mit_moira_MoiraConnectInternal.h
 
 TARGET=	 $(SOBJ)
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+        $(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
 
 clean:
-	rm -f $(CLASSES) $(OBJ) $(SOBJ) $(SOBJG) $(JHEADER)
+	$(LIBTOOL) --mode=clean rm $(CLASSES) $(OBJ) $(SOBJ) $(SOBJG) $(JHEADER)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -46,7 +48,7 @@ cleandir distclean: clean
 depend:
 
 $(SOBJ): $(JHEADER) $(OBJ)
-	$(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	$(LIBTOOL) --mode=link $(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	cp -p $@ $(SOBJG)
 
 $(JHEADER): java

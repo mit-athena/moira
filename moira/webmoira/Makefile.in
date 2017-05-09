@@ -25,17 +25,20 @@ top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
 
 CLASSES= mit/moira/AuthenticationError.class mit/moira/Coder.class mit/moira/Delmember.class mit/moira/Kticket.class mit/moira/ListInfo.class mit/moira/Member.class mit/moira/Moira.class mit/moira/MoiraConnectInternal.class mit/moira/MoiraException.class mit/moira/MoiraServlet.class
-OBJ=     moirai.o
-SOBJ=    mit/moira/libmoirajava.so
-SOBJG=   mit/moira/libmoirajava_g.so
+OBJ=     moirai.lo
+SOBJ=    mit/moira/libmoirajava.la
 JHEADER= mit_moira_MoiraConnectInternal.h
 
 TARGET=	 $(SOBJ)
 
 .c.lo:
-        $(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+.SUFFIXES: .lo
 
 all: $(TARGET)
 
@@ -48,8 +51,7 @@ cleandir distclean: clean
 depend:
 
 $(SOBJ): $(JHEADER) $(OBJ)
-	$(LIBTOOL) --mode=link $(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	cp -p $@ $(SOBJG)
+	$(LIBTOOL) --mode=link $(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS) -rpath ${libdir} -version-info 0:0:0
 
 $(JHEADER): java
 	javah -jni mit.moira.MoiraConnectInternal

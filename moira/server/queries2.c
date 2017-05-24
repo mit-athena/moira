@@ -1530,22 +1530,6 @@ static struct validate gpob_validate = {
   followup_gpob,
 };
 
-static char *gpox_fields[] = {
-  "login", "type", "box",
-};
-
-static struct validate gpox_validate = {
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  followup_gpob,
-};
-
 static char *spob_fields[] = {
   "login", "type", "box",
 };
@@ -6521,60 +6505,6 @@ struct query Queries[] = {
     1,
     "login",
     &gpob_validate,
-  },
-
-  {
-    /* Q_GAPO - GET_ALL_POBOXES */
-    "get_all_poboxes",
-    "gapo",
-    2,
-    MR_Q_RETRIEVE,
-    "u",
-    USERS_TABLE,
-    "login, potype, pop_id || ':' || box_id FROM users",
-    gpox_fields,
-    3,
-    3,
-    "potype != 'NONE'",
-    0,
-    "login",
-    &gpox_validate,
-  },
-
-  {
-    /* Q_GPOP - GET_POBOXES_POP */
-    "get_poboxes_pop",
-    "gpop",
-    2,
-    MR_Q_RETRIEVE,
-    "u",
-    USERS_TABLE,
-    "login, potype, users_id FROM users",
-    gpox_fields,
-    3,
-    3,
-    "potype = 'POP'",
-    0,
-    "login",
-    &gpox_validate
-  },
-
-  {
-    /* Q_GPOF - GET_POBOXES_SMTP */
-    "get_poboxes_smtp",
-    "gpos",
-    2,
-    MR_Q_RETRIEVE,
-    "u",
-    USERS_TABLE,
-    "login, potype, users_id FROM users",
-    gpox_fields,
-    3,
-    3,
-    "potype = 'SMTP'",
-    0,
-    "login",
-    &gpox_validate
   },
 
   {

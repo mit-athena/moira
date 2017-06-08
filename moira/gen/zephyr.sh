@@ -16,13 +16,14 @@ MR_TARERR=47836476
 hup=no
 PATH=/bin
 TARFILE=/var/tmp/zephyr.out
+ZEPHYRETC=/usr/local/etc/zephyr
 
 # Alert if the tar file does not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
 
 # Make a temporary directory to unpack the tar file into
-mkdir /etc/athena/zephyr/acl.new
-cd /etc/athena/zephyr/acl.new || exit $MR_MKCRED
+mkdir $ZEPHYRETC/acl.new
+cd $ZEPHYRETC/acl.new || exit $MR_MKCRED
 tar xf $TARFILE || exit $MR_TARERR
 
 # Copy over each file which is new or has changed
@@ -49,7 +50,7 @@ yes)
 esac
 
 # cleanup
-rm -rf /etc/athena/zephyr/acl.new
+rm -rf $ZEPHYRETC/acl.new
 test -f $TARFILE && rm -f $TARFILE
 test -f $0 && rm -f $0
 

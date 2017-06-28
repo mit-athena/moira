@@ -175,14 +175,18 @@ if ($query[0] eq "ghst" || $query[0] eq "get_host") {
 }
 
 if ($query[0] eq "asnt" || $query[0] eq "add_subnet" || $query[0] eq "usnt" || $query[0] eq "update_subnet") {
-    my ($decimal_form, $idx);
+    my ($decimal_form, $packed_address, $idx);
     $idx = 0;
     if ($query[0] eq "usnt" || $query[0] eq "update_subnet") { $idx = 1 };
     foreach $arg (6..9) {
-	$decimal_form = unpack('N', inet_aton($query[$arg + $idx]));
-	if ($decimal_form) { 
-	    $decimal_form -= 2**32 if $decimal_form >= 2**31;
-	    $query[$arg + $idx] = $decimal_form;
+	$query[$arg + $idx] =~ s/^"(.*)"$/$1/;
+	$packed_address = inet_aton($query[$arg + $idx]);
+	if ($packed_address) {
+	    $decimal_form = unpack('N', $packed_address);
+	    if ($decimal_form) { 
+		$decimal_form -= 2**32 if $decimal_form >= 2**31;
+		$query[$arg + $idx] = $decimal_form;
+	    }
 	}
     }
 }

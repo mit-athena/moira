@@ -28,16 +28,6 @@ extern krb5_context context;
 static int set_client(client *cl, char *kname,
 		      char *name, char *inst, char *realm);
 
-#ifdef HAVE_KRB4
-typedef struct _replay_cache {
-  KTEXT_ST auth;
-  time_t expires;
-  struct _replay_cache *next;
-} replay_cache;
-
-replay_cache *rcache = NULL;
-#endif
-
 /*
  * Handle a MOIRA_AUTH RPC request.
  *
@@ -48,87 +38,7 @@ replay_cache *rcache = NULL;
 
 void do_auth(client *cl)
 {
-#ifdef HAVE_KRB4
-  KTEXT_ST auth;
-  AUTH_DAT ad;
-  int status;
-  replay_cache *rc, *rcnew;
-  time_t now;
-
-  auth.length = cl->req.mr_argl[0];
-  memcpy(auth.dat, cl->req.mr_argv[0], auth.length);
-  auth.mbz = 0;
-
-  if ((status = krb_rd_req(&auth, MOIRA_SNAME, host,
-			   cl->haddr.sin_addr.s_addr, &ad, "")))
-    {
-      status += ERROR_TABLE_BASE_krb;
-      client_reply(cl, status);
-      com_err(whoami, status, " (authentication failed)");
-      return;
-    }
-
-  if (!rcache)
-    {
-      rcache = xmalloc(sizeof(replay_cache));
-      memset(rcache, 0, sizeof(replay_cache));
-    }
-
-  /* scan replay cache */
-  for (rc = rcache->next; rc; rc = rc->next)
-    {
-      if (auth.length == rc->auth.length &&
-	  !memcmp(&(auth.dat), &(rc->auth.dat), auth.length))
-	{
-	  com_err(whoami, 0,
-		  "Authenticator replay from %s using authenticator for %s",
-		  inet_ntoa(cl->haddr.sin_addr),
-		  mr_kname_unparse(ad.pname, ad.pinst, ad.prealm));
-	  com_err(whoami, KE_RD_AP_REPEAT, " (authentication failed)");
-	  client_reply(cl, KE_RD_AP_REPEAT);
-	  return;
-	}
-    }
-
-  /* add new entry */
-  time(&now);
-  rcnew = xmalloc(sizeof(replay_cache));
-  memcpy(&(rcnew->auth), &auth, sizeof(KTEXT_ST));
-  rcnew->expires = now + 2 * CLOCK_SKEW;
-  rcnew->next = rcache->next;
-  rcache->next = rcnew;
-
-  /* clean cache */
-  for (rc = rcnew; rc->next; )
-    {
-      if (rc->next->expires < now)
-	{
-	  rcnew = rc->next;
-	  rc->next = rc->next->next;
-	  free(rcnew);
-	}
-      else
-	rc = rc->next;
-    }
-
-  status = set_client(cl, mr_kname_unparse(ad.pname, ad.pinst, ad.prealm),
-		      ad.pname, ad.pinst, ad.prealm);
-
-  strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);
-  cl->entity[sizeof(cl->entity) - 1] = 0;
-
-  memset(&ad, 0, sizeof(ad));	/* Clean up session key, etc. */
-
-  com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
-	  cl->clname, cl->entity, cl->users_id, cl->client_id);
-
-  if (status != MR_SUCCESS || cl->users_id != 0)
-    client_reply(cl, status);
-  else
-    client_reply(cl, MR_USER_AUTH);
-#else
   client_reply(cl, MR_NO_KRB4);
-#endif
 }
 
 void do_proxy(client *cl)

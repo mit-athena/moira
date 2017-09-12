@@ -1,744 +1,1695 @@
-#!/moira/bin/perl -Tw
-#
-# infoblox.incr
-# Update IB zone data from "machine" and "hostalias" incrementals
+#!/moira/bin/python -u
 
-$|=1;
-$SIG{__DIE__}  = 'critical_alert';
-$ENV{ 'PATH' } = '/bin:/usr/bin:/usr/local/bin';
+debug = True
 
-use strict;
-use warnings;
-use JSON;
-use LWP::UserAgent;
-use Net::SMTP;
-use File::Basename;
-use POSIX qw(strftime);
-use Sys::Hostname;
-use Data::Dumper;
+import json
+import moira
+import os
+import requests
+import struct
+import sys
+from netaddr import IPAddress
+from subprocess import call
+from time import sleep, ctime
 
-my $ib_host_file   = '/moira/infoblox/host';
-my $ib_host        = (file($ib_host_file))[0];
-my $ib_api         = 'https://' . $ib_host . '/wapi/v1.0';
-my $ib_args        = '_return_type=json-pretty';
-my $ib_search_args = '_return_fields=ipv4addrs,name,aliases,use_ttl,ttl,disable,extensible_attributes,view';
-my $ib_uri         = $ib_api.'/record:host?'.$ib_args;
+# For printing JSON
+indent = 2
 
-my @views          = ('internal','external');
+# IB config
+with open('/moira/infoblox/host', 'r') as f:
+    ib_host = f.readline().rstrip("\r\n")
 
-my $myself         = File::Basename::basename($0);
+ib_user = 'api'
 
-my $moira_log      = '/moira/moira.log';
-my $critical_log   = '/moira/critical.log';
-my $zwrite         = '/usr/local/bin/zwrite';
-my $passwd_file    = '/moira/infoblox/passwd';
-my $qy             = '/moira/bin/qy';
+with open('/moira/infoblox/passwd', 'r') as f:
+    ib_passwd = f.readline().rstrip("\r\n")
 
-my $ib_user        = 'api';
-my $ib_pass        = (file($passwd_file))[0];
+ib_api_version = 'v2.2.2'
+ib_base_url = 'https://' + ib_host + '/wapi/' + ib_api_version
+ib_common_args = '?_return_type=json-pretty'
+ib_search_args = '_return_fields=ipv4addrs,ipv6addrs,name,aliases,use_ttl,ttl,disable,extattrs,view'
 
-my $smtpserver     = 'outgoing.mit.edu';
-my $subj_prefix    = 'MOIRA->IB INCREMENTAL';
-my $from_addr      = $myself . '@' . hostname;
-my @to_addrs       = ('moira-admin@mit.edu');
+default_ttl = 1800
+default_domain = "mit.edu"
+views = ['internal', 'external']
+# Supported types for hostrecord
+rr_types = ['MX', 'NS', 'SRV', 'TXT']
 
-my $default_ttl    = 1800;
+# Display an informational message to incr-runner.log.
+def log(msg):
+    print progname + ': ' + msg
 
-my @errors;
-my @input = @ARGV;
+# Write a message to critical.log and send a zephyr message to -c moira.
+def critical_log(msg):
+    log('critical error: ' + msg)
+    timestr = ctime()[4:-5]
+    with open('/moira/critical.log', 'a') as f:
+        f.write('%s <%d>%s: %s\n' % (timestr, os.getpid(), progname, msg))
+    zwrite = '/usr/local/bin/zwrite'
+    if os.path.exists(zwrite):
+        call([zwrite, '-q', '-d', '-n', '-c', 'moira', '-i', 'incremental', '-m', progname + msg])
+    slack = '/moira/bin/slack-send'
+    if os.path.exists(slack):
+        call(slack, progname + msg)
 
-if (!@ARGV) {
-    die('no moira input received via ARGV')
-}
+# Is hostname one we're canonical for?
+def canonical_for_hostname(hostname):
+    if hostname.lower().endswith(default_domain) and hostname.count('.') == 2:
+        return True
+    return False
 
-my $type       = shift(@input);
-my $before_len = shift(@input);
-my $after_len  = shift(@input);
+def domoira(query, args):
+    try:
+        # always connect to localhost 
+        moira.connect(os.uname()[1], app=progname)
+        moira.mr_version(-1)
+        try:
+            return moira.mr_query(query, args)
+        finally:
+            moira.disconnect()
+    except moira.error, e:
+        # MR_NO_MATCH
+        if e[0] == 47836423:
+            return []
+        else:
+            critical_log('could not connect to Moira server: ' + str(e[0]))
 
-if ($type eq 'machine') {
-    if ($before_len == 0 && $after_len == 19 && scalar(@input) == 19) {
-        ib_mach_add(\@input);
-    } elsif ($before_len == 19 && $after_len == 0 && scalar(@input) == 19) {
-        ib_mach_delete(\@input);
-    } elsif ($before_len == 19 && $after_len == 19 && scalar(@input) == 38) {
-        ib_mach_update(\@input);
-    } else {
-        die('main: malformed moira machine input: ' . join(' ', @ARGV));
-    }
-} elsif ($type eq 'hostalias') {
-    if ($before_len == 0 && $after_len == 3 && scalar(@input) == 3) {
-        ib_hostalias_add(\@input);
-    } elsif ($before_len == 3 && $after_len == 0 && scalar(@input) == 3) {
-        ib_hostalias_delete(\@input);
-    } else {
-        die('main: malformed moira hostalias input: ' . join(' ', @ARGV));
-    }
-} else {
-    die('main: unknown moira input: ' . join(' ', @ARGV));
-}
+def get_moira_hostrecords(hostname):
+    return domoira('get_host_resource_record', (hostname, '*'))
 
-if (scalar(@errors)) {
-    foreach my $err (@errors) {
-      print "$myself: $err\n";
-    }
-    exit(0);
-} else {
-    exit(0);
-}
+def get_moira_hostaliases(hostname):
+    return domoira('get_hostalias', ('*', hostname))
+                   
+def get_moira_hostaddresses(hostname):
+    return domoira('get_host_addresses', (hostname, '*'))
 
-# convert Moira record (array of 16 elements) to JSON
-sub mach_to_ib {
-    my ($moira_input) = @_;
-    my $extensible_attributes;
-    my $name;
-    my $address;
-    my $ib_record;
-    my $use;
-    my $inuse;
-    my $ttl;
-    my @moira_aliases;
+def get_moira_host_identifiers(hostname):
+    return domoira('get_host_identifier_mapping', (hostname, '*'))
 
-    (
-     $name,
-     $extensible_attributes->{'moira_mach_id'},
-     $extensible_attributes->{'moira_vendor'},
-     $extensible_attributes->{'moira_model'},
-     $extensible_attributes->{'moira_os'},
-     $extensible_attributes->{'moira_location'},
-     $extensible_attributes->{'moira_contact'},
-     $extensible_attributes->{'moira_billing_contact'},
-     $extensible_attributes->{'moira_account_number'},
-     $extensible_attributes->{'moira_status'},
-     $address,
-     $extensible_attributes->{'moira_owner_type'},
-     $extensible_attributes->{'moira_owner_id'},
-     $extensible_attributes->{'moira_acomment'},
-     $extensible_attributes->{'moira_ocomment'},
-     $extensible_attributes->{'moira_snet_id'},
-     $use,
-     $inuse,
-     $ttl
-    ) = @{$moira_input};
+def get_moira_host_status(hostname):
+    data, = domoira('get_host', (hostname, '*'))
+    return int(data[9])
 
-    if ($extensible_attributes->{'moira_owner_id'} eq "0") {
-        $extensible_attributes->{'moira_owner_id'} = "none";
-    }
+def mach_to_ib(record):
+    extattrs = {
+        'moira_mach_id' : record[1],
+        'moira_vendor' : record[2],
+        'moira_model' : record[3],
+        'moira_os' : record[4],
+        'moira_location' : record[5],
+        'moira_contact' : record[6],
+        'moira_biling_contact' : record[7],
+        'moira_account_number' : record[8],
+        'moira_status' : record[9],
+        'moira_owner_type' : record[10],
+        'moira_owner_id' : record[11],
+        'moira_acomment' : record[12],
+        'moira_ocomment' : record[13],
+        }
 
-    # retrieve aliases from moira via qy
-    my ($laundered_name) = $name =~ /([\w\-\.]+)/;
-    my @qy_output = `$qy get_hostalias \\* $laundered_name 2>&1`;
+    if extattrs['moira_owner_id'] == "0":
+        extattrs['moira_owner_id'] = "none";
+
+    for key, value in extattrs.items():
+        if not value:
+            extattrs[key] = '-'
+        else:
+            extattrs[key] = value.lower()
+
+    extattrs['moira_managed'] = 1;
     
-    if ($qy_output[0] !~ /^alias:/ &&
-        $qy_output[0] !~ /^moira \(query\): No records in database match query/) {
-        die('mach_to_ib: qy: ' . $qy_output[0]);
-    }
-    foreach my $alias_line (grep(/^alias:/, @qy_output)) {
-        chomp $alias_line;
-        my($rhs, $lhs) = split (/\s*:\s*/, $alias_line);
-        push(@moira_aliases, $lhs);
-    }
-
-    # force JSON to treat numbers as numbers
-    $ttl += 0;
-    $extensible_attributes->{'moira_mach_id'} += 0;
-    $extensible_attributes->{'moira_status'} += 0;
-
-    if (($address !~ /^\d{1,3}(\.\d{1,3}){3}$/ && $address !~ /^unassigned$/i) ||
-        $extensible_attributes->{'moira_mach_id'} !~ /^\d+$/) {
-        die('mach_to_ib: malformed moira input: ' .
-        join(' ', @${moira_input}));
-    } elsif ($name !~ /^[\w\-]+\.mit\.edu$/i) {
-        push(@errors, 'mach_to_ib: malformed moira input: ' .
-        join(' ', @${moira_input}));
-    }
-
-    foreach my $extensible_attribute (keys(%{$extensible_attributes})) {
-        if ($extensible_attributes->{$extensible_attribute} eq '') {
-            $extensible_attributes->{$extensible_attribute} = '-';
-        } else {
-            $extensible_attributes->{$extensible_attribute} = 
-            lc($extensible_attributes->{$extensible_attribute});
+    ib_host_record = {
+        'name' : record[0].lower(),
+        'ttl' : default_ttl,
+        'use_ttl' : False,
+        'disable' : False,
+        'extattrs' : extattrs
         }
-    }
-    $extensible_attributes->{'moira_managed'}   = 1;
 
-    $ib_record->{'ipv4addrs'} = [ {'ipv4addr' => $address } ];
-    $ib_record->{'name'} = lc($name);
-    $ib_record->{'extensible_attributes'} = $extensible_attributes;
-    if ($ttl != $default_ttl) {
-        $ib_record->{'ttl'} = $ttl;
-        $ib_record->{'use_ttl'} = JSON::true;
-    } else {
-        $ib_record->{'use_ttl'} = JSON::false;
-    }
-    if ($ib_record->{'extensible_attributes'}->{'moira_status'} == 1) {
-        $ib_record->{'disable'} = JSON::false;
-    } else {
-        $ib_record->{'disable'} = JSON::true;
-    }
-    if (scalar(@moira_aliases)) {
-        $ib_record->{'aliases'} = \@moira_aliases;
-    }
-    return($ib_record);
-}
+    return ib_host_record
 
-# compare two IB records, return 0 if same, 1 if name mismatch,
-# 2 if address mismatch, 3 if extensible_attributes mismatch
-sub ib_compare {
-    my($new, $existing) = @_;
+def ib_search_by_mach_id(mach_id):
+    ib_search_url = ib_base_url + '/record:host' + ib_common_args + '&' + ib_search_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { '*moira_mach_id' : mach_id }
 
-#print "NEW\n".Dumper($new)."\n";
-#print "EXISTING\n".Dumper($existing)."\n";
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
 
-    if ($new->{'name'} ne $existing->{'name'}) {
-        return(1);
-    }
-    if($new->{'ipv4addrs'}[0]->{'ipv4addr'} ne
-       $existing->{'ipv4addrs'}[0]->{'ipv4addr'}) {
-        return(2);
-    }
-    if ($new->{'disable'} ne $existing->{'disable'}) {
-        return(3);
-    }
-    if ($existing->{'use_ttl'} eq 'true' && $new->{'use_ttl'} eq 'true') {
-        if ($new->{'ttl'} ne $existing->{'ttl'}) {
-            return(4);
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_by_mach_id for URL %s, payload %s with HTTP status %s, %s' % (ib_search_url, data, r.status_code, r.text))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view].append(item)
+
+    return results_by_view
+
+def ib_search_by_name(name):
+    ib_search_url = ib_base_url + '/record:host' + ib_common_args + '&' + ib_search_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'name' : name }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_by_name for URL %s, payload %s with HTTP status: %s, %s' % (ib_search_url, data, r.status_code, r.text))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view].append(item)
+
+    return results_by_view
+
+# Add infoblox host record
+def ib_create_host(record):
+    # Turn incoming record into something we can work with
+    ib_record = mach_to_ib(record)
+    moira_mach_id = ib_record['extattrs']['moira_mach_id']
+    # Does this record already exist?
+    mach_id_results = ib_search_by_mach_id(moira_mach_id)
+    name_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in mach_id_results:
+        log('ib_search_by_mach_id returned error, aborting')
+        return
+
+    if 'error' in name_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(name_results[view]) > 0:
+            critical_log("Record already exists for name %s in view %s" % (ib_record['name'], view))
+        elif len(mach_id_results[view]) > 0:
+            critical_log("Record already exists for mach_id %s in view %s" % (moira_mach_id, view))
+        else:
+            ib_url = ib_base_url + '/record:host' + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                continue
+
+            log('Created host record for %s with mach_id %s in view %s: %s' % (ib_record['name'], moira_mach_id, view, r.text))
+
+# Delete infoblox host record
+def ib_delete_host(record):
+    ib_record = mach_to_ib(record)
+    moira_mach_id = ib_record['extattrs']['moira_mach_id']
+    # Does this exist?
+    mach_id_results = ib_search_by_mach_id(moira_mach_id)
+
+    if 'error' in mach_id_results:
+        log('ib_search_by_mach_id returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(mach_id_results[view]) == 0:
+            log('No record exists for mach_id %s in view %s, not deleting' % (moira_mach_id, view))
+        elif mach_id_results[view]['extattrs']['moira_managed'] != "1":
+            log('Record for mach_id %s in view %s is not managed by moira, not deleting' % (moira_mach_id, view))
+        else:
+            ib_ref = mach_id_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host for host %s view %s' % (ib_record['name'], view))
+                continue
+
+            log('Deleted host record for %s with mach_id %s in view %s: %s' % (ib_record['name'], moira_mach_id, view, r.text))
+
+# Update host information
+def ib_update_host(before, after):
+    before_record = mach_to_ib(before)
+    after_record = mach_to_ib(after)
+    moira_mach_id = before_record['extattrs']['moira_mach_id']
+
+    # This shouldn't ever change.
+    if moira_mach_id != after_record['extattrs']['moira_mach_id']:
+        critical_log('Moira mach ID changed from %s to %s in an update, this cannot happen!' % (moira_mach_id, after_record['extattrs']['moira_mach_id']))
+        return
+
+    mach_id_results = ib_search_by_mach_id(moira_mach_id)
+    name_results = ib_search_by_name(after_record['name'])
+
+    if 'error' in mach_id_results:
+        log('ib_search_by_mach_id returned error, aborting')
+        return
+
+    if 'error' in name_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        before_record['view'] = view;
+        after_record['view'] = view;
+
+        if len(name_results[view]) > 0 and before_record['name'] != after_record['name']:
+            critical_log('Record already exists in view %s for new name %s, old name %s' % (view, before_record['name'], after_record['name']))
+        elif len(mach_id_results[view]) == 0:
+            log('No record exists for mach id %s in view %s, creating' % (moira_mach_id, view))
+            ib_create_host(after)
+        elif len(mach_id_results[view]) > 1:
+            critical_log('Mutiple records exist for mach_id %s in view %s, should not happen!' % (moira_mach_id, view))
+        elif mach_id_results[view]['extattrs']['moira_managed'] != "1":
+            log('Record for mach_id %s in view %s is not managed by moira, not updating' % (moira_mach_id, view))
+        else:
+            ib_ref = mach_id_results[view]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(after_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_update_host for host %s view %s' % (after_record['name'], view))
+                continue
+
+            log('Updated host record for %s with mach_id in view %s: %s' % (after_record['name'], moira_mach_id, view, r.text))
+
+def address_to_ib(record):
+    ib_address_record = {
+        'name' : record[0].lower(),
+        'disable' : False
         }
-    }
 
-#    if ($existing->{'aliases'} && $new->{'aliases'}) {
-#        if (lc(join(' ', sort(@{$existing->{'aliases'}}))) ne
-#            lc(join(' ', sort(@{$new->{'aliases'}})))) {
-#            return(5);
-#        }
-#    } elsif ($existing->{'aliases'} && !defined($new->{'aliases'})) {
-#      return(6);
-#    } elsif (!defined($existing->{'aliases'}) && $new->{'aliases'}) {
-#      return(7);
-#    }
+    addr_type = record[2]
+    if addr_type == 'IPV4':
+        ib_address_record['ipv4addr'] = record[3]
+    elif addr_type == 'IPV6':
+        ib_address_record['ipv6addr'] = record[3]
+    else:
+        critical_log('Unknown IP address type %s in address_to_ib' % (addr_type))
+        return
 
-    foreach my $attr (keys(%{$new->{'extensible_attributes'}})) {
-        if (($new->{'extensible_attributes'}->{$attr} &&
-             $existing->{'extensible_attributes'}->{$attr}
-            ) &&
-            $new->{'extensible_attributes'}->{$attr} ne
-            $existing->{'extensible_attributes'}->{$attr}
-           ) {
-            return(8);
+    ttl = int(record[4])
+    if ttl == default_ttl:
+        ib_address_record['use_ttl'] = False
+        ib_address_record['ttl'] = default_ttl
+    else:
+        ib_address_record['use_ttl'] = True
+        ib_address_record['ttl'] = ttl
+
+    return ib_address_record
+
+def ib_search_by_name_and_address(name, addr_type, address):
+    if addr_type == 'IPV4':
+        object = '/record:a'
+        payload = { 'name' : name, 'ipv4addr' : address }
+    elif addr_type == 'IPV6':
+        object = '/record:aaaa'
+        payload = { 'name' : name, 'ipv6addr' : address }
+    else:
+        error = 'Unknown IP address type %s in ib_search_by_name_and_address' % (addr_type)
+        critical_log(error)
+        return { 'error' : error }
+
+    ib_search_url = ib_base_url + object + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_by_name_and_address for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view].append(item)
+
+    return results_by_view
+
+def ib_add_a_record(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV4', ib_record['ipv4addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        # Never add private address space to external view
+        if view == 'external' and IPAddress(ib_record['ipv4addr']).is_private() == True:
+            continue
+        if len(search_results[view]) > 0:
+            critical_log('A record already exists for name %s address %s in view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+        else:
+            ib_url = ib_base_url + '/record:a' + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+
+            log('Created A record for name %s address %s in view %s: %s' % (ib_record['name'], ib_record['ipv4addr'], view, r.text))
+              
+def ib_add_aaaa_record(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV6', ib_record['ipv6addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        # Never add private address space to external view
+        if view == 'external' and IPAddress(ib_record['ipv6addr']).is_private() == True:
+            continue
+        if len(search_results[view]) > 0:
+            critical_log('AAAA record already exists for name %s address %s in view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+        else:
+            ib_url = ib_base_url + '/record:aaaa' + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+
+            log('Created AAAA record for name %s address %s in view %s: %s' % (ib_record['name'], ib_record['ipv6addr'], view, r.text))
+
+def alias_to_ib(record):
+    ib_alias_record = {
+        'name' : record[0].lower(),
+        'canonical' : record[1].lower(),
+        'disable' : False,
+        'ttl' : default_ttl,
+        'use_ttl' : False
         }
-    }
-    return(0);
-}
 
-# search for IB record by name
-sub ib_search_by_name {
-    my ($name) = @_;
-    my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(GET => $ib_uri . '&' . $ib_search_args);
-    $req->authorization_basic($ib_user, $ib_pass);
-    my $search_obj = { 'name' => $name };
-    my $json_obj = JSON->new->pretty->encode($search_obj);
-    $req->content($json_obj);
-    my $res = $ua->request($req);
-    if ($res->is_success) {
-        my $search_results = JSON->new->decode($res->content);
-        my $search_results_by_view;
-        foreach my $search_result (@{$search_results}) {
-          my $view = $search_result->{'view'};
-          push(@{$search_results_by_view->{$view}}, $search_result);
-        }
-        foreach my $view (@views) {
-            if (!defined($search_results_by_view->{$view})) {
-                my @tmp = ();
-                $search_results_by_view->{$view} = \@tmp;
-            }
-        }
-        return($search_results_by_view);
-    } else {
-        my $ib_response = JSON->new->decode($res->content);
-        if ($ib_response->{'Error'}) {
-            die('ib_search_by_name: ' . $res->status_line . ': ' . 
-                $ib_response->{'Error'});      
-        } else {
-            die('ib_search_by_name: unknown error: '. $ib_response);
-        }
-    }
-}
+    return ib_alias_record
 
-# search for IB record by mach_id
-sub ib_search_by_mach_id {
-    my ($mach_id) = @_;
-    my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(GET => $ib_uri . '&' . $ib_search_args);
-    $req->authorization_basic($ib_user, $ib_pass);
-    my $search_obj = { '*moira_mach_id' => $mach_id };
-    my $json_obj = JSON->new->pretty->encode($search_obj);
-    $req->content($json_obj);
-    my $res = $ua->request($req);
-    if ($res->is_success) {
-        my $search_results = JSON->new->decode($res->content);
-        my $search_results_by_view;
-        foreach my $search_result (@{$search_results}) {
-          my $view = $search_result->{'view'};
-          push(@{$search_results_by_view->{$view}}, $search_result);
-        }
-        foreach my $view (@views) {
-            if (!defined($search_results_by_view->{$view})) {
-                my @tmp = ();
-                $search_results_by_view->{$view} = \@tmp;
-            }
-        }
-        return($search_results_by_view);
-    } else {
-        my $ib_response = JSON->new->decode($res->content);
-        if ($ib_response->{'Error'}) {
-            die('ib_search_by_mach_id: ' . $res->status_line . ': ' .
-                $ib_response->{'Error'});
-        } else {
-            die('ib_search_by_mach_id: unknown error: ' .
-                $ib_response);
-        }
-    }
-}
+def ib_search_by_name_and_cname(name, alias):
+    object = '/record:cname'
+    ib_search_url = ib_base_url + object + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'canonical' : name.lower(), 'name' : alias.lowe() }
 
-# add IB host record based on moira machine incremental
-sub ib_mach_add {
-    my ($moira_input) = @_;
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
 
-    my $ib_record       = mach_to_ib($moira_input);
-    my $moira_mach_id   = $ib_record->{'extensible_attributes'}
-                                    ->{'moira_mach_id'};
-    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
-    my $name_results    = ib_search_by_name($ib_record->{'name'});
+    data = json.dumps(payload)
+               
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_by_name_and_cname for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
 
-    if ($ib_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
-        print 'ib_mach_add: moira record with mach_id ' . $moira_mach_id . ' has unassigned address, ignoring' . "\n";
-        return;
-    }
-    foreach my $view (@views) {
-        $ib_record->{'view'} = $view;
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view].append(item)
 
-        if (scalar(@{$name_results->{$view}})) {
-            push(@errors, 'ib_mach_add: IB host record with name '
-                         .$ib_record->{'name'} . ' already exists in ' . $view
-                         .' view, not added');
-        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
-            push(@errors, 'ib_mach_add: more than one IB record with '
-                         .'mach_id ' . $moira_mach_id.' in view ' . $view
-                         .', not added');
-        } elsif (scalar(@{$mach_id_results->{$view}}) == 1) {
-            push(@errors, 'ib_mach_add: IB host record with mach_id '
-                  .$moira_mach_id . ' already exists in ' . $view
-                  .' view, not added');
-        } else {
-            my $ua = LWP::UserAgent->new();
-            my $req = HTTP::Request->new(POST => $ib_uri);
-            $req->authorization_basic($ib_user, $ib_pass);
-            $req->header('Content-Type' => 'application/json');
-            $req->content(JSON->new->pretty->encode($ib_record));
-            my $res = $ua->request($req);
-            if ($res->is_success) {
-                if ($res->content =~ /^\"record:host\//) {
-                    print 'ib_mach_add: name:' . $ib_record->{'name'}
-                          .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
-                } else {
-                    my $ib_response = JSON->new->decode($res->content);
-                    if ($ib_response->{'Error'}) {
-                        die('ib_mach_add: ' . $res->status_line . ': '
-                           .$ib_response->{'Error'});
-                    } else {
-                        die('ib_mach_add: unknown error: '
-                           .$ib_response);
-                    }
-                }
-            } else {
-                my $ib_response = JSON->new->decode($res->content);
-                die('ib_mach_add: ' . $res->status_line . ': '
-                   .$ib_response->{'Error'});
-            }
-        }
-    }
-}
-
-# delete IB host record based on moira machine incremental
-sub ib_mach_delete {
-    my ($moira_input) = @_;
-  
-    my $ib_record       = mach_to_ib($moira_input);
-    my $moira_mach_id   = $ib_record->{'extensible_attributes'}
-                                     ->{'moira_mach_id'};
-    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
-
-    foreach my $view (@views) {
-        my $mach_id_result = $mach_id_results->{$view}->[0];
-        $ib_record->{'view'} = $view;
-
-        if (scalar(@{$mach_id_results->{$view}}) == 0) {
-            push(@errors, 'ib_mach_delete: no IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view
-                         .', not deleted');
-        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
-            push(@errors, 'ib_mach_delete: more than one IB record '
-                         .'with mach_id ' . $moira_mach_id . ' in view '
-                         .$view . ', not deleted');
-        } elsif (ib_compare($ib_record, $mach_id_result)) {
-            push(@errors, 'ib_mach_delete: existing IB record with '
-                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
-                         .' is not identical to moira input, not deleted');
-        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
-            push(@errors, 'ib_mach_delete: existing IB record with '
-                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
-                         .' is not moira managed, not deleted');   
-        } else {
-            my $ib_ref = $mach_id_result->{'_ref'};
-            my $ua = LWP::UserAgent->new();
-            my $req = HTTP::Request->new(DELETE => $ib_api . '/' . $ib_ref);
-            $req->authorization_basic($ib_user, $ib_pass);
-            my $res = $ua->request($req);
-            if ($res->is_success) {
-                if ($res->content =~ /^\"record:host\//) {
-                    print 'ib_mach_delete: name:' . $ib_record->{'name'} 
-                          .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$ib_ref . "\n";
-                } else {
-                    my $ib_response = JSON->new->decode($res->content);
-                    if ($ib_response->{'Error'}) {
-                        die($res->status_line . ': ' . $ib_response->{'Error'});
-                    } else {
-                        die('ib_mach_delete: unknown error: ' . $ib_response);
-                    }
-                }
-            } else {
-                my $ib_response = JSON->new->decode($res->content);
-                die('ib_mach_delete: ' . $res->status_line . ': '
-                   .$ib_response->{'Error'});
-            }
-        }
-    }
-}
-
-# update IB host record based on moira machine incremental
-sub ib_mach_update {
-    my ($moira_input) = @_;
-
-    my $before          = [@$moira_input[0..18]];
-    my $after           = [@$moira_input[19..37]];
-
-    my $ib_record       = mach_to_ib($before);
-    my $updated_record  = mach_to_ib($after);
-
-    my $moira_mach_id   = $ib_record->{'extensible_attributes'}->{'moira_mach_id'};
-    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
-
-    my $name_results    = ib_search_by_name($updated_record->{'name'});
-
-    foreach my $view (@views) {
-        my $mach_id_result  = $mach_id_results->{$view}->[0];
-        $ib_record->{'view'} = $view;
-        $updated_record->{'view'} = $view;
-
-#        if (lc(join(' ', @{$before})) eq lc(join(' ', @{$after}))) {
-#            push(@errors, 'ib_mach_update: moira inputs are identical, not updating');
-#            return;
-#        }
-        if ($ib_record->{'extensible_attributes'}->{'moira_mach_id'} !=
-            $updated_record->{'extensible_attributes'}->{'moira_mach_id'}) {
-            die('ib_mach_update: moira mach_id changed, this is impossible', 1);
-        }
-        if (scalar(@{$name_results->{$view}} &&
-            $ib_record->{'name'} ne $updated_record->{'name'})) {
-            push(@errors, 'ib_mach_update: IB host record with name '
-                         .$updated_record->{'name'} . ' already exists in '
-                         .$view .' view, not updated');
-        } elsif (scalar(@{$mach_id_results->{$view}}) == 0) {
-            print 'ib_mach_update: no IB record with mach_id ' . $moira_mach_id
-                  .' in view ' . $view . ', adding instead' . "\n";
-            ib_mach_add($after);
-            return;
-        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
-            push(@errors, 'ib_mach_update: more than one IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view 
-                         .', not updated');
-        } elsif (ib_compare($ib_record, $mach_id_result)) {
-            push(@errors, 'ib_mach_update: existing IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view
-                         .' is not identical to moira input (1), not updated' . "\n");
-#print "result: ".ib_compare($ib_record, $mach_id_result)."\n";
-#print "IB \n".Dumper($mach_id_result)."\n";
-#        } elsif (!ib_compare($updated_record, $mach_id_result)) {
-#            push(@errors, 'ib_mach_update: existing IB record with mach_id '
-#                         .$moira_mach_id . ' in view ' . $view
-#                         .' is identical to moira input (2), not updated');
-        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
-            push(@errors, 'ib_mach_update: existing IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view . ' is not moira managed, not updated');
-        } elsif ($updated_record->{'ipv4addrs'}[0]->{'ipv4addr'} =~ /^unassigned$/i) {
-            print 'ib_mach_update: no address in updated record, deleting instead' . "\n";
-            ib_mach_delete($before);
-            return;
-        } else {
-            my $ib_ref = $mach_id_result->{'_ref'};
-            my $ua = LWP::UserAgent->new();
-            my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
-            $req->authorization_basic($ib_user, $ib_pass);
-            $req->header('Content-Type' => 'application/json');
-            $req->content(JSON->new->pretty->encode($updated_record));
-            my $res = $ua->request($req);
-            if ($res->is_success) {
-                if ($res->content =~ /^\"record:host\//) {
-                    print 'ib_mach_update: name:' . $ib_record->{'name'}
-                          .' view:' . $ib_record->{'view'} . ' mach_id:'
-                          .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
-                } else {
-                    my $ib_response = JSON->new->decode($res->content);
-                    if ($ib_response->{'Error'}) {
-                        die('ib_mach_update: ' . $res->status_line . ': '
-                           .$ib_response->{'Error'});
-                    } else {
-                        die('ib_mach_update: unknown error: ' . $ib_response);
-                    }
-                }
-            } else {
-                my $ib_response = JSON->new->decode($res->content);
-                die('ib_mach_update: ' . $res->status_line . ': '
-                    . $ib_response->{'Error'});
-            }
-        }
-    }
-}
-
-# add alias to IB host record based on moira hostalias incremental
-sub ib_hostalias_add {
-    my ($moira_input) = @_;
-
-    my ( $moira_alias,
-              $moira_name,
-              $moira_mach_id
-          ) = @{$moira_input};
-
-    if ($moira_name !~ /^[\w\-]+\.mit\.edu$/i ||
-        $moira_alias!~ /^[\w\-]+\.mit\.edu$/i ||
-        $moira_mach_id !~ /^\d+$/) {
-        die('ib_hostalias_add: malformed Moira input: '
-            . join(' ', @${moira_input}));
-    }
-
-    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
-
-    foreach my $view (@views) {
+    return results_by_view
     
-        my $mach_id_result  = $mach_id_results->{$view}->[0];
+def ib_add_cname(record):
+    ib_record = alias_to_ib(record)
+    search_results = ib_search_by_name_and_cname(ib_record['canonical'], ib_record['name'])
 
-        if (scalar(@{$mach_id_results->{$view}}) == 0) {
-            push(@errors, 'ib_hostalias_add: no IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view 
-                         .', alias not added');
-        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
-            push(@errors, 'ib_hostalias_add: more than one IB record with '
-                         .'mach_id ' . $moira_mach_id . ' in view ' . $view
-                         .', alias not added');
-        } elsif ($mach_id_result->{'name'} ne lc($moira_name)) {
-            push(@errors, 'ib_hostalias_add: moira record with name (' . lc($moira_name)
-                         .') does not match existing record ('
-                         .$mach_id_result->{'name'} . ') with mach_id '
-                         .$moira_mach_id . ' in view ' . $view
-                         .', alias not added');
-        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
-            push(@errors, 'ib_hostalias_add: existing IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view 
-                         .' is not moira managed, alias not added');
-        } else {
-            my @aliases;
-            if (defined($mach_id_result->{'aliases'})) {
-                @aliases = @{$mach_id_result->{'aliases'}};
-            }
-            if (grep(/^$moira_alias$/i, @aliases)) {
-                push(@errors, 'ib_hostalias_add: alias ' . $moira_alias
-                             .' already associated with ' . $moira_name
-                             .' in view ' . $view . ', not added');
-            } else {
-                push(@aliases, $moira_alias);
+    if 'error' in search_results:
+        log('ib_search_by_name_and_cname returned error, aborting')
+        return
 
-                my $update;
-                $update->{'aliases'} = \@aliases;
+    # canonical name should be non-mit.edu if we got here.
+    if canonical_for_name(ib_record['canonical']) == True:
+        critical_log('Request to create explicit CNAME record for %s. alias %s, should not happen!' % (ib_record['canonical'], ib_record['name']))
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) > 0:
+            critical_log('A record already exists for name %s alias %s in view %s' % (ib_record['canonical'], ib_record['name']. view))
+        else:
+            ib_url = ib_base_url + '/record:cname' + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+
+            log('Created CNAME record for name %s alias %s in view %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.text))
+            
+def ib_add_host_alias(record):
+    ib_record = { 'name' : record[1].lower() }
+    alias = record[0]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s while adding alias %s, skipping' % (ib_record['name'], alias))
+        else:
+            aliases = [ alias ]
+            for item in search_results[view][0]['aliases']:
+                aliases.append(item)
+            ib_record['aliases'] = aliases
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_add_host_alias for name %s alias %s view %s with HTTP return %s' % (ib_record['name'], alias, view, str(r.status_code)))
+                continue
     
-                my $ib_ref = $mach_id_result->{'_ref'};
-                my $ua = LWP::UserAgent->new();
-                my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
-                $req->authorization_basic($ib_user, $ib_pass);
-                $req->header('Content-Type' => 'application/json');
-                $req->content(JSON->new->pretty->encode($update));
-                my $res = $ua->request($req);
-                if ($res->is_success) {
-                    if ($res->content =~ /^\"record:host\//) {
-                        print 'ib_hostalias_add: alias ' . $moira_alias
-                              .' added to host ' . $moira_name . ' in view '
-                              .$view . "\n";
-                    } else {
-                        my $ib_response = JSON->new->decode($res->content);
-                        if ($ib_response->{'Error'}) {
-                            die('ib_hostalias_add: ' . $res->status_line 
-                               .': ' . $ib_response->{'Error'});
-                        } else {
-                            die('ib_hostalias_add: unknown error: '
-                               .$ib_response);
-                        }
-                    }
-                } else {
-                    my $ib_response = JSON->new->decode($res->content);
-                    die('ib_hostalias_add: ' . $res->status_line . ': '
-                       .$ib_response->{'Error'});
-                }
-            }
+            log('Added alias %s to host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
+
+def ib_add_host_identifier(record):
+    id_type = record[1]
+    if id_type == 'DUID':
+        ib_add_host_duid(record)
+    elif id_type == 'HWADDR':
+        ib_add_host_mac(record)
+    else:
+        critical_log('Attempted machine identifier add of unknown type %s for host %s' % (id_type, record[0]))
+
+def ib_add_host_duid(record):
+    ib_record = { 'name' : record[0].lower() }
+    id_type = record[1]
+    id_value = record[2]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s while adding %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
+        else:
+            # DUID is associated with ipv6addrs entry in host structure
+            if 'ipv6addrs' in search_results[view][0]:
+                ipv6addrs = search_results[view][0]['ipv6addrs']
+            else:
+                ipv6addrs = []
+                ipv6addrs[0] = {} 
+            ipv6addrs[0]['duid'] = id_value
+            ipv6addrs[0]['configure_for_dhcp'] = True
+            if not 'ipv6addr' in ipv6addrs[0]:
+                ipv6addrs[0]['ipv6addr'] = 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
+
+            ib_record['ipv6addrs'] = ipv6addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+
+            log('Added %s %s to host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
+
+def ib_add_host_mac(record):
+    ib_record = { 'name' : record[0].lower() }
+    id_type = record[1]
+    id_value = record[2]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s while adding %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
+        else:
+            # MAC address associated with ipv4addrs entry in host structure
+            if 'ipv4addrs' in search_results[view][0]:
+                ipv4addrs = search_results[view][0]['ipv4addrs']
+            else:
+                ipv4addrs = []
+                ipv4addrs[0] = {}
+            ipv4addrs[0]['mac'] = id_value
+            ipv4addrs[0]['configure_for_dhcp'] = True
+            if not 'ipv4addr' in ipv4addrs[0]:
+                ipv4addrs[0]['ipv4addr'] = '255.255.255.255'
+
+            ib_record['ipv4addrs'] = ipv4addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox AP call failed in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+
+            log('Added %s %s to host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
+
+def ib_add_host_ipv4_address(record):
+    ib_record = { 'name' : record[0].lower() }
+    address = record[3]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        # No private addresses in external view
+        if view == 'external' and IPAddress(address).is_private() == True:
+            continue
+
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s while adding IPv4 address %s, skipping' % (ib_record['name'], address))
+        else:
+            if 'ipv4addrs' in search_results[view][0]:
+                ipv4addrs = search_results[view][0]['ipv4addrs']
+            else:
+                ipv4addrs = []
+                ipv4addrs[0] = {}
+            ipv4addrs[0]['ipv4addr'] = address
+
+            ib_record['ipv4addrs'] = ipv4addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_add_host_ipv4_address for name %s address %s view %s with HTTP return %s' % (ib_record['name'], address, view, r.status_code))
+                continue
+
+            log('Added IPv4 address %s to host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
+
+def ib_add_host_ipv6_address(record):
+    ib_record = { 'name' : record[0] }
+    address = record[3]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        # No private addresses in external view
+        if view == 'external' and IPAddress(address).is_private == True:
+            continue
+
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s while adding IPv6 address %s, skipping' % (ib_record['name']. address))
+        else:
+            if 'ipv6addrs' in search_results[view][0]:
+                ipv6addrs = search_results[view][0]['ipv6addrs']
+            else:
+                ipv6addrs = []
+                ipv6addrs[0] = {}
+            ipv6addrs[0]['ipv6addr'] = address
+
+            ib_record['ipv6addrs'] = ipv6addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_add_host_ipv6_address for name %s address %s view %s with HTTP return %s' % (ib_record['name'], address, view, r.status_code))
+                continue
+
+            log('Added IPv6 address %s to host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
+
+def ib_add_hostrecord(record):
+    rr_type = record[1]
+    if rr_type == 'NS':
+        ib_add_delegated_zone(record)
+        return
+    elif rr_type == 'MX':
+        ib_record = mx_to_ib(record)
+        primary_rr_value = ib_record['mail_exchanger']
+        object = '/record:mx'
+    elif rr_type == 'SRV':
+        ib_record = srv_to_ib(record)
+        primary_rr_value = ib_record['target']
+        object = '/record:srv'
+    elif rr_type == 'TXT':
+        ib_record = txt_to_ib(record)
+        primary_rr_value = ib_record['text']
+        object = '/record:txt'
+    else:
+        critical_log('Unexpected RR type %s in ib_add_hostrecord' % (rr_type))
+        return
+
+    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+
+    if 'error' in search_results:
+        log('ib_search_hostrecord returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) > 0:
+            critical_log('%s record already exists for name %s value %s in view %s, not adding' % (rr_type, ib_record['name'], primary_rr_value, view))
+        else:
+            ib_url = ib_base_url + object + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed creating RR type %s for name %s view %s' % (rr_type, ib_record['name'], view))
+                continue
+
+            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view))
+
+def ib_search_hostrecord(name, rr_type, value):
+    if rr_type == 'MX':
+        object = '/record:mx'
+        search_key = 'mail_exchanger'
+    elif rr_type == 'SRV':
+        object = '/record:srv'
+        search_key = 'target'
+    elif rr_type == 'TXT':
+        object = '/record:txt'
+        search_key = 'text'
+
+    ib_search_url = ib_base_url + object + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'name' : name, search_key : value }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_hostrecord for RR type %s URL %s payload %s with HTTP status: %s' % (rr_type, ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view] = item
+
+    return results_by_view
+
+def ns_to_ib(record):
+    addresses = get_moira_hostaddresses(record[2].upper())
+    ib_delegate_to = []
+    for address in addresses:
+        ib_delegate_element = {
+            'name' : address[0].lower(),
+            'address' : address[3]
         }
-    }
-}
 
-# delete alias from IB host record based on moira hostalias incremental
-sub ib_hostalias_delete {
-    my ($moira_input) = @_;
-  
-    my ( $moira_alias,
-         $moira_name,
-         $moira_mach_id
-       ) = @{$moira_input};
+        ib.delegate_to.append(ib_delegate_element)
 
-    if ($moira_name !~ /^[\w\-]+\.mit\.edu$/i ||
-        $moira_alias!~ /^[\w\-]+\.mit\.edu$/i ||
-        $moira_mach_id !~ /^\d+$/) {
-        die('ib_hostalias_delete: malformed moira input: '
-            .join(' ', @${moira_input}));
+    ib_ns_record = {
+        'fqdn' : record[0].lower(),
+        'delegate_to' : ib_delegate_to,
+        'disable' : False
     }
 
-    my $mach_id_results = ib_search_by_mach_id($moira_mach_id);
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_ns_record['delegated_ttl'] = default_ttl
+        ib_ns_record['use_delegated_ttl'] = False
+    else:
+        ib_ns_record['delegated_ttl'] = ttl
+        ib_ns_record['use_delegated_ttl'] = True
 
-    foreach my $view (@views) {
+    return ib_ns_record
 
-        my $mach_id_result  = $mach_id_results->{$view}->[0];
-  
-        if (scalar(@{$mach_id_results->{$view}}) == 0) {
-            push(@errors, 'ib_hostalias_delete: no IB record with mach_id '
-                         .$moira_mach_id . ' in view ' . $view
-                         . ', alias not deleted');
-        } elsif (scalar(@{$mach_id_results->{$view}}) > 1) {
-            push(@errors, 'ib_hostalias_delete: more than one IB record with '
-                         .'mach_id ' . $moira_mach_id . ' in view ' . $view 
-                         . ', alias not deleted');
-        } elsif ($mach_id_result->{'name'} ne lc($moira_name)) {
-            push(@errors, 'ib_hostalias_delete: moira name does not match '
-                         .'existing record with mach_id ' . $moira_mach_id 
-                         .' in view ' . $view . ', alias not deleted');
-        } elsif (!$mach_id_result->{'extensible_attributes'}->{'moira_managed'}) {
-            push(@errors, 'ib_hostalias_delete: existing IB record with mach_id ' 
-                         .$moira_mach_id . ' in view ' . $view
-                         .' is not moira managed, alias not deleted');
-        } else {
-            my @aliases;
-            if (defined($mach_id_result->{'aliases'})) {
-                my @tmp_aliases = @{$mach_id_result->{'aliases'}};
-                if (!grep(/^$moira_alias$/i, @tmp_aliases)) {
-                    push(@errors, 'ib_hostalias_delete: alias ' . $moira_alias
-                                 .' not associated with host ' . $moira_name
-                                 .' in view ' . $view . ', not deleted');
-                } else {
-                    foreach my $alias (@tmp_aliases) {
-                        push(@aliases, $alias) if ($alias !~ /^$moira_alias$/i);
-                    }
-          
-                    my $update;
-                    $update->{'aliases'} = \@aliases;
-          
-                    my $ib_ref = $mach_id_result->{'_ref'};
-                    my $ua = LWP::UserAgent->new();
-                    my $req = HTTP::Request->new(PUT => $ib_api . '/' . $ib_ref);
-                    $req->authorization_basic($ib_user, $ib_pass);
-                    $req->header('Content-Type' => 'application/json');
-                    $req->content(JSON->new->pretty->encode($update));
-                    my $res = $ua->request($req);
-                    if ($res->is_success) {
-                        if ($res->content =~ /^\"record:host\//) {
-                            print 'ib_hostalias_delete: name:' . $moira_name 
-                                  .' view:' . $view . ' mach_id:'
-                                  .$moira_mach_id. ' ib_ref:'.$res->content . "\n";
-                        } else {
-                            my $ib_response = JSON->new->decode($res->content);
-                            if ($ib_response->{'Error'}) {
-                                die('ib_hostalias_delete: '
-                                   .$res->status_line . ': '
-                                   .$ib_response->{'Error'});
-                            } else {
-                                die('ib_hostalias_delete: unknown error: '
-                                   .$ib_response);
-                            }
-                        }
-                    } else {
-                        my $ib_response = JSON->new->decode($res->content);
-                        die('ib_hostalias_delete: ' . $res->status_line . ': ' 
-                            . $ib_response->{'Error'});
-                    }
-                }
-            } else {
-                push(@errors, 'ib_hostalias_delete: no aliases associated with '
-                             .$moira_name . ' in view ' . $view 
-                             .', not deleted');
-            }
+def ib_search_delegated_zone(fqdn):
+    ib_search_url = ib_base_url + '/zone_delegated' + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'fqdn' : fqdn }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_delegated_zone for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view] = item
+
+    return results_by_view
+
+def ib_add_delegated_zone(record):
+    ib_record = ns_to_ib(record)
+    search_results = ib_search_delegated_zone(ib_record['fqdn'])
+
+    if 'error' in search_results:
+        log('ib_search_delegated_zone returned error, aborting')
+        return
+
+    for view in views:
+        if view == 'external':
+            # Make a copy of ib_record['delegated_to'] since we might modify it.
+            delegated_to = list(ib_record['delegated_to'])
+            # Don't put private addresses in the external zone.
+            for item in delegated_to:
+                if IPAddress(item['address']).is_private() == True:
+                    delegated_to[:] = [ d for d in delegated_to if d.get('address') != item['address']]
+            ib_record['delegated_to'] = delegated_to
+
+        ib_record['view'] = view
+
+        if len(search_results[view]) > 0:
+            for item in search_results[view]['delegated_to']:
+                ib_record['delegated_to'].append(item)
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed updating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
+
+            log('Updated delegated zone %s with additional delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegated_to'][0]['name'], view, r.text))
+        else:
+            ib_url = ib_base_url + '/zone_delegated' + ib_common_args
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
+
+            log('Created delegated zone %s with delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegated_to'][0]['name'], view, r.text))
+
+def txt_to_ib(record):
+    ib_txt_record = {
+        'name' : record[0].lower(),
+        'text' : record[2].lower(),
+        'disable' : False
         }
-    }
-}
 
-sub critical_alert {
-    my ($error) = @_;
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_txt_record['ttl'] = default_ttl
+        ib_txt_record['use_ttl'] = False
+    else:
+        ib_txt_record['ttl'] = ttl
+        ib_txt_record['use_ttl'] = True
 
-    my $logfile = "/moira/critical.log";
-    open(LOG, ">>$logfile");
-    my $tnow = localtime;
-    print LOG "$tnow <$$> $error";
-    close(LOG);
+    return ib_txt_record
 
-    $error =~ /(.*)/;
-    $error = $1;
+def srv_to_ib(record):
+    ib_srv_record = {
+        'name' : record[0].lower(),
+        'disable' : False
+        }
 
-    my $zwrite = "/usr/local/bin/zwrite";
+    (priority, weight, port, target) = record[2].split()
+    if not priority or not weight or not port or not target:
+        critical_log('Could not parse SRV record value in srv_to_ib')
+        return
+    ib_srv_record['priority'] = int(priority)
+    ib_srv_record['weight'] = int(weight)
+    ib_srv_record['port'] = int(port)
+    ib_srv_record['target'] = target.lower()
 
-    if (-f $zwrite) {
-        #system($zwrite, "-q", "-d", "-n", "-c", "moira", "-i", "incremental", "-m", "$error");
-    }
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_srv_record['ttl'] = default_ttl
+        ib_srv_record['use_ttl'] = False
+    else:
+        ib_srv_record['ttl'] = ttl
+        ib_srv_record['use_ttl'] = True
+
+    return ib_srv_record
+
+def mx_to_ib(record):
+    ib_mx_record = {
+        'name' : record[0].lower(),
+        'disable' : False
+        }
+
+    (weight, mxhost) = record[2].split()
+    if not weight or not mxhost:
+        critical_log('Could not parse MX record value in mx_to_ib')
+        return
+    ib_mx_record['preference'] = int(weight)
+    ib_mx_record['mail_exchanger'] = mxhost.lower()
+
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_mx_record['ttl'] = default_ttl
+        ib_mx_record['use_ttl'] = False
+    else:
+        ib_mx_record['ttl'] = ttl
+        ib_mx_record['use_ttl'] = True
+        
+    return ib_mx_record
+
+def ib_delete_a_record(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV4', ib_record['ipv4addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        if len(search_results[view]) == 0:
+            log('No A record exists for name %s address %s in view %s, not deleting' % (ib_record['name'], ib_record['ipv4addr'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+
+            log('Deleted A record for name %s address %s in view %s: %s' % (ib_record['name'], ib_record['ipv4addr'], view, r.text))
+
+def ib_delete_aaaa_record(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV6', ib_record['ipv6addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        if len(search_results[view]) == 0:
+            log('No AAAA record exists for name %s address %s in view %s, not deleting' % (ib_record['name'], ib_record['ipv6addr'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+
+            log('Deleted AAAA record for name %s address %s in view %s: %s' % (ib_record['name'], ib_record['ipv6addr'], view, r.text))
+
+def ib_delete_cname(record):
+    ib_record = alias_to_ib(record)
+    search_results = ib_search_by_name_and_cname(ib_record['canonical'], ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_cname returned error, aborting')
+        return
+
+    for view in views:
+        if len(search_results[view]) == 0:
+            log('No CNAME record exists for name %s alias %s in view %s, not deleting' % (ib_record['canonical'], ib_record['name'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+                
+            log('Deleted CNAME record for name %s alias %s in view %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.text))
+
+def ib_delete_host_alias(record):
+    ib_record = { 'name' : record[1] }
+    alias = record[0]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            log('No host record exists for %s while deleting alias %s, skipping' % (ib_record['name'], alias))
+        else:
+            aliases = [ x for x in search_results[view][0]['aliases'] if x != alias]
+            ib_record['aliases'] = aliases
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                continue
+
+            log('Deleted alias %s from host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
+
+def ib_delete_host_identifier(record):
+    id_type = record[1]
+    if id_type == 'DUID':
+        ib_delete_host_duid(record)
+    elif id_type == 'HWADDR':
+        ib_delete_host_mac(record)
+    else:
+        critical_log('Attempted machine identifier delete of unknown type %s for host %s' % (id_type, record[0]))
+
+def ib_delete_host_duid(record):
+    ib_record = { 'name' : record[0].lower() }
+    id_type = record[1]
+    id_value = record[2]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            log('No host record exists for %s while deleting %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        else:
+            ipv6addrs = []
+            for x in search_results[view][0]['ipv6addrs']:
+                if x['duid'] != id_value:
+                    ipv6addrs.append(x)
+                elif x['ipv6addr'] != 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff':
+                    del x['duid']
+                    ipv6addrs.append(x)
+
+            ib_record['ipv6addrs'] = ipv6addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+
+            log('Deleted %s %s for host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
+
+def ib_delete_host_mac(record):
+    ib_record = { 'name' : record[0].lower() }
+    id_type = record[1]
+    id_value = record[2]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            log('No host record exists for %s while deleting %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        else:
+            ipv4addrs = []
+            for x in search_results[view][0]['ipv4addrs']:
+                if x['mac'] != id_value:
+                    ipv4addrs.append(x)
+                elif x['ipv4addr'] != '255.255.255.255':
+                    del x['mac']
+                    ipv4addrs.append(x)
+
+            ib_record['ipv4addrs'] = ipv4addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host_mac for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+
+            log('Deleted %s %s for host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
+
+def ib_delete_host_ipv4_address(record):
+    ib_record = { 'name' : record[0].lower() }
+    address = record[3]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
     
-    exit 1;
-}
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            log('No host record exists for %s while deleting IPv4 address %s, skipping' % (ib_record['name'], address))
+        else:
+            ipv4addrs = []
+            for x in search_results[view][0]['ipv4addrs']:
+                if x['ipv4addr'] != address:
+                    ipv4addrs.append(x)
+                elif 'mac' in x:
+                    x['ipv4addr'] = '255.255.255.255'
+                    ipv4addrs.append(x)
 
-sub mailer {
-    my ($error) = @_;
-    my $date = POSIX::strftime("%m/%d/%y %H:%M:%S", localtime);
-    my $smtp = Net::SMTP->new($smtpserver);
-    if (defined($smtp)){
-        $smtp->mail($from_addr);
-        $smtp->to(@to_addrs);
-        $smtp->data();
-        $smtp->datasend('From: ' . $from_addr . "\n");
-        $smtp->datasend('To: ' . join(",",@to_addrs)."\n");
-        $smtp->datasend('Subject: '.$subj_prefix.': '.$date.': ERROR'."\n");
-        $smtp->datasend("\n");
-        $smtp->datasend($error);
-        $smtp->dataend();
-        $smtp->quit;
-    } else {              
-        die('unable to send via ' . $smtpserver  . ': '. $!);
-    }
-}
+            ib_record['ipv4addrs'] = ipv4addrs
 
-sub file {
-    my ($file) = @_;
-    my $fh;        
-    my @lines;
-    open($fh, $file) || error_and_exit("Unable to open $file: $!");
-    while (<$fh>) {          
-        next if ($_ =~ /^\s*[#;]/ || $_ =~ /^\s*$/);
-        chop $_;                 
-        $_ =~ s/\s+$//;       
-        push(@lines, $_);               
-    }
-    close($fh);               
-    return(@lines);
-}
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+
+            log('Deleted IPv4 address %s for host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
+
+def ib_delete_host_ipv6_address(record):
+    ib_record = { 'name' : record[0].lower() }
+    address = record[3]
+    search_results = ib_search_by_name(ib_record['name'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            log('No host record exists for %s while deleting IPv6 address %s, skipping' % (ib_record['name'], address))
+        else:
+            ipv6addrs = []
+            for x in search_results[view][0]['ipv6addrs']:
+                if x['ipv6addr'] != address:
+                    ipv6addrs.append(x)
+                elif 'duid' in x:
+                    x['ipv6addr'] = 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
+                    ipv6addrs.append(x)
+
+            ib_record['ipv6addrs'] = ipv6addrs
+
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+
+            log('Deleted IPv6 address %s for host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
+
+def ib_delete_hostrecord(record):
+    rr_type = record[1]
+    if rr_type == 'NS':
+        ib_delete_delegated_zone(record)
+        return
+    elif rr_type == 'MX':
+        ib_record = mx_to_ib(record)
+        primary_rr_value = ib_record['mail_exchanger']
+    elif rr_type == 'SRV':
+        ib_record = srv_to_ib(record)
+        primary_rr_value = ib_record['target']
+    elif rr_type == 'TXT':
+        ib_record = txt_to_ib(record)
+        primary_rr_value = ib_record['text']
+    else:
+        critical_log('Unexpected RR type %s in ib_delete_hostrecord' % (rr_type))
+        return
+
+    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+
+    if 'error' in search_results:
+        log('ib_search_hostrecord returned error, aborting')
+        return
+
+    for view in views:
+        if len(search_results[view]) == 0:
+            log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, ib_record['name'], primary_rr_value, view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, ib_record['name'], view))
+                continue
+
+            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view))
+
+def ib_delete_delegated_zone(record):
+    ib_record = ns_to_ib(record)
+    search_results = ib_search_delegated_zone(ib_record['fqdn'])
+
+    if 'error' in search_results:
+        log('ib_search_delegated_zone returned error, aborting')
+        return
+
+    for view in views:
+        if len(search_results[view]) == 0:
+            log('No delegated zone record for %s exists in view %s, not deleting' % (ib_record['fqdn'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+            delegated_to = [ x for x in search_results[view][0]['delegated_to'] if x not in ib_record['delegated_to']]
+            if len(delegated_to) == 0:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+                if r.status_code != requests.codes.ok:
+                    critical_log('Infoblox API call failed for DELETE in ib_delete_delegated_zone of zone %s view %s' % (ib_record['fqdn'], view))
+                    continue
+                log('Deleted delegated zone %s in view %s: %s' % (ib_record['fqdn'], view, r.text))
+            else:
+                ib_record['delegated_to'] = delegated_to
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+                if r.status_code != requests.codes.ok:
+                    critical_log('Infoblox API call failed for PUT in ib_delete_delegated_zone of zone %s view %s' % (ib_record['fqdn'], view))
+                    continue
+
+                log('Updated delegated zone %s to remove delegation to %s in view %s: %s' % (ib_record['fqdn'], record[2], view, r.text))
+        
+def ib_set_aaaa_record_ttl(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV6', ib_record['ipv6addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No AAAA record exists for name %s address %s in view %s while updating TTL' % (ib_record['name'], ib_record['ipv6addr'], view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple AAAA records exist for name %s address %s in view %s, should not happen' % (ib_record['name'], ib_record['ipv6addr'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+
+            log('Updated TTL for AAAA record %s address %s in view %s to %s' % (ib_record['name'], ib_record['ipv6addr'], view, ib_record['ttl']))
+
+def ib_set_a_record_ttl(record):
+    ib_record = address_to_ib(record)
+    search_results = ib_search_by_name_and_address(ib_record['name'], 'IPV4', ib_record['ipv4addr'])
+
+    if 'error' in search_results:
+        log('ib_search_by_name_and_address returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No A record exists for name %s address %s in view %s while updating TTL' % (ib_record['name'], ib_record['ipv4addr'], view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple A records exist for name %s address %s in view %s, should not happen' % (ib_record['name'], ib_record['ipv4addr'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+
+            log('Updated TTL for A record %s address %s in view %s to %s' % (ib_record['name'], ib_record['ipv4addr'], view, ib_record['ttl']))
+
+def ib_set_host_ttl(record):
+    hostname = record[0].lower()
+    ttl = int(record[4])
+    ib_record = { 'name': hostname, 'ttl' : ttl, 'use_ttl' : True }
+    search_results = ib_search_by_name(hostname)
+
+    if 'error' in search_results:
+        log('ib_search_by_name returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No host record exists for %s in view %s while setting TTL' % (ib_record['name'], view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s, should not happen' % (ib_record['name'], view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
+                continue
+
+            log('Updated TTL for host record %s in view %s to %s' % (ib_record['name'], view, ib_record['ttl']))
+
+def ib_set_record_ttl(record):
+    rr_type = record[1]
+    if rr_type == 'NS':
+        ib_set_delegated_zone_ttl(record)
+        return
+    elif rr_type == 'MX':
+        ib_record = mx_to_ib(record)
+        primary_rr_value = ib_record['mail_exchanger']
+    elif rr_type == 'SRV':
+        ib_record = srv_to_ib(record)
+        primary_rr_value = ib_record['target']
+    elif rr_type == 'TXT':
+        ib_record = txt_to_ib(record)
+        primary_rr_value = ib_record['text']
+    else:
+        critical_log('Unexpected RR type %s in ib_set_record_ttl' % (rr_type))
+        return
+
+    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+
+    if 'error' in search_results:
+        log('ib_search_hostrecord returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, ib_record['name'], primary_rr_value, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple %s records exist for name %s value %s in view %s while setting TTL, should not happen' % (rr_type, ib_record['name'], primary_rr_value, view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s' % (rr_type, ib_record['name'], view))
+                continue
+
+            log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, ib_record['name'], primary_rr_value, view, ib_record['ttl']))
+
+def ib_set_delegated_zone_ttl(record):
+    zonename = record[0].lower()
+    ttl = int(record[3])
+
+    ib_record = { 'fqdn' : zonename, 'disable' : False }
+    if ttl == default_ttl:
+        ib_record['delegated_ttl'] = default_ttl
+        ib_record['use_delegated_ttl'] = False
+    else:
+        ib_record['delegated_ttl'] = ttl
+        ib_record['use_delegated_ttl'] = True
+
+    search_results = ib_search_delegated_zone(zonename)
+
+    if 'error' in search_results:
+        log('ib_search_delegated_zone returned error, aborting')
+        return
+
+    for view in views:
+        ib_record['view'] = view
+        if len(search_results[view]) == 0:
+            critical_log('No delegated zone record for %s exists in view %s while setting TTL' % (zonename, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple delegated zone records exist for %s in view %s while setting TTL, should not happen' % (zonename, view))
+        else:
+            ib_ref = search_results[view][0]['_ref']
+            ib_url = ib_base_url + '/' + ib_ref
+            headers = { 'Content-Type' : 'application/json' }
+
+            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+
+            if r.status_code != requests.codes.ok:
+                critical_log('Infoblox API call failed setting TTL for delegated zone %s view %s' % (zonename, view))
+                continue
+
+            log('Updated TTL for delegated zone %s in view %s to %s' % (zonename, view, ttl))
+
+# Handle machine incremental
+def do_machine(before, after):
+    # Add
+    if before == []:
+        after_status = int(after[9])
+        hostname = after[0]
+        if after_status == 1 and canonical_for_hostname(hostname):
+            ib_create_host(after)
+    # Delete
+    elif after == []:
+        # Must be status 3 to be deleted and already handled via update path.
+        log('nothing to do for deleted host %s' % (before[0]))
+    # Update
+    else:
+        before_status = int(before[9])
+        after_status = int(after[9])
+
+        if after_status != 1:
+
+            # Delete DNS records that may be associated with before name.
+            hostname = before[0]
+            for record in get_moira_hostrecords(hostname):
+                ib_delete_hostrecord(record)
+
+            # Check for cross-domain CNAME.
+            if canonical_for_hostname(hostname) == False:
+                for record in get_moira_hostaliases(hostname):
+                    ib_delete_cname(record)
+
+            # Get host addresses and delete.
+            for record in get_moira_hostaddresses(hostname):
+                has_ptr = int(record[5])
+                addr_type = record[2]
+                if has_ptr == 0:
+                    if addr_type == 'IPV4':
+                        ib_delete_a_record(record)
+                    elif addr_type == 'IPV6':
+                        ib_delete_aaaa_record(record)
+
+            # Lastly, delete host record
+            ib_delete_host(before)
+                
+        elif after_status == 1:
+            if before_status != 1:
+                hostname = after[0]
+                canon = canonical_for_hostname(hostname)
+
+                # Are we canonical for this name?  If so, handle everything
+                # If not, only handle CNAME records.
+                if canon == True:
+                    # primary host record
+                    ib_create_host(after)
+                    
+                    # aliases
+                    for record in get_moira_hostaliases(hostname):
+                        ib_add_host_alias(record)
+                        
+                    # host addresses
+                    for record in get_moira_hostaddresses(hostname):
+                        has_ptr = int(record[5])
+                        addr_type = record[2]
+                        if has_ptr == 1:
+                            if addr_type == 'IPV4':
+                                ib_add_host_ipv4_address(record)
+                            elif addr_type == 'IPV6':
+                                ib_add_host_ipv6_address(record)
+                        else:
+                            if addr_type == 'IPV4':
+                                ib_add_a_record(record)
+                            elif addr_type == 'IPV6':
+                                ib_add_aaaa_record(record)
+
+                    # host records
+                    for record in get_moira_host_records(hostname):
+                        ib_add_hostrecord(record)
+
+                    # mach identifiers
+                    for record in get_moira_mach_identifiers(hostname):
+                        ib_add_host_identifier(record)
+                else:
+                    for record in get_moira_hostaliases(hostname):
+                        ib_add_cname(record)
+
+            else:
+                # active before and after, update host record
+                ib_update_host(before, after)
+
+                # If hostname changed, need to handle other bits of information
+                before_hostname = before[0]
+                after_hostname = after[0]
+
+                if before_hostname != after_hostname:
+
+                    canon_before = canonical_for_hostname(before_hostname)
+                    canon_after = canonical_for_hostname(after_hostname)
+
+                    # If we're no longer canonical, delete the host object.
+                    if canon_before == True and canon_after == False:
+                        ib_delete_host(before)
+                               
+                    # Host records
+                    for record in get_moira_hostrecords(after_hostname):
+                        if canon_after == True:
+                            ib_add_hostrecord(record)
+                        if canon_before == True:
+                            record[0] = before_hostname
+                            ib_delete_hostrecord(record)
+
+                    # CNAMEs.  Aliases directly associated with the host record
+                    # will have moved as part of ib_update_host()
+                    for record in get_moira_hostaliases(after_hostname):
+                        if canon_before == True and canon_after == False:
+                            ib_add_cname(record)
+                        elif canon_before == False and canon_after == True:
+                            ib_add_host_alias(record)
+                            record[0] = before_hostname
+                            ib_delete_cname(record)
+                        elif canon_before == False and canon_after == False:
+                            ib_add_cname(record)
+                            record[0] = before_hostname
+                            ib_delete_cname(record)
+
+                    # Host addreses        
+                    for record in get_moira_hostaddresses(after_hostname):
+                        has_ptr = int(record[5])
+                        addr_type = record[2]
+                        if canon_after == True:
+                            # Addresses directly associated with host record will have moved
+                            # as part of ib_update_host()
+                            if has_ptr == 0:
+                                if addr_type == 'IPV4':
+                                    ib_add_a_record(record)
+                                elif addr_type == 'IPV6':
+                                    ib_add_aaaa_record(record)
+                        if canon_before == True:
+                            record[0] = before_hostname
+                            if has_ptr == 0:
+                                if addr_type == 'IPV4':
+                                    ib_delete_a_record(record)
+                                elif addr_type == 'IPV6':
+                                    ib_delete_aaaa_record(record)
+
+# Handle hostalias incremental
+def do_hostalias(before, after):
+    # Add
+    if before == []:
+        hostname = after[1]
+        if canonical_for_hostname(hostname) == True:
+            ib_add_host_alias(after)
+        else:
+            status = int(get_moira_host_status(hostname))
+            if status == 1:
+                ib_add_cname(after)
+    # Delete
+    elif after == []:
+        hostname = before[1]
+        if canonical_for_hostname(hostname) == True:
+            ib_delete_host_alias(before)
+        else:
+            status = int(get_moira_host_status(hostname))
+            if status == 1:
+                ib_delete_cname(before)
+    # update case with both before and after not empty can't happen
+
+# Handle hostaddress incremental
+def do_hostaddress(before, after):
+    # Add
+    if before == []:
+        hostname = after[0]
+        has_ptr = int(after[5])
+        addr_type = after[2]
+        if canonical_for_hostname(hostname) == True:
+            if has_ptr == 1:
+                if addr_type == 'IPV4':
+                    ib_add_host_ipv4_address(after)
+                elif addr_type == 'IPV6':
+                    ib_add_host_ipv6_address(after)
+            else:
+                status = int(get_moira_host_status(hostname))
+                if status == 1:
+                    if addr_type == 'IPV4':
+                        ib_add_a_record(after)
+                    elif addr_type == 'IPV6':
+                        ib_add_aaaa_record(after)
+    # Delete
+    elif after == []:
+        hostname = before[0]
+        has_ptr = int(before[5])
+        addr_type = before[2]
+        if canonical_for_hostname(hostname) == True:
+            if has_ptr == 1:
+                if addr_type == 'IPV4':
+                    ib_delete_host_ipv4_address(before)
+                elif addr_type == 'IPV6':
+                    ib_delete_host_ipv6_address(before)
+            else:
+                status = int(get_moira_host_status(hostname))
+                if status == 1:
+                    if addr_type == 'IPV4':
+                        ib_delete_a_record(before)
+                    elif addr_type == 'IPV6':
+                        ib_delete_aaaa_record(before)
+    # Update - TTL or PTR bit might change, but never both at the same time.
+    else:
+        hostname = after[0]
+        before_ptr = int(before[5])
+        after_ptr = int(after[5])
+        addr_type = after[2]
+
+        if before_ptr == after_ptr:
+            # if here, ttl must have changed.
+            if after_ptr == 1:
+                ib_set_host_ttl(after)
+            else:
+                status = int(get_moira_host_status(hostname))
+                if status == 1:
+                    if addr_type == 'IPV4':
+                        ib_set_a_record_ttl(after)
+                    elif addr_type == 'IPV6':
+                        ib_set_aaaa_record_ttl(after)
+        else:
+            # ptr bit changed.
+            if before_ptr == 0 and after_ptr == 1:
+                ib_delete_a_record(before)
+                ib_add_host_ipv4_address(after)
+            elif before_ptr == 1 and after_ptr == 0:
+                ib_delete_host_ipv4_address(before)
+                ib_add_a_record(after)
+            
+# Handle hostrecord incremental
+def do_hostrecord(before, after):
+    # Add
+    if before == []:
+        hostname = after[0]
+        rr_type = after[1]
+        status = int(get_moira_host_status(hostname))
+        if status == 1 and canonical_for_hostname(hostname) == True:
+            if rr_type in rr_types:
+                ib_add_hostrecord(after)
+            else:
+                log('received incremental for unsupported DNS RR type %s' % (rr_type))
+    # Delete
+    elif after == []:
+        hostname = before[0]
+        rr_type = before[1]
+        if canonical_for_hostname(hostname) == True:
+            if rr_type in rr_types:
+                ib_delete_hostrecord(after)
+            else:
+                log('received incremental for unsupported DNS RR type %s' % (rr_type))
+    # Update - only thing that can change is TTL
+    else:
+        rr_type = after[1]
+        if rr_type in rr_types:
+            ib_set_record_ttl(after)
+        else:
+            log('received incremental for unsupported DNS RR type %s' % (rr_type))
+
+# Handle machidentifier incremental
+def do_machidentifier(before, after):
+    # Add
+    if before == []:
+        hostname = after[0]
+        id_type = after[1]
+        if canonical_for_hostname(hostname) == True:
+            ib_add_host_identifier(after)
+    # Delete
+    elif after == []:
+        hostname = before[0]
+        id_type = before[1]
+        if canonical_for_hostname(hostname) == True:
+            ib_delete_host_identifier(before)
+    # update case with before and after not empty can't happen
+        
+progname = os.path.basename(sys.argv[0])
+print progname + ' pipe child starting'
+sys.stdout.flush()
+# main loop
+while True:
+    # Pause for up to 30 minutes while the stop file exists.
+    stop_file = '/moira/infoblox/noinfoblox'
+    stop_check_count = 0
+    while os.path.exists(stop_file):
+        sleep(60)
+        if stop_check_count > 30:
+            critical_log('incremental failed (%s exists)' % stop_file)
+            sys.exit(1)
+        stop_check_count +=1
+
+    # read length of incremental argv
+    lenbytes = sys.stdin.read(4)
+    if len(lenbytes) == 0:
+        print progname + ' pipe child exiting'
+        break
+    l, = struct.unpack('>L', lenbytes)
+    # read and parse incremental argv
+    incrargv = sys.stdin.read(l).split('\0')
+    table = incrargv[0]
+    beforec = int(incrargv[1])
+    afterc = int(incrargv[2])
+    beforev = incrargv[3:3+beforec]
+    afterv = incrargv[3+beforec:3+beforec+afterc]
+
+    log('processing an incremental')
+
+    if table == 'machine':
+        log('calling do_machine')
+        do_machine(beforev, afterv)
+    elif table == 'hostalias':
+        log('calling do_hostalias')
+        do_hostalias(beforev, afterv)
+    elif table == 'hostaddress':
+        log('calling do_hostaddress')
+        do_hostaddress(beforev, afterv)
+    elif table == 'hostrecord':
+        log('calling do_hostrecord')
+        do_hostrecord(beforev, afterv)
+    elif table == 'machidentifiermap':
+        log('calling do_machidentifier')
+        do_machidentifier(beforev, afterv)
+    else:
+        error = 'Incremental received on unexpected table %s' % table
+        critical_log(error)
+        
+exit(0)

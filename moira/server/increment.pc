@@ -78,7 +78,9 @@ void incremental_init(void)
 void incremental_before(enum tables table, char *qual, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id;
+  int id, sid, cnt, use, ttl, ptr, vlan_tag;
+  char sname[SUBNET_NAME_SIZE];
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   char *name, *name2;
@@ -98,42 +100,39 @@ void incremental_before(enum tables table, char *qual, char **argv)
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
-	      "m.contact, m.billing_contact, m.account_number, m.status, m.address, "
-	      "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id, m.use, "
-	      "TO_CHAR(m.inuse, 'DD-mon-YYYY'), m.ttl FROM machine m "
+	      "m.contact, m.billing_contact, m.account_number, m.status, "
+	      "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.use, "
+	      "TO_CHAR(m.inuse, 'DD-mon-YYYY') FROM machine m "
 	      "WHERE %s", qual);
       dosql(before);
-      beforec = 19;
+      beforec = 16;
       name = xmalloc(0);
-      id = atoi(before[12]);
-      if (!strncmp(before[11], "USER", 4))
+      id = atoi(before[11]);
+      if (!strncmp(before[10], "USER", 4))
 	{
 	  id_to_name(id, USERS_TABLE, &name);
-	  strcpy(before[12], name);
+	  strcpy(before[11], name);
 	}
-      else if (!strncmp(before[11], "LIST", 4))
+      else if (!strncmp(before[10], "LIST", 4))
 	{
 	  id_to_name(id, LIST_TABLE, &name);
-	  strcpy(before[12], name);
+	  strcpy(before[11], name);
 	}
-      else if (!strncmp(before[11], "KERBEROS", 8))
+      else if (!strncmp(before[10], "KERBEROS", 8))
 	{
 	  id_to_name(id, STRINGS_TABLE, &name);
-	  strcpy(before[12], name);
+	  strcpy(before[11], name);
 	}
-      else if (!strncmp(before[11], "NONE", 4))
+      else if (!strncmp(before[10], "NONE", 4))
 	{
-	  strcpy(before[12], "NONE");
+	  strcpy(before[11], "NONE");
 	}
+      id = atoi(before[12]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(before[12], name);
       id = atoi(before[13]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(before[13], name);
-      id = atoi(before[14]);
-      id_to_name(id, STRINGS_TABLE, &name);
-      strcpy(before[14], name);
-      id = atoi(before[15]);
-      id_to_name(id, SUBNET_TABLE, &name);
-      strcpy(before[15], name);
       break;
     case HOSTALIAS_TABLE:
       strcpy(before[0], argv[0]);
@@ -142,12 +141,59 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(before[2], "%d", id);
       beforec = 3;
       break;
-    case HWADDRMAP_TABLE:
+    case HOSTADDRESS_TABLE:
+      /* hostname */
       strcpy(before[0], argv[0]);
+      name_to_id(before[0], MACHINE_TABLE, &id);
+
+      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag
+	INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag
+	FROM machine m, subnet s, hostaddress ha
+	WHERE m.mach_id = :id AND m.mach_id = ha.mach_id AND s.snet_id = ha.snet_id AND ha.address = :argv[1];
+
+      strcpy(before[1], strtrim(sname));
+      strcpy(before[2], strtrim(addr_type));
+
+      /* address */
+      strcpy(before[3], argv[1]);
+      sprintf(before[4], "%d", ttl);
+      sprintf(before[5], "%d", ptr);
+
+      sprintf(before[6], "%d", use);
+      sprintf(before[7], "%d", vlan_tag);
+      sprintf(before[8], "%d", id);
+      sprintf(before[9], "%d", sid);
+      beforec = 10;
+      break;
+    case HOSTRECORD_TABLE:
+      strcpy(before[0], argv[0]);
+      name_to_id(before[0], MACHINE_TABLE, &id);
       strcpy(before[1], argv[1]);
-      name_to_id(before[1], MACHINE_TABLE, &id);
-      sprintf(before[2], "%d", id);
-      beforec = 3;
+      strcpy(before[2], argv[2]);
+      EXEC SQL SELECT ttl INTO :ttl FROM hostrecord
+	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = :argv[2];
+      sprintf(before[3], "%d", ttl);
+      sprintf(before[4], "%d", id);
+      beforec = 5;
+      break;
+    case MACHIDENTIFIERMAP_TABLE:
+      strcpy(before[0], argv[0]);
+      name_to_id(before[0], MACHINE_TABLE, &id);
+      /* Workaround for legacy queries */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM alias
+	WHERE name='mach_identifier' AND type='TYPE' AND trans=:argv[1];
+      if (cnt > 0)
+	{
+	  strcpy(before[1], argv[1]);
+	  strcpy(before[2], argv[2]);
+	}
+      else
+	{
+	  strcpy(before[1], "HWADDR");
+	  strcpy(before[2], argv[1]);
+	}
+      sprintf(before[3], "%d", id);
+      beforec = 4;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "
@@ -313,7 +359,8 @@ void incremental_after(enum tables table, char *qual, char **argv)
 {
   char *name, *name2;
   EXEC SQL BEGIN DECLARE SECTION;
-  int id; 
+  int id, sid, cnt, use, ttl, ptr, vlan_tag;
+  char sname[SUBNET_NAME_SIZE], addr_type[SUBNET_ADDR_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct iupdate *iu;
 
@@ -330,42 +377,39 @@ void incremental_after(enum tables table, char *qual, char **argv)
       break;
     case MACHINE_TABLE:
       sprintf(stmt_buf, "SELECT m.name, m.mach_id, m.vendor, m.model, m.os, m.location, "
-              "m.contact, m.billing_contact, m.account_number, m.status, m.address, "
-              "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id, m.use, "
-	      "TO_CHAR(m.inuse, 'DD-mon-YYYY'), m.ttl FROM machine m "
+              "m.contact, m.billing_contact, m.account_number, m.status, "
+              "m.owner_type, m.owner_id, m.acomment, m.ocomment, m.use, "
+	      "TO_CHAR(m.inuse, 'DD-mon-YYYY') FROM machine m "
               "WHERE %s", qual);
       dosql(after);
-      afterc = 19;
+      afterc = 16;
       name = xmalloc(0);
-      id = atoi(after[12]);
-      if (!strncmp(after[11], "USER", 4))
+      id = atoi(after[11]);
+      if (!strncmp(after[10], "USER", 4))
         { 
           id_to_name(id, USERS_TABLE, &name);
-          strcpy(after[12], name);
+          strcpy(after[11], name);
         }
-      else if (!strncmp(after[11], "LIST", 4))
+      else if (!strncmp(after[10], "LIST", 4))
         {
           id_to_name(id, LIST_TABLE, &name);
-          strcpy(after[12], name);
+          strcpy(after[11], name);
         }
-      else if (!strncmp(after[11], "KERBEROS", 8))
+      else if (!strncmp(after[10], "KERBEROS", 8))
         {
           id_to_name(id, STRINGS_TABLE, &name);
-          strcpy(after[12], name);
+          strcpy(after[11], name);
         }
-      else if (!strncmp(after[11], "NONE", 4))
+      else if (!strncmp(after[10], "NONE", 4))
 	{
-	  strcpy(after[12], "NONE");
+	  strcpy(after[11], "NONE");
 	}
+      id = atoi(after[12]);
+      id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(after[12], name);
       id = atoi(after[13]);
       id_to_name(id, STRINGS_TABLE, &name);
       strcpy(after[13], name);
-      id = atoi(after[14]);
-      id_to_name(id, STRINGS_TABLE, &name);
-      strcpy(after[14], name);
-      id = atoi(after[15]);
-      id_to_name(id, SUBNET_TABLE, &name);
-      strcpy(after[15], name);
       break;
     case HOSTALIAS_TABLE:
       strcpy(after[0], argv[0]);
@@ -374,12 +418,59 @@ void incremental_after(enum tables table, char *qual, char **argv)
       sprintf(after[2], "%d", id);
       afterc = 3;
       break;
-    case HWADDRMAP_TABLE:
+    case HOSTADDRESS_TABLE:
+      /* hostname */
       strcpy(after[0], argv[0]);
+      name_to_id(after[0], MACHINE_TABLE, &id);
+
+      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag
+        INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag
+        FROM machine m, subnet s, hostaddress ha
+        WHERE m.mach_id = :id AND m.mach_id = ha.mach_id AND s.snet_id = ha.snet_id AND ha.address = :argv[1];
+
+      strcpy(after[1], strtrim(sname));
+      strcpy(after[2], strtrim(addr_type));
+
+      /* address */
+      strcpy(after[3], argv[1]);
+      sprintf(after[4], "%d", ttl);
+      sprintf(after[5], "%d", ptr);
+
+      sprintf(after[6], "%d", use);
+      sprintf(after[7], "%d", vlan_tag);
+      sprintf(after[8], "%d", id);
+      sprintf(after[9], "%d", sid);
+      afterc = 10;
+      break;
+    case HOSTRECORD_TABLE:
+      strcpy(after[0], argv[0]);
+      name_to_id(after[0], MACHINE_TABLE, &id);
       strcpy(after[1], argv[1]);
-      name_to_id(after[1], MACHINE_TABLE, &id);
-      sprintf(after[2], "%d", id);
-      afterc = 3;
+      strcpy(after[2], argv[2]);
+      EXEC SQL SELECT ttl INTO :ttl FROM hostrecord
+	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = :argv[2];
+      sprintf(after[3], "%d", ttl);
+      sprintf(after[4], "%d", id);
+      afterc = 5;
+      break;
+    case MACHIDENTIFIERMAP_TABLE:
+      strcpy(after[0], argv[0]);
+      name_to_id(after[0], MACHINE_TABLE, &id);
+      /* Workaround for legacy queries */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM alias WHERE NAME='mach_identifier'
+	AND type='TYPE' AND trans=:argv[1];
+      if (cnt > 0)
+	{
+	  strcpy(after[1], argv[1]);
+	  strcpy(after[2], argv[2]);
+	}
+      else 
+	{
+	  strcpy(after[1], "HWADDR");
+	  strcpy(after[2], argv[1]);
+	}
+      sprintf(after[3], "%d", id);
+      afterc = 4;
       break;
     case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, "

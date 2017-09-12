@@ -533,14 +533,20 @@ static int fix_ace(char *type, char **name)
 }
 
 
-/* followup_gsnt: fix the ace_name and modby */
+/* followup_gsnt: fix the ace_name and modby, backwards IPv4 address compat for old clients */
 
 int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  char **argv;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  char **argv, *maskstr;
+  char buf[BUFSIZ];
   int status, idx;
+  struct sockaddr_in sa;
 
   if (q->version < 8)
     idx = 0;
@@ -554,6 +560,54 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
       status = fix_ace(argv[7 + idx], &argv[8 + idx]);
       if (status && status != MR_NO_MATCH)
 	return status;
+
+      /* If client is older than version 17, turn the IP addresses
+       * back into decimal format if they're v4 addresses. We don't
+       * have access to the addr_type in the return argv for old queries,
+       * so look at the DB. */
+      if (q->version < 17)
+	{
+	  EXEC SQL SELECT addr_type INTO :addr_type FROM subnet WHERE name = :argv[0];
+	  if (sqlca.sqlcode)
+	    return MR_SUBNET;
+
+	  if (!strcmp(strtrim(addr_type), "IPV4"))
+	    {
+	      if (inet_pton(AF_INET, argv[2 + idx], &(sa.sin_addr)) < 1)
+		return MR_ADDRESS;
+
+	      sprintf(buf, "%d", ntohl(sa.sin_addr.s_addr));
+	      strcpy(argv[2 + idx], buf);
+
+	      /* subnet mask - bit length, not string */
+	      maskstr = masksize_to_mask("IPV4", atoi(argv[3 + idx]));
+	      if (!maskstr)
+		return MR_ADDRESS;
+
+	      if (inet_pton(AF_INET, maskstr, &(sa.sin_addr)) < 1)
+		  return MR_ADDRESS;
+
+	      sprintf(buf, "%d", ntohl(sa.sin_addr.s_addr));
+	      strcpy(argv[3 + idx], buf);
+
+	      if (inet_pton(AF_INET, argv[4 + idx], &(sa.sin_addr)) < 1)
+		return MR_ADDRESS;
+
+	      sprintf(buf, "%d", ntohl(sa.sin_addr.s_addr));
+	      strcpy(argv[4 + idx], buf);
+
+	      if (inet_pton(AF_INET, argv[5 + idx], &(sa.sin_addr)) < 1)
+		return MR_ADDRESS;
+
+	      sprintf(buf, "%d", ntohl(sa.sin_addr.s_addr));
+	      strcpy(argv[5 + idx], buf);
+	    }
+	  else if (!strcmp(strtrim(addr_type), "IPV6"))
+	    {
+	      /* Old clients can't have IPV6 addresses returned to them, so just fail */
+	      return MR_SUBNET;
+	    }
+	}
     }
 
   return followup_fix_modby(q, sq, v, action, actarg, cl);
@@ -573,8 +627,10 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
     idx = 0;
   else if (q->version >= 6 && q->version < 8)
     idx = 1;
-  else
+  else if (q->version >= 8 && q->version < 17)
     idx = 2;
+  else
+    idx = 0;
 
   while (sq_get_data(sq, &argv))
     {
@@ -773,6 +829,132 @@ int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
   return MR_SUCCESS;
 }
 
+/* followup_ahad - insert address record
+ * required because we need to pass the actual address to
+ * the incremental for processing if someone specified "unique"
+ */
+
+int followup_ahad(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid, table, status, ptr = 0, ttl = DEFAULT_TTL;
+  char *tname;
+  char address[HOSTADDRESS_ADDRESS_SIZE];
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  char *incr_argv[3];
+
+  table = q->rtable;
+  tname = table_name[table];
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+  strcpy(address, argv[2]);
+
+  if (q->type == MR_Q_APPEND)
+    {
+      incremental_clear_before();
+
+      /* Is this the first address of this type for this host? */
+      EXEC SQL SELECT addr_type INTO :addr_type FROM subnet WHERE snet_id = :sid;
+      if (dbms_errno)
+	return mr_errcode;
+      strmove(addr_type, strtrim(addr_type));
+
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, subnet s WHERE
+	ha.mach_id = :mid AND ha.snet_id = s.snet_id AND s.addr_type = :addr_type;
+      if (cnt == 0)
+	ptr = 1;
+
+      /* Is this address in use by any other hosts with reverse resolution? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress WHERE
+	address = :address AND ptr = 1;
+      if (cnt > 0)
+	ptr = 0;
+
+      EXEC SQL INSERT INTO hostaddress (mach_id, snet_id, address, ttl, ptr)
+	VALUES (:mid, :sid, :address, :ttl, :ptr);
+      if (dbms_errno)
+	return mr_errcode;
+
+      incr_argv[0] = xmalloc(0);
+      status = id_to_name(mid, MACHINE_TABLE, &incr_argv[0]);
+      if (status)
+	return status;
+
+      incr_argv[1] = address;
+
+      incr_argv[2] = xmalloc(0);
+      status = id_to_name(sid, SUBNET_TABLE, &incr_argv[2]);
+      if (status)
+	return status;
+
+      incremental_after(table, NULL, incr_argv);
+
+      free(incr_argv[0]);
+      free(incr_argv[2]);
+    }
+
+  EXEC SQL UPDATE tblstats SET appends = appends + 1, modtime = SYSDATE
+    WHERE table_name = :tname;
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
+
+  return MR_SUCCESS;
+}
+
+int followup_dhad(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, sid, table, status;
+  char *tname;
+  char address[HOSTADDRESS_ADDRESS_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  char *incr_argv[3];
+
+  table = q->rtable;
+  tname = table_name[table];
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+  strcpy(address, argv[2]);
+
+  if (q->type == MR_Q_DELETE)
+    {
+      incr_argv[0] = xmalloc(0);
+      status = id_to_name(mid, MACHINE_TABLE, &incr_argv[0]);
+      if (status)
+	return status;
+
+      incr_argv[1] = address;
+
+      incr_argv[2] = xmalloc(0);
+      status = id_to_name(sid, SUBNET_TABLE, &incr_argv[2]);
+      if (status)
+	return status;
+
+      incremental_before(table, NULL, incr_argv);
+
+      free(incr_argv[0]);
+      free(incr_argv[2]);
+
+      EXEC SQL DELETE FROM hostaddress WHERE mach_id = :mid AND snet_id = :sid
+        AND address = :address;
+      incremental_clear_after();
+
+      if (dbms_errno)
+	return mr_errcode;
+    }
+
+  EXEC SQL UPDATE tblstats SET deletes = deletes + 1, modtime = SYSDATE
+    WHERE table_name = :tname;
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
+
+  return MR_SUCCESS;
+}
 
 /* followup_aqot: Add allocation to nfsphys after creating quota.
  *   argv[0] = filsys_id
@@ -1072,5 +1254,69 @@ int followup_get_user(struct query *q, struct save_queue *sq, struct
       free(argv);
     }
   sq_destroy(sq);
+  return MR_SUCCESS;
+}
+
+int followup_srrt(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *rr_type, *rr_value;
+  int mid, ttl;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  mid = *(int *)argv[0];
+  rr_type = argv[1];
+  rr_value = argv[2];
+  ttl = atoi(argv[3]);
+
+  /* If this is an NS record for a delegated zone, keep all other
+     records in sync that's all we can express in the backend. */
+  if (!strcmp(rr_type, "NS"))
+    {
+      EXEC SQL UPDATE hostrecord SET ttl = :ttl WHERE
+	mach_id = :mid AND rr_type = :rr_type AND rr_value != :rr_value;
+      if (dbms_errno)
+	return mr_errcode;
+    }
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
+
+  return MR_SUCCESS;
+}
+
+int followup_sttl(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *address;
+  int mid, ttl, has_ptr;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  mid = *(int *)argv[0];
+  address = argv[1];
+  ttl = atoi(argv[2]);
+
+  /* Did we update a record where has_ptr is set to 1? */
+  EXEC SQL SELECT ptr INTO :has_ptr FROM hostaddress
+    WHERE mach_id = :mid AND address = :address;
+  if (dbms_errno)
+    return mr_errcode;
+
+  if (has_ptr)
+    {
+      /* Update all of the other addresses where has_ptr is set */
+      EXEC SQL UPDATE hostaddress SET ttl = :ttl WHERE
+	mach_id = :mid AND address != :address AND ptr = 1;
+      if (dbms_errno)
+	return mr_errcode;
+    }
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
+
   return MR_SUCCESS;
 }

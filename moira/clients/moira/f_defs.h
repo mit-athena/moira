@@ -46,13 +46,14 @@ int AttachHelp(void);
 
 int ShowMachineInfo(int argc, char **argv);
 int ShowMachineQuery(int argc, char **argv);
+int ShowMachineByAddress(int argc, char **argv);
 int MachineByOwner(int argc, char **argv);
 int MachineByAcctNumber(int argc, char **argv);
 int AddMachine(int argc, char **argv);
 int UpdateMachine(int argc, char **argv);
 int DeleteMachine(int argc, char **argv);
+int ShowMachineUsage(int argc, char **argv);
 int SetMachineOpt(int argc, char **argv);
-int SetMachineTTL(int argc, char **argv);
 int AddDynamicHost(int argc, char **argv);
 int MachineToClusterMap(int argc, char **argv);
 int AddMachineToCluster(int argc, char **argv);
@@ -81,6 +82,16 @@ int ShowCname(int argc, char **argv);
 int AddCname(int argc, char **argv);
 int DeleteCname(int argc, char **argv);
 
+int ShowAddresses(int argc, char **argv);
+int AddAddress(int argc, char **argv);
+int DeleteAddress(int argc, char **argv);
+int SetAddressTTL(int argc, char **argv);
+
+int ShowRecords(int argc, char **argv);
+int AddRecord(int argc, char **argv);
+int DeleteRecord(int argc, char **argv);
+int SetRecordTTL(int argc, char **argv);
+
 int ShowContainerInfo(int argc, char **argv);
 int AddContainer(int argc, char **argv);
 int UpdateContainer(int argc, char **argv);
@@ -92,9 +103,9 @@ int RemoveMachineFromContainer(int argc, char **argv);
 int GetMachinesOfContainer(int argc, char **argv);
 int GetTopLevelCont(int argc, char **argv);
 
-int ShowHWAddrs(int argc, char **argv);
-int AddHWAddr(int argc, char **argv);
-int DeleteHWAddr(int argc, char **argv);
+int ShowIdentifiers(int argc, char **argv);
+int AddIdentifier(int argc, char **argv);
+int DeleteIdentifier(int argc, char **argv);
 
 /* delete.c */
 
@@ -258,11 +269,11 @@ Bool YesNoQuitQuestion(char *prompt, int bool_def);
 int do_mr_query(char *name, int argc, char **argv,
 		int (*proc)(int, char **, void *), void *hint);
 int GetTypeFromUser(char *prompt, char *tname, char **pointer);
-int GetAddressFromUser(char *prompt, char **pointer);
 Bool ValidName(char *s);
 int QueueCount(struct mqelem *elem);
 int PromptWithDefault(char *prompt, char *buf, int buflen, char *def);
 struct mqelem *GetTypeValues(char *tname);
+char *masksize_to_mask(char *addr_type, unsigned int prefix);
 
 /* from clients/lib/error.c */
 char *mrcl_get_message(void); 

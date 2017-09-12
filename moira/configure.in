@@ -90,9 +90,6 @@ AC_CHECK_FUNC(socket, :,
 					LIBS="-lsocket -lnsl $LIBS", :,
 					-lnsl)))
 
-# configure / build libbind
-AC_CONFIG_SUBDIRS(util/bind)
-
 # com_err (required, but can be built)
 AC_MSG_CHECKING(for com_err)
 AC_ARG_WITH(com_err,
@@ -120,38 +117,6 @@ AC_SUBST(COMPILE_ET)
 AC_CHECK_LIB(k5crypto, main, crypto="k5crypto",
              [AC_CHECK_LIB(crypto, main, crypto="crypto")])
 
-# Kerberos (Kerberos 4 optional, Kerberos 5 required)
-AC_MSG_CHECKING(for Kerberos 4)
-AC_ARG_WITH(krb4,
-    [  --with-krb4=PREFIX      Specify location of krb4],
-    [krb4="$withval"], [krb4=no])
-AC_MSG_RESULT($krb4)
-if test "$krb4" != no; then
-    if test "$krb4" != yes; then
-	MR_INCLUDE($krb4/include)
-	if test -d "$krb4/include/kerberosIV"; then
-	    MR_INCLUDE($krb4/include/kerberosIV)
-	fi
-	MR_LIBS($krb4/lib)
-    elif test -d /usr/include/kerberosIV; then
-	MR_INCLUDE(/usr/include/kerberosIV)
-    fi
-    MR_DEFINE(HAVE_KRB4)
-    AC_CHECK_LIB(krb4, krb_rd_req,
-		 [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"],
-		 [AC_CHECK_LIB(krb, krb_rd_req,
-			       [KRB4_LIBS="-lkrb -ldes"],
-			       [AC_MSG_ERROR(Kerberos 4 libraries not found)],
-			       $LIBPATH -ldes)],
-		 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv)
-fi
-if test "$KRB4_LIBS" != "" ; then
-    AC_CANONICAL_TARGET
-    case "$target_os" in
-    darwin*) KRB4_LIBS="$KRB4_LIBS -framework Kerberos"
-    esac
-fi
-
 AC_MSG_CHECKING(for Kerberos 5)
 AC_ARG_WITH(krb5,
     [  --with-krb5=PREFIX      Specify location of krb5],
@@ -172,19 +137,6 @@ if test "$KRB5_LIBS" != "" ; then
     case "$target_os" in
     darwin*) KRB5_LIBS="$KRB5_LIBS -framework Kerberos"
     esac
-fi
-
-AC_MSG_CHECKING(for OpenSSL)
-AC_ARG_WITH(openssl,
-    [  --with-openssl=PREFIX	Specify location of openssl],
-    [openssl="$withval"], [openssl=no])
-AC_MSG_RESULT($openssl)
-if test "$openssl" != no; then
-   if test "$openssl" != yes; then
-      MR_EXTEND(PRO_C_INCLUDES, -I$openssl/include)
-   else
-      MR_EXTEND(PRO_C_INCLUDES, INCLUDE=/usr/include/openssl)
-   fi
 fi
 
 AC_SUBST(KERBEROS_SUBDIRS)
@@ -221,7 +173,7 @@ if test "$zephyr" != no; then
     fi
     AC_CHECK_LIB(zephyr, ZInitialize, :,
 		 [AC_MSG_ERROR(Zephyr library not found)],
-		 $LIBPATH $KRB4_LIBS $KRB5_LIBS -lcom_err)
+		 $LIBPATH $KRB5_LIBS -lcom_err)
     MR_DEFINE(HAVE_ZEPHYR)
 fi
 
@@ -261,7 +213,7 @@ if test "$oracle" != no; then
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/mailman/Makefile incremental/dns/Makefile incremental/dropbox/Makefile incremental/route-server/Makefile incremental/roles/Makefile regtape/Makefile util/bsd-compat/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/incr-runner/Makefile incremental/infoblox/Makefile incremental/dropbox/Makefile incremental/route-server/Makefile incremental/roles/Makefile regtape/Makefile util/bsd-compat/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
@@ -332,7 +284,10 @@ if test "$afs" != no -a "$oracle" != no; then
 	AFS_CPPFLAGS="-I$afs/include -I$afs/include/afs -I$afs/include/rx"
 	AFS_PRO_C_INCLUDES="INCLUDE=$afs/include INCLUDE=$afs/include/afs INCLUDE=$afs/include/rx"
 	AFS_LIBS="-L$afs/lib -L$afs/lib/afs"
-	AFS_DIR=$afs
+    else
+	AFS_CPPFLAGS="-I/usr/include/afs -I/usr/include/rx"
+	AFS_PRO_C_INCLUDES="INCLUDE=/usr/include/afs INCLUDE=/usr/include/rx"
+	AFS_LIBS="-L/usr/lib64/afs"
     fi
     AC_CHECK_LIB(sys, pioctl, :,
 		 [AC_MSG_ERROR(AFS libraries not found)],
@@ -349,7 +304,6 @@ fi
 AC_SUBST(AFS_CPPFLAGS)
 AC_SUBST(AFS_PRO_C_INCLUDES)
 AC_SUBST(AFS_LIBS)
-AC_SUBST(AFS_DIR)
 AC_SUBST(AFS_SUBDIRS)
 AC_SUBST(AFS_SYNCDIR)
 
@@ -453,12 +407,12 @@ MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 MR_INCLUDE('$(srcdir)')
 LDFLAGS="$LDFLAGS $LIBPATH"
-KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $LIBS"
+KLIBS="$KRB5_LIBS -lcom_err $LIBS"
 KLIBS="$LIBS"
 if test "$hesiod" != no; then
   KLIBS="-lhesiod $KLIBS"
 fi
-KLIBS="$KRB4_LIBS $KRB5_LIBS -lcom_err $KLIBS"
+KLIBS="$KRB5_LIBS -lcom_err $KLIBS"
 if test "$zephyr" != no; then
   KLIBS="-lzephyr $KLIBS"
 fi
@@ -477,4 +431,4 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/stanley/Makefile clients/stella/Makefile \
 	  update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES \
 	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES \
-	  $AFS_OUTPUT_FILES $KERBEROS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)
+	  $AFS_OUTPUT_FILES $KERBEROS_OUTPUT_FILES)

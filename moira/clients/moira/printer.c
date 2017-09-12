@@ -30,7 +30,7 @@ void ChangePrn(char **info, Bool one_item);
 void ChangePrintSrvLoop(char **info, Bool one);
 extern int GetAliasValue(int argc, char **argv, void *retval);
 
-void PrintHWAddrs(char **info);
+void PrintIdentifiers(char **info);
 static char *PrintPrintSrvInfo(char **info);
 static char **SetPrintSrvDefaults(char **info, char *name);
 static char **AskPrintSrvInfo(char **info);
@@ -109,6 +109,7 @@ static struct mqelem *GetPrnInfo(char *name, int how)
 {
   int stat;
   struct mqelem *elem = NULL;
+  char *args[2];
 
   switch (how)
     {
@@ -121,7 +122,9 @@ static struct mqelem *GetPrnInfo(char *name, int how)
 	}
       break;
     case BY_ETHERNET:
-      stat = do_mr_query("get_printer_by_ethernet", 1, &name,
+      args[0] = "HWADDR";
+      args[1] = name;
+      stat = do_mr_query("get_printer_by_identifier", 2,args,
 			 StoreInfo, &elem);
       break;
     case BY_HOSTNAME:
@@ -154,16 +157,18 @@ static struct mqelem *GetPrnInfo(char *name, int how)
   return QueueTop(elem);
 }
 
-static char hwaddrbuf[BUFSIZ * 2];
+static char idbuf[BUFSIZ * 2];
 
-void PrintHWAddrs(char **info)
+void PrintIdentifiers(char **info)
 {
-  if (strlen(hwaddrbuf) == 0)
-    sprintf(hwaddrbuf, "Hardware Addresses: %s", info[1]);
+  if (strlen(idbuf) == 0)
+    sprintf(idbuf, "Identifiers: %s:%s", info[1], info[2]);
   else
     {
-      strcat(hwaddrbuf, ", ");
-      strcat(hwaddrbuf, info[1]);
+      strcat(idbuf, ", ");
+      strcat(idbuf, info[1]);
+      strcat(idbuf, ":");
+      strcat(idbuf, info[2]);
     }
 }
 
@@ -176,6 +181,7 @@ void PrintHWAddrs(char **info)
 static char *PrintPrnInfo(char **info)
 {
   char buf[BUFSIZ];
+  char *args[2];
   int status, banner = atoi(info[PRN_BANNER]);
   struct mqelem *elem = NULL;
 
@@ -199,21 +205,23 @@ static char *PrintPrnInfo(char **info)
   sprintf(buf, "Printer hostname: %s", info[PRN_HOSTNAME]);
   Put_message(buf);
 
-  status = do_mr_query("get_host_hwaddr_mapping", 1, &info[PRN_HOSTNAME],
-		       StoreInfo, &elem);
+  args[0] = info[PRN_HOSTNAME];
+  args[1] = "*";
+  
+  status = do_mr_query("get_host_identifier_mapping", 2, args, StoreInfo, &elem);
   if (status)
     {
       if (status != MR_NO_MATCH)
-	com_err(program_name, status, " looking up hardware addresses");
+	com_err(program_name, status, " looking up host identifiers");
       else
-	Put_message("Hardware Addresses: none");
+	Put_message("Identifiers: none");
     }
   else 
     {
-      hwaddrbuf[0] = 0;
-      Loop(QueueTop(elem), (void (*)(char **)) PrintHWAddrs);
+      idbuf[0] = 0;
+      Loop(QueueTop(elem), (void (*)(char **)) PrintIdentifiers);
       FreeQueue(elem);
-      Put_message(hwaddrbuf);
+      Put_message(idbuf);
     }
 
   sprintf(buf, "Printer log host: %s", info[PRN_LOGHOST]);
@@ -493,13 +501,17 @@ int AddPrn(int argc, char **argv)
 
   if (stat == MR_SUCCESS && strcasecmp(info[PRN_HOSTNAME], "[NONE]"))
     {
-      char *hwargv[2], *hwaddr, *s, *d;
+      char *idargv[3], *idtype, *idvalue, *s, *d;
 
-      hwaddr = strdup("");
-      if (GetValueFromUser("Hardware ethernet address", &hwaddr) == SUB_ERROR)
+      idtype = strdup("");
+      if (GetTypeFromUser("Host identifier type", "mach_identifier", &idtype) == SUB_ERROR)
 	return DM_NORMAL;
 
-      s = d = hwaddr;
+      idvalue = strdup("");
+      if (GetValueFromUser("Host identifier", &idvalue) == SUB_ERROR)
+	return DM_NORMAL;
+
+      s = d = idvalue;
       do
 	{
 	  if (*s != ':')
@@ -507,12 +519,13 @@ int AddPrn(int argc, char **argv)
 	}
       while (*s++);
 
-      hwargv[0] = info[PRN_HOSTNAME];
-      hwargv[1] = hwaddr;
+      idargv[0] = info[PRN_HOSTNAME];
+      idargv[1] = idtype;
+      idargv[2] = idvalue;
 
-      stat = do_mr_query("add_host_hwaddr", 2, hwargv, NULL, NULL);
+      stat = do_mr_query("add_host_identifier", 3, idargv, NULL, NULL);
       if (stat != MR_SUCCESS)
-	com_err(program_name, stat, " in add_host_hwaddr");
+	com_err(program_name, stat, " in add_host_identifier");
     }
   
   FreeInfo(info);

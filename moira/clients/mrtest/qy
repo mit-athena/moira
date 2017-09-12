@@ -174,23 +174,6 @@ if ($query[0] eq "ghst" || $query[0] eq "get_host") {
     if ($name) { $query[1] = $name; }
 }
 
-if ($query[0] eq "asnt" || $query[0] eq "add_subnet" || $query[0] eq "usnt" || $query[0] eq "update_subnet") {
-    my ($decimal_form, $packed_address, $idx);
-    $idx = 0;
-    if ($query[0] eq "usnt" || $query[0] eq "update_subnet") { $idx = 1 };
-    foreach $arg (6..9) {
-	$query[$arg + $idx] =~ s/^"(.*)"$/$1/;
-	$packed_address = inet_aton($query[$arg + $idx]);
-	if ($packed_address) {
-	    $decimal_form = unpack('N', $packed_address);
-	    if ($decimal_form) { 
-		$decimal_form -= 2**32 if $decimal_form >= 2**31;
-		$query[$arg + $idx] = $decimal_form;
-	    }
-	}
-    }
-}
-
 # send the query to the Moira server
 @qret = command "qy @query";
 (pop(@qret) =~ /^\d+ tuple/) || die "Unexpected last line from 'qy @query'";
@@ -204,16 +187,6 @@ foreach (@qret) {
     if (!$short) { for (@vals) { s/\\(\d{3})/chr(oct($1))/ge; } }
 
     @out{@retl} = @vals;
-
-    if ($query[0]eq "gsnt" || $query[0] eq "get_subnet") {
-	my ($dotted_quad);
-	foreach $arg ('address', 'mask', 'low', 'high') {
-	    $dotted_quad = inet_ntoa(pack('N', $out{$arg}));
-	    if ($dotted_quad) {
-		$out{$arg} = $dotted_quad;
-	    }
-	}
-    }
 
     if ($short) {
       print join ", ", map { if (defined $out{$_}) {

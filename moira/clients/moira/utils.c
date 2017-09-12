@@ -846,33 +846,6 @@ int GetTypeFromUser(char *prompt, char *tname, char **pointer)
   return GetTypeFromUser(prompt, tname, pointer);
 }
 
-
-/*	Function Name: GetAddressFromUser
- *	Description: gets an IP address from the user
- *	Arguments: prompt string, buffer pointer
- *		buffer contains default value as long int
- *	Returns: SUB_ERROR if ^C, SUB_NORMAL otherwise
- */
-
-int GetAddressFromUser(char *prompt, char **pointer)
-{
-  char *value, buf[256];
-  struct in_addr addr;
-  int ret;
-
-  addr.s_addr = htonl(atoi(*pointer));
-  value = strdup(inet_ntoa(addr));
-  ret = GetValueFromUser(prompt, &value);
-  if (ret == SUB_ERROR)
-    return SUB_ERROR;
-  addr.s_addr = inet_addr(value);
-  free(*pointer);
-  sprintf(buf, "%d", ntohl(addr.s_addr));
-  *pointer = strdup(buf);
-  return SUB_NORMAL;
-}
-
-
 int do_mr_query(char *name, int argc, char **argv,
 		int (*proc)(int, char **, void *), void *hint)
 {
@@ -906,3 +879,50 @@ int do_mr_query(char *name, int argc, char **argv,
   return status;
 }
 
+char *masksize_to_mask(char *addr_type, unsigned int prefix)
+{
+  int i, j;
+
+  if (!strcmp(addr_type, "IPV4"))
+    {
+      struct in_addr in;
+      char buf[INET_ADDRSTRLEN];
+
+      if (prefix > 32)
+        return NULL;
+
+      memset(&in, 0, sizeof(in));
+
+      if (prefix)
+        in.s_addr = htonl(~((1 << (32 - prefix)) - 1));
+
+      if (inet_ntop(AF_INET, &in, buf, INET_ADDRSTRLEN) == NULL)
+        return NULL;
+      else
+        return strdup(buf);
+    }
+  else if (!strcmp(addr_type, "IPV6"))
+    {
+      struct in6_addr in6;
+      char buf[INET6_ADDRSTRLEN];
+
+      if (prefix > 128)
+        return NULL;
+
+      memset(&in6, 0, sizeof(in6));
+      for (i = prefix, j = 0; i > 0; i -= 8, j++) {
+	if (i >= 8) {
+          in6.s6_addr[j] = 0xff;
+        } else {
+          in6.s6_addr[j] = (unsigned long)(0xffU << (8 - i));
+	}
+      }
+
+      if (inet_ntop(AF_INET6, &in6, buf, INET6_ADDRSTRLEN) == NULL)
+        return NULL;
+      else
+        return strdup(buf);
+    }
+  else
+    return NULL;
+}

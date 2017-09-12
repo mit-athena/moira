@@ -18,7 +18,6 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES) $(AFS_PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 AFS_LIBS=@AFS_LIBS@
-AFS_DIR=@AFS_DIR@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -67,7 +66,7 @@ install:
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(DESTDIR)$(mrbindir)
 
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(SQL_LIBS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafsutil
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(SYNC_OBJS) $(SQL_LIBS) $(LIBS) $(AFS_LIBS) -llwp -lprot -lcom_err -lafscom_err -lafsutil
 
 pt_util: $(UTIL_OBJS) $(MR_LIBDEP) $(BSDCOMPAT_LIB)
-	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) $(BSDCOMPAT_LIB) -llwp -lprot -lcom_err -lafsutil
+	$(LIBTOOL) --mode=link $(CC) -static -o $@ $(LDFLAGS) $(UTIL_OBJS) $(LIBS) $(AFS_LIBS) $(BSDCOMPAT_LIB) -llwp -lprot -lcom_err -lafscom_err -lafsutil

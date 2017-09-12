@@ -13,12 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#else
 #define KTEXT void*
 #include <mr_krb.h>
-#endif
 #include <krb5.h>
 #include <update.h>
 
@@ -27,15 +23,9 @@ RCSID("$HeadURL$ $Id$");
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
-#ifdef HAVE_KRB4
-des_cblock session;
-#endif
 krb5_context context = NULL;
 
 static int get_mr_krb5_tgt(krb5_context context, krb5_ccache ccache);
-#ifdef HAVE_KRB4
-static int get_mr_tgt(void);
-#endif
 
 int get_mr_krb5_update_ticket(char *host, krb5_data *auth)
 {
@@ -116,60 +106,5 @@ int get_mr_krb5_tgt(krb5_context context, krb5_ccache ccache)
 
 int get_mr_update_ticket(char *host, KTEXT ticket)
 {
-#ifdef HAVE_KRB4
-  int code, pass;
-  char phost[BUFSIZ];
-  CREDENTIALS cr;
-
-  pass = 1;
-  if (krb_get_lrealm(realm, 1))
-    strcpy(realm, KRB_REALM);
-  strcpy(phost, (char *)krb_get_phost(host));
-
-try_it:
-  code = krb_mk_req(ticket, service, phost, realm, (long)0);
-  if (code)
-    {
-      if (pass == 1)
-	{
-	  /* maybe we're taking too long? */
-	  if ((code = get_mr_tgt()))
-	    {
-	      com_err(whoami, code, "can't get Kerberos TGT");
-	      return code;
-	    }
-	  pass++;
-	  goto try_it;
-	}
-      code += ERROR_TABLE_BASE_krb;
-      com_err(whoami, code, "in krb_mk_req");
-    }
-  else
-    {
-      code = krb_get_cred(service, phost, realm, &cr);
-      if (code)
-	code += ERROR_TABLE_BASE_krb;
-      memcpy(session, cr.session, sizeof(session));
-    }
-  return code;
-#else
   return MR_NO_KRB4;
-#endif
 }
-
-#ifdef HAVE_KRB4
-static int get_mr_tgt(void)
-{
-  int code;
-  char linst[INST_SZ], kinst[INST_SZ];
-
-  linst[0] = '\0';
-  strcpy(kinst, "krbtgt");
-  code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,
-			    DEFAULT_TKT_LIFE, KEYFILE);
-  if (!code)
-    return 0;
-  else
-    return code + ERROR_TABLE_BASE_krb;
-}
-#endif

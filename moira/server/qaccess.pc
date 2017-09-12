@@ -548,16 +548,15 @@ int access_filesys(struct query *q, char *argv[], client *cl)
 /* access_shot - successful if:
  *  - existing opt is not 3 and new one isn't 3 (blackhole).
  *  - opt is 0 or 1.
- *  - user is owner of subnet containing host.
- *  - user is owner of host and network isn't RESERVED / INFRASTRUCTURE.
+ *  - user is owner of host
  *  - user has 'CAN SPEND OR COMMIT FUNDS' for host cost object and 
  *    affiliation is one of student, faculty, or research staff.
  */ 
 int access_shot(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int muse, mid, sid, status;
-  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  int muse, mid;
+  char mtype[MACHINE_OWNER_TYPE_SIZE];
   char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
   char login[USERS_LOGIN_SIZE], affiliation[USERS_AFFILIATION_DETAILED_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -566,22 +565,14 @@ int access_shot(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
 
-  EXEC SQL SELECT m.use, m.owner_type, m.owner_id, m.account_number, s.owner_type,
-    s.owner_id, s.status INTO :muse, :mtype, :mid, :account_number, :stype, :sid, :status
-    FROM machine m, subnet s WHERE m.mach_id = :id AND m.snet_id = s.snet_id;
+  EXEC SQL SELECT m.use, m.owner_type, m.owner_id, m.account_number
+    INTO :muse, :mtype, :mid, :account_number
+    FROM machine m WHERE m.mach_id = :id;
 
   /* Only query owner can set opt to 3 or change it once it's set to 3. */
   if (muse == 3 || atoi(argv[1]) == 3)
     return MR_PERM;
   
-  /* subnet owner? */
-  if (find_member(stype, sid, cl))
-    return MR_SUCCESS;
-
-  /* If we're not the subnet owner, don't allow this for certain types of networks */
-  if (status == SNET_STATUS_RESERVED || status == SNET_STATUS_INFRASTRUCTURE)
-    return MR_PERM;
-
   /* opt must be zero or one for non-query, non-subnet owner */
   if (atoi(argv[1]) != 0 && atoi(argv[1]) != 1)
     return MR_PERM;
@@ -668,7 +659,7 @@ int access_adhr(struct query *q, char *argv[], client *cl)
 
   /* Check DHCP registrations  and make sure it doesn't exceed maximum*/
   EXEC SQL SELECT COUNT(*) INTO :count FROM machine m WHERE
-    m.snet_id = :sid AND m.owner_type = 'USER' AND m.owner_id = :cl->users_id
+    m.name like 'HOSTLESS-%' AND m.owner_type = 'USER' AND m.owner_id = :cl->users_id
     AND m.status = 1;
   if (dbms_errno)
     return mr_errcode;
@@ -700,7 +691,7 @@ int access_adhr(struct query *q, char *argv[], client *cl)
   while (sq_get_data(sq, &id))
     {
       EXEC SQL SELECT COUNT(*) INTO :count FROM machine m WHERE
-	m.snet_id = :sid AND m.owner_type = 'LIST' AND m.owner_id = :id
+	m.name LIKE 'HOSTLESS-%' AND m.owner_type = 'LIST' AND m.owner_id = :id
 	AND m.status = 1;
       if (dbms_errno)
 	return mr_errcode;
@@ -724,56 +715,27 @@ int access_host(struct query *q, char *argv[], client *cl)
   int mid, sid, id, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
-  int status, idx;
+  int status;
 
-  if (q->version < 6)
-    idx = 0;
-  else if (q->version >= 6 && q->version < 8)
-    idx = 1;
-  else
-    idx = 2;
-  
+  /* This query has changed enough that we just can't support old versions
+   * without making bizarre assumptions.  If the client is before v17, just
+   * make it fail.
+   */
+
+  if (q->version < 17)
+    return MR_VERSION_MISMATCH;
+
   if (q->type == MR_Q_APPEND)
     {
-      /* Non-query owner must set use to zero. is ignored anyway */
-      if (atoi(argv[6 + idx]) != 0)
-	return MR_PERM;
-
-      /* ... and start the hostname with a letter */
-      if (isdigit(argv[0][0]))
-	return MR_BAD_CHAR;
-
-      if (!strncasecmp(argv[0], "HOSTLESS-", 9))
-	  return MR_RESERVED;
-
-      id = *(int *)argv[8 + idx];
-      EXEC SQL SELECT s.owner_type, s.owner_id, s.status
-	INTO :stype, :sid, :subnet_status FROM subnet s
-	WHERE s.snet_id = :id;
-      mid = 0;
-
-      /* Non query owner must provide valid billing information. */
-      if (q->version >= 8)
-	{
-	  if (subnet_status == SNET_STATUS_BILLABLE)
-	    {
-	      EXEC SQL SELECT account_number FROM accountnumbers 
-		WHERE account_number = :argv[7];
-	      if (sqlca.sqlcode == SQL_NO_MATCH)
-		return MR_ACCOUNT_NUMBER;
-	    }
-	}
-
-      if (find_member(stype, sid, cl))
-	return MR_SUCCESS;
-      else
-	return MR_PERM;
+      /* With subnet no longer an intrinsic part of a host record,
+	 who should be allowed to add new ones? For now, be conservative. */
+      return MR_PERM;
     }
   else /* q-type == MR_Q_UPDATE */
     {
       EXEC SQL BEGIN DECLARE SECTION;
       int status, acomment, use, ocomment, snid;
-      char contact[MACHINE_CONTACT_SIZE], address[MACHINE_ADDRESS_SIZE];
+      char contact[MACHINE_CONTACT_SIZE];
       char name[MACHINE_NAME_SIZE];
       char billing_contact[MACHINE_BILLING_CONTACT_SIZE];
       char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
@@ -783,31 +745,24 @@ int access_host(struct query *q, char *argv[], client *cl)
       char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
 
       id = *(int *)argv[0];
-      EXEC SQL SELECT m.name, m.use, m.contact, m.billing_contact, m.account_number,
-	m.status,  m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id,
-	s.owner_type, s.owner_id, s.status INTO :name, :use, :contact, 
-	:billing_contact, :account_number, :status, :address, :mtype, :mid, :acomment, 
-	:ocomment, :snid, :stype, :sid, :subnet_status
-	FROM machine m, subnet s
-	WHERE m.mach_id = :id AND s.snet_id = m.snet_id;
+      EXEC SQL SELECT m.name, m.contact, m.billing_contact, m.account_number,
+	m.status, m.owner_type, m.owner_id, m.acomment, m.ocomment
+	INTO :name, :contact,  :billing_contact, :account_number, :status,
+	:mtype, :mid, :acomment, :ocomment
+	FROM machine m WHERE m.mach_id = :id;
       if (dbms_errno)
 	return mr_errcode;
 
-      /* Non query owner must provide valid billing information. */
-      if (q->version >= 8)
+      if (atoi(argv[8]) != 3)
 	{
-	  if ((subnet_status == SNET_STATUS_BILLABLE) &&
-	      (atoi(argv[10]) != 3))
-	    {
-	      EXEC SQL SELECT account_number FROM accountnumbers 
-		WHERE account_number = :argv[8];
-	      if (sqlca.sqlcode == SQL_NO_MATCH)
-		return MR_ACCOUNT_NUMBER;
-	    }
+	  EXEC SQL SELECT account_number FROM accountnumbers 
+	    WHERE account_number = :argv[7];
+	  if (sqlca.sqlcode == SQL_NO_MATCH)
+	    return MR_ACCOUNT_NUMBER;
 	}
 
-      /* non-query-owner cannot change use or ocomment */
-      if ((use != atoi(argv[7 + idx])) || (ocomment != *(int *)argv[14 + idx]))
+      /* non-query-owner cannot ocomment */
+      if (ocomment != *(int *)argv[12])
 	return MR_PERM;
 
       /* or rename to start with digit */
@@ -818,26 +773,11 @@ int access_host(struct query *q, char *argv[], client *cl)
       if (!strncasecmp(argv[0], "HOSTLESS-", 9) && strcmp(strtrim(name), argv[1]))
 	return MR_RESERVED;
 
-      if (find_member(stype, sid, cl))
-	{
-	  /* If moving to a new subnet, make sure user is on acl there */
-	  id = *(int *)argv[9 + idx];
-	  if (id != snid)
-	    {
-	      EXEC SQL SELECT owner_type, owner_id INTO :stype, :sid
-		FROM subnet WHERE snet_id=:id;
-	      if (!find_member(stype, sid, cl))
-		return MR_PERM;
-	    }
-	  
-	  return MR_SUCCESS;
-	}
-
       /* Check host owner */
       if (find_member(mtype, mid, cl))
 	is_machine_owner = 1;
-      /* Check roles permissions, don't let them work for reserved and infrastructure networks */
-      else if (subnet_status != SNET_STATUS_RESERVED && subnet_status != SNET_STATUS_INFRASTRUCTURE)
+      /* Check roles permissions */
+      else
 	{
 	  EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
   
@@ -871,20 +811,16 @@ int access_host(struct query *q, char *argv[], client *cl)
       if (!is_machine_owner)
 	return MR_PERM;
       
-      /* host owner also cannot change contact, status, subnet, address, owner, or acomment */
-      if (strcmp(argv[6], strtrim(contact)) ||
-	  (status != atoi(argv[8 + idx])) ||
-	  (snid != *(int *)argv[9 + idx]) ||
-	  strcmp(argv[10 + idx], strtrim(address)) ||
-	  strcmp(argv[11 + idx], strtrim(mtype)) ||
-	  (mid != *(int *)argv[12 + idx]) || 
-	  (acomment != *(int *)argv[13 + idx]))
+      /* host owner also cannot change contact, status, owner, or acomment */
+      if (strcmp(argv[5], strtrim(contact)) ||
+	  (status != atoi(argv[8])) ||
+	  strcmp(argv[9], strtrim(mtype)) ||
+	  (mid != *(int *)argv[10]) || 
+	  (acomment != *(int *)argv[11]))
 	return MR_PERM;
 
-      /* Billing contact field didn't appear until version 6 */
-      if (q->version >= 6)
-	if (strcmp(argv[7], strtrim(billing_contact)))
-	  return MR_PERM;
+      if (strcmp(argv[6], strtrim(billing_contact)))
+	return MR_PERM;
 
       return MR_SUCCESS;
     }
@@ -899,8 +835,8 @@ int access_host(struct query *q, char *argv[], client *cl)
 int access_ahal(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt, id, mid, sid, subnet_status;
-  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  int cnt, id, mid;
+  char mtype[MACHINE_OWNER_TYPE_SIZE];
   char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
   char login[USERS_LOGIN_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -928,21 +864,12 @@ int access_ahal(struct query *q, char *argv[], client *cl)
   if (q->type == MR_Q_APPEND && cnt >= 2)
     return MR_PERM;
 
-  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
-    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid,
-    :subnet_status FROM machine m, subnet s WHERE m.mach_id = :id and s.snet_id = m.snet_id;
+  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number
+    INTO :mtype, :mid, :account_number FROM machine m WHERE m.mach_id = :id;
 
   status = find_member(mtype, mid, cl);
   if (status)
     return MR_SUCCESS;
-
-  status = find_member(stype, sid, cl);
-  if (status)
-    return MR_SUCCESS;
-
-  /* If you're only a Roles owner, punt for network reserved / infrastructure */
-  if (subnet_status == SNET_STATUS_RESERVED || subnet_status == SNET_STATUS_INFRASTRUCTURE)
-    return MR_PERM;
 
   EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
 
@@ -966,22 +893,118 @@ int access_ahal(struct query *q, char *argv[], client *cl)
   return MR_PERM;
 }
 
-/* Same logic as access_ahal, for different table */
+/* acccess_ahad - check for adding host address.  
+ * Similar to access_ahal.
+ */
 
-int access_hwaddr(struct query *q, char *argv[], client *cl)
+int access_ahad(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt, id, mid, sid, subnet_status;
+  int cnt, mid, sid, oid, soid, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
+  char login[USERS_LOGIN_SIZE], addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
+  int status;
+
+  if (q->type == MR_Q_RETRIEVE)
+    return MR_SUCCESS;
+
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+
+  EXEC SQL SELECT s.owner_type, s.owner_id, s.addr_type INTO :stype, :soid, :addr_type
+    FROM subnet s WHERE s.snet_id = :sid;
+
+  if (q->type == MR_Q_APPEND)
+    {
+      /* Only allow non-query owner one address for now */
+      EXEC SQL SELECT COUNT(address) INTO :cnt FROM hostaddress WHERE
+	mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_PERM;
+
+      /* Don't allow duplicate addresses */
+      if (strcmp(argv[2], "unique"))
+	{
+	  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress WHERE
+	    address = :argv[2];
+	  if (dbms_errno)
+	    return mr_errcode;
+	  if (cnt > 0)
+	    return MR_EXISTS;
+
+	  /* If it's a specific IPv6 address, don't allow assignment if 
+	   * another address in the same /64 is assigned anywhere */
+	  if (!strcmp(addr_type, "IPV6"))
+	    {
+	      int i;
+	      char *prefixstr, buf6[INET6_ADDRSTRLEN];
+	      struct in6_addr prefix, address;
+
+	      prefixstr = masksize_to_mask("IPV6", MIN_IPV6_PREFIX_LEN);
+	      if (!prefixstr)
+		return MR_ADDRESS;
+
+	      if (inet_pton(AF_INET6, prefixstr, &prefix) < 1)
+		return MR_ADDRESS;
+
+	      if (inet_pton(AF_INET6, argv[2], &address) < 1)
+		return MR_ADDRESS;
+
+	      for (i = 0; i < 16; i++)
+		address.s6_addr[i] = address.s6_addr[i] & prefix.s6_addr[i];
+
+	      if (inet_ntop(AF_INET6, &address, buf6, INET6_ADDRSTRLEN) == NULL)
+		return MR_ADDRESS;
+
+	      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+		WHERE address LIKE :buf6 || '%';
+	      if (dbms_errno)
+		return mr_errcode;
+	      if (cnt > 0)
+		return MR_PERM;
+	    }
+	}
+    }
+
+  EXEC SQL SELECT s.owner_type, s.owner_id INTO :stype, :soid
+    FROM subnet s WHERE s.snet_id = :sid;
+
+  /* subnet owner? */
+  status = find_member(stype, soid, cl);
+  if (status)
+    return MR_SUCCESS;
+
+  return MR_PERM;
+}
+
+/* Same logic as access_ahal, for different table */
+
+int access_machidentifier(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, id, mid;
+  char mtype[MACHINE_OWNER_TYPE_SIZE];
+  char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
   char login[USERS_LOGIN_SIZE];
+  char *type;
   EXEC SQL END DECLARE SECTION;
   int status;
   char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
 
   id = *(int *)argv[0];
   
-  EXEC SQL SELECT count(hwaddr) INTO :cnt from hwaddrmap WHERE mach_id = :id;
+  /* legacy queries */
+  if (!strcmp(q->shortname, "ahha") || !strcmp(q->shortname, "uhha") || !strcmp(q->shortname, "dhha"))
+    type = "HWADDR";
+  else
+    type = argv[1];
+
+  EXEC SQL SELECT count(mach_identifier) INTO :cnt from machidentifiermap WHERE mach_identifier_type = :type AND mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
 
@@ -992,21 +1015,13 @@ int access_hwaddr(struct query *q, char *argv[], client *cl)
   if (q->type == MR_Q_APPEND && cnt >= 2)
     return MR_PERM;
 
-  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number, s.owner_type,
-    s.owner_id, s.status INTO :mtype, :mid, :account_number, :stype, :sid,
-    :subnet_status FROM machine m, subnet s WHERE m.mach_id = :id and s.snet_id = m.snet_id;
+  EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number
+    INTO :mtype, :mid, :account_number
+    FROM machine m WHERE m.mach_id = :id;
 
   status = find_member(mtype, mid, cl);
   if (status)
     return MR_SUCCESS;
-
-  status = find_member(stype, sid, cl);
-  if (status)
-    return MR_SUCCESS;
-
-  /* If you're only a Roles owner, punt for network reserved / infrastructure */
-  if (subnet_status == SNET_STATUS_RESERVED || subnet_status == SNET_STATUS_INFRASTRUCTURE)
-    return MR_PERM;
 
   EXEC SQL SELECT u.login INTO :login FROM users u WHERE u.users_id = :cl->users_id;
 

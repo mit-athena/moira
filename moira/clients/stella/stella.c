@@ -50,25 +50,30 @@ struct string_list {
 
 /* flags from command line */
 int info_flag, update_flag, create_flag, delete_flag, list_map_flag;
-int update_alias_flag, update_map_flag, verbose, noauth;
+int update_alias_flag, update_address_flag, update_map_flag, verbose, noauth;
 int list_container_flag, update_container_flag, unformatted_flag;
-int list_hwaddr_flag, update_hwaddr_flag;
-int set_host_opt_flag, set_ttl_flag;
-int add_dynamic_host_flag;
+int list_identifier_flag, update_identifier_flag;
+int list_resource_records_flag, update_resource_records_flag;
+int set_host_opt_flag, set_ttl_flag, set_ptr_flag;
+int add_dynamic_host_flag, show_host_usage_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
+struct string_list *address_add_queue, *address_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
 struct string_list *container_add_queue, *container_remove_queue;
-struct string_list *hwaddr_add_queue, *hwaddr_remove_queue;
+struct string_list *identifier_add_queue, *identifier_remove_queue;
+struct string_list *record_add_queue, *record_remove_queue;
 
 char *hostname, *whoami;
 
 char *newname, *address, *network, *h_status, *vendor, *model;
 char *os, *location, *contact, *billing_contact, *account_number;
-char *adm_cmt, *op_cmt, *opt, *ttl;
+char *adm_cmt, *op_cmt, *opt, *ttl, *ptr;
 
-in_addr_t ipaddress;
+struct sockaddr_in sa;
+struct sockaddr_in6 sa6;
 struct mrcl_ace_type *owner;
+struct mrcl_identifier_type *identifier;
 
 void usage(char **argv);
 int store_host_info(int argc, char **argv, void *hint);
@@ -76,13 +81,17 @@ void show_host_info(char **argv);
 void show_host_info_unformatted(char **argv);
 int show_machine_in_cluster(int argc, char **argv, void *hint);
 int show_machine_in_container(int argc, char **argv, void *hint);
-int show_host_hwaddrs(int argc, char **argv, void *hint);
+int show_host_identifiers(int argc, char **argv, void *hint);
+int show_host_rr(int argc, char **argv, void *hint);
+int show_host_usage(int argc, char **argv, void *hint);
 int show_dynamic_hostname(int argc, char **argv, void *hint);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
 		  int (*callback)(int, char **, void *), void *callarg);
 void print_query(char *query_name, int argc, char **argv);
 char *get_username(void);
+int store_query_info(int argc, char **argv, void *data);
+struct mqelem *queue_top(struct mqelem *elem);
 
 int main(int argc, char **argv)
 {
@@ -92,18 +101,20 @@ int main(int argc, char **argv)
 
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
-  update_alias_flag = verbose = noauth = 0;
-  list_container_flag = update_container_flag = 0;
-  list_hwaddr_flag = update_hwaddr_flag = 0;
-  set_host_opt_flag = set_ttl_flag = add_dynamic_host_flag = 0;
+  update_alias_flag = update_address_flag = verbose = noauth = 0;
+  list_container_flag = update_container_flag = list_resource_records_flag = 0;
+  list_identifier_flag = update_identifier_flag = show_host_usage_flag = 0;
+  set_host_opt_flag = set_ttl_flag = set_ptr_flag = add_dynamic_host_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = account_number = adm_cmt = NULL;
   op_cmt = opt = NULL;
   owner = NULL;
   alias_add_queue = alias_remove_queue = NULL;
+  address_add_queue = address_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
   container_add_queue = container_remove_queue = NULL;
-  hwaddr_add_queue = hwaddr_remove_queue = NULL;
+  identifier_add_queue = identifier_remove_queue = NULL;
+  record_add_queue = record_remove_queue = NULL;
   whoami = argv[0];
 
   success = 1;
@@ -127,14 +138,6 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
-	  else if (argis("A", "address")) {
-	    if (arg - argv < argc - 1) {
-	      arg++;
-	      update_flag++;
-	      address = *arg;
-	    } else
-	      usage(argv);
-	  }
 	  else if (argis("O", "owner")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -145,14 +148,6 @@ int main(int argc, char **argv)
 		  com_err(whoami, 0, "Invalid owner format. Must be one of USER, LIST, KERBEROS, or NONE.");
 		  exit(1);
 		}
-	    } else
-	      usage(argv);
-	  }
-	  else if (argis("N", "network")) {
-	    if (arg - argv < argc - 1) {
-	      arg++;
-	      update_flag++;
-	      network = *arg;
 	    } else
 	      usage(argv);
 	  }
@@ -265,6 +260,22 @@ int main(int argc, char **argv)
 	      usage(argv);
 	    update_alias_flag++;
 	  }
+	  else if (argis("A", "address")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      address_add_queue=add_to_string_list(address_add_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_address_flag++;
+	  }
+	  else if (argis("DA", "deleteaddress")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      address_remove_queue=add_to_string_list(address_remove_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_address_flag++;
+	  }
 	  else if (argis("am", "addmap")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -303,22 +314,38 @@ int main(int argc, char **argv)
 	  }
 	  else if (argis("lcn", "listcontainer"))
 	    list_container_flag++;
-	  else if (argis("ahw", "addhwaddr")) {
+	  else if (argis("aid", "addidentifier")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
-	      hwaddr_add_queue = add_to_string_list(hwaddr_add_queue, *arg);
+	      identifier_add_queue = add_to_string_list(identifier_add_queue, *arg);
 	    } else
 	      usage(argv);
-	    update_hwaddr_flag++;
+	    update_identifier_flag++;
 	  }
-	  else if (argis("dhw", "delhwaddr")) {
+	  else if (argis("did", "delidentifier")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
-	      hwaddr_remove_queue = add_to_string_list(hwaddr_remove_queue, *arg);
+	      identifier_remove_queue = add_to_string_list(identifier_remove_queue, *arg);
 	    } else
 	      usage(argv);
-	    update_hwaddr_flag++;
+	    update_identifier_flag++;
 	  }
+          else if (argis("arr", "addrecord")) {
+            if (arg - argv < argc - 1) {
+              arg++;
+              record_add_queue = add_to_string_list(record_add_queue, *arg);
+            } else
+              usage(argv);
+            update_resource_records_flag++;
+          }
+          else if (argis("drr", "delrecord")) {
+            if (arg - argv < argc - 1) {
+              arg++;
+              record_remove_queue = add_to_string_list(record_remove_queue, *arg);
+            } else
+              usage(argv);
+            update_resource_records_flag++;
+          }
 	  else if (argis("oi", "optin")) {
 	    set_host_opt_flag++;
 	    opt = "0";
@@ -343,8 +370,20 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
-	  else if (argis("lhw", "listhwaddr"))
-	    list_hwaddr_flag++;
+	  else if (argis("ptr", "setptr")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      set_ptr_flag++;
+	      ptr = *arg;
+	    } else
+	      usage(argv);
+	  }
+	  else if (argis("lid", "listidentifier"))
+	    list_identifier_flag++;
+	  else if (argis("lrr", "listrecords"))
+	    list_resource_records_flag++;
+	  else if (argis("su", "showusage"))
+	    show_host_usage_flag++;
 	  else if (argis("adh", "adddynamic")) {
 	    add_dynamic_host_flag++;
             if (arg - argv < argc - 1) {
@@ -397,25 +436,26 @@ int main(int argc, char **argv)
   /* default to info_flag if nothing else was specified */
   if(!(info_flag   || update_flag   || create_flag     || \
        delete_flag || list_map_flag || update_map_flag || \
-       update_alias_flag || update_container_flag || \
-       list_container_flag || update_hwaddr_flag || \
-       list_hwaddr_flag || set_host_opt_flag || set_ttl_flag || \
-       add_dynamic_host_flag)) {
+       update_alias_flag || update_address_flag || update_container_flag || \
+       list_container_flag || update_identifier_flag || list_identifier_flag || \
+       update_resource_records_flag || list_resource_records_flag || set_host_opt_flag || \
+       set_ttl_flag || set_ptr_flag || add_dynamic_host_flag || show_host_usage_flag)) {
     info_flag++;
   }
 
   if (add_dynamic_host_flag && (info_flag || update_flag || create_flag || \
 				delete_flag || list_map_flag || update_map_flag || \
-				update_alias_flag || update_container_flag || \
-				list_container_flag || update_hwaddr_flag || \
-				list_hwaddr_flag || set_host_opt_flag || set_ttl_flag))
+				update_alias_flag || update_address_flag || update_container_flag || \
+				list_container_flag || update_identifier_flag || list_resource_records_flag || \
+				update_resource_records_flag || list_identifier_flag || set_host_opt_flag || \
+				set_ttl_flag || set_ptr_flag ||	show_host_usage_flag))
     {
       com_err(whoami, 0, "-adh / -adddynamic option must be the only argument provided.");
       exit(1);
     }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stella", 9, !noauth);
+  status = mrcl_connect(server, "stella", 17, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -424,23 +464,25 @@ int main(int argc, char **argv)
   if (status)
     exit(2);
 
-  /* Perform the lookup by IP address if that's what we've been handed */
+  /* If we were given an IP address (v4 or v6) see if we can turn it into a hostname */
   if (hostname)
     {
-      if ((ipaddress=inet_addr(hostname)) != -1) {
-	char *args[5];
-	char *argv[30];
-	
-	args[1] = strdup(hostname);
-	args[0] = args[2] = args[3] = "*";
-	status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
-	
-	if (status) {
-	  com_err(whoami, status, "while looking up IP address.");
-	} else {
-	  hostname = argv[0];
+      if ((inet_pton(AF_INET, hostname, &(sa.sin_addr)) == 1) ||
+	  (inet_pton(AF_INET6, hostname, &(sa6.sin6_addr)) == 1))
+	{
+	  char *args[2];
+	  char *argv[30];
+
+	  args[0] = "*";
+	  args[1] = strdup(hostname);
+
+	  status = wrap_mr_query("get_host_by_address", 2, args, store_host_info, argv);
+	  if (status) {
+	    com_err(whoami, status, "while looking up IP address.");
+	  } else {
+	    hostname = argv[0];
+	  }
 	}
-      }
     }
 
   /* create if needed */
@@ -449,7 +491,7 @@ int main(int argc, char **argv)
       char *argv[30];
       int cnt;
 
-      for (cnt = 0; cnt < 17; cnt++) {
+      for (cnt = 0; cnt < 13; cnt++) {
 	argv[cnt] = "";
       }
 
@@ -469,62 +511,54 @@ int main(int argc, char **argv)
 	argv[6] = billing_contact;
       if (account_number)
 	argv[7] = account_number;
-      /* The use field always gets set to "0" */
-      argv[8] = "0";
       if (h_status)
-	argv[9] = h_status;
+	argv[8] = h_status;
       else
-	argv[9] = "1";
-      if (network)
-	argv[10] = network;
-      if (address)
-	argv[11] = address;
-      else
-	argv[11] = "unique";
+	argv[8] = "1";
       if (adm_cmt)
-	argv[14] = adm_cmt;
+	argv[11] = adm_cmt;
       if (op_cmt)
-	argv[15] = op_cmt;
+	argv[12] = op_cmt;
 
       if (owner)
 	{
-	  argv[13] = owner->name;
+	  argv[10] = owner->name;
 	  switch (owner->type)
 	    {
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
-	      argv[12] = "USER";
-	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
+	      argv[9] = "USER";
+	      status = wrap_mr_query("add_host", 13, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
-	      argv[12] = "LIST";
-	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
+	      argv[9] = "LIST";
+	      status = wrap_mr_query("add_host", 13, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
-	      argv[12] = "KERBEROS";
-	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
+	      argv[9] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[10], &argv[10]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
+	      status = wrap_mr_query("add_host", 13, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_NONE:
-	      argv[12] = "NONE";
-	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
+	      argv[9] = "NONE";
+	      status = wrap_mr_query("add_host", 13, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
 	{
-	  argv[12] = "NONE";
-	  argv[13] = "NONE";
+	  argv[9] = "NONE";
+	  argv[10] = "NONE";
 
-	  status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
+	  status = wrap_mr_query("add_host", 13, argv, NULL, NULL);
 	}
 
       if (status)
@@ -541,31 +575,43 @@ int main(int argc, char **argv)
       char *args[5];
 
       args[0] = canonicalize_hostname(strdup(hostname));
-      args[1] = args[2] = args[3] = "*";
+      args[1] = "*";
 
-      status = wrap_mr_query("get_host", 4, args, store_host_info, old_argv);
+      status = wrap_mr_query("get_host", 2, args, store_host_info, old_argv);
       if (status)
 	{
 	  com_err(whoami, status, "while getting list information");
 	  exit(1);
 	}
 
+      /* hostname */
       argv[1] = old_argv[0];
+      /* vendor */
       argv[2] = old_argv[1];
+      /* model */
       argv[3] = old_argv[2];
+      /* os */
       argv[4] = old_argv[3];
+      /* location */
       argv[5] = old_argv[4];
+      /* contact */
       argv[6] = old_argv[5];
+      /* billing contact */
       argv[7] = old_argv[6];
+      /* account number */
       argv[8] = old_argv[7];
-      argv[9] = old_argv[8];
-      argv[10] = old_argv[9];
-      argv[11] = old_argv[11];
-      argv[12] = old_argv[12];
-      argv[13] = old_argv[13];
-      argv[14] = old_argv[14];
-      argv[15] = old_argv[15];
-      argv[16] = old_argv[16];
+      /* argvs don't line up at this point because update_host doesn't take use as an argument */
+      /* status */
+      argv[9] = old_argv[9];
+      /* skip status_change */
+      /* ace_type */
+      argv[10] = old_argv[11];
+      /* ace_name */
+      argv[11] = old_argv[12];
+      /* admin comment */
+      argv[12] = old_argv[13];
+      /* ops comment */
+      argv[13] = old_argv[14];
 
       argv[0] = canonicalize_hostname(strdup(hostname));
       if (newname)
@@ -585,51 +631,47 @@ int main(int argc, char **argv)
       if (account_number)
 	argv[8] = account_number;
       if (h_status)
-	argv[10] = h_status;
-      if (network)
-	argv[11] = network;
-      if (address)
-	argv[12] = address;
+	argv[9] = h_status;
       if (adm_cmt)
-	argv[15] = adm_cmt;
+	argv[12] = adm_cmt;
       if (op_cmt)
-	argv[16] = op_cmt;
+	argv[13] = op_cmt;
 
       if (owner)
 	{
-	  argv[14] = owner->name;
+	  argv[11] = owner->name;
 	  switch (owner->type)
 	    {
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
-	      argv[13] = "USER";
-	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
+	      argv[10] = "USER";
+	      status = wrap_mr_query("update_host", 14, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
-	      argv[13] = "LIST";
-	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
+	      argv[10] = "LIST";
+	      status = wrap_mr_query("update_host", 14, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
-	      argv[13] = "KERBEROS";
-	      status = mrcl_validate_kerberos_member(argv[14], &argv[14]);
+	      argv[10] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[11], &argv[11]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
+	      status = wrap_mr_query("update_host", 14, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_NONE:
-	      argv[13] = "NONE";
-	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
+	      argv[10] = "NONE";
+	      status = wrap_mr_query("update_host", 14, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
+	status = wrap_mr_query("update_host", 14, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating host.");
@@ -673,6 +715,63 @@ int main(int argc, char **argv)
 	exit(1);
       }
 
+      q = q->next;
+    }
+  }
+
+  if (address_add_queue) {
+    struct string_list *q = address_add_queue;
+
+    while (q) {
+      /* string is of the form network:address */
+      struct mrcl_netaddr_type *netaddr;
+      char *args[3];
+
+      netaddr = mrcl_parse_netaddr(q->string);
+      if (!netaddr)
+	{
+	  com_err(whoami, 0, "Could not parse network address specification while adding host address.");
+	  exit(1);
+	}
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = netaddr->network;
+      args[2] = netaddr->address;
+
+      status = wrap_mr_query("add_host_address", 3, args, NULL, NULL);
+      if (status) {
+	com_err(whoami, status, "while adding host address");
+	exit(1);
+      }
+
+      q = q->next;
+    }
+  }
+
+  if (address_remove_queue) {
+    struct string_list *q = address_remove_queue;
+
+    while (q) {
+      /* string is of the form network:address */
+      struct mrcl_netaddr_type *netaddr;
+      char *args[3];
+
+      netaddr = mrcl_parse_netaddr(q->string);
+      if (!netaddr)
+	{
+	  com_err(whoami, 0, "Could not parse network address specification while removing host address.");
+	  exit(1);
+	}
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = netaddr->network;
+      args[2] = netaddr->address;
+
+      status = wrap_mr_query("delete_host_address", 3, args, NULL, NULL);
+      if (status) {
+	com_err(whoami, status, "while removing host address");
+	exit(1);
+      }
       q = q->next;
     }
   }
@@ -762,21 +861,35 @@ int main(int argc, char **argv)
     }
   }
 
-  /* add hwaddrs */
-  if (hwaddr_add_queue) {
-    struct string_list *q = hwaddr_add_queue;
+  /* add identifiers */
+  if (identifier_add_queue) {
+    struct string_list *q = identifier_add_queue;
 
     while (q) {
-      char *hwaddr = q->string;
-      char *args[2];
+      char *args[3];
 
       args[0] = canonicalize_hostname(strdup(hostname));
-      args[1] = hwaddr;
-      status = wrap_mr_query("add_host_hwaddr", 2, args,
+
+      identifier = mrcl_parse_mach_identifier(q->string);
+      args[2] = identifier->value;
+
+      switch (identifier->type)
+	{
+        case MRCL_MID_ANY:
+        case MRCL_MID_HWADDR:
+          args[1] = "HWADDR";
+          break;
+
+        case MRCL_MID_DUID:
+          args[1] = "DUID";
+          break;
+        }
+
+      status = wrap_mr_query("add_host_identifier", 3, args,
 			     NULL, NULL);
 
       if (status) {
-	com_err(whoami, status, "while adding host hardware address");
+	com_err(whoami, status, "while adding host identifier");
 	exit(1);
       }
 
@@ -784,21 +897,35 @@ int main(int argc, char **argv)
     }
   }
 
-  /* delete hwaddrs */
-  if (hwaddr_remove_queue) {
-    struct string_list *q = hwaddr_remove_queue;
+  /* delete identifiers */
+  if (identifier_remove_queue) {
+    struct string_list *q = identifier_remove_queue;
    
     while (q) {
-      char *hwaddr = q->string;
-      char *args[2];
+      char *args[3];
 
       args[0] = canonicalize_hostname(strdup(hostname));
-      args[1] = hwaddr;
-      status = wrap_mr_query("delete_host_hwaddr", 2, args,
+
+      identifier = mrcl_parse_mach_identifier(q->string);
+      args[2] = identifier->value;
+
+      switch (identifier->type)
+        {
+        case MRCL_MID_ANY:
+        case MRCL_MID_HWADDR:
+          args[1] = "HWADDR";
+          break;
+
+	case MRCL_MID_DUID:
+          args[1] = "DUID";
+          break;
+        }
+
+      status = wrap_mr_query("delete_host_identifier", 3, args,
 			     NULL, NULL);
 
       if (status) {
-	com_err(whoami, status, "while deleting host hardware address");
+	com_err(whoami, status, "while deleting host identifier");
 	exit(1);
       }
 
@@ -806,22 +933,81 @@ int main(int argc, char **argv)
     }
   }
 
-  /* display list info if requested to */
+  /* add host resource records */
+  if (record_add_queue)
+    {
+      struct string_list *q = record_add_queue;
+
+      while (q) {
+	char *args[3];
+	struct mrcl_addropt_type *addropt;
+
+	addropt = mrcl_parse_addropt(q->string);
+	if (!addropt)
+	  {
+	    com_err(whoami, 0, "Could not parse resource record specification while adding host resource record.");
+	    exit(1);
+	  }
+
+	args[0] = canonicalize_hostname(strdup(hostname));
+	args[1] = addropt->address;
+	args[2] = addropt->opt;
+
+	status = wrap_mr_query("add_host_resource_record", 3, args, NULL, NULL);
+	if (status) {
+	  com_err(whoami, status, "while adding host resource record");
+	  exit(1);
+	}
+
+	q = q->next;
+      }
+    }
+
+  /* delete host resource records */
+  if (record_remove_queue)
+    {
+      struct string_list *q = record_remove_queue;
+
+      while (q) {
+        char *args[3];
+        struct mrcl_addropt_type *addropt;
+
+        addropt = mrcl_parse_addropt(q->string);
+        if (!addropt)
+          {
+            com_err(whoami, 0, "Could not parse resource record specification while removing host resource record.");
+            exit(1);
+          }
+
+	args[0] = canonicalize_hostname(strdup(hostname));
+        args[1] = addropt->address;
+        args[2] = addropt->opt;
+
+        status = wrap_mr_query("delete_host_resource_record", 3, args, NULL, NULL);
+        if (status) {
+          com_err(whoami, status, "while removing host resource record");
+          exit(1);
+        }
+
+        q = q->next;
+      }
+    }
+
+  /* display host info if requested to */
   if (info_flag) {
-    struct mqelem *elem = NULL;
     char *args[5];
     char *argv[30];
 
     args[0] = canonicalize_hostname(strdup(hostname));
-    args[1] = args[2] = args[3] = "*";
-    status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+    args[1] = "*";
+    status = wrap_mr_query("get_host", 2, args, store_host_info, argv);
 
     /* We might be looking for an alias of a deleted host. */
     if (status && status == MR_NO_MATCH) {
       status = wrap_mr_query("get_hostalias", 2, args, store_host_info, argv);
       if (!status) {
 	args[0] = strdup(argv[1]);
-	status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+	status = wrap_mr_query("get_host", 2, args, store_host_info, argv);
       }
     }
 
@@ -834,17 +1020,6 @@ int main(int argc, char **argv)
       show_host_info_unformatted(argv);
     else
       show_host_info(argv);
-    args[0] = argv[M_SUBNET];
-    status = wrap_mr_query("get_subnet", 1, args, store_host_info, argv);
-    if (status)
-      com_err(whoami, status, "while getting subnet information");
-    if (atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_10MBPS ||
-	atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_100MBPS ||
-	atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_1000MBPS)
-      {
-	fprintf(stderr, "\nWarning:  This host is on a private subnet.\n");
-	fprintf(stderr, "Billing information shown is superseded by billing information for the subnet.\n");
-      }
   }
 
   /* list cluster mappings if needed */
@@ -877,20 +1052,55 @@ int main(int argc, char **argv)
       }
   }
 
-  /* list hwaddr mappings if needed */
-  if (list_hwaddr_flag) {
-    char *argv[1];
+  /* list identifier mappings if needed */
+  if (list_identifier_flag) {
+    char *argv[2];
 
     argv[0] = canonicalize_hostname(strdup(hostname));
-    status = wrap_mr_query("get_host_hwaddr_mapping", 1, argv,
-			   show_host_hwaddrs, NULL);
+    argv[1] = "*";
+
+    status = wrap_mr_query("get_host_identifier_mapping", 2, argv,
+			   show_host_identifiers, NULL);
 
     if (status)
       if (status != MR_NO_MATCH) {
-	com_err(whoami, status, "while getting host hardware addresses");
+	com_err(whoami, status, "while getting host identifier");
 	exit(1);
       }
   }
+
+  /* List DNS resource records */
+  if (list_resource_records_flag) {
+    char *argv[2];
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    argv[1] = "*";
+
+    status = wrap_mr_query("get_host_resource_record", 2, argv,
+                           show_host_rr, NULL);
+
+    if (status)
+      if (status != MR_NO_MATCH) {
+        com_err(whoami, status, "while getting host identifier");
+        exit(1);
+      }
+  }
+
+  /* show host usage */
+  if (show_host_usage_flag)
+    {
+      char *argv[1];
+
+      argv[0] = canonicalize_hostname(strdup(hostname));
+
+      status = wrap_mr_query("get_host_usage", 1, argv,
+			     show_host_usage, NULL);
+      if (status)
+	if (status != MR_NO_MATCH) {
+	  com_err(whoami, status, "while getting host usage");
+	  exit(1);
+	}
+    }
 
   if (set_host_opt_flag) {
     char *argv[3];
@@ -916,14 +1126,86 @@ int main(int argc, char **argv)
   }
 
   if (set_ttl_flag) {
-    char *argv[2];
+    char *argv[4];
+    struct mrcl_addropt_type *addropt;
+    struct mqelem *elem = NULL, *top = NULL;
+
+    addropt = mrcl_parse_addropt(ttl);
+    if (!addropt)
+      {
+	com_err(whoami, 0, "Couldn't parse address specification while setting host TTL");
+	exit(1);
+      }
 
     argv[0] = canonicalize_hostname(strdup(hostname));
-    argv[1] = ttl;
+    argv[1] = addropt->address;
+    argv[2] = addropt->opt;
 
-    status = wrap_mr_query("set_host_ttl", 2, argv, NULL, NULL);
+    if (!strcasecmp(argv[2], "default"))
+      sprintf(argv[2], "%d", DEFAULT_TTL);
+
+    /* Is argv[1] an IP address?  If not, assume it's a DNS RR type */
+    if (inet_pton(AF_INET, argv[1], &(sa.sin_addr)) < 1 &&
+	inet_pton(AF_INET6, argv[1], &(sa6.sin6_addr)) < 1)
+      {
+	/* Iterate over all records of this type */
+	status = wrap_mr_query("get_host_resource_record", 2, argv, store_query_info, &elem);
+	if (status) {
+	  com_err(whoami, status, "while getting host resource records");
+	  exit(1);
+	}
+
+	top = queue_top(elem);
+	while (top)
+	  {
+	    argv[2] = ((char **)top->q_data)[2];
+	    argv[3] = addropt->opt;
+
+	    if (!strcasecmp(argv[3], "default"))
+	      sprintf(argv[3], "%d", DEFAULT_TTL);
+
+	    status = wrap_mr_query("set_host_resource_record_ttl", 4, argv, NULL, NULL);
+	    if (status) {
+	      com_err(whoami, status, "while setting host resource record TTL");
+	      exit(1);
+	    }
+
+	    top = top->q_forw;
+	  }
+      }
+    else
+      {
+	argv[2] = addropt->opt;
+
+	if (!strcasecmp(argv[2], "default"))
+	  sprintf(argv[2], "%d", DEFAULT_TTL);
+
+	status = wrap_mr_query("set_host_address_ttl", 3, argv, NULL, NULL);
+	if (status) {
+	  com_err(whoami, status, "while setting host address TTL");
+	  exit(1);
+	}
+      }
+  }
+
+  if (set_ptr_flag) {
+    char *argv[3];
+    struct mrcl_addropt_type *addropt;
+
+    addropt = mrcl_parse_addropt(ptr);
+    if (!addropt)
+      {
+	com_err(whoami, 0, "Couldn't parse address specification while setting host address PTR status");
+	exit(1);
+      }
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    argv[1] = addropt->address;
+    argv[2] = addropt->opt;
+
+    status = wrap_mr_query("set_host_address_ptr", 3, argv, NULL, NULL);
     if (status) {
-      com_err(whoami, status, "while setting host TTL");
+      com_err(whoami, status, "while setting host address PTR status");
       exit(1);
     }
   }
@@ -959,7 +1241,7 @@ int main(int argc, char **argv)
 
       case MRCL_M_KERBEROS:
 	argv[0] = "KERBEROS";
-	status = mrcl_validate_kerberos_member(argv[2], &argv[2]);
+	status = mrcl_validate_kerberos_member(argv[1], &argv[1]);
 	if (mrcl_get_message())
 	  mrcl_com_err(whoami);
 	if (status == MRCL_REJECT)
@@ -1006,10 +1288,10 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ac  | -admcmt adm_cmt",
 	  "-bc  | -billingcontact billing_contact");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-an  | -accountnumber account_number",
-	  "-A   | -address address");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-N   | -network network",
+	  "-A   | -address network:address");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-DA  | -deleteaddress network:address",
 	  "-am  | -addmap cluster");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | deletemap cluster",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | -deletemap cluster",
 	  "-acn | -addcontainer container");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dcn | -deletecontainer container",
 	  "-lm  | -listmap");
@@ -1017,13 +1299,17 @@ void usage(char **argv)
 	  "-u   | -unformatted");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "-n   | -noauth");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ahw | -addhwaddr hwaddr",
-	  "-dhw | -delhwaddr hwaddr");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lhw | -listhwaddr",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-aid | -addidentifier identifier",
+	  "-did | -delidentifier identifier");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lid | -listidentifier",
 	  "-oi  | -optin");
   fprintf(stderr,  USAGE_OPTIONS_FORMAT, "-oo  | -optout",
-	  "-ttl | -setttl ttl");
+	  "-ttl | -setttl <address or record type>:ttl");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-adh | -adddynamic owner",
+	  "-su  | -showusage");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-arr | -addrecord record",
+	  "-drr | -delrecord record");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lrr | -listrecords",
 	  "-db  | -database host[:port]");
   exit(1);
 }
@@ -1054,21 +1340,34 @@ int show_alias_info_unformatted(int argc, char **argv, void *hint)
 
 /* Show TTL if not default */
 
-#define DEFAULT_TTL "1800"
-
-int show_ttl(int argc, char **argv, void *hint)
+int show_address_info(int argc, char **argv, void *hint)
 {
-  if (strcmp(argv[0], DEFAULT_TTL))
-      printf("DNS TTL:  %s\n\n", argv[0]);
+  char tbuf[BUFSIZ];
+
+  sprintf(tbuf, "%s:%s", argv[2], argv[3]);
+  printf("Address:  %-16s    Network:    %-16s", tbuf, argv[1]);
+  if (atoi(argv[5]) == 1)
+    printf("    PTR record: yes");
+  if (atoi(argv[4]) != DEFAULT_TTL)
+    printf("    DNS TTL:  %-16s", argv[4]);
+  printf("\n");
 
   return MR_CONT;
 }
 
-int show_ttl_unformatted(int argc, char **argv, void *hint)
+int show_address_info_unformatted(int argc, char **argv, void *hint)
 {
-  if (strcmp(argv[0], DEFAULT_TTL))
-    printf("DNS TTL:          %s\n", argv[0]);
-  
+  char tbuf[BUFSIZ];
+
+  sprintf(tbuf, "%s:%s", argv[2], argv[3]);
+  printf("Network,Address:  %s,%s", argv[1], tbuf);
+  if (atoi(argv[5]) == 1)
+    printf("    PTR record: yes");
+  if (atoi(argv[4]) != DEFAULT_TTL)
+    printf("    DNS TTL: %s\n", argv[4]);
+  else
+    printf("\n");
+
   return MR_CONT;
 }
 
@@ -1134,17 +1433,18 @@ void show_host_info(char **argv)
   }
 
   args[0] = argv[M_NAME];
-
-  stat = wrap_mr_query("get_host_ttl", 1, args, show_ttl, &elem);
+  args[1] = "*";
+  
+  stat = wrap_mr_query("get_host_addresses", 2, args, show_address_info, &elem);
   if (stat) {
     if (stat != MR_NO_MATCH)
-      com_err(whoami, stat, "while getting host TTL");
+      com_err(whoami, stat, "while getting addresses");
+  } else {
+    printf("\n");
   }
-  
+
   sprintf(tbuf, "%s %s", argv[M_OWNER_TYPE],
           strcmp(argv[M_OWNER_TYPE], "NONE") ? argv[M_OWNER_NAME] : "");
-  printf("Address:  %-16s    Network:    %-16s\n",
-          argv[M_ADDR], argv[M_SUBNET]);
   printf("Owner:    %-16s    Use data:   %s\n", tbuf, argv[M_INUSE]);
   printf("Status:   %-16s    Changed:    %s\n",
           MacState(atoi(argv[M_STAT])), argv[M_STAT_CHNG]);
@@ -1183,13 +1483,12 @@ void show_host_info_unformatted(char **argv)
     printf("\n");
 
   args[0] = argv[M_NAME];
-  stat = wrap_mr_query("get_host_ttl", 1, args, show_ttl_unformatted,
+  args[1] = "*";
+  stat = wrap_mr_query("get_host_addresses", 2, args, show_address_info_unformatted,
 		       &elem);
   if (stat && stat != MR_NO_MATCH)
-    com_err(whoami, stat, "while getting host TTL");
+    com_err(whoami, stat, "while getting addresses");
   
-  printf("Address:          %s\n", argv[M_ADDR]);
-  printf("Network:          %s\n", argv[M_SUBNET]);
   printf("Owner Type:       %s\n", argv[M_OWNER_TYPE]);
   printf("Owner:            %s\n", argv[M_OWNER_NAME]);
   printf("Status:           %s\n", MacState(atoi(argv[M_STAT])));
@@ -1226,9 +1525,26 @@ int show_machine_in_container(int argc, char **argv, void *hint)
   return MR_CONT;
 }
 
-int show_host_hwaddrs(int argc, char **argv, void *hint)
+int show_host_identifiers(int argc, char **argv, void *hint)
 {
-  printf("Machine: %-30s Hardware Address: %-25s\n", argv[0], argv[1]);
+  printf("Machine: %-30s Identifier: %s:%s\n", argv[0], argv[1], argv[2]);
+
+  return MR_CONT;
+}
+
+int show_host_rr(int argc, char **argv, void *hint)
+{
+  printf("Machine: %-16s   Type: %s  Value: %-24s", argv[0], argv[1], argv[2]);
+  if (atoi(argv[3]) != DEFAULT_TTL)
+    printf("    DNS TTL:  %-16s", argv[3]);
+  printf("\n");
+
+  return MR_CONT;
+}
+
+int show_host_usage(int argc, char **argv, void *hint)
+{
+  printf("Machine: %-40s Type: %-16s Use: %s\n", argv[0], argv[1], argv[2]);
 
   return MR_CONT;
 }
@@ -1276,3 +1592,44 @@ char *get_username(void)
     }
   return username;
 }
+
+struct mqelem *queue_top(struct mqelem *elem)
+{
+  if (!elem)
+    return NULL;
+  while (elem->q_back)
+    elem = elem->q_back;
+  return elem;
+}
+
+int store_query_info(int argc, char **argv, void *data)
+{
+  char **info = malloc(argc * sizeof(char *));
+  struct mqelem **old_elem = data;
+  struct mqelem *new_elem = malloc(sizeof(struct mqelem));
+  int count;
+
+  if (!new_elem || !info)
+    return MR_ABORT;
+
+  for (count = 0; count < argc; count++)
+    info[count] = strdup(argv[count]);
+  info[count] = NULL;
+
+  new_elem->q_data = info;
+  if (!*old_elem)
+    {
+      new_elem->q_forw = NULL;
+      new_elem->q_back = NULL;
+    }
+  else
+    {
+      new_elem->q_back = *old_elem;
+      new_elem->q_forw = (*old_elem)->q_forw;
+      (*old_elem)->q_forw = new_elem;
+    }
+  *old_elem = new_elem;
+
+  return MR_CONT;
+}
+

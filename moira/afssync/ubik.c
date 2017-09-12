@@ -18,7 +18,9 @@
 extern int dbase_fd;
 struct ubik_dbase *dbase;
 
-int ubik_ServerInit()
+int ubik_ServerInit(afs_uint32 myHost, short myPort,
+		    afs_uint32 serverList[],
+		    const char *pathName, struct ubik_dbase **dbase)
 {
     return(0);
 }
@@ -42,12 +44,14 @@ int ubik_BeginTrans(register struct ubik_dbase *dbase,
     return(0);
 }
 
-int ubik_BeginTransReadAny()
+int ubik_BeginTransReadAny(struct ubik_dbase *dbase,
+			   afs_int32 transMode,
+			   struct ubik_trans **transPtr)
 {
     return(0);
 }
 
-int ubik_AbortTrans()
+int ubik_AbortTrans(struct ubik_trans *transPtr)
 {
     return(0);
 }
@@ -57,22 +61,26 @@ int ubik_EndTrans(register struct ubik_trans *transPtr)
     return(0);
 }
 
-int ubik_Tell()
+int ubik_Tell(struct ubik_trans *transPtr, afs_int32 * fileid,
+	      afs_int32 * position)
 {
     return(0);
 }
 
-int ubik_Truncate()
+int ubik_Truncate(struct ubik_trans *transPtr,
+		  afs_int32 length)
 {
     return(0);
 }
 
-long ubik_SetLock()
+int ubik_SetLock(struct ubik_trans *atrans, afs_int32 apos,
+		  afs_int32 alen, int atype)
 {
     return(0);
 }
 
-int ubik_WaitVersion()
+int ubik_WaitVersion(struct ubik_dbase *adatabase,
+		     struct ubik_version *aversion)
 {
     return(0);
 }
@@ -82,28 +90,23 @@ int ubik_CacheUpdate()
     return(0);
 }
 
-int panic(a, b, c, d)
-char *a, *b, *c, *d;
+void panic(char *format, ...)
 {
-    printf(a, b, c, d);
     abort();
     printf("BACK FROM ABORT\n");    /* shouldn't come back from floating pt exception */
     exit(1);    /* never know, though */
 }
 
-int ubik_GetVersion(dummy, ver)
-int dummy;
-struct ubik_version *ver;
+int ubik_GetVersion(struct ubik_trans *atrans,
+		    struct ubik_version *ver)
 {
     memset(ver, 0, sizeof(struct ubik_version));
     return(0);
 }
 
 
-int ubik_Seek(tt, afd, pos)
-struct ubik_trans *tt;
-long afd;
-long pos;
+int ubik_Seek(struct ubik_trans *transPtr, afs_int32 fileid,
+	      afs_int32 pos)
 {
     if (lseek(dbase_fd, pos+HDRSIZE, 0) < 0) {
 	perror("ubik_Seek");
@@ -112,10 +115,8 @@ long pos;
     return(0);
 }
 
-int ubik_Write(tt, buf, len)
-struct ubik_trans *tt;
-char *buf;
-long len;
+int ubik_Write(struct ubik_trans *transPtr, void *buf,
+	       afs_int32 len)
 {
     int status;
 
@@ -127,10 +128,8 @@ long len;
     return(0);
 }
 
-int ubik_Read(tt, buf, len)
-struct ubik_trans *tt;
-char *buf;
-long len;
+int ubik_Read(struct ubik_trans *transPtr, void *buf,
+	      afs_int32 len)
 {
     int status;
     
@@ -140,7 +139,7 @@ long len;
 	return(1);
     }
     if (status < len)
-      memset(&buf[status], 0, len - status);
+      memset(&(((char *)buf)[status]), 0, len - status);
     return(0);
 }
 

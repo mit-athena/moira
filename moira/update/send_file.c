@@ -17,16 +17,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_KRB4
-#include <des.h>
-#endif
 #include <update.h>
 
 RCSID("$HeadURL$ $Id$");
 
-#ifdef HAVE_KRB4
-extern des_cblock session;
-#endif
 
 /*
  * syntax:
@@ -51,10 +45,6 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
   char data[UPDATE_BUFSIZ], enc[UPDATE_BUFSIZ];
   long response;
   struct stat statb;
-#ifdef HAVE_KRB4
-  des_key_schedule sched;
-  des_cblock ivec;
-#endif
 
   /* send file over */
   fd = open(pathname, O_RDONLY, 0);
@@ -110,17 +100,7 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
     }
 
   if (encrypt)
-    {
-#ifdef HAVE_KRB4
-      des_key_sched(session, sched);
-      memmove(ivec, session, sizeof(ivec));
-#else
-      /* The session key only gets stored if auth happens in krb4 to
-         begin with. If you don't have krb4, you can't possibly be
-         coming up with a valid session key. */
-      return MR_NO_KRB4;
-#endif
-    }
+    return MR_NO_KRB4;
 
   while (n_to_send > 0)
     {
@@ -131,21 +111,9 @@ int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 	  close(fd);
 	  return MR_ABORTED;
 	}
-      if (encrypt)
-	{
-#ifdef HAVE_KRB4
-	  memset(data + n, 0, sizeof(data) -n);
-	  des_pcbc_encrypt((des_cblock *)data, (des_cblock *)enc, (n + 7) & ~7, sched, &ivec, 0);
-	  /* save vector to continue chaining */
-	  for (i = 0; i < 8; i++)
-	    ivec[i] = data[n - 8 + i] ^ enc[n - 8 + i];
-	  /* round up to multiple of 8 */
-	  n = (n + 7) & ~7;
-	  code = send_string(conn, enc, n);
-#endif
-	}
-      else
-	code = send_string(conn, data, n);
+
+      code = send_string(conn, data, n);
+
       if (code)
 	{
 	  com_err(whoami, code, "transmitting file %s", pathname);

@@ -12,7 +12,6 @@ ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
 LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 AFS_LIBS=@AFS_LIBS@
-AFS_DIR=@AFS_DIR@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
@@ -53,5 +52,4 @@ install:
 
 afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
-	-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit \
-	$(AFS_DIR)/lib/afs/util.a $(LIBS)
+	-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit -lafscom_err -lafsutil $(LIBS)

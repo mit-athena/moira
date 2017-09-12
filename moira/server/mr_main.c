@@ -28,9 +28,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#endif
 #include <krb5.h>
 
 RCSID("$HeadURL$ $Id$");

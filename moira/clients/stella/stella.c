@@ -940,18 +940,18 @@ int main(int argc, char **argv)
 
       while (q) {
 	char *args[3];
-	struct mrcl_addropt_type *addropt;
+	struct mrcl_netaddr_type *host_rr;
 
-	addropt = mrcl_parse_addropt(q->string);
-	if (!addropt)
+	host_rr = mrcl_parse_netaddr(q->string);
+	if (!host_rr)
 	  {
 	    com_err(whoami, 0, "Could not parse resource record specification while adding host resource record.");
 	    exit(1);
 	  }
 
 	args[0] = canonicalize_hostname(strdup(hostname));
-	args[1] = addropt->address;
-	args[2] = addropt->opt;
+	args[1] = host_rr->network;
+	args[2] = host_rr->address;
 
 	status = wrap_mr_query("add_host_resource_record", 3, args, NULL, NULL);
 	if (status) {
@@ -970,18 +970,18 @@ int main(int argc, char **argv)
 
       while (q) {
         char *args[3];
-        struct mrcl_addropt_type *addropt;
+        struct mrcl_netaddr_type *host_rr;
 
-        addropt = mrcl_parse_addropt(q->string);
-        if (!addropt)
+        host_rr = mrcl_parse_netaddr(q->string);
+        if (!host_rr)
           {
             com_err(whoami, 0, "Could not parse resource record specification while removing host resource record.");
             exit(1);
           }
 
 	args[0] = canonicalize_hostname(strdup(hostname));
-        args[1] = addropt->address;
-        args[2] = addropt->opt;
+        args[1] = host_rr->network;
+        args[2] = host_rr->address;
 
         status = wrap_mr_query("delete_host_resource_record", 3, args, NULL, NULL);
         if (status) {

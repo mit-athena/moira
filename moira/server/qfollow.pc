@@ -864,6 +864,14 @@ int followup_ahad(struct query *q, char *argv[], client *cl)
 	ha.mach_id = :mid AND ha.snet_id = s.snet_id AND s.addr_type = :addr_type;
       if (cnt == 0)
 	ptr = 1;
+      else
+	{
+	  /* TTL should match to what's set for existing addresses of this type */
+	  EXEC SQL SELECT ttl INTO :ttl FROM hostaddress ha, subnet s WHERE
+	    ha.mach_id = :mid AND ha.snet_id = s.snet_id AND s.addr_type = :addr_type;
+	  if (dbms_errno)
+	    return mr_errcode;
+	}
 
       /* Is this address in use by any other hosts with reverse resolution? */
       EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress WHERE
@@ -1290,8 +1298,8 @@ int followup_srrt(struct query *q, char *argv[], client *cl)
 int followup_sttl(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *address;
-  int mid, ttl, has_ptr;
+  char *address, addr_type[SUBNET_ADDR_TYPE_SIZE];
+  int mid, sid, ttl, has_ptr;
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -1300,7 +1308,7 @@ int followup_sttl(struct query *q, char *argv[], client *cl)
   ttl = atoi(argv[2]);
 
   /* Did we update a record where has_ptr is set to 1? */
-  EXEC SQL SELECT ptr INTO :has_ptr FROM hostaddress
+  EXEC SQL SELECT snet_id, ptr INTO :sid, :has_ptr FROM hostaddress
     WHERE mach_id = :mid AND address = :address;
   if (dbms_errno)
     return mr_errcode;
@@ -1314,6 +1322,19 @@ int followup_sttl(struct query *q, char *argv[], client *cl)
 	return mr_errcode;
     }
 
+  /* Keep TTLs for all addresses of the same type in sync. */
+  EXEC SQL SELECT addr_type INTO :addr_type FROM subnet
+    WHERE snet_id = :sid;
+  if (dbms_errno)
+    return mr_errcode;
+  strmove(addr_type, strtrim(addr_type));
+
+  EXEC SQL UPDATE hostaddress SET ttl = :ttl WHERE
+    mach_id = :mid AND address != :address AND snet_id
+    IN (SELECT snet_id FROM subnet WHERE addr_type = :addr_type);
+  if (dbms_errno)
+    return mr_errcode;
+ 
   status = set_mach_modtime_by_id(q, argv, cl);
   if (status)
     return status;

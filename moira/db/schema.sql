@@ -226,7 +226,7 @@ create table servers
 
 create table serverhosts 
 (
-	service		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	service		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	success		INTEGER 	DEFAULT 0	NOT NULL,
 	enable		INTEGER 	DEFAULT 0	NOT NULL,
@@ -345,7 +345,7 @@ create table strings
 
 create table services 
 (
-	name		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	protocol	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
 	port		SMALLINT 	DEFAULT 0	NOT NULL,
 	description	VARCHAR(64) 	DEFAULT CHR(0)	NOT NULL,
@@ -417,7 +417,7 @@ create table numvalues
 
 create table tblstats 
 (
-	table_name	VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
+	table_name	VARCHAR(32)	DEFAULT CHR(0)	NOT NULL,
 	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
 	appends		INTEGER		DEFAULT 0	NOT NULL,
 	updates		INTEGER		DEFAULT 0	NOT NULL,
@@ -524,8 +524,8 @@ create table machidentifiermap
 
 create table incremental_queue
 (
-	table_name      VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
-	service         VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
+	table_name      VARCHAR(32)     DEFAULT CHR(0)  NOT NULL,
+	service         VARCHAR(32)     DEFAULT CHR(0)  NOT NULL,
 	beforec		INTEGER		DEFAUlT 0	NOT NULL,
 	afterc		INTEGER		DEFAULT 0	NOT NULL,
 	before		VARCHAR(4000)	DEFAULT CHR(0)	NOT NULL,

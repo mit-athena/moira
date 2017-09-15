@@ -1358,6 +1358,17 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	return MR_EXISTS;
     }
 
+  /* Don't allow renaming at all if you have NS records */
+  if (row == 1)
+    {
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord
+	WHERE mach_id = :id;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt != 0)
+	return MR_EXISTS;
+    }
+
   /*
    * If this is an update_host query, we're done.
    */
@@ -1398,6 +1409,14 @@ int setup_ahal(struct query *q, char **argv, client *cl)
   if (cnt > 0)
     return MR_EXISTS;
 
+  /* No aliases if you have NS records / are a delegated zone */
+  EXEC SQL SELECT count(mach_id) INTO :cnt FROM hostrecord hr, machine m
+    WHERE m.name = UPPER(:name) AND m.mach_id = hr.mach_id AND hr.rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt > 0)
+    return MR_EXISTS;
+
   return MR_SUCCESS;
 }
 
@@ -1431,6 +1450,14 @@ int setup_ahad(struct query *q, char **argv, client *cl)
   status = canonical_for_hostname(mname);
   if (status)
     return status;
+
+  /* Don't allow adding addresses for NS records / delegated zones */
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord WHERE mach_id = :mid
+    AND rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt > 0)
+    return MR_EXISTS;
 
   /* Get address type of specified subnet */
   EXEC SQL SELECT addr_type, saddr, mask, low, high INTO :addr_type, :saddr, :mask, :low, :high
@@ -1749,6 +1776,14 @@ int setup_ahid(struct query *q, char **argv, client *cl)
   status = canonical_for_hostname(mname);
   if (status)
     return status;
+
+  /* Don't allow adding identifiers to anything with NS records */
+  EXEC SQL SELECT COUNT(*) INTO :count FROM hostrecord WHERE mach_id = :mid
+    AND rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (count > 0)
+    return MR_EXISTS;
 
   /* Don't allow empty string */
   if (strlen(identifier) == 0)
@@ -2178,13 +2213,14 @@ int setup_sttl(struct query *q, char *argv[], client *cl)
 int setup_ahrr(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid;
-  char mname[MACHINE_NAME_SIZE];
+  int mid, count;
+  char *rr_type, mname[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
   mid = *(int *)argv[0];
-  
+  rr_type = argv[1];
+
   EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
   if (dbms_errno)
     return mr_errcode;
@@ -2194,6 +2230,31 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
   status = canonical_for_hostname(mname);
   if (status)
     return status;
+
+  /* Don't allow adding NS records to anything that has other identifiers */
+  if (!strcmp(rr_type, "NS"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostalias
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM machidentifiermap
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+    }
 
   return MR_SUCCESS;
 }

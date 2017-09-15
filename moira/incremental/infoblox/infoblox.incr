@@ -8,7 +8,9 @@ import os
 import requests
 import struct
 import sys
+import netaddr
 from netaddr import IPAddress
+from netaddr import EUI
 from subprocess import call
 from time import sleep, ctime
 
@@ -90,33 +92,36 @@ def get_moira_host_status(hostname):
     data, = domoira('get_host', (hostname, '*'))
     return int(data[9])
 
+def get_moira_host(hostname):
+    return domoira('get_host', (hostname, '*'))
+
 def mach_to_ib(record):
     extattrs = {
-        'moira_mach_id' : record[1],
-        'moira_vendor' : record[2],
-        'moira_model' : record[3],
-        'moira_os' : record[4],
-        'moira_location' : record[5],
-        'moira_contact' : record[6],
-        'moira_biling_contact' : record[7],
-        'moira_account_number' : record[8],
-        'moira_status' : record[9],
-        'moira_owner_type' : record[10],
-        'moira_owner_id' : record[11],
-        'moira_acomment' : record[12],
-        'moira_ocomment' : record[13],
+        'moira_mach_id' : { 'value' : record[1] },
+        'moira_vendor' : { 'value' : record[2] },
+        'moira_model' : { 'value' : record[3] },
+        'moira_os' : { 'value' : record[4] },
+        'moira_location' : { 'value' : record[5] },
+        'moira_contact' : { 'value' : record[6] },
+        'moira_billing_contact' : { 'value' : record[7] },
+        'moira_account_number' : { 'value' : record[8] },
+        'moira_status' : { 'value' : record[9] },
+        'moira_owner_type' : { 'value' : record[10] },
+        'moira_owner_id' : { 'value' : record[11] },
+        'moira_acomment' : { 'value' : record[12] },
+        'moira_ocomment' : { 'value' : record[13] },
         }
 
-    if extattrs['moira_owner_id'] == "0":
-        extattrs['moira_owner_id'] = "none";
+    if extattrs['moira_owner_id']['value'] == "0":
+        extattrs['moira_owner_id']['value'] = "none";
 
     for key, value in extattrs.items():
-        if not value:
-            extattrs[key] = '-'
+        if not value['value']:
+            extattrs[key]['value'] = '-'
         else:
-            extattrs[key] = value.lower()
+            extattrs[key]['value'] = value['value'].lower()
 
-    extattrs['moira_managed'] = 1;
+    extattrs['moira_managed'] = { 'value' : 1 }
     
     ib_host_record = {
         'name' : record[0].lower(),
@@ -175,10 +180,10 @@ def ib_search_by_name(name):
     return results_by_view
 
 # Add infoblox host record
-def ib_create_host(record):
+def ib_create_host(record, myviews=None):
     # Turn incoming record into something we can work with
     ib_record = mach_to_ib(record)
-    moira_mach_id = ib_record['extattrs']['moira_mach_id']
+    moira_mach_id = ib_record['extattrs']['moira_mach_id']['value']
     # Does this record already exist?
     mach_id_results = ib_search_by_mach_id(moira_mach_id)
     name_results = ib_search_by_name(ib_record['name'])
@@ -191,7 +196,14 @@ def ib_create_host(record):
         log('ib_search_by_name returned error, aborting')
         return
 
-    for view in views:
+    # For creation, use dummy IPs.
+    ib_record['ipv4addrs'] = [ { 'ipv4addr' : '0.0.0.0' } ]
+    ib_record['ipv6addrs'] = [ ]
+
+    if myviews == None:
+        myviews = views
+
+    for view in myviews:
         ib_record['view'] = view
         if len(name_results[view]) > 0:
             critical_log("Record already exists for name %s in view %s" % (ib_record['name'], view))
@@ -203,7 +215,7 @@ def ib_create_host(record):
 
             r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                critical_log('Infoblox API call failed in ib_create_host for host %s view %s with HTTP status %s, %s' % (ib_record['name'], view, r.status_code, r.text))
                 continue
 
             log('Created host record for %s with mach_id %s in view %s: %s' % (ib_record['name'], moira_mach_id, view, r.text))
@@ -211,7 +223,7 @@ def ib_create_host(record):
 # Delete infoblox host record
 def ib_delete_host(record):
     ib_record = mach_to_ib(record)
-    moira_mach_id = ib_record['extattrs']['moira_mach_id']
+    moira_mach_id = ib_record['extattrs']['moira_mach_id']['value']
     # Does this exist?
     mach_id_results = ib_search_by_mach_id(moira_mach_id)
 
@@ -223,8 +235,8 @@ def ib_delete_host(record):
         ib_record['view'] = view
         if len(mach_id_results[view]) == 0:
             log('No record exists for mach_id %s in view %s, not deleting' % (moira_mach_id, view))
-        elif mach_id_results[view]['extattrs']['moira_managed'] != "1":
-            log('Record for mach_id %s in view %s is not managed by moira, not deleting' % (moira_mach_id, view))
+        elif mach_id_results[view][0]['extattrs']['moira_managed']['value'] != 1:
+            log('Record for mach_id %s in view %s is not managed by moira, not deleting: moira_managed value is %s' % (moira_mach_id, view, mach_id_results[view][0]['extattrs']['moira_managed']['value']))
         else:
             ib_ref = mach_id_results[view][0]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
@@ -241,11 +253,11 @@ def ib_delete_host(record):
 def ib_update_host(before, after):
     before_record = mach_to_ib(before)
     after_record = mach_to_ib(after)
-    moira_mach_id = before_record['extattrs']['moira_mach_id']
+    moira_mach_id = before_record['extattrs']['moira_mach_id']['value']
 
     # This shouldn't ever change.
-    if moira_mach_id != after_record['extattrs']['moira_mach_id']:
-        critical_log('Moira mach ID changed from %s to %s in an update, this cannot happen!' % (moira_mach_id, after_record['extattrs']['moira_mach_id']))
+    if moira_mach_id != after_record['extattrs']['moira_mach_id']['value']:
+        critical_log('Moira mach ID changed from %s to %s in an update, this cannot happen!' % (moira_mach_id, after_record['extattrs']['moira_mach_id']['value']))
         return
 
     mach_id_results = ib_search_by_mach_id(moira_mach_id)
@@ -270,10 +282,10 @@ def ib_update_host(before, after):
             ib_create_host(after)
         elif len(mach_id_results[view]) > 1:
             critical_log('Mutiple records exist for mach_id %s in view %s, should not happen!' % (moira_mach_id, view))
-        elif mach_id_results[view]['extattrs']['moira_managed'] != "1":
+        elif mach_id_results[view][0]['extattrs']['moira_managed']['value'] != 1:
             log('Record for mach_id %s in view %s is not managed by moira, not updating' % (moira_mach_id, view))
         else:
-            ib_ref = mach_id_results[view]['_ref']
+            ib_ref = mach_id_results[view][0]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
@@ -282,7 +294,7 @@ def ib_update_host(before, after):
                 critical_log('Infoblox API call failed in ib_update_host for host %s view %s' % (after_record['name'], view))
                 continue
 
-            log('Updated host record for %s with mach_id in view %s: %s' % (after_record['name'], moira_mach_id, view, r.text))
+            log('Updated host record for %s with mach_id %s in view %s: %s' % (after_record['name'], moira_mach_id, view, r.text))
 
 def address_to_ib(record):
     ib_address_record = {
@@ -409,7 +421,7 @@ def ib_search_by_name_and_cname(name, alias):
     object = '/record:cname'
     ib_search_url = ib_base_url + object + ib_common_args
     headers = { 'Content-Type' : 'application/json' }
-    payload = { 'canonical' : name.lower(), 'name' : alias.lowe() }
+    payload = { 'canonical' : name.lower(), 'name' : alias.lower() }
 
     results_by_view = {}
     for view in views:
@@ -419,7 +431,7 @@ def ib_search_by_name_and_cname(name, alias):
                
     r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
     if r.status_code != requests.codes.ok:
-        critical_log('Infoblox API call failed in ib_search_by_name_and_cname for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        critical_log('Infoblox API call failed in ib_search_by_name_and_cname for URL %s, payload %s with HTTP status %s: %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
 
     response = r.json()
@@ -438,7 +450,7 @@ def ib_add_cname(record):
         return
 
     # canonical name should be non-mit.edu if we got here.
-    if canonical_for_name(ib_record['canonical']) == True:
+    if canonical_for_hostname(ib_record['canonical']) == True:
         critical_log('Request to create explicit CNAME record for %s. alias %s, should not happen!' % (ib_record['canonical'], ib_record['name']))
         return
 
@@ -452,14 +464,14 @@ def ib_add_cname(record):
 
             r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                critical_log('Infoblox API call failed in ib_add_cname for name %s alias %s view %s with HTTP status %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.status_code, r.text))
                 continue
 
             log('Created CNAME record for name %s alias %s in view %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.text))
             
 def ib_add_host_alias(record):
     ib_record = { 'name' : record[1].lower() }
-    alias = record[0]
+    alias = record[0].lower()
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -469,20 +481,27 @@ def ib_add_host_alias(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            critical_log('No host record exists for %s while adding alias %s, skipping' % (ib_record['name'], alias))
+            critical_log('No host record exists for %s in view %s while adding alias %s, skipping' % (ib_record['name'], view, alias))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while adding alias %s, should not happen!' % (ib_record['name'], view, alias))
         else:
+            # exactly one result
+            search_result = search_results[view][0]
+            
             aliases = [ alias ]
-            for item in search_results[view][0]['aliases']:
-                aliases.append(item)
+            if 'aliases' in search_result:
+                for item in search_result['aliases']:
+                    aliases.append(item)
+
             ib_record['aliases'] = aliases
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_add_host_alias for name %s alias %s view %s with HTTP return %s' % (ib_record['name'], alias, view, str(r.status_code)))
+                critical_log('Infoblox API call failed in ib_add_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
     
             log('Added alias %s to host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
@@ -507,26 +526,23 @@ def ib_add_host_duid(record):
         return
 
     for view in views:
+        if view == 'external':
+            continue
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No host record exists for %s while adding %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
         elif len(search_results[view]) > 1:
             critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
         else:
-            # DUID is associated with ipv6addrs entry in host structure
-            if 'ipv6addrs' in search_results[view][0]:
-                ipv6addrs = search_results[view][0]['ipv6addrs']
-            else:
-                ipv6addrs = []
-                ipv6addrs[0] = {} 
+            search_result = search_results[view][0]
+
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
             ipv6addrs[0]['duid'] = id_value
             ipv6addrs[0]['configure_for_dhcp'] = True
-            if not 'ipv6addr' in ipv6addrs[0]:
-                ipv6addrs[0]['ipv6addr'] = 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
 
             ib_record['ipv6addrs'] = ipv6addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
@@ -540,7 +556,7 @@ def ib_add_host_duid(record):
 def ib_add_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
     id_type = record[1]
-    id_value = record[2]
+    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -548,38 +564,45 @@ def ib_add_host_mac(record):
         return
 
     for view in views:
+        if view == 'external':
+            continue
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No host record exists for %s while adding %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
         elif len(search_results[view]) > 1:
             critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
         else:
-            # MAC address associated with ipv4addrs entry in host structure
-            if 'ipv4addrs' in search_results[view][0]:
-                ipv4addrs = search_results[view][0]['ipv4addrs']
-            else:
-                ipv4addrs = []
-                ipv4addrs[0] = {}
+            search_result = search_results[view][0]
+
+            # preserve existing IP address
+            ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
             ipv4addrs[0]['mac'] = id_value
             ipv4addrs[0]['configure_for_dhcp'] = True
-            if not 'ipv4addr' in ipv4addrs[0]:
-                ipv4addrs[0]['ipv4addr'] = '255.255.255.255'
 
             ib_record['ipv4addrs'] = ipv4addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox AP call failed in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                critical_log('Infoblox API call failed in ib_add_host_mac for name %s %s %s in view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
 
             log('Added %s %s to host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
 
 def ib_add_host_ipv4_address(record):
     ib_record = { 'name' : record[0].lower() }
+
+    ttl = int(record[4])
+    if ttl == default_ttl:
+        ib_record['use_ttl'] = False
+        ib_record['ttl'] = default_ttl
+    else:
+        ib_record['use_ttl'] = True
+        ib_record['ttl'] = ttl
+
     address = record[3]
     search_results = ib_search_by_name(ib_record['name'])
 
@@ -594,30 +617,43 @@ def ib_add_host_ipv4_address(record):
             continue
 
         if len(search_results[view]) == 0:
-            critical_log('No host record exists for %s while adding IPv4 address %s, skipping' % (ib_record['name'], address))
+            critical_log('No host record exists for %s in view %s while adding IPv4 address %s, skipping' % (ib_record['name'], view, address))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while adding IPv4 address %s, should not happen!' % (ib_record['name'], view, address))            
         else:
-            if 'ipv4addrs' in search_results[view][0]:
-                ipv4addrs = search_results[view][0]['ipv4addrs']
-            else:
-                ipv4addrs = []
-                ipv4addrs[0] = {}
-            ipv4addrs[0]['ipv4addr'] = address
+            # exactly one result, as expected.
+            search_result = search_results[view][0]
+
+            ipv4addrs = [ { 'ipv4addr' : address } ]
+            # preserve MAC address if assigned.
+            if 'mac' in search_result['ipv4addrs'][0]:
+                ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
+                ipv4addrs[0]['configure_for_dhcp'] = True
 
             ib_record['ipv4addrs'] = ipv4addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_add_host_ipv4_address for name %s address %s view %s with HTTP return %s' % (ib_record['name'], address, view, r.status_code))
+                critical_log('Infoblox API call failed in ib_add_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
 
             log('Added IPv4 address %s to host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
 
 def ib_add_host_ipv6_address(record):
-    ib_record = { 'name' : record[0] }
+    ib_record = { 'name' : record[0].lower() }
+
+    ttl = int(record[4])
+    if ttl == default_ttl:
+        ib_record['use_ttl'] = False
+        ib_record['ttl'] = default_ttl
+    else:
+        ib_record['use_ttl'] = True
+        ib_record['ttl'] = ttl
+
     address = record[3]
     search_results = ib_search_by_name(ib_record['name'])
 
@@ -628,28 +664,32 @@ def ib_add_host_ipv6_address(record):
     for view in views:
         ib_record['view'] = view
         # No private addresses in external view
-        if view == 'external' and IPAddress(address).is_private == True:
+        if view == 'external' and IPAddress(address).is_private() == True:
             continue
 
         if len(search_results[view]) == 0:
-            critical_log('No host record exists for %s while adding IPv6 address %s, skipping' % (ib_record['name']. address))
+            critical_log('No host record exists for %s in view %s while adding IPv6 address %s, skipping' % (ib_record['name'], view, address))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while adding IPv6 address %s, should not happen!' % (ib_record['name'], view, address))
         else:
-            if 'ipv6addrs' in search_results[view][0]:
-                ipv6addrs = search_results[view][0]['ipv6addrs']
-            else:
-                ipv6addrs = []
-                ipv6addrs[0] = {}
-            ipv6addrs[0]['ipv6addr'] = address
+            # exactly one result, as expected.
+            search_result = search_results[view][0]
+
+            ipv6addrs = [ { 'ipv6addr' : address } ]
+            # preserve DUID if assigned.
+            if 'ipv6addrs' in search_result and 'duid' in search_result['ipv6addrs'][0]:
+                ipv6addrs[0]['duid'] = search_result['ipv6addrs'][0]['duid']
+                ipv6addrs[0]['configure_for_dhcp'] = True
 
             ib_record['ipv6addrs'] = ipv6addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_add_host_ipv6_address for name %s address %s view %s with HTTP return %s' % (ib_record['name'], address, view, r.status_code))
+                critical_log('Infoblox API call failed in ib_add_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
 
             log('Added IPv6 address %s to host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
@@ -661,16 +701,31 @@ def ib_add_hostrecord(record):
         return
     elif rr_type == 'MX':
         ib_record = mx_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
         primary_rr_value = ib_record['mail_exchanger']
         object = '/record:mx'
+
     elif rr_type == 'SRV':
         ib_record = srv_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+        
         primary_rr_value = ib_record['target']
         object = '/record:srv'
+
     elif rr_type == 'TXT':
         ib_record = txt_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
         primary_rr_value = ib_record['text']
         object = '/record:txt'
+
     else:
         critical_log('Unexpected RR type %s in ib_add_hostrecord' % (rr_type))
         return
@@ -691,10 +746,10 @@ def ib_add_hostrecord(record):
 
             r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed creating RR type %s for name %s view %s' % (rr_type, ib_record['name'], view))
+                critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
                 continue
 
-            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view))
+            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
 
 def ib_search_hostrecord(name, rr_type, value):
     if rr_type == 'MX':
@@ -738,7 +793,7 @@ def ns_to_ib(record):
             'address' : address[3]
         }
 
-        ib.delegate_to.append(ib_delegate_element)
+        ib_delegate_to.append(ib_delegate_element)
 
     ib_ns_record = {
         'fqdn' : record[0].lower(),
@@ -790,46 +845,55 @@ def ib_add_delegated_zone(record):
     for view in views:
         if view == 'external':
             # Make a copy of ib_record['delegated_to'] since we might modify it.
-            delegated_to = list(ib_record['delegated_to'])
+            delegated_to = list(ib_record['delegate_to'])
             # Don't put private addresses in the external zone.
             for item in delegated_to:
                 if IPAddress(item['address']).is_private() == True:
                     delegated_to[:] = [ d for d in delegated_to if d.get('address') != item['address']]
-            ib_record['delegated_to'] = delegated_to
+            ib_record['delegate_to'] = delegated_to
 
         ib_record['view'] = view
 
         if len(search_results[view]) > 0:
-            for item in search_results[view]['delegated_to']:
-                ib_record['delegated_to'].append(item)
+            # zone already exists
+            for item in search_results[view]['delegate_to']:
+                if item not in ib_record['delegate_to']:
+                    ib_record['delegate_to'].append(item)
 
-            ib_ref = search_results[view][0]['_ref']
+            # Infoblox doesn't allow this for updates, even if it didn't change.
+            if 'fqdn' in ib_record:
+                del ib_record['fqdn']
+
+            ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            data = json.dumps(ib_record)
+            r = requests.put(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
 
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed updating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                critical_log('Infoblox API call failed updating delegated zone %s in view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                 continue
 
-            log('Updated delegated zone %s with additional delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegated_to'][0]['name'], view, r.text))
+            log('Updated delegated zone %s with additional delegation to %s in view %s: %s' % (record[0].lower(), ib_record['delegate_to'][0]['name'], view, r.text))
         else:
+            # empty search results, create.
             ib_url = ib_base_url + '/zone_delegated' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            data = json.dumps(ib_record)
+            r = requests.post(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
 
             if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                critical_log('Infoblox API call failed creating delegated zone %s in view %s with HTTP return %s: %s' % (ib_record['fqdn'], view, r.status_code, r.text))
                 continue
 
-            log('Created delegated zone %s with delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegated_to'][0]['name'], view, r.text))
+            log('Created delegated zone %s with delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegate_to'][0]['name'], view, r.text))
 
 def txt_to_ib(record):
     ib_txt_record = {
         'name' : record[0].lower(),
-        'text' : record[2].lower(),
+        'text' : '"' + record[2].lower() + '"',
         'disable' : False
         }
 
@@ -849,10 +913,12 @@ def srv_to_ib(record):
         'disable' : False
         }
 
+    if len(record[2].split()) != 4:
+        return { 'error' : 'Could not parse SRV record in srv_to_ib' }
+
     (priority, weight, port, target) = record[2].split()
     if not priority or not weight or not port or not target:
-        critical_log('Could not parse SRV record value in srv_to_ib')
-        return
+        return { 'error' : 'Could not parse SRV record in srv_to_ib' }
     ib_srv_record['priority'] = int(priority)
     ib_srv_record['weight'] = int(weight)
     ib_srv_record['port'] = int(port)
@@ -874,10 +940,12 @@ def mx_to_ib(record):
         'disable' : False
         }
 
+    if len(record[2].split()) != 2:
+        return { 'error' : 'Could not parse MX record value in mx_to_ib' }
+
     (weight, mxhost) = record[2].split()
     if not weight or not mxhost:
-        critical_log('Could not parse MX record value in mx_to_ib')
-        return
+        return { 'error' : 'Could not parse MX record value in mx_to_ib' }
     ib_mx_record['preference'] = int(weight)
     ib_mx_record['mail_exchanger'] = mxhost.lower()
 
@@ -961,8 +1029,8 @@ def ib_delete_cname(record):
             log('Deleted CNAME record for name %s alias %s in view %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.text))
 
 def ib_delete_host_alias(record):
-    ib_record = { 'name' : record[1] }
-    alias = record[0]
+    ib_record = { 'name' : record[1].lower() }
+    alias = record[0].lower()
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -972,18 +1040,22 @@ def ib_delete_host_alias(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            log('No host record exists for %s while deleting alias %s, skipping' % (ib_record['name'], alias))
+            log('No host record exists for %s in view %s while deleting alias %s, skipping' % (ib_record['name'], view, alias))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while deleting alias %s, should not happen!' % (ib_record['name'], view, alias))
         else:
-            aliases = [ x for x in search_results[view][0]['aliases'] if x != alias]
+            search_result = search_results[view][0]
+            
+            aliases = [ x for x in search_result['aliases'] if x != alias]
             ib_record['aliases'] = aliases
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                critical_log('Infoblox API call failed in ib_delete_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
 
             log('Deleted alias %s from host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
@@ -1000,7 +1072,8 @@ def ib_delete_host_identifier(record):
 def ib_delete_host_duid(record):
     ib_record = { 'name' : record[0].lower() }
     id_type = record[1]
-    id_value = record[2]
+    # Infoblox formats these things like MAC addresses, but longer, for some reason.
+    id_value = ':'.join(s.encode('hex') for s in record[2].decode('hex'))
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -1008,27 +1081,35 @@ def ib_delete_host_duid(record):
         return
 
     for view in views:
+        if view == 'external':
+            continue
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             log('No host record exists for %s while deleting %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while deleting %s %s, should not happen!' % (ib_record['name'], view, id_type, id_value))
         else:
-            ipv6addrs = []
-            for x in search_results[view][0]['ipv6addrs']:
-                if x['duid'] != id_value:
-                    ipv6addrs.append(x)
-                elif x['ipv6addr'] != 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff':
-                    del x['duid']
-                    ipv6addrs.append(x)
+            search_result = search_results[view][0]
+
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
+
+            if 'duid' in search_result['ipv6addrs'][0]:
+                if search_result['ipv6addrs'][0]['duid'] == id_value:
+                    ipv6addrs[0]['duid'] = ''
+                    ipv6addrs[0]['configure_for_dhcp'] = False
+                else:
+                    critical_log('DUID %s does not match attempted delete of %s for host %s in view %s, not deleting' % (search_result['ipv6addrs'][0]['duid'], id_value, ib_record['name'], view))
+                    continue
 
             ib_record['ipv6addrs'] = ipv6addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                critical_log('Infoblox API call failed in ib_delete_host_duid for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
 
             log('Deleted %s %s for host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
@@ -1036,7 +1117,7 @@ def ib_delete_host_duid(record):
 def ib_delete_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
     id_type = record[1]
-    id_value = record[2]
+    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -1044,27 +1125,36 @@ def ib_delete_host_mac(record):
         return
 
     for view in views:
+        if view == 'external':
+            continue
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             log('No host record exists for %s while deleting %s %s in view %s, skipping' % (ib_record['name'], id_type, id_value, view))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while deleting %s %s, should not happen!' % (ib_record['name'],  view, id_type, id_value))
         else:
-            ipv4addrs = []
-            for x in search_results[view][0]['ipv4addrs']:
-                if x['mac'] != id_value:
-                    ipv4addrs.append(x)
-                elif x['ipv4addr'] != '255.255.255.255':
-                    del x['mac']
-                    ipv4addrs.append(x)
+            # exactly one result
+            search_result = search_results[view][0]
+
+            ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
+
+            if 'mac' in search_result['ipv4addrs'][0]:
+                if search_result['ipv4addrs'][0]['mac'] == id_value:
+                    ipv4addrs[0]['mac'] = ''
+                    ipv4addrs[0]['configure_for_dhcp'] = False
+                else:
+                    critical_log('MAC address %s does not match attempted delete of %s for host %s in view %s, not deleting' % (search_result['ipv4addrs'][0]['mac'], id_value, ib_record['name'], view))
+                    continue
 
             ib_record['ipv4addrs'] = ipv4addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_host_mac for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                critical_log('Infoblox API call failed in ib_delete_host_mac for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
 
             log('Deleted %s %s for host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
@@ -1081,25 +1171,28 @@ def ib_delete_host_ipv4_address(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            log('No host record exists for %s while deleting IPv4 address %s, skipping' % (ib_record['name'], address))
+            log('No host record exists for %s in view %s while deleting IPv4 address %s, skipping' % (ib_record['name'], view, address))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while deleting IPv4 address %s, should not happen!' % (ib_record['name'], view, address))
         else:
-            ipv4addrs = []
-            for x in search_results[view][0]['ipv4addrs']:
-                if x['ipv4addr'] != address:
-                    ipv4addrs.append(x)
-                elif 'mac' in x:
-                    x['ipv4addr'] = '255.255.255.255'
-                    ipv4addrs.append(x)
+            # exactly one result, as expected.
+            search_result = search_results[view][0]
+
+            ipv4addrs = [ { 'ipv4addr' : '0.0.0.0' } ]
+            # preserve MAC address if assigned.
+            if 'mac' in search_result['ipv4addrs'][0]:
+                ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
+                ipv4addrs[0]['configure_for_dhcp'] = True
 
             ib_record['ipv4addrs'] = ipv4addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                critical_log('Infoblox API call failed in ib_delete_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
 
             log('Deleted IPv4 address %s for host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
@@ -1116,19 +1209,22 @@ def ib_delete_host_ipv6_address(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            log('No host record exists for %s while deleting IPv6 address %s, skipping' % (ib_record['name'], address))
+            log('No host record exists for %s in view %s while deleting IPv6 address %s, skipping' % (ib_record['name'], view, address))
+        elif len(search_results[view]) > 1:
+            critical_log('Multiple host records exist for %s in view %s while deleting IPv6 address %s, should not happen!' % (ib_record['name'], view, address))
         else:
-            ipv6addrs = []
-            for x in search_results[view][0]['ipv6addrs']:
-                if x['ipv6addr'] != address:
-                    ipv6addrs.append(x)
-                elif 'duid' in x:
-                    x['ipv6addr'] = 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
-                    ipv6addrs.append(x)
+            # exactly one result, as expected.
+            search_result = search_results[view][0]
 
+            ipv6addrs = [ ]
+            # preserve DUID if assigned.
+            if 'ipv6addrs' in search_result and 'duid' in search_result['ipv6addrs'][0]:
+                ipv6addrs[0]['duid'] = search_result['ipv6addrs'][0]['duid']
+                ipv6addrs[0]['configure_for_dhcp'] = True
+                          
             ib_record['ipv6addrs'] = ipv6addrs
 
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
@@ -1146,12 +1242,20 @@ def ib_delete_hostrecord(record):
         return
     elif rr_type == 'MX':
         ib_record = mx_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
         primary_rr_value = ib_record['mail_exchanger']
     elif rr_type == 'SRV':
         ib_record = srv_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
         primary_rr_value = ib_record['target']
     elif rr_type == 'TXT':
         ib_record = txt_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
         primary_rr_value = ib_record['text']
     else:
         critical_log('Unexpected RR type %s in ib_delete_hostrecord' % (rr_type))
@@ -1165,18 +1269,23 @@ def ib_delete_hostrecord(record):
 
     for view in views:
         if len(search_results[view]) == 0:
+            if rr_type == 'TXT':
+                # search is stupid
+                search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value.strip('"'))
+        
+        if len(search_results[view]) == 0:
             log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, ib_record['name'], primary_rr_value, view))
         else:
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, ib_record['name'], view))
+                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
                 continue
 
-            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view))
+            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
 
 def ib_delete_delegated_zone(record):
     ib_record = ns_to_ib(record)
@@ -1186,28 +1295,57 @@ def ib_delete_delegated_zone(record):
         log('ib_search_delegated_zone returned error, aborting')
         return
 
+    deleted_delegation = list(ib_record['delegate_to'])
+
     for view in views:
         if len(search_results[view]) == 0:
             log('No delegated zone record for %s exists in view %s, not deleting' % (ib_record['fqdn'], view))
         else:
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
-            delegated_to = [ x for x in search_results[view][0]['delegated_to'] if x not in ib_record['delegated_to']]
-            if len(delegated_to) == 0:
+            new_delegated_to = [ x for x in search_results[view]['delegate_to'] if x not in deleted_delegation ]
+
+            if len(new_delegated_to) == 0:
                 r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
                 if r.status_code != requests.codes.ok:
-                    critical_log('Infoblox API call failed for DELETE in ib_delete_delegated_zone of zone %s view %s' % (ib_record['fqdn'], view))
+                    critical_log('Infoblox API call failed for DELETE in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
-                log('Deleted delegated zone %s in view %s: %s' % (ib_record['fqdn'], view, r.text))
+                log('Deleted delegated zone %s in view %s: %s' % (record[0].lower(), view, r.text))
+
+                # Infoblox nuked our host record when we did this, but Moira might still expect it to exist.  Check and put it back if so.
+                # This case should only come up in a 'real' incremental, where we have the mach_id.
+                if len(record) == 5:
+                    name_results = ib_search_by_name(record[0].lower())
+
+                    if 'error' in name_results:
+                        log('ib_search_by_mach_id returned error, aborting')
+                        return
+
+                    if len(name_results[view]) > 0:
+                        # host record still exists for some reason, which is weird.
+                        critical_log('Infoblox host record for %s in view %s still exists after delegated zone deletion, should not happen!' % (record[0].lower(), view))
+                        return
+                    else:
+                        # No record exists, make one.
+                        hostinfo, = get_moira_host(record[0])
+                        # Reshuffle output of get_host into incremental argv, inserting mach_id.
+                        create_record = [ hostinfo[0], record[4], hostinfo[1], hostinfo[2], hostinfo[3], hostinfo[4], hostinfo[5], hostinfo[6], hostinfo[7],
+                                          hostinfo[9], hostinfo[11], hostinfo[12], hostinfo[13], hostinfo[14] ]
+                        # Since we're already in our view loop, only do this for the current view
+                        ib_create_host(create_record, myviews=[view])
             else:
-                ib_record['delegated_to'] = delegated_to
+                # Infoblox doesn't allow this for updates, even if it hasn't changed.
+                if 'fqdn' in ib_record:
+                    del ib_record['fqdn']
+                
+                ib_record['delegate_to'] = new_delegated_to
                 r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
                 if r.status_code != requests.codes.ok:
-                    critical_log('Infoblox API call failed for PUT in ib_delete_delegated_zone of zone %s view %s' % (ib_record['fqdn'], view))
+                    critical_log('Infoblox API call failed for PUT in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
 
-                log('Updated delegated zone %s to remove delegation to %s in view %s: %s' % (ib_record['fqdn'], record[2], view, r.text))
+                log('Updated delegated zone %s to remove delegation to %s in view %s: %s' % (record[0].lower(), record[2], view, r.text))
         
 def ib_set_aaaa_record_ttl(record):
     ib_record = address_to_ib(record)
@@ -1218,7 +1356,6 @@ def ib_set_aaaa_record_ttl(record):
         return
 
     for view in views:
-        ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No AAAA record exists for name %s address %s in view %s while updating TTL' % (ib_record['name'], ib_record['ipv6addr'], view))
         elif len(search_results[view]) > 1:
@@ -1230,7 +1367,7 @@ def ib_set_aaaa_record_ttl(record):
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                critical_log('Infoblox API call failed in ib_set_aaaa_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv6addr'], view, r.status_code, r.text))
                 continue
 
             log('Updated TTL for AAAA record %s address %s in view %s to %s' % (ib_record['name'], ib_record['ipv6addr'], view, ib_record['ttl']))
@@ -1244,7 +1381,6 @@ def ib_set_a_record_ttl(record):
         return
 
     for view in views:
-        ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No A record exists for name %s address %s in view %s while updating TTL' % (ib_record['name'], ib_record['ipv4addr'], view))
         elif len(search_results[view]) > 1:
@@ -1256,7 +1392,7 @@ def ib_set_a_record_ttl(record):
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                critical_log('Infoblox API call failed in ib_set_a_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv4addr'], view, r.status_code, r.text))
                 continue
 
             log('Updated TTL for A record %s address %s in view %s to %s' % (ib_record['name'], ib_record['ipv4addr'], view, ib_record['ttl']))
@@ -1317,16 +1453,14 @@ def ib_set_record_ttl(record):
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, ib_record['name'], primary_rr_value, view))
-        elif len(search_results[view]) > 1:
-            critical_log('Multiple %s records exist for name %s value %s in view %s while setting TTL, should not happen' % (rr_type, ib_record['name'], primary_rr_value, view))
         else:
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s' % (rr_type, ib_record['name'], view))
+                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
                 continue
 
             log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, ib_record['name'], primary_rr_value, view, ib_record['ttl']))
@@ -1590,13 +1724,23 @@ def do_hostaddress(before, after):
                         ib_set_aaaa_record_ttl(after)
         else:
             # ptr bit changed.
-            if before_ptr == 0 and after_ptr == 1:
-                ib_delete_a_record(before)
-                ib_add_host_ipv4_address(after)
-            elif before_ptr == 1 and after_ptr == 0:
-                ib_delete_host_ipv4_address(before)
-                ib_add_a_record(after)
-            
+            status = int(get_moira_host_status(hostname))
+            if status == 1:
+                if before_ptr == 0 and after_ptr == 1:
+                    if addr_type == 'IPV4':
+                        ib_delete_a_record(before)
+                        ib_add_host_ipv4_address(after)
+                    elif addr_type == 'IPV6':
+                        ib_delete_aaaa_record(before)
+                        ib_add_host_ipv6_address(after)
+                elif before_ptr == 1 and after_ptr == 0:
+                    if addr_type == 'IPV4':
+                        ib_delete_host_ipv4_address(before)
+                        ib_add_a_record(after)
+                    elif addr_type == 'IPV6':
+                        ib_delete_host_ipv6_address(before)
+                        ib_add_aaaa_record(after)
+
 # Handle hostrecord incremental
 def do_hostrecord(before, after):
     # Add
@@ -1615,7 +1759,7 @@ def do_hostrecord(before, after):
         rr_type = before[1]
         if canonical_for_hostname(hostname) == True:
             if rr_type in rr_types:
-                ib_delete_hostrecord(after)
+                ib_delete_hostrecord(before)
             else:
                 log('received incremental for unsupported DNS RR type %s' % (rr_type))
     # Update - only thing that can change is TTL
@@ -1671,22 +1815,15 @@ while True:
     beforev = incrargv[3:3+beforec]
     afterv = incrargv[3+beforec:3+beforec+afterc]
 
-    log('processing an incremental')
-
     if table == 'machine':
-        log('calling do_machine')
         do_machine(beforev, afterv)
     elif table == 'hostalias':
-        log('calling do_hostalias')
         do_hostalias(beforev, afterv)
     elif table == 'hostaddress':
-        log('calling do_hostaddress')
         do_hostaddress(beforev, afterv)
     elif table == 'hostrecord':
-        log('calling do_hostrecord')
         do_hostrecord(beforev, afterv)
     elif table == 'machidentifiermap':
-        log('calling do_machidentifier')
         do_machidentifier(beforev, afterv)
     else:
         error = 'Incremental received on unexpected table %s' % table

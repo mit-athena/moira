@@ -171,7 +171,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       strcpy(before[1], argv[1]);
       strcpy(before[2], argv[2]);
       EXEC SQL SELECT ttl INTO :ttl FROM hostrecord
-	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = :argv[2];
+	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = UPPER(:argv[2]);
       sprintf(before[3], "%d", ttl);
       sprintf(before[4], "%d", id);
       beforec = 5;
@@ -448,7 +448,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
       strcpy(after[1], argv[1]);
       strcpy(after[2], argv[2]);
       EXEC SQL SELECT ttl INTO :ttl FROM hostrecord
-	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = :argv[2];
+	WHERE mach_id = :id AND rr_type = :argv[1] AND rr_value = UPPER(:argv[2]);
       sprintf(after[3], "%d", ttl);
       sprintf(after[4], "%d", id);
       afterc = 5;

@@ -1487,17 +1487,19 @@ def ib_set_delegated_zone_ttl(record):
         ib_record['view'] = view
         if len(search_results[view]) == 0:
             critical_log('No delegated zone record for %s exists in view %s while setting TTL' % (zonename, view))
-        elif len(search_results[view]) > 1:
-            critical_log('Multiple delegated zone records exist for %s in view %s while setting TTL, should not happen' % (zonename, view))
         else:
-            ib_ref = search_results[view][0]['_ref']
+            ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
+
+            # Infoblox doesn't allow this for updates, even if it hasn't changed.
+            if 'fqdn' in ib_record:
+                del ib_record['fqdn']
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
 
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed setting TTL for delegated zone %s view %s' % (zonename, view))
+                critical_log('Infoblox API call failed setting TTL for delegated zone %s view %s with HTTP return %s: %s' % (zonename, view, r.status_code, r.text))
                 continue
 
             log('Updated TTL for delegated zone %s in view %s to %s' % (zonename, view, ttl))

@@ -1045,6 +1045,39 @@ int access_machidentifier(struct query *q, char *argv[], client *cl)
   return MR_PERM;
 }
 
+int access_uhp4(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid, moid, soid;
+  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  char address[HOSTADDRESS_ADDRESS_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  mid = *(int *)argv[0];
+
+  /* Host owner? */
+  EXEC SQL SELECT m.owner_type, m.owner_id INTO :mtype, :moid FROM machine m where mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  status = find_member(mtype, moid,cl);
+  if (status)
+    return MR_SUCCESS;
+
+  /* Owner of subnet containing primary v4 address */
+  EXEC SQL SELECT s.owner_type, s.owner_id INTO :stype, :soid FROM hostaddress ha, subnet s
+    WHERE ha.mach_id = :mid AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4';
+  if (dbms_errno)
+    return mr_errcode;
+
+  status = find_member(stype, soid, cl);
+  if (status)
+    return MR_SUCCESS;
+
+  return MR_PERM;
+}
+
 /* access_snt - check for retrieving network structure
  */
 

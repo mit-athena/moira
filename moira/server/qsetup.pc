@@ -1362,7 +1362,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   if (row == 1)
     {
       EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord
-	WHERE mach_id = :id;
+	WHERE mach_id = :id AND rr_type = 'NS';
       if (dbms_errno)
 	return mr_errcode;
       if (cnt != 0)
@@ -1410,7 +1410,7 @@ int setup_ahal(struct query *q, char **argv, client *cl)
     return MR_EXISTS;
 
   /* No aliases if you have NS records / are a delegated zone */
-  EXEC SQL SELECT count(mach_id) INTO :cnt FROM hostrecord hr, machine m
+  EXEC SQL SELECT count(*) INTO :cnt FROM hostrecord hr, machine m
     WHERE m.name = UPPER(:name) AND m.mach_id = hr.mach_id AND hr.rr_type = 'NS';
   if (dbms_errno)
     return mr_errcode;
@@ -1666,6 +1666,26 @@ int setup_ahad(struct query *q, char **argv, client *cl)
 	  strcpy(argv[2], buf6);
 	}
     }
+
+  return MR_SUCCESS;
+}
+
+int setup_uhp4(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid;
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+
+  /* Host must have 1 IPv4 address marked as primary on a subnet ending in -PRIVATE */
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, subnet s WHERE
+    ha.mach_id = :mid and ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND s.name LIKE '%-PRIVATE';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt != 1)
+    return MR_ADDRESS;
 
   return MR_SUCCESS;
 }

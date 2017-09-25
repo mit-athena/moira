@@ -125,9 +125,6 @@ def mach_to_ib(record):
     
     ib_host_record = {
         'name' : record[0].lower(),
-        'ttl' : default_ttl,
-        'use_ttl' : False,
-        'disable' : False,
         'extattrs' : extattrs
         }
 
@@ -196,9 +193,12 @@ def ib_create_host(record, myviews=None):
         log('ib_search_by_name returned error, aborting')
         return
 
-    # For creation, use dummy IPs.
+    # For creation, use dummy v4 IP and default TTL.
     ib_record['ipv4addrs'] = [ { 'ipv4addr' : '0.0.0.0' } ]
     ib_record['ipv6addrs'] = [ ]
+    ib_record['ttl'] = default_ttl
+    ib_record['use_ttl'] = False
+    ib_record['disable'] = True
 
     if myviews == None:
         myviews = views
@@ -279,7 +279,7 @@ def ib_update_host(before, after):
             critical_log('Record already exists in view %s for new name %s, old name %s' % (view, before_record['name'], after_record['name']))
         elif len(mach_id_results[view]) == 0:
             log('No record exists for mach id %s in view %s, creating' % (moira_mach_id, view))
-            ib_create_host(after)
+            ib_create_host(after, myviews=view)
         elif len(mach_id_results[view]) > 1:
             critical_log('Mutiple records exist for mach_id %s in view %s, should not happen!' % (moira_mach_id, view))
         elif mach_id_results[view][0]['extattrs']['moira_managed']['value'] != 1:
@@ -536,7 +536,11 @@ def ib_add_host_duid(record):
         else:
             search_result = search_results[view][0]
 
-            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
+            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
+                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
+            else:
+                ipv6addrs = [ {} ]
+
             ipv6addrs[0]['duid'] = id_value
             ipv6addrs[0]['configure_for_dhcp'] = True
 
@@ -593,7 +597,7 @@ def ib_add_host_mac(record):
             log('Added %s %s to host %s in view %s: %s' % (id_type, id_value, ib_record['name'], view, r.text))
 
 def ib_add_host_ipv4_address(record):
-    ib_record = { 'name' : record[0].lower() }
+    ib_record = { 'name' : record[0].lower(), 'disable' : False }
 
     ttl = int(record[4])
     if ttl == default_ttl:
@@ -626,7 +630,7 @@ def ib_add_host_ipv4_address(record):
 
             ipv4addrs = [ { 'ipv4addr' : address } ]
             # preserve MAC address if assigned.
-            if 'mac' in search_result['ipv4addrs'][0]:
+            if 'ipv4addrs' in search_result and 'mac' in search_result['ipv4addrs'][0]:
                 ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
                 ipv4addrs[0]['configure_for_dhcp'] = True
 
@@ -644,7 +648,7 @@ def ib_add_host_ipv4_address(record):
             log('Added IPv4 address %s to host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
 
 def ib_add_host_ipv6_address(record):
-    ib_record = { 'name' : record[0].lower() }
+    ib_record = { 'name' : record[0].lower(), 'disable' : False }
 
     ttl = int(record[4])
     if ttl == default_ttl:
@@ -682,6 +686,10 @@ def ib_add_host_ipv6_address(record):
                 ipv6addrs[0]['configure_for_dhcp'] = True
 
             ib_record['ipv6addrs'] = ipv6addrs
+
+            # Handle v6 only case; if v4 address is set to 0.0.0.0, set it to empty array.
+            if 'ipv4addrs' in search_result and search_result['ipv4addrs'][0]['ipv4addr'] == '0.0.0.0':
+                ib_record['ipv4addrs'] = []
 
             ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
@@ -1091,7 +1099,10 @@ def ib_delete_host_duid(record):
         else:
             search_result = search_results[view][0]
 
-            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
+            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
+                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
+            else:
+                ipv6addrs = [ {} ]
 
             if 'duid' in search_result['ipv6addrs'][0]:
                 if search_result['ipv6addrs'][0]['duid'] == id_value:
@@ -1178,11 +1189,16 @@ def ib_delete_host_ipv4_address(record):
             # exactly one result, as expected.
             search_result = search_results[view][0]
 
-            ipv4addrs = [ { 'ipv4addr' : '0.0.0.0' } ]
-            # preserve MAC address if assigned.
-            if 'mac' in search_result['ipv4addrs'][0]:
-                ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
-                ipv4addrs[0]['configure_for_dhcp'] = True
+            # Do we still have a v6 address assigned?
+            if 'ipv6addrs' in search_result and search_result['ipv6addrs'][0]['ipv6addr'] != '::':
+                ipv4addrs = []
+            else:
+                ipv4addrs = [ { 'ipv4addr' : '0.0.0.0' } ]
+                # preserve MAC address if assigned.
+                if 'mac' in search_result['ipv4addrs'][0]:
+                    ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
+                    ipv4addrs[0]['configure_for_dhcp'] = True
+                    ib_record['disable'] = True
 
             ib_record['ipv4addrs'] = ipv4addrs
 
@@ -1219,10 +1235,18 @@ def ib_delete_host_ipv6_address(record):
             ipv6addrs = [ ]
             # preserve DUID if assigned.
             if 'ipv6addrs' in search_result and 'duid' in search_result['ipv6addrs'][0]:
+                ipv6addrs[0] = {}
                 ipv6addrs[0]['duid'] = search_result['ipv6addrs'][0]['duid']
                 ipv6addrs[0]['configure_for_dhcp'] = True
                           
             ib_record['ipv6addrs'] = ipv6addrs
+
+            # Do we still have a valid v4 address?
+            if 'ipv4addrs' not in search_result:
+                ib_record['ipv4addrs'] = [ { 'ipv4addr' : '0.0.0.0' } ]
+                ib_record['disable'] = True
+            elif 'ipv4addrs' in search_result and search_result['ipv4addrs'][0]['ipv4addr'] == '0.0.0.0':
+                ib_record['disable'] = True
 
             ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
@@ -1230,7 +1254,7 @@ def ib_delete_host_ipv6_address(record):
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                critical_log('Infoblox API call failed in ib_delete_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
 
             log('Deleted IPv6 address %s for host %s in view %s: %s' % (address, ib_record['name'], view, r.text))
@@ -1577,31 +1601,33 @@ def do_machine(before, after):
                                 ib_add_aaaa_record(record)
 
                     # host records
-                    for record in get_moira_host_records(hostname):
+                    for record in get_moira_hostrecords(hostname):
                         ib_add_hostrecord(record)
 
                     # mach identifiers
-                    for record in get_moira_mach_identifiers(hostname):
+                    for record in get_moira_host_identifiers(hostname):
                         ib_add_host_identifier(record)
                 else:
                     for record in get_moira_hostaliases(hostname):
                         ib_add_cname(record)
 
             else:
-                # active before and after, update host record
-                ib_update_host(before, after)
-
-                # If hostname changed, need to handle other bits of information
+                # active before and after
                 before_hostname = before[0]
                 after_hostname = after[0]
 
+                canon_before = canonical_for_hostname(before_hostname)
+                canon_after = canonical_for_hostname(after_hostname)
+
+                # If hostname changed, need to handle other bits of information
                 if before_hostname != after_hostname:
 
-                    canon_before = canonical_for_hostname(before_hostname)
-                    canon_after = canonical_for_hostname(after_hostname)
-
                     # If we're no longer canonical, delete the host object.
-                    if canon_before == True and canon_after == False:
+                    if canon_before == True and canon_after == True:
+                        ib_update_host(before, after)
+                    elif canon_before == False and canon_after == True:
+                        ib_create_host(after)
+                    elif canon_after == False:
                         ib_delete_host(before)
                                
                     # Host records
@@ -1609,8 +1635,9 @@ def do_machine(before, after):
                         if canon_after == True:
                             ib_add_hostrecord(record)
                         if canon_before == True:
-                            record[0] = before_hostname
-                            ib_delete_hostrecord(record)
+                            recordlist = list(record)
+                            recordlist[0] = before_hostname
+                            ib_delete_hostrecord(recordlist)
 
                     # CNAMEs.  Aliases directly associated with the host record
                     # will have moved as part of ib_update_host()
@@ -1618,13 +1645,15 @@ def do_machine(before, after):
                         if canon_before == True and canon_after == False:
                             ib_add_cname(record)
                         elif canon_before == False and canon_after == True:
+                            recordlist = list(record)
+                            recordlist[1] = before_hostname
+                            ib_delete_cname(recordlist)
                             ib_add_host_alias(record)
-                            record[0] = before_hostname
-                            ib_delete_cname(record)
                         elif canon_before == False and canon_after == False:
                             ib_add_cname(record)
-                            record[0] = before_hostname
-                            ib_delete_cname(record)
+                            recordlist = list(record)
+                            recordlist[1] = before_hostname
+                            ib_delete_cname(recordlist)
 
                     # Host addreses        
                     for record in get_moira_hostaddresses(after_hostname):
@@ -1639,23 +1668,26 @@ def do_machine(before, after):
                                 elif addr_type == 'IPV6':
                                     ib_add_aaaa_record(record)
                         if canon_before == True:
-                            record[0] = before_hostname
+                            recordlist = list(record)
+                            recordlist[0] = before_hostname
                             if has_ptr == 0:
                                 if addr_type == 'IPV4':
-                                    ib_delete_a_record(record)
+                                    ib_delete_a_record(recordlist)
                                 elif addr_type == 'IPV6':
-                                    ib_delete_aaaa_record(record)
+                                    ib_delete_aaaa_record(recordlist)
+                else:
+                    ib_update_host(before, after)
 
 # Handle hostalias incremental
 def do_hostalias(before, after):
     # Add
     if before == []:
         hostname = after[1]
-        if canonical_for_hostname(hostname) == True:
-            ib_add_host_alias(after)
-        else:
-            status = int(get_moira_host_status(hostname))
-            if status == 1:
+        status = int(get_moira_host_status(hostname))
+        if status == 1:
+            if canonical_for_hostname(hostname) == True:
+                ib_add_host_alias(after)
+            else:
                 ib_add_cname(after)
     # Delete
     elif after == []:
@@ -1663,9 +1695,7 @@ def do_hostalias(before, after):
         if canonical_for_hostname(hostname) == True:
             ib_delete_host_alias(before)
         else:
-            status = int(get_moira_host_status(hostname))
-            if status == 1:
-                ib_delete_cname(before)
+            ib_delete_cname(before)
     # update case with both before and after not empty can't happen
 
 # Handle hostaddress incremental
@@ -1675,7 +1705,8 @@ def do_hostaddress(before, after):
         hostname = after[0]
         has_ptr = int(after[5])
         addr_type = after[2]
-        if canonical_for_hostname(hostname) == True:
+        status = int(get_moira_host_status(hostname))
+        if status == 1 and canonical_for_hostname(hostname) == True:
             if has_ptr == 1:
                 if addr_type == 'IPV4':
                     ib_add_host_ipv4_address(after)
@@ -1706,27 +1737,25 @@ def do_hostaddress(before, after):
                         ib_delete_a_record(before)
                     elif addr_type == 'IPV6':
                         ib_delete_aaaa_record(before)
-    # Update - TTL or PTR bit might change, but never both at the same time.
+    # Update - TTL, PTR, or address might change, but only one at a time.
     else:
         hostname = after[0]
         before_ptr = int(before[5])
         after_ptr = int(after[5])
         addr_type = after[2]
+        before_address = before[3]
+        after_address = after[3]
 
-        if before_ptr == after_ptr:
-            # if here, ttl must have changed.
-            if after_ptr == 1:
-                ib_set_host_ttl(after)
-            else:
-                status = int(get_moira_host_status(hostname))
-                if status == 1:
-                    if addr_type == 'IPV4':
-                        ib_set_a_record_ttl(after)
-                    elif addr_type == 'IPV6':
-                        ib_set_aaaa_record_ttl(after)
-        else:
+        status = int(get_moira_host_status(hostname))
+
+        if before_address != after_address:
+            # This can only change if we're upgrading a host to a public address.
+            # Otherwise it would be a delete and an add.
+            if status == 1:
+                ib_delete_host_ipv4_address(before)
+                ib_add_host_ipv4_address(after)
+        elif before_ptr != after_ptr:
             # ptr bit changed.
-            status = int(get_moira_host_status(hostname))
             if status == 1:
                 if before_ptr == 0 and after_ptr == 1:
                     if addr_type == 'IPV4':
@@ -1742,6 +1771,16 @@ def do_hostaddress(before, after):
                     elif addr_type == 'IPV6':
                         ib_delete_host_ipv6_address(before)
                         ib_add_aaaa_record(after)
+        else:
+            # if here, ttl must have changed.
+            if status == 1:
+                if after_ptr == 1:
+                    ib_set_host_ttl(after)
+                else:
+                    if addr_type == 'IPV4':
+                        ib_set_a_record_ttl(after)
+                    elif addr_type == 'IPV6':
+                        ib_set_aaaa_record_ttl(after)
 
 # Handle hostrecord incremental
 def do_hostrecord(before, after):
@@ -1766,11 +1805,14 @@ def do_hostrecord(before, after):
                 log('received incremental for unsupported DNS RR type %s' % (rr_type))
     # Update - only thing that can change is TTL
     else:
+        hostname = after[0]
         rr_type = after[1]
-        if rr_type in rr_types:
-            ib_set_record_ttl(after)
-        else:
-            log('received incremental for unsupported DNS RR type %s' % (rr_type))
+        status = int(get_moira_host_status(hostname))
+        if status == 1 and canonical_for_hostname(hostname) == True:
+            if rr_type in rr_types:
+                ib_set_record_ttl(after)
+            else:
+                log('received incremental for unsupported DNS RR type %s' % (rr_type))
 
 # Handle machidentifier incremental
 def do_machidentifier(before, after):

@@ -2305,6 +2305,22 @@ static struct validate dhad_validate = {
   followup_dhad,
 };
 
+static char *uhp4_fields[] = {
+  "name",
+};
+
+static struct validate uhp4_validate = {
+  VOmach0,
+  1,
+  0,
+  0,
+  0,
+  "mach_id",
+  access_uhp4,
+  setup_uhp4,
+  upgrade_host_private_ipv4_addr,
+};
+
 static char *ghrr_fields[] = {
   "name", "rr_type",
   "name", "rr_type", "rr_value", "ttl",
@@ -7697,6 +7713,24 @@ struct query Queries[] = {
     0,
     NULL,
     &ahad_validate,
+  },
+
+  {
+    /* Q_UPGRADE_HOST_PRIVATE_IPV4_ADDR */
+    "upgrade_host_private_ipv4_addr",
+    "uhp4",
+    17,
+    MR_Q_UPDATE,
+    0,
+    HOSTADDRESS_TABLE,
+    0,
+    uhp4_fields,
+    1,
+    1,
+    NULL,
+    0,
+    NULL,
+    &uhp4_validate,
   },
 
   {

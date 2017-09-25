@@ -172,6 +172,7 @@ int access_adhr(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
 int access_ahad(struct query *q, char *argv[], client *cl);
 int access_machidentifier(struct query *q, char *argv[], client *cl);
+int access_uhp4(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
 int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
@@ -270,6 +271,7 @@ int setup_ghst(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
 int setup_ahad(struct query *q, char *argv[], client *cl);
+int setup_uhp4(struct query *q, char *argv[], client *cl);
 int setup_srrt(struct query *q, char *argv[], client *cl);
 int setup_shap(struct query *q, char *argv[], client *cl);
 int setup_ahid(struct query *q, char *argv[], client *cl);
@@ -294,7 +296,7 @@ int do_user_reservation(struct query *q, char *argv[], client *cl);
 int update_container(struct query *q, char *argv[], client *cl);
 int set_container_list(struct query *q, char *argv[], client *cl);
 int update_user_password_expiration(struct query *q, char *argv[], client *cl);
-
+int upgrade_host_private_ipv4_addr(struct query *q, char *argv[], client *cl);
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
 int get_host_by_owner(struct query *q, char **argv, client *cl,

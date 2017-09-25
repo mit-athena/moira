@@ -55,7 +55,7 @@ int list_container_flag, update_container_flag, unformatted_flag;
 int list_identifier_flag, update_identifier_flag;
 int list_resource_records_flag, update_resource_records_flag;
 int set_host_opt_flag, set_ttl_flag, set_ptr_flag;
-int add_dynamic_host_flag, show_host_usage_flag;
+int add_dynamic_host_flag, show_host_usage_flag, upgrade_priv_addr_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *address_add_queue, *address_remove_queue;
@@ -105,6 +105,7 @@ int main(int argc, char **argv)
   list_container_flag = update_container_flag = list_resource_records_flag = 0;
   list_identifier_flag = update_identifier_flag = show_host_usage_flag = 0;
   set_host_opt_flag = set_ttl_flag = set_ptr_flag = add_dynamic_host_flag = 0;
+  upgrade_priv_addr_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = account_number = adm_cmt = NULL;
   op_cmt = opt = NULL;
@@ -384,6 +385,8 @@ int main(int argc, char **argv)
 	    list_resource_records_flag++;
 	  else if (argis("su", "showusage"))
 	    show_host_usage_flag++;
+	  else if (argis("up4", "upgradeprivaddr"))
+	    upgrade_priv_addr_flag++;
 	  else if (argis("adh", "adddynamic")) {
 	    add_dynamic_host_flag++;
             if (arg - argv < argc - 1) {
@@ -439,7 +442,7 @@ int main(int argc, char **argv)
        update_alias_flag || update_address_flag || update_container_flag || \
        list_container_flag || update_identifier_flag || list_identifier_flag || \
        update_resource_records_flag || list_resource_records_flag || set_host_opt_flag || \
-       set_ttl_flag || set_ptr_flag || add_dynamic_host_flag || show_host_usage_flag)) {
+       set_ttl_flag || set_ptr_flag || add_dynamic_host_flag || show_host_usage_flag || upgrade_priv_addr_flag)) {
     info_flag++;
   }
 
@@ -448,7 +451,7 @@ int main(int argc, char **argv)
 				update_alias_flag || update_address_flag || update_container_flag || \
 				list_container_flag || update_identifier_flag || list_resource_records_flag || \
 				update_resource_records_flag || list_identifier_flag || set_host_opt_flag || \
-				set_ttl_flag || set_ptr_flag ||	show_host_usage_flag))
+				set_ttl_flag || set_ptr_flag ||	show_host_usage_flag || upgrade_priv_addr_flag))
     {
       com_err(whoami, 0, "-adh / -adddynamic option must be the only argument provided.");
       exit(1);
@@ -719,6 +722,35 @@ int main(int argc, char **argv)
     }
   }
 
+  /* Need to process address removals first */
+  if (address_remove_queue) {
+    struct string_list *q = address_remove_queue;
+
+    while (q) {
+      /* string is of the form network:address */
+      struct mrcl_netaddr_type *netaddr;
+      char *args[3];
+
+      netaddr = mrcl_parse_netaddr(q->string);
+      if (!netaddr)
+        {
+          com_err(whoami, 0, "Could not parse network address specification while removing host address.");
+          exit(1);
+        }
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = netaddr->network;
+      args[2] = netaddr->address;
+
+      status = wrap_mr_query("delete_host_address", 3, args, NULL, NULL);
+      if (status) {
+        com_err(whoami, status, "while removing host address");
+        exit(1);
+      }
+      q = q->next;
+    }
+  }
+
   if (address_add_queue) {
     struct string_list *q = address_add_queue;
 
@@ -744,34 +776,6 @@ int main(int argc, char **argv)
 	exit(1);
       }
 
-      q = q->next;
-    }
-  }
-
-  if (address_remove_queue) {
-    struct string_list *q = address_remove_queue;
-
-    while (q) {
-      /* string is of the form network:address */
-      struct mrcl_netaddr_type *netaddr;
-      char *args[3];
-
-      netaddr = mrcl_parse_netaddr(q->string);
-      if (!netaddr)
-	{
-	  com_err(whoami, 0, "Could not parse network address specification while removing host address.");
-	  exit(1);
-	}
-
-      args[0] = canonicalize_hostname(strdup(hostname));
-      args[1] = netaddr->network;
-      args[2] = netaddr->address;
-
-      status = wrap_mr_query("delete_host_address", 3, args, NULL, NULL);
-      if (status) {
-	com_err(whoami, status, "while removing host address");
-	exit(1);
-      }
       q = q->next;
     }
   }
@@ -1102,6 +1106,21 @@ int main(int argc, char **argv)
 	}
     }
 
+  /* upgrade private address */
+  if (upgrade_priv_addr_flag)
+    {
+      char *argv[1];
+
+      argv[0] = canonicalize_hostname(strdup(hostname));
+
+      status = wrap_mr_query("upgrade_host_private_ipv4_addr", 1, argv, NULL, NULL);
+      if (status)
+	if (status != MR_NO_MATCH) {
+	  com_err(whoami, status, "while upgrading host private IPv4 address");
+	  exit(1);
+	}
+    }
+
   if (set_host_opt_flag) {
     char *argv[3];
 
@@ -1310,7 +1329,9 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-arr | -addrecord record",
 	  "-drr | -delrecord record");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lrr | -listrecords",
-	  "-db  | -database host[:port]");
+	  "-up4  | -upgradeprivaddr");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-db  | -database host[:port]",
+	  "");
   exit(1);
 }
 
@@ -1344,10 +1365,8 @@ int show_address_info(int argc, char **argv, void *hint)
 {
   char tbuf[BUFSIZ];
 
-  sprintf(tbuf, "%s:%s", argv[2], argv[3]);
-  printf("Address:  %-16s    Network:    %-16s", tbuf, argv[1]);
-  if (atoi(argv[5]) == 1)
-    printf("    PTR record: yes");
+  sprintf(tbuf, "%s:%s%s", argv[2], argv[3], atoi(argv[5]) == 1 ? "*" : "");
+  printf("Address:  %-24s    Network:    %-16s", tbuf, argv[1]);
   if (atoi(argv[4]) != DEFAULT_TTL)
     printf("    DNS TTL:  %-16s", argv[4]);
   printf("\n");
@@ -1445,17 +1464,17 @@ void show_host_info(char **argv)
 
   sprintf(tbuf, "%s %s", argv[M_OWNER_TYPE],
           strcmp(argv[M_OWNER_TYPE], "NONE") ? argv[M_OWNER_NAME] : "");
-  printf("Owner:    %-16s    Use data:   %s\n", tbuf, argv[M_INUSE]);
-  printf("Status:   %-16s    Changed:    %s\n",
+  printf("Owner:    %-24s    Use data:   %s\n", tbuf, argv[M_INUSE]);
+  printf("Status:   %-24s    Changed:    %s\n",
           MacState(atoi(argv[M_STAT])), argv[M_STAT_CHNG]);
   printf("\n");
-  printf("Vendor:   %-16s    Location:        %s\n", argv[M_VENDOR], 
+  printf("Vendor:   %-24s    Location:        %s\n", argv[M_VENDOR], 
 	 argv[M_LOC]);
-  printf("Model:    %-16s    Contact:         %s\n", argv[M_MODEL], 
+  printf("Model:    %-24s    Contact:         %s\n", argv[M_MODEL], 
 	 argv[M_CONTACT]);
-  printf("OS:       %-16s    Billing Contact: %s\n", argv[M_OS], 
+  printf("OS:       %-24s    Billing Contact: %s\n", argv[M_OS], 
 	 argv[M_BILL_CONTACT]);
-  printf("Opt:      %-16s    Account Number:  %s\n", argv[M_USE],
+  printf("Opt:      %-24s    Account Number:  %s\n", argv[M_USE],
 	 argv[M_ACCT_NUMBER]);
   printf("\nAdm cmt: %s\n", argv[M_ACOMMENT]);
   printf("Op cmt:  %s\n", argv[M_OCOMMENT]);

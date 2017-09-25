@@ -2966,3 +2966,125 @@ int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
 
   return MR_SUCCESS;
 }
+
+int upgrade_host_private_ipv4_addr(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid, public_sid, mask, table, ttl;
+  char sname[SUBNET_NAME_SIZE], public_sname[SUBNET_NAME_SIZE];
+  char address[HOSTADDRESS_ADDRESS_SIZE], public_address[HOSTADDRESS_ADDRESS_SIZE];
+  char saddr[SUBNET_SADDR_SIZE], high[SUBNET_HIGH_SIZE], low[SUBNET_LOW_SIZE];
+  char buf[INET_ADDRSTRLEN];
+  EXEC SQL END DECLARE SECTION;
+  struct sockaddr_in sa, saddr_sa, mask_sa, low_sa, high_sa;
+  unsigned int isaddr, imask, ihigh, ilow, value;
+  int status;
+  char *maskstr, *incr_argv[3];;
+
+  mid = *(int *)argv[0];
+  table = q->rtable;
+
+  /* Get existing private address.  This must return only one row if we got this far. */
+  EXEC SQL SELECT ha.address, s.name, s.snet_id, ha.ttl INTO :address, :sname, :sid, :ttl
+    FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid AND ha.ptr = 1 
+    AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND s.name LIKE '%-PRIVATE';
+  if (dbms_errno)
+    return mr_errcode;
+
+  strmove(address, strtrim(address));
+  strmove(sname, strtrim(sname));
+
+  /* Get informtion for corresponding public subnet */
+  strcpy(public_sname, sname);
+  public_sname[strlen(sname) - strlen("-PRIVATE")] = '\0';
+  EXEC SQL SELECT snet_id INTO :public_sid FROM SUBNET WHERE name = :public_sname;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Generate a unique address on the public subnet */
+  EXEC SQL SELECT saddr, mask, low, high INTO :saddr, :mask, :low, :high FROM subnet
+    WHERE snet_id = :public_sid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* First, convert subnet strings into something we can work with */
+  if (inet_pton(AF_INET, strtrim(saddr), &(saddr_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  /* mask - bit size, not string */
+  maskstr = masksize_to_mask("IPV4", mask);
+  if (!maskstr)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, maskstr, &(mask_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, strtrim(low), &(low_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, strtrim(high), &(high_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  isaddr = ntohl(saddr_sa.sin_addr.s_addr);
+  imask = ntohl(mask_sa.sin_addr.s_addr);
+  ilow = ntohl(low_sa.sin_addr.s_addr);
+  ihigh = ntohl(high_sa.sin_addr.s_addr);
+
+  for (value = ilow; value <= ihigh; value++)
+    {
+      if (((value & 0xff) == 0) || ((value & 0xff) == 255))
+	continue;
+
+      sa.sin_addr.s_addr = htonl(value);
+      if (inet_ntop(AF_INET, &(sa.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+	return MR_ADDRESS;
+
+      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+	WHERE address = :buf;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt == 0)
+	break;
+    }
+
+  if (cnt != 0)
+    return MR_NO_ID;
+  else
+    strcpy(public_address, buf);
+
+  /* Build "before" incremental argv */
+  incr_argv[0] = xmalloc(0);
+  status = id_to_name(mid, MACHINE_TABLE, &incr_argv[0]);
+  if (status)
+    return status;
+
+  incr_argv[1] = address;
+  incr_argv[2] = sname;
+
+  incremental_before(table, NULL, incr_argv);
+
+  /* Delete old host address record */
+  EXEC SQL DELETE FROM hostaddress WHERE mach_id = :mid
+    AND address = :address AND snet_id = :sid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Insert new record */
+  EXEC SQL INSERT INTO HOSTADDRESS (mach_id, snet_id, address, ttl, ptr)
+    VALUES (:mid, :public_sid, :public_address, :ttl, 1);
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Build "after" incremental argv, argv[0] remains the same */
+  incr_argv[1] = public_address;
+  incr_argv[2] = public_sname;
+
+  incremental_after(table, NULL, incr_argv);
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
+
+  return MR_SUCCESS;
+}

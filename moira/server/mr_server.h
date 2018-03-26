@@ -70,6 +70,9 @@ extern int newqueries;
 #define MIN_VLAN_VALUE 1
 #define MAX_VLAN_VALUE 4095
 
+/* DNS constants */
+#define MAX_TTL_VALUE 2147483647
+
 /* IPv6 constants */
 #define MIN_IPV6_ADDR "::"
 #define MAX_IPV6_ADDR "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
@@ -303,7 +306,7 @@ int get_host_by_owner(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
 int get_host_usage(struct query *q, char **argv, client *cl,
 		   int (*action)(int, char *[], void *), void *actarg);
-int get_user_account_by_sponsor(struct query *q, char **argv, client *cl,
+int get_sponsored_user_accounts(struct query *q, char **argv, client *cl,
 				int (*action)(int, char *[], void *),
 				void *actarg);
 int qualified_get_lists(struct query *q, char **argv, client *cl,

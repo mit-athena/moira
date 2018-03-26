@@ -827,15 +827,18 @@ int access_host(struct query *q, char *argv[], client *cl)
 }
 
 /* access_ahal - check for adding a host alias.
- * successful if host has less then 2 aliases and (client is owner of
- * host or subnet).
+ *
+ * successful if host has fewer then 2 aliases or is exempt from alias
+ * limit via membership on ahal capacl and user is either the host or
+ * subnet owner.
+ *
  * If deleting an alias, any owner will do.
  */
 
 int access_ahal(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt, id, mid;
+  int cnt, id, mid, lid;
   char mtype[MACHINE_OWNER_TYPE_SIZE];
   char account_number[MACHINE_ACCOUNT_NUMBER_SIZE];
   char login[USERS_LOGIN_SIZE];
@@ -848,21 +851,43 @@ int access_ahal(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[1];
 
-  if (q->type == MR_Q_APPEND && isdigit(argv[0][0]))
-    return MR_BAD_CHAR;
+  if (q->type == MR_Q_APPEND)
+    {
+      /* added aliases can't begin with a leading digit */
+      if (isdigit(argv[0][0]))
+	return MR_BAD_CHAR;
 
-  if (q->type == MR_Q_APPEND && !strncasecmp(argv[0], "HOSTLESS-", 9))
-    return MR_RESERVED;
+      /* No aliases in our reserved namespace */
+      if (!strncasecmp(argv[0], "HOSTLESS-", 9))
+	return MR_RESERVED;
 
-  EXEC SQL SELECT count(name) INTO :cnt from hostalias WHERE mach_id = :id;
-  if (dbms_errno)
-    return mr_errcode;
-  /* if the type is MR_Q_APPEND, this is ahal and we need to make sure there
-   * will be no more than 2 aliases.  If it's not, it must be dhal and
-   * any owner will do.
-   */
-  if (q->type == MR_Q_APPEND && cnt >= 2)
-    return MR_PERM;
+      /* Hackish, but convenient and fun: if the MACHINE record we're modifying
+       * is a member of the ahal capacl, then exempt it from the requirement that
+       * host / subnet owners can only add at most 2 aliases to records they're
+       * authorized to maintain.
+       */
+
+      /* get list_id for ahal capacl */
+      EXEC SQL SELECT list_id INTO :lid FROM capacls WHERE tag = :q->shortname;
+      if (dbms_errno)
+	return mr_errcode;
+
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM imembers WHERE list_id = :lid
+	AND member_type = 'MACHINE' and member_id = :id;
+      if (dbms_errno)
+	return mr_errcode;
+
+      /* not a member, perform access check */
+      if (cnt == 0)
+	{
+	  EXEC SQL SELECT count(name) INTO :cnt from hostalias WHERE mach_id = :id;
+	  if (dbms_errno)
+	    return mr_errcode;
+
+	  if (cnt >= 2)
+	    return MR_PERM;
+	}
+    }
 
   EXEC SQL SELECT m.owner_type, m.owner_id, m.account_number
     INTO :mtype, :mid, :account_number FROM machine m WHERE m.mach_id = :id;

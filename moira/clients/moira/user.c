@@ -1300,7 +1300,7 @@ struct mqelem *GetUserBySponsor(char *type, char *name)
 
   args[0] = type;
   args[1] = name;
-  if ((status = do_mr_query("get_user_account_by_sponsor", 2, args, StoreInfo,
+  if ((status = do_mr_query("get_sponsored_user_accounts", 2, args, StoreInfo,
 			    &elem)))
     {
       com_err(program_name, status, " in get_user_account_by_sponsor");

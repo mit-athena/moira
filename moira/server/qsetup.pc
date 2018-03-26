@@ -76,14 +76,19 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
 	return MR_PERM;
     }
 
-  /* Don't allow usernames to contain anything but lower case letters,                                                
-   * numbers, or underscores.  First character must be lowercase letter.
+  /* Don't allow usernames to contain anything but lower case letters,
+   * numbers, or underscores.  First character must be lowercase letter or '#'.
    */
   if (strcmp(argv[row - 1], UNIQUE_LOGIN))
     {
-      if (!islower(argv[row - 1][0]))
+      p = argv[row - 1];
+
+      if (!islower(*p) && *p != '#')
 	return MR_BAD_CHAR;
-      for (p = argv[row - 1]; *p; p++)
+
+      /* Check rest of login name */
+      p++;
+      for (p; *p; p++)
 	{
 	  if (!(islower(*p) || isdigit(*p) || *p == '_'))
 	    return MR_BAD_CHAR;
@@ -622,6 +627,10 @@ int setup_alis(struct query *q, char *argv[], client *cl)
       if (badlistchars[*p])
 	return MR_BAD_CHAR;
     }
+
+  /* Don't allow _ as a leading character */
+  if (name[0] == '_')
+    return MR_BAD_CHAR;
 
   for (p = (unsigned char *) desc; *p; p++)
     {
@@ -1693,7 +1702,6 @@ int setup_uhp4(struct query *q, char **argv, client *cl)
 int setup_srrt(struct query *q, char **argv, client *cl)
 {
   char *p;
-
   if (!strcmp(argv[3], "default"))
     sprintf(argv[3], "%d", DEFAULT_TTL);
 
@@ -1703,6 +1711,9 @@ int setup_srrt(struct query *q, char **argv, client *cl)
       if (*p < '0' || *p > '9')
 	return MR_INTEGER;
     }
+
+  if (atoll(argv[3]) > MAX_TTL_VALUE)
+    return MR_ARG_TOO_LONG;
 
   return MR_SUCCESS;
 }
@@ -2213,7 +2224,7 @@ int setup_sttl(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, count;
-  char *address;
+  char *address, *p;
   EXEC SQL END DECLARE SECTION;
 
   mid = *(int *)argv[0];
@@ -2226,6 +2237,19 @@ int setup_sttl(struct query *q, char *argv[], client *cl)
 
   if (count == 0)
     return MR_NO_MATCH;
+
+  if (!strcmp(argv[2], "default"))
+    sprintf(argv[2], "%d", DEFAULT_TTL);
+
+  p = argv[2];
+  for (; *p; p++)
+    {
+      if (*p < '0' || *p > '9')
+        return MR_INTEGER;
+    }
+
+  if (atoll(argv[2]) > MAX_TTL_VALUE)
+    return MR_ARG_TOO_LONG;
 
   return MR_SUCCESS;
 }

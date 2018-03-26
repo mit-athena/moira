@@ -1515,6 +1515,54 @@ int get_host_usage(struct query *q, char *argv[], client *cl,
 int guas_internal(char *atype, int aid,
 		  int (*action)(int, char *[], void *), void *actarg)
 {
+  char *rargv[8], status_buf[BUFSIZ];
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *type = atype;
+  int id = aid;
+  char login[USERS_LOGIN_SIZE];
+  char first[USERS_FIRST_SIZE], last[USERS_LAST_SIZE], middle[USERS_MIDDLE_SIZE];
+  char clearid[USERS_CLEARID_SIZE], class[USERS_TYPE_SIZE], comments[STRINGS_STRING_SIZE];
+  int status;
+  EXEC SQL END DECLARE SECTION;
+
+  rargv[0] = login;
+  rargv[1] = last;
+  rargv[2] = first;
+  rargv[3] = middle;
+  rargv[4] = status_buf;
+  rargv[5] = clearid;
+  rargv[6] = class;
+  rargv[7] = comments;
+
+  EXEC SQL DECLARE csr_guas_internal CURSOR FOR
+    SELECT u.login, u.last, u.first, u.middle, u.status, u.clearid, u.type, s.string
+    FROM users u, strings s
+    WHERE u.sponsor_type = :type AND u.sponsor_id = :id AND u.users_id != 0 AND u.comments = s.string_id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_guas_internal;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_guas_internal INTO :login, :last, :first, :middle, :status, :clearid, :class, :comments;
+      if (sqlca.sqlcode)
+	break;
+      sprintf(status_buf, "%d", status);
+      (*action)(8, rargv, actarg);
+      found++;
+    }
+
+  EXEC SQL CLOSE csr_guas_internal;
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+int gsua_internal(char *atype, int aid,
+		  int (*action)(int, char *[], void *), void *actarg)
+{
   char *rargv[1];
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -1547,8 +1595,8 @@ int guas_internal(char *atype, int aid,
   return MR_SUCCESS;
 }
 
-/* get_user_account_by_sponsor - like gaus but limited to user accounts */
-int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
+/* get_sponsored_user_accounts - like gaus but limited to user accounts */
+int get_sponsored_user_accounts(struct query *q, char *argv[], client *cl,
 				int (*action)(int, char *[], void *),
 				void *actarg)
 {
@@ -1563,8 +1611,13 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
   aid = *(int *)argv[1];
   if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
       !strcmp(atype, "KERBEROS"))
-    return guas_internal(atype, aid, action, actarg);
-
+    {
+      if (!strcmp(q->shortname, "gsua"))
+	return gsua_internal(atype, aid, action, actarg);
+      else
+	return guas_internal(atype, aid, action, actarg);
+    }
+      
   sq = sq_create();
   if (!strcmp(atype, "RLIST"))
     {
@@ -1589,8 +1642,16 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
-	    found++;
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
 	}
     }
 
@@ -1615,11 +1676,27 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	}
+      if (!strcmp(q->shortname, "gsua"))
+	{
+	  if (gsua_internal("USER", aid, action, actarg) == MR_SUCCESS)
 	    found++;
 	}
-      if (guas_internal("USER", aid, action, actarg) == MR_SUCCESS)
-	found++;
+      else
+	{
+	  if (guas_internal("USER", aid, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
     }
 
   if (!strcmp(atype, "RKERBEROS"))
@@ -1643,11 +1720,28 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	}
+
+      if (!strcmp(q->shortname, "gsua"))
+	{
+	  if (gsua_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
 	    found++;
 	}
-      if (guas_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
-	found++;
+      else
+	{
+	  if (guas_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
     }
 
   sq_destroy(sq);

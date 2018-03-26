@@ -332,6 +332,29 @@ static struct validate guan_validate =
   followup_get_user,
 };
 
+static char *guas_fields[] = {
+  "sponsor_type", "sponsor_name",
+  "login", "last", "first", "middle", "status", "clearid", "class", "comments",
+};
+
+static struct valobj guas_valobj[] = {
+  {V_TYPE, 0, 0, "gaus", 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
+};
+
+static struct validate guas_validate =
+{
+  guas_valobj,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_sponsored_user_accounts,
+};
+
 static char *guac2_fields[] = {
   "class",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
@@ -444,18 +467,18 @@ static char *guam_fields[] = {
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guas_fields[] = {
+static char *gsua_fields[] = {
   "sponsor_type", "sponsor_name",
   "login",
 };
 
-static struct valobj guas_valobj[] = {
+static struct valobj gsua_valobj[] = {
   {V_TYPE, 0, 0, "gaus", 0, MR_TYPE},
   {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
 };
 
-static struct validate guas_validate = {
-  guas_valobj,
+static struct validate gsua_validate = {
+  gsua_valobj,
   2,
   0,
   0,
@@ -463,7 +486,7 @@ static struct validate guas_validate = {
   0,
   access_member,
   0,
-  get_user_account_by_sponsor,
+  get_sponsored_user_accounts,
 };
 
 static char *gubu2_fields[] = {
@@ -2192,9 +2215,9 @@ static struct valobj dhid_valobj[] = {
 static struct validate dhid_validate = {
   dhid_valobj,
   3,
-  0,
-  0,
-  0,
+  "mach_id",
+  "mach_id = %d AND mach_identifier_type = UPPER('%s') AND mach_identifier = LOWER('%s')",
+  3,
   "mach_id",
   access_machidentifier,
   0,
@@ -4410,6 +4433,22 @@ static char *gpbi_fields[] = {
   "location", "contact", "modtime", "modby", "modwith"
 };
 
+static struct valobj gpbi_valobj[] = {
+  {V_TYPE, 0, 0, "mach_identifier", 0, MR_TYPE},
+};
+
+static struct validate gpbi_validate = {
+  gpbi_valobj,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_fix_modby,
+};
+
 static char *gpbh_fields[] = {
   "hostname",
   "name", "type", "hwtype", "duplexname", "duplexdefault",
@@ -5832,21 +5871,39 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GUAS - GET_USER_ACCOUNT_BY_SPONSOR, v12 */
+    /* Q_GUAS - GET_USER_ACCOUNT_BY_SPONSOR, v16 */
     "get_user_account_by_sponsor",
     "guas",
-    12,
+    16,
     MR_Q_RETRIEVE,
     0,
     0,
     0,
     guas_fields,
+    10,
+    8,
+    0,
+    2,
+    NULL,
+    &guas_validate,
+  },
+
+  {
+    /* Q_GSUA - GET_SPONSORED_USER_ACCOUNTS, v12 */
+    "get_sponsored_user_accounts",
+    "gsua",
+    12,
+    MR_Q_RETRIEVE,
+    0,
+    0,
+    0,
+    gsua_fields,
     3,
     1,
     0,
     2,
     NULL,
-    &guas_validate,
+    &gsua_validate,
   },
 
   {
@@ -9872,7 +9929,7 @@ struct query Queries[] = {
     "midmap.mach_identifier_type LIKE '%s' AND midmap.mach_identifier LIKE LOWER('%s') AND midmap.mach_id = m1.mach_id AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl AND l3.list_id = pr.report_list",
     2,
     "pr.name",
-    &VDfix_modby,
+    &gpbi_validate,
   },
 
   {

@@ -15,11 +15,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#else
 #include <mr_krb.h>
-#endif
 #include <krb5.h>
 
 enum clstate { CL_ACCEPTING, CL_ACTIVE, CL_CLOSING };
@@ -69,6 +65,18 @@ extern int newqueries;
 /* Maximum and minimum values that will be used for uids and gids */
 #define MAX_ID_VALUE	262144
 #define MIN_ID_VALUE	100
+
+/* VLAN constants */
+#define MIN_VLAN_VALUE 1
+#define MAX_VLAN_VALUE 4095
+
+/* DNS constants */
+#define MAX_TTL_VALUE 2147483647
+
+/* IPv6 constants */
+#define MIN_IPV6_ADDR "::"
+#define MAX_IPV6_ADDR "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
+#define MIN_IPV6_PREFIX_LEN 64
 
 /* Sleepy states for the server! */
 #define AWAKE 0
@@ -147,6 +155,8 @@ char **mr_copy_args(char **argv, int argc);
 void *xmalloc(size_t);
 void *xrealloc(void *, size_t);
 char *xstrdup(char *);
+char *masksize_to_mask(char *addr_type, unsigned int prefix);
+int mask_to_masksize(char *addr_type, char *mask);
 
 /* prototypes from qaccess.pc */
 int access_user(struct query *q, char *argv[], client *cl);
@@ -163,7 +173,9 @@ int access_shot(struct query *q, char *argv[], client *cl);
 int access_host(struct query *q, char *argv[], client *cl);
 int access_adhr(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
-int access_hwaddr(struct query *q, char *argv[], client *cl);
+int access_ahad(struct query *q, char *argv[], client *cl);
+int access_machidentifier(struct query *q, char *argv[], client *cl);
+int access_uhp4(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
 int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
@@ -218,6 +230,10 @@ int followup_get_user(struct query *q, struct save_queue *sq,
 int followup_ausr(struct query *q, char *argv[], client *cl);
 int followup_aqot(struct query *q, char *argv[], client *cl);
 int followup_dqot(struct query *q, char *argv[], client *cl);
+int followup_ahad(struct query *q, char *argv[], client *cl);
+int followup_dhad(struct query *q, char *argv[], client *cl);
+int followup_srrt(struct query *q, char *argv[], client *cl);
+int followup_sttl(struct query *q, char *argv[], client *cl);
 
 int set_modtime(struct query *q, char *argv[], client *cl);
 int set_modtime_by_id(struct query *q, char *argv[], client *cl);
@@ -257,13 +273,20 @@ int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ghst(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
-int setup_ahha(struct query *q, char *argv[], client *cl);
+int setup_ahad(struct query *q, char *argv[], client *cl);
+int setup_uhp4(struct query *q, char *argv[], client *cl);
+int setup_srrt(struct query *q, char *argv[], client *cl);
+int setup_shap(struct query *q, char *argv[], client *cl);
+int setup_ahid(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
 int setup_dpsv(struct query *q, char *argv[], client *cl);
 int setup_dcon(struct query *q, char *argv[], client *cl);
 int setup_acon(struct query *q, char *argv[], client *cl);
 int setup_scli(struct query *q, char *argv[], client *cl);
 int setup_aali(struct query *q, char *argv[], client *cl);
+int setup_sttl(struct query *q, char *argv[], client *cl);
+int setup_ahrr(struct query *q, char *argv[], client *cl);
+int setup_uust(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);
@@ -276,12 +299,14 @@ int do_user_reservation(struct query *q, char *argv[], client *cl);
 int update_container(struct query *q, char *argv[], client *cl);
 int set_container_list(struct query *q, char *argv[], client *cl);
 int update_user_password_expiration(struct query *q, char *argv[], client *cl);
-
+int upgrade_host_private_ipv4_addr(struct query *q, char *argv[], client *cl);
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
 int get_host_by_owner(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
-int get_user_account_by_sponsor(struct query *q, char **argv, client *cl,
+int get_host_usage(struct query *q, char **argv, client *cl,
+		   int (*action)(int, char *[], void *), void *actarg);
+int get_sponsored_user_accounts(struct query *q, char **argv, client *cl,
 				int (*action)(int, char *[], void *),
 				void *actarg);
 int qualified_get_lists(struct query *q, char **argv, client *cl,

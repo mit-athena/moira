@@ -43,8 +43,9 @@
 RCSID("$HeadURL$ $Id$");
 
 void PrintAliases(char **info);
-void PrintTTL(char **info);
+void PrintAddresses(char **info);
 static void PrintMachine(char **info);
+static void PrintMachineUsage(char **info);
 struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 struct mqelem *GetMachineByOwner(char *type, char *name);
 char **AskMCDInfo(char **info, int type, Bool name);
@@ -65,6 +66,8 @@ static void RealRemoveMachineFromContainer(char **info, Bool one_contmap);
 #define CNAME	  5
 #define CONTAINER 6
 #define CONTMAP   7
+#define ADDRESS   8
+#define RECORD    9
 
 #define M_DEFAULT_TYPE     DEFAULT_NONE
 
@@ -76,8 +79,17 @@ static void RealRemoveMachineFromContainer(char **info, Bool one_contmap);
 #define CD_DEFAULT_LABEL   DEFAULT_NONE
 #define CD_DEFAULT_DATA    DEFAULT_NONE
 
-#define S_DEFAULT_LOW	"18.0.0.20"
-#define S_DEFAULT_HIGH	"18.0.2.249"
+#define S_DEFAULT_ADDRESS_V4  "18.0.0.0"
+#define S_DEFAULT_MASK_V4     "16"
+#define S_DEFAULT_LOW_V4      "18.0.0.20"
+#define S_DEFAULT_HIGH_V4     "18.0.2.249"
+
+#define S_DEFAULT_PREFIX_V6   "2603:4000:"
+
+#define S_DEFAULT_ADDRESS_V6  S_DEFAULT_PREFIX_V6 ":"
+#define S_DEFAULT_MASK_V6     "40"
+#define S_DEFAULT_LOW_V6      S_DEFAULT_PREFIX_V6 ":20"
+#define S_DEFAULT_HIGH_V6     S_DEFAULT_PREFIX_V6 "fffe::ff00"
 
 static char *states[] = {
   "Reserved (0)",
@@ -141,14 +153,14 @@ static char **SetMachineDefaults(char **info, char *name)
   info[M_CONTACT] = strdup(M_DEFAULT_TYPE);
   info[M_BILL_CONTACT] = strdup(M_DEFAULT_TYPE);
   info[M_ACCT_NUMBER] = strdup("");
-  info[M_USE] = strdup("0");
-  info[M_STAT] = strdup("1");
-  info[M_SUBNET] = strdup("NONE");
-  info[M_ADDR] = strdup("unique");
-  info[M_OWNER_TYPE] = strdup("NONE");
-  info[M_OWNER_NAME] = strdup("NONE");
-  info[M_ACOMMENT] = strdup("");
-  info[M_OCOMMENT] = strdup("");
+  /* Can't rely on M_ #defines after this because get and
+   * add don't line up exactly */
+  info[8] = strdup("1");
+  info[9] = strdup("NONE");
+  info[10] = strdup("NONE");
+  info[11] = strdup("");
+  info[12] = strdup("");
+  info[13] = info[14] = info[15] = info[16] = NULL;
   info[17] = info[18] = NULL;
   return info;
 }
@@ -201,17 +213,15 @@ static char **SetSubnetDefaults(char **info, char *name)
   info[SN_STATUS] = strdup("1");
   info[SN_CONTACT] = strdup(DEFAULT_NONE);
   info[SN_ACCT_NUMBER] = strdup("");
-  sprintf(buf, "%d", ntohl(inet_addr("18.255.0.0")));
-  info[SN_ADDRESS] = strdup(buf);
-  sprintf(buf, "%d", ntohl(inet_addr("255.255.0.0")));
-  info[SN_MASK] = strdup(buf);
-  sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_LOW)));
-  info[SN_LOW] = strdup(buf);
-  sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_HIGH)));
-  info[SN_HIGH] = strdup(buf);
+  info[SN_ADDRESS] = strdup(S_DEFAULT_ADDRESS_V4);
+  info[SN_MASK] = strdup(S_DEFAULT_MASK_V4);
+  info[SN_LOW] = strdup(S_DEFAULT_LOW_V4);
+  info[SN_HIGH] = strdup(S_DEFAULT_HIGH_V4);
   info[SN_PREFIX] = strdup("");
   info[SN_ACE_TYPE] = strdup("LIST");
   info[SN_ACE_NAME] = strdup("network");
+  info[SN_VLAN_TAG] = strdup("1");
+  info[SN_ADDR_TYPE] = strdup("IPV4");
   info[SN_MODBY] = info[SN_MODTIME] = info[SN_MODWITH] = info[SN_END] = NULL;
   return info;
 }
@@ -240,17 +250,21 @@ void PrintAliases(char **info)
     }
 }
 
-void PrintTTL(char **info)
+void PrintAddresses(char **info)
 {
-  char buf[256];
+  char buf[BUFSIZ], tbuf[256];
 
-  if (strcmp(info[0], DEFAULT_TTL))
+  sprintf(tbuf, "%s:%s", info[2], info[3]);
+  sprintf(buf, "Address:  %-16s    Network: %-16s", tbuf, info[1]);
+  if (atoi(info[5]) == 1)
+    strcat(buf, "    PTR record: yes");
+  if (atoi(info[4]) != DEFAULT_TTL)
     {
-      sprintf(buf, "DNS TTL:  %s\n", info[0]);
-      Put_message(buf);
+      strcat(buf, "    DNS TTL: ");
+      strcat(buf, info[4]);
     }
-  else
-    Put_message("");
+
+  Put_message(buf);
 }
 
 void PrintDynamicHost(char **info)
@@ -297,19 +311,22 @@ static char *PrintMachInfo(char **info)
     }
 
   args[0] = info[M_NAME];
-  if ((stat = do_mr_query("get_host_ttl", 1, args, StoreInfo, &elem)))
-    com_err(program_name, stat, " getting host TTL");
+  args[1] = "*";
+  if ((stat = do_mr_query("get_host_addresses", 2, args, StoreInfo, &elem)))
+    {
+      if (stat != MR_NO_MATCH)
+	com_err(program_name, stat, " looking up addresses");
+    }
   else
     {
-      Loop(QueueTop(elem), (void (*)(char **)) PrintTTL);
+      Loop(QueueTop(elem), (void (*)(char **)) PrintAddresses);
       FreeQueue(elem);
+      elem = NULL;
+      Put_message("");
     }
 
   sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
 	  strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
-  sprintf(buf, "Address:  %-16s    Network:    %-16s",
-	  info[M_ADDR], info[M_SUBNET]);
-  Put_message(buf);
   sprintf(buf, "Owner:    %-16s    Use data:   %s", tbuf, info[M_INUSE]);
   Put_message(buf);
   sprintf(buf, "Status:   %-16s    Changed:    %s",
@@ -338,24 +355,6 @@ static char *PrintMachInfo(char **info)
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
   Put_message(buf);
-  /* Do a get_subnet for the machine's subnet.  We need to know if it's
-   *  Private.
-   */
-  args[0] = info[M_SUBNET];
-  stat = do_mr_query("get_subnet", 1, args, StoreInfo, &elem2);
-  if (stat)
-    com_err(program_name, stat, " looking up subnet info");
-  else if (atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_10MBPS ||
-	   atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_100MBPS ||
-	   atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_1000MBPS)
-    {
-      Put_message("");
-      sprintf(buf, "Warning:  This host is on a private subnet.");
-      Put_message(buf);
-      sprintf(buf, "Billing information shown is superseded by billing information for the subnet.");
-      Put_message(buf);
-      FreeQueue(elem2);
-    }
 
   return info[M_NAME];
 }
@@ -385,6 +384,50 @@ static char *PrintCname(char **info)
   char buf[BUFSIZ];
 
   sprintf(buf, "Alias: %-32s Canonical Name: %s", info[0], info[1]);
+  Put_message(buf);
+  return info[0];
+}
+
+static void PrintMachineUsage(char **info)
+{
+  char buf[BUFSIZ];
+
+  sprintf(buf, "Machine: %-40s Type: %-16s Use: %s", info[0], info[1],
+	  info[2]);
+  Put_message(buf);
+}
+
+static char *PrintAddress(char **info)
+{
+  char buf[BUFSIZ], tbuf[256];
+
+  sprintf(tbuf, "%s:%s", info[2], info[3]);
+  sprintf(buf, "Machine: %-16s    Address: %-16s    Network: %-16s",
+	  info[0], tbuf, info[1]);
+  if (atoi(info[5]) == 1)
+    strcat(buf, "   PTR record: yes");
+  if (atoi(info[4]) != DEFAULT_TTL)
+    {
+      strcat(buf, " DNS TTL: ");
+      strcat(buf, info[4]);
+    }
+
+  Put_message(buf);
+  return info[0];
+}
+
+static char *PrintRecord(char **info)
+{
+  char buf[BUFSIZ];
+
+  sprintf(buf, "Machine: %-16s   Type: %s  Value: %-24s",
+	  info[0], info[1], info[2]);
+  if (atoi(info[3]) != DEFAULT_TTL)
+    {
+      strcat(buf, " TTL: ");
+      strcat(buf, info[3]);
+    }
+
   Put_message(buf);
   return info[0];
 }
@@ -454,7 +497,6 @@ static char *PrintMCMap(char **info)
 static char *PrintSubnetInfo(char **info)
 {
   char buf[BUFSIZ];
-  struct in_addr addr, mask, low, high;
 
   Put_message("");
   sprintf(buf, "        Network:  %s", info[SN_NAME]);
@@ -467,24 +509,20 @@ static char *PrintSubnetInfo(char **info)
   Put_message(buf);
   sprintf(buf, " Account Number:  %s", info[SN_ACCT_NUMBER]);
   Put_message(buf);
-  addr.s_addr = htonl(atoi(info[SN_ADDRESS]));
-  mask.s_addr = htonl(atoi(info[SN_MASK]));
-  low.s_addr = htonl(atoi(info[SN_LOW]));
-  high.s_addr = htonl(atoi(info[SN_HIGH]));
-  /* screwy sequence is here because inet_ntoa returns a pointer to
-     a static buf.  If it were all one sprintf, the last value would
-     appear 4 times. */
-  sprintf(buf, "        Address:  %s        Mask:  ", inet_ntoa(addr));
-  strcat(buf, inet_ntoa(mask));
-  strcat(buf, "\n           High:  ");
-  strcat(buf, inet_ntoa(high));
-  strcat(buf, "       Low:  ");
-  strcat(buf, inet_ntoa(low));
+  sprintf(buf, "   Address Type:  %s", info[SN_ADDR_TYPE]);
+  Put_message(buf);
+  sprintf(buf, "     CIDR Block:  %s/%s", info[SN_ADDRESS], info[SN_MASK]);
+  Put_message(buf);
+  sprintf(buf, "            Low:  %s", info[SN_LOW]);
+  Put_message(buf);
+  sprintf(buf, "           High:  %s", info[SN_HIGH]);
   Put_message(buf);
   sprintf(buf, "Hostname prefix:  %s", info[SN_PREFIX]);
   Put_message(buf);
-  sprintf(buf, "          Owner:  %s %s\n", info[SN_ACE_TYPE],
+  sprintf(buf, "          Owner:  %s %s", info[SN_ACE_TYPE],
 	  strcmp(info[SN_ACE_TYPE], "NONE") ? info[SN_ACE_NAME] : "");
+  Put_message(buf);
+  sprintf(buf, "VLAN Assignment:  %s\n", info[SN_VLAN_TAG]);
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[SN_MODBY], info[SN_MODTIME], info[SN_MODWITH]);
   Put_message(buf);
@@ -509,8 +547,8 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
     {
     case MACHINE:
       args[0] = name1;
-      args[1] = args[2] = args[3] = "*";
-      if ((stat = do_mr_query("get_host", 4, args, StoreInfo, &elem)))
+      args[1] = "*";
+      if ((stat = do_mr_query("get_host", 2, args, StoreInfo, &elem)))
 	{
 	  if (stat == MR_NO_MATCH)
 	    {
@@ -588,6 +626,22 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
 	  com_err(program_name, stat, " in get_machine_to_container_map.");
 	  return NULL;
 	}
+    case ADDRESS:
+      args[0] = name1;
+      args[1] = "*";
+      if ((stat = do_mr_query("get_host_addresses", 2, args, StoreInfo, &elem)))
+	{
+	  com_err(program_name, stat, " in get_host_addresses.");
+	  return NULL;
+	}
+    case RECORD:
+      args[0] = name1;
+      args[1] = "*";
+      if ((stat = do_mr_query("get_host_resource_record", 2, args, StoreInfo, &elem)))
+	{
+	  com_err(program_name, stat, " in get_host_resource_records.");
+	  return NULL;
+	}
     }
   return QueueTop(elem);
 }
@@ -607,7 +661,7 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
 char **AskMCDInfo(char **info, int type, Bool name)
 {
   char temp_buf[BUFSIZ], *newname, *oldnewname;
-  int status;
+  int status, bits;
 
   switch (type)
     {
@@ -698,81 +752,53 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (GetValueFromUser("Machine's billing account number",
 			   &info[M_ACCT_NUMBER]) == SUB_ERROR)
 	return NULL;
+
+      if (name)
+	{
+	  /* argument shuffling; get doesn't return exactly what add / update take */
+	  info[8] = info[9];
+	  info[9] = info[11];
+	  info[10] = info[12];
+	  info[11] = info[13];
+	  info[12] = info[14];
+	}
+
       while (1)
 	{
 	  int i;
 	  if (GetValueFromUser("Machine's status (? for help)",
-				 &info[M_STAT]) == SUB_ERROR)
+				 &info[8]) == SUB_ERROR)
 	    return NULL;
-	  if (isdigit(info[M_STAT][0]))
+	  if (isdigit(info[8][0]))
 	    break;
 	  Put_message("Valid status numbers:");
 	  for (i = 0; i < 4; i++)
 	    Put_message(states[i]);
 	}
 
-      /* there appears to be some argument mismatch between the client
-       * and the server.. so here is this argument shuffler.
-       * I have since modified this to always shuffle the arguments..
-       * not just do so when performing a modify all fields request.
-       * The SetMachinedefaults() has been changed to reflect this.
-       * pray for us and may we attain enlightenment through structures.
-       */
-
-      if (name)
-	{
-	  /* info did not come from SetMachineDefaults(), which does not
-	   * initialize entry 10 (M_STAT_CHNG), therefore we can
-	   * free it.
-	   */
-	  /* This is an update of an existing machine and the structure
-	   * was filled in thru a query to the db which does fill in this
-	   * field.
-	   */
-	  free(info[10]);
-	}
-
-      info[10] = strdup(info[M_SUBNET]);
-      info[11] = strdup(info[M_ADDR]);
-      info[12] = strdup(info[M_OWNER_TYPE]);
-      info[13] = strdup(info[M_OWNER_NAME]);
-      info[14] = strdup(info[M_ACOMMENT]);
-      info[15] = strdup(info[M_OCOMMENT]);
-
-      if (name)
-	{
-	  if (GetValueFromUser("Machine's network (or 'none')", &info[10])
-	      == SUB_ERROR)
-	    return NULL;
-	}
-      if (GetValueFromUser("Machine's address (or 'unassigned' or 'unique')",
-			   &info[11]) == SUB_ERROR)
-	return NULL;
-      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[12]) ==
+      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[9]) ==
 	  SUB_ERROR)
 	return NULL;
-      if (strcmp(info[12], "NONE") &&
-	  GetValueFromUser("Owner's Name", &info[13]) == SUB_ERROR)
+      if (strcmp(info[9], "NONE") &&
+	  GetValueFromUser("Owner's Name", &info[10]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[12], "KERBEROS"))
+      if (!strcmp(info[9], "KERBEROS"))
 	  {
 	    char *canon;
 
-	    status = mrcl_validate_kerberos_member(info[13], &canon);
+	    status = mrcl_validate_kerberos_member(info[10], &canon);
 	    if (mrcl_get_message())
 	      Put_message(mrcl_get_message());
 	    if (status == MRCL_REJECT)
 	      return NULL;
-	    free(info[13]);
-	    info[13] = canon;
+	    free(info[10]);
+	    info[10] = canon;
 	  }
-      if (GetValueFromUser("Administrative comment", &info[14]) == SUB_ERROR)
+      if (GetValueFromUser("Administrative comment", &info[11]) == SUB_ERROR)
 	return NULL;
-      if (GetValueFromUser("Operational comment", &info[15]) == SUB_ERROR)
+      if (GetValueFromUser("Operational comment", &info[12]) == SUB_ERROR)
 	return NULL;
-      info[16] = NULL;
-      FreeAndClear(&info[17], TRUE);
-      FreeAndClear(&info[18], TRUE);
+      info[13] = NULL;
       break;
     case SUBNET:
       if (GetValueFromUser("Network description", &info[SN_DESC]) == SUB_ERROR)
@@ -794,40 +820,186 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (GetValueFromUser("Network's billing account number", 
 			   &info[SN_ACCT_NUMBER]) == SUB_ERROR)
 	return NULL;
-      if (GetAddressFromUser("Network address", &info[SN_ADDRESS]) == SUB_ERROR)
+      if (GetTypeFromUser("What kind of subnet addresses", "addr_type", &info[SN_ADDR_TYPE]) == SUB_ERROR)
 	return NULL;
-      if (GetAddressFromUser("Network mask", &info[SN_MASK]) == SUB_ERROR)
-	return NULL;
-      if (atoi(info[SN_LOW]) == (int)ntohl(inet_addr(S_DEFAULT_LOW)))
-	{
-	  struct in_addr low;
-	  unsigned int mask, addr;
 
-	  addr = atoi(info[SN_ADDRESS]);
-	  mask = atoi(info[SN_MASK]);
-	  low.s_addr = atoi(info[SN_LOW]);
-	  low.s_addr = (low.s_addr & ~mask) | (addr & mask);
+      /* If this is an IPV6 network, set some more appropriate defaults */
+      if (!name && !strcmp(info[SN_ADDR_TYPE], "IPV6"))
+	{
+	  free(info[SN_ADDRESS]);
+	  info[SN_ADDRESS] = strdup(S_DEFAULT_ADDRESS_V6);
+
+	  free(info[SN_MASK]);
+	  info[SN_MASK] = strdup(S_DEFAULT_MASK_V6);
+
 	  free(info[SN_LOW]);
-	  sprintf(temp_buf, "%d", low.s_addr);
-	  info[SN_LOW] = strdup(temp_buf);
+	  info[SN_LOW] = strdup(S_DEFAULT_LOW_V6);
+
+	  free(info[SN_HIGH]);
+	  info[SN_HIGH] = strdup(S_DEFAULT_HIGH_V6);
 	}
-      if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) ==
+
+      if (GetValueFromUser("Network address", &info[SN_ADDRESS]) == SUB_ERROR)
+	return NULL;
+
+     if (GetValueFromUser("Network mask size in bits", &info[SN_MASK]) == SUB_ERROR)
+	return NULL;
+
+     bits = atoi(info[SN_MASK]);
+     if (!strcmp(info[SN_ADDR_TYPE], "IPV4") && (bits < 0 || bits > 32))
+       {
+	 Put_message("IPV4 network mask size must be between 0 and 32 bits.");
+	 return NULL;
+       }
+     else if (!strcmp(info[SN_ADDR_TYPE], "IPV6") && (bits < 0 || bits > 128))
+       {
+	 Put_message("IPV6 network mask size must be between 0 and 128 bits.");
+	 return NULL;
+       }
+
+     if (!strcmp(info[SN_LOW], S_DEFAULT_LOW_V4))
+       {
+	 struct sockaddr_in addr, mask, low;
+	 int iaddr, imask, ilow;
+	 char buf[INET_ADDRSTRLEN], *maskstr;
+	
+	 if (atoi(info[SN_MASK]) == 0)
+	   memset(&(low.sin_addr), 0, sizeof(struct sockaddr_in));
+	 else
+	   {
+	     if (inet_pton(AF_INET, info[SN_ADDRESS], &(addr.sin_addr)) < 1)
+	       return NULL;
+	     
+	     iaddr = ntohl(addr.sin_addr.s_addr);
+	     
+	     maskstr = masksize_to_mask(info[SN_ADDR_TYPE], atoi(info[SN_MASK]));
+	     if (!maskstr)
+	       return NULL;
+	     
+	     if (inet_pton(AF_INET, maskstr, &(mask.sin_addr)) < 1)
+	       return NULL;
+	     
+	     imask = ntohl(mask.sin_addr.s_addr);
+	     
+	     if (inet_pton(AF_INET, info[SN_LOW], &(low.sin_addr)) < 1)
+	       return NULL;
+	     
+	     ilow = ntohl(low.sin_addr.s_addr);
+	     low.sin_addr.s_addr = ntohl((ilow & ~imask) | (iaddr & imask));
+	   }
+	 
+	 if (inet_ntop(AF_INET, &(low.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+	   return NULL;
+	 free(info[SN_LOW]);
+	 info[SN_LOW] = strdup(buf);
+       }
+     else if (!strcmp(info[SN_LOW], S_DEFAULT_LOW_V6))
+       {
+	 int i;
+	 struct in6_addr addr, mask, low;
+	 char buf6[INET6_ADDRSTRLEN], *maskstr;
+
+	 if (atoi(info[SN_MASK]) == 0)
+	   memset(&low, 0, sizeof(struct in6_addr));
+	 else
+	   {
+	     if (inet_pton(AF_INET6, info[SN_ADDRESS], &addr) < 1)
+	       return NULL;
+	     
+	     maskstr = masksize_to_mask(info[SN_ADDR_TYPE], atoi(info[SN_MASK]));
+	     if (!maskstr)
+	       return NULL;
+	     
+	     if (inet_pton(AF_INET6, maskstr, &mask) < 1)
+	       return NULL;
+	     
+	     if (inet_pton(AF_INET6, info[SN_LOW], &low) < 1)
+	       return NULL;
+	     
+	     for (i = 0; i < 16; i++)
+	       low.s6_addr[i] = (low.s6_addr[i] & ~mask.s6_addr[i]) | (addr.s6_addr[i] & mask.s6_addr[i]);
+	   }
+	     
+	 if (inet_ntop(AF_INET6, &low, buf6, INET6_ADDRSTRLEN) == NULL)
+	   return NULL;
+	 free(info[SN_LOW]);
+	 info[SN_LOW] = strdup(buf6);
+       }
+
+      if (GetValueFromUser("Lowest assignable address", &info[SN_LOW]) ==
 	  SUB_ERROR)
 	return NULL;
-      if (atoi(info[SN_HIGH]) == (int)ntohl(inet_addr(S_DEFAULT_HIGH)))
-	{
-	  struct in_addr high;
-	  unsigned int mask, addr;
 
-	  addr = atoi(info[SN_ADDRESS]);
-	  mask = atoi(info[SN_MASK]);
-	  high.s_addr = atoi(info[SN_HIGH]);
-	  high.s_addr = (high.s_addr & ~mask) | (addr & mask);
-	  free(info[SN_HIGH]);
-	  sprintf(temp_buf, "%d", high.s_addr);
-	  info[SN_HIGH] = strdup(temp_buf);
+      if (!strcmp(info[SN_HIGH], S_DEFAULT_HIGH_V4))
+	{
+	  struct sockaddr_in addr, mask, high;
+	  int iaddr, imask, ihigh;
+	  char buf[INET_ADDRSTRLEN], *maskstr;
+
+	  if (atoi(info[SN_MASK]) == 0)
+	    memset(&(high.sin_addr), 0xffU, sizeof(struct sockaddr_in));
+	  else
+	    {
+	      if (inet_pton(AF_INET, info[SN_ADDRESS], &(addr.sin_addr)) < 1)
+		return NULL;
+	      
+	      iaddr = ntohl(addr.sin_addr.s_addr);
+	      
+	      maskstr = masksize_to_mask(info[SN_ADDR_TYPE], atoi(info[SN_MASK]));
+	      if (!maskstr)
+		return NULL;
+	      
+	      if (inet_pton(AF_INET, maskstr, &(mask.sin_addr)) < 1)
+		return NULL;
+	      
+	      imask = ntohl(mask.sin_addr.s_addr);
+	      
+	      if (inet_pton(AF_INET, info[SN_HIGH], &(high.sin_addr)) < 1)
+		return NULL;
+	      
+	      ihigh = ntohl(high.sin_addr.s_addr);
+	      high.sin_addr.s_addr = ntohl((ihigh & ~imask) | (iaddr & imask));
+	    }
+
+	  if (inet_ntop(AF_INET, &(high.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+	    return NULL;
+          free(info[SN_HIGH]);
+	  info[SN_HIGH] = strdup(buf);
 	}
-      if (GetAddressFromUser("Highest assignable address", &info[SN_HIGH]) ==
+      else if (!strcmp(info[SN_HIGH], S_DEFAULT_HIGH_V6))
+	{
+	  int i;
+	  struct in6_addr addr, mask, high;
+	  char buf6[INET6_ADDRSTRLEN], *maskstr;
+
+	  if (atoi(info[SN_MASK]) == 0)
+	    memset(&high, 0xffU, sizeof(struct in6_addr));
+	  else
+	    {
+	      if (inet_pton(AF_INET6, info[SN_ADDRESS], &addr) < 1)
+		return NULL;
+	      
+	      maskstr = masksize_to_mask(info[SN_ADDR_TYPE], atoi(info[SN_MASK]));
+	      if (!maskstr)
+		return NULL;
+	      
+	      if (inet_pton(AF_INET6, maskstr, &mask) < 1)
+		return NULL;
+	      
+	      if (inet_pton(AF_INET6, info[SN_HIGH], &high) < 1)
+		return NULL;
+	      
+	      for (i = 0; i < 16; i++)
+		high.s6_addr[i] = (high.s6_addr[i] & ~mask.s6_addr[i]) | (addr.s6_addr[i] & mask.s6_addr[i]);
+	    }
+
+          if (inet_ntop(AF_INET6, &high, buf6, INET6_ADDRSTRLEN) == NULL)
+            return NULL;
+          free(info[SN_HIGH]);
+          info[SN_HIGH] = strdup(buf6);
+	}
+
+      if (GetValueFromUser("Highest assignable address", &info[SN_HIGH]) ==
 	  SUB_ERROR)
 	return NULL;
       if (GetValueFromUser("Hostname prefix", &info[SN_PREFIX]) == SUB_ERROR)
@@ -850,6 +1022,9 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	    free(info[SN_ACE_NAME]);
 	    info[SN_ACE_NAME] = canon;
 	  }
+      if (GetValueFromUser("Network VLAN assignment", &info[SN_VLAN_TAG]) ==
+	  SUB_ERROR)
+	return NULL;
       FreeAndClear(&info[SN_MODTIME], TRUE);
       FreeAndClear(&info[SN_MODBY], TRUE);
       FreeAndClear(&info[SN_MODWITH], TRUE);
@@ -974,10 +1149,9 @@ int ShowMachineQuery(int argc, char **argv)
 {
   int stat;
   struct mqelem *top, *elem = NULL;
-  char *args[5];
+  char *args[2];
 
-  if (!strcmp(argv[1], "") && !strcmp(argv[2], "") &&
-      !strcmp(argv[3], "") && !strcmp(argv[4], ""))
+  if (!strcmp(argv[1], "") && !strcmp(argv[2], ""))
     {
       Put_message("You must specify at least one parameter of the query.");
       return DM_NORMAL;
@@ -991,21 +1165,63 @@ int ShowMachineQuery(int argc, char **argv)
     args[1] = argv[2];
   else
     args[1] = "*";
-  if (*argv[3])
-    args[2] = argv[3];
-  else
-    args[2] = "*";
-  if (*argv[4])
-    args[3] = argv[4];
-  else
-    args[3] = "*";
 
-  if ((stat = do_mr_query("get_host", 4, args, StoreInfo, &elem)))
+  if ((stat = do_mr_query("get_host", 2, args, StoreInfo, &elem)))
     {
       if (stat == MR_NO_MATCH)
 	Put_message("No machine(s) found matching query in the database.");
       else
 	com_err(program_name, stat, " in get_machine.");
+      return DM_NORMAL;
+    }
+  top = QueueTop(elem);
+  Loop(top, ((void (*)(char **)) PrintMachInfo));
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+int ShowMachineByAddress(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *top, *elem = NULL;
+  char *args[2];
+
+  if (!strcmp(argv[1], "") && !strcmp(argv[2], ""))
+    {
+      Put_message("You must specify at least one parameter of the query.");
+      return DM_NORMAL;
+    }
+
+  if (*argv[1])
+    {
+      if ((stat = do_mr_query("get_subnet", 1, &argv[1], NULL, NULL)))
+	{
+	  if (stat == MR_NO_MATCH)
+	    {
+	      char buf[128];
+	      sprintf(buf, "Network '%s' is not in the database.", argv[1]);
+	      Put_message(buf);
+	    }
+	  else
+	    com_err(program_name, stat, " in get_subnet.");
+	  return DM_NORMAL;
+	}
+      args[0] = argv[1];
+    }
+  else
+    args[0] = "*";
+
+  if (*argv[2])
+    args[1] = argv[2];
+  else
+    args[1] = "*";
+
+  if ((stat = do_mr_query("get_host_by_address", 2, args, StoreInfo, &elem)))
+    {
+      if (stat == MR_NO_MATCH)
+	Put_message("No machine(s) found matching query in the database.");
+      else
+	com_err(program_name, stat, " in get_host_by_address.");
       return DM_NORMAL;
     }
   top = QueueTop(elem);
@@ -1031,35 +1247,14 @@ int AddMachine(int argc, char **argv)
     return DM_NORMAL;
 
   /*
-   * get the network record
-   */
-
-  if (strcasecmp(argv[1], "none") &&
-      (stat = do_mr_query("get_subnet", 1, &argv[1], StoreInfo, &elem)))
-    {
-      if (stat == MR_NO_MATCH)
-	{
-	  char buf[128];
-	  sprintf(buf, "Network '%s' is not in the database.", argv[1]);
-	  Put_message(buf);
-	} else
-	  com_err(program_name, stat, " in get_subnet.");
-      return DM_NORMAL;
-    }
-
-  /*
    * Check to see if this machine already exists.
    */
 
-  name = strdup(""); /* want to put prefix here */
-  if (GetValueFromUser("Machine name", &name) == SUB_ERROR)
-    return 0;
-
-  name = canonicalize_hostname(strdup(name));
+  name = canonicalize_hostname(strdup(argv[1]));
 
   xargs[0] = name;
-  xargs[1] = xargs[2] = xargs[3] = "*";
-  if (!(stat = do_mr_query("get_host", 4, xargs, NULL, NULL)))
+  xargs[1] = "*";
+  if (!(stat = do_mr_query("get_host", 2, xargs, NULL, NULL)))
     {
       sprintf(buf, "The machine '%s' already exists.", name);
       Put_message(buf);
@@ -1074,7 +1269,6 @@ int AddMachine(int argc, char **argv)
       return DM_NORMAL;
     }
   rinfo = SetMachineDefaults(info, name);
-  rinfo[M_SUBNET] = strdup(argv[1]);
   if (!(args = AskMCDInfo(rinfo, MACHINE, FALSE)))
     {
       Put_message("Aborted.");
@@ -1358,28 +1552,36 @@ int SetMachineOpt(int argc, char **argv)
   return DM_NORMAL;
 }
 
-int SetMachineTTL(int argc, char **argv)
+int SetAddressTTL(int argc, char **argv)
 {
-  char *args[2];
+  char *args[3];
   struct mqelem *elem = NULL;
   int status;
 
   args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup(argv[2]);
 
-  if ((status = do_mr_query("get_host_ttl", 1, args, StoreInfo, &elem)))
-    com_err(program_name, status, " in SetMachineTTL");
+  if ((status = do_mr_query("get_host_address_ttl", 2, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, status, " in SetAddressTTL");
+      return DM_NORMAL;
+    }
 
-  args[1] = strdup(((char **)elem->q_data)[0]);
+  args[2] = strdup(((char **)elem->q_data)[0]);
 
-  if (GetValueFromUser("TTL", &args[1]) == SUB_ERROR)
+  if (GetValueFromUser("TTL", &args[2]) == SUB_ERROR)
     return DM_NORMAL;
 
-  if ((status = do_mr_query("set_host_ttl", 2, args, NULL, NULL)))
-    com_err(program_name, status, " in SetMachineTTL");
+  if ((status = do_mr_query("set_host_address_ttl", 3, args, NULL, NULL)))
+    {
+      com_err(program_name, status, " in SetAddressTTL");
+      return DM_NORMAL;
+    }
 
   FreeQueue(elem);
   free(args[0]);
   free(args[1]);
+  free(args[2]);
 
   return DM_NORMAL;
 }
@@ -1444,6 +1646,89 @@ int DeleteCname(int argc, char **argv)
   return DM_NORMAL;
 }
 
+int ShowAddresses(int argc, char **argv)
+{
+  struct mqelem *top;
+  char *tmpname;
+
+  tmpname = canonicalize_hostname(strdup(argv[1]));
+  top = GetMCInfo(ADDRESS, tmpname, NULL);
+  Put_message("");
+  Loop(top, ((void (*)(char **)) PrintAddress));
+  FreeQueue(top);
+  return DM_NORMAL;
+};
+
+int AddAddress(int argc, char **argv)
+{
+  int stat;
+  char *args[3];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  if ((stat = do_mr_query("get_subnet", 1, &argv[2], NULL, NULL)))
+    {
+      if (stat == MR_NO_MATCH)
+	{
+	  char buf[128];
+	  sprintf(buf, "Network '%s' is not in the database.", argv[2]);
+	  Put_message(buf);
+	}
+      else
+	com_err(program_name, stat, " in get_subnet.");
+      return DM_NORMAL;
+    }
+  args[1] = argv[2];
+  args[2] = argv[3];
+
+  stat = do_mr_query("add_host_address", 3, args, NULL, NULL);
+  switch (stat)
+    {
+    case MR_SUCCESS:
+      break;
+    case MR_ADDRESS:
+    case MR_EXISTS:
+      Put_message("That address is invalid or is already in use.");
+      break;
+    case MR_PERM:
+      Put_message("Permission denied. Regular users can only add one address to a host.");
+      break;
+    default:
+      com_err(program_name, stat, "in add_host_address");
+    }
+
+  return DM_NORMAL;
+}
+
+int DeleteAddress(int argc, char **argv)
+{
+  int stat;
+  char *args[3];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  if ((stat = do_mr_query("get_subnet", 1, &argv[2], NULL, NULL)))
+    {
+      if (stat = MR_NO_MATCH)
+	{
+	  char buf[128];
+	  sprintf(buf, "Network '%s' is not in the database.", argv[2]);
+	  Put_message(buf);
+	}
+      else
+	com_err(program_name, stat, " in get_subnet.");
+      return DM_NORMAL;
+    }
+
+  args[1] = argv[2];
+  args[2] = argv[3];
+
+  stat = do_mr_query("delete_host_address", 3, args, NULL, NULL);
+  if (stat)
+    com_err(program_name, stat, " in delete_host_address");
+
+  return DM_NORMAL;
+}
 
 /*	Function Name: AddMachineToCluster
  *	Description: This function adds a machine to a cluster
@@ -2127,6 +2412,28 @@ int MachineToClusterMap(int argc, char **argv)
   return DM_NORMAL;
 }
 
+int ShowMachineUsage(int argc, char **argv)
+{
+  int status;
+  struct mqelem *elem = NULL;
+  char *tmpname, *args[1];
+  
+  tmpname = canonicalize_hostname(strdup(argv[1]));
+  args[0] = tmpname;
+
+  if ((status = do_mr_query("get_host_usage", 1, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, status, " in get_host_usage");
+      return DM_NORMAL;
+    }
+
+  Loop(QueueTop(elem), PrintMachineUsage);
+
+  FreeQueue(elem);
+  free(tmpname);
+  return DM_NORMAL;
+}
+
 /*        Function Name: MachineByOwner
  *        Description: This function prints all machines which are owned by 
  *                     a given user or group.
@@ -2209,7 +2516,7 @@ int MachineByAcctNumber(int argc, char **argv)
       com_err(program_name, status, " in get_host_by_account_number");
       return DM_NORMAL;
     }
-  Loop(QueueTop(elem), (void (*)(char **)) PrintMachInfo);
+  Loop(QueueTop(elem), (void (*)(char **)) PrintMachine);
   FreeQueue(elem);
 
   return DM_NORMAL;
@@ -2701,66 +3008,69 @@ int GetTopLevelCont(int argc, char **argv)
   return DM_NORMAL;
 }
 
-void PrintHWAddr(char **info)
+void PrintIdentifier(char **info)
 {
   char buf[BUFSIZ];
 
-  sprintf(buf, "Machine: %-30s Hardware Address: %-20s",
-          info[0], info[1]);
+  sprintf(buf, "Machine: %-30s Identifier: %s:%s",
+          info[0], info[1], info[2]);
   Put_message(buf);
 }
 
-/*	Function Name: ShowHWAddrs
- *	Description: This function shows machine hardware addresses
+/*	Function Name: ShowIdentifiers
+ *	Description: This function shows machine identifiers
  *	Arguments: argc, argv - the hostname in argv[1]
  *	Returns: DM_NORMAL.
  */
 
-int ShowHWAddrs(int argc, char **argv)
+int ShowIdentifiers(int argc, char **argv)
 {
-  char *args[1];
+  char *args[2];
   int stat;
   struct mqelem *elem = NULL;
 
   args[0] = canonicalize_hostname(strdup(argv[1]));
-  if ((stat = do_mr_query("get_host_hwaddr_mapping", 1, args, StoreInfo, &elem)))
+  args[1] = "*";
+  if ((stat = do_mr_query("get_host_identifier_mapping", 2, args, StoreInfo, &elem)))
     {
-      com_err(program_name, stat, " in get_host_hwaddr_mapping.");
+      com_err(program_name, stat, " in get_host_identifier_mapping.");
       return DM_NORMAL;
     }
 
   Put_message("");
-  Loop(QueueTop(elem), (void (*)(char **)) PrintHWAddr);
+  Loop(QueueTop(elem), (void (*)(char **)) PrintIdentifier);
   FreeQueue(elem);
   return DM_NORMAL;
 }
   
-int AddHWAddr(int argc, char **argv)
+int AddIdentifier(int argc, char **argv)
 {
   int stat;
-  char *args[2];
+  char *args[3];
 
   args[0] = canonicalize_hostname(strdup(argv[1]));
   args[1] = argv[2];
+  args[2] = argv[3];
 
-  stat = do_mr_query("add_host_hwaddr", 2, args, NULL, NULL);
+  stat = do_mr_query("add_host_identifier", 3, args, NULL, NULL);
   if (stat != MR_SUCCESS)
-    com_err(program_name, stat, " in add_host_hwaddr");
+    com_err(program_name, stat, " in add_host_identifer");
 
   return DM_NORMAL;
 }
 
-int DeleteHWAddr(int argc, char **argv)
+int DeleteIdentifier(int argc, char **argv)
 {
   int stat;
-  char *args[2];
+  char *args[3];
 
   args[0] = canonicalize_hostname(strdup(argv[1]));
   args[1] = argv[2];
+  args[2] = argv[3];
 
-  stat = do_mr_query("delete_host_hwaddr", 2, args, NULL, NULL);
+  stat = do_mr_query("delete_host_identifier", 3, args, NULL, NULL);
   if (stat != MR_SUCCESS)
-    com_err(program_name, stat, " in delete_host_hwaddr");
+    com_err(program_name, stat, " in delete_host_identifier");
  
   return DM_NORMAL;
 }
@@ -2797,3 +3107,167 @@ int AddDynamicHost(int argc, char **argv)
 
   return DM_NORMAL;
 }
+
+int ShowRecords(int argc, char **argv)
+{
+  struct mqelem *top;
+  char *tmpname;
+
+  tmpname = canonicalize_hostname(strdup(argv[1]));
+  top = GetMCInfo(RECORD, tmpname, NULL);
+  Put_message("");
+  Loop(top, ((void (*)(char **)) PrintRecord));
+  FreeQueue(top);
+
+  return DM_NORMAL;
+}
+
+int AddRecord(int argc, char **argv)
+{
+  int stat;
+  char *args[3];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  args[1] = strdup("");
+  if (GetTypeFromUser("Record type", "rr_type", &args[1]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[2] = strdup("");
+  if (GetValueFromUser("Record value", &args[2]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  stat = do_mr_query("add_host_resource_record", 3, args, NULL, NULL);
+  switch (stat)
+    {
+    case MR_SUCCESS:
+      break;
+    case MR_EXISTS:
+      Put_message("That record already exists.");
+      break;
+    case MR_PERM:
+      Put_message("Permission denied. Regular users cannot added DNS records to a host.");
+      break;
+    default:
+      com_err(program_name, stat, "in add_host_resource_record");
+    }
+
+  return DM_NORMAL;
+}
+
+int DeleteRecord(int argc, char **argv)
+{
+  int stat;
+  char *args[3];
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  args[1] = strdup("");
+  if (GetTypeFromUser("Record type", "rr_type", &args[1]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[2] = strdup("");
+  if (GetValueFromUser("Record value", &args[2]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  stat = do_mr_query("delete_host_resource_record", 3, args, NULL, NULL);
+  if (stat)
+    com_err(program_name, stat, " in delete_host_resource_record");
+
+  return DM_NORMAL;
+}
+
+static void RealSetRecordTTL(char **info, Bool junk)
+{
+  int stat;
+
+}
+
+int SetRecordTTL(int argc, char **argv)
+{
+  int stat;
+  char *args[3], *yesno;
+  struct mqelem *elem = NULL;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+
+  args[1] = strdup("");
+  if (GetTypeFromUser("Record type", "rr_type", &args[1]) == SUB_ERROR)
+    return DM_NORMAL;
+
+  stat = do_mr_query("get_host_resource_record", 2, args, StoreInfo, &elem);
+  if (stat)
+    {
+      if (stat == MR_NO_MATCH)
+	{
+	  Put_message("Machine has no assigned records of that type.");
+	  return DM_NORMAL;
+	}
+      else
+	{
+	  com_err(program_name, stat, " in get_host_resource_record.");
+	  return DM_NORMAL;
+	}
+    }
+
+  yesno = strdup("1");
+  if (GetYesNoValueFromUser("Set TTL for all records of this type?:", &yesno) == SUB_ERROR)
+    return DM_NORMAL;
+
+  if (!strcmp(yesno, "1"))
+    {
+      /* Get a reasonable default */
+      while (elem)
+	{
+	  char **xargv = elem->q_data;
+	  if (!strcmp(xargv[1], args[1]))
+	    {
+	      args[3] = strdup(xargv[3]);
+	      break;
+	    }
+	  elem = elem->q_forw;
+	}
+
+      if (GetValueFromUser("New TTL for record type", &args[3]) == SUB_ERROR)
+        return DM_NORMAL;
+
+      elem = QueueTop(elem);
+      while (elem)
+	{
+	  char **xargv = elem->q_data;
+	  args[2] = strdup(xargv[2]);
+	  stat = do_mr_query("set_host_resource_record_ttl", 4, args, NULL, NULL);
+	  if (stat)
+	    com_err(program_name, stat, " while updating TTL for record type %s, value %s", args[1], args[2]);
+	  free(args[2]);
+	  elem = elem->q_forw;
+	}
+    }
+  else
+    {
+      args[2] = strdup("");
+      if (GetValueFromUser("Value of record to modify", &args[2]) == SUB_ERROR)
+	return DM_NORMAL;
+
+      while (elem)
+	{
+	  char **xargv = elem->q_data;
+	  if (!strcmp(xargv[1], args[1]) && !strcmp(xargv[2], args[2]))
+	    {
+	      args[3] = strdup(xargv[3]);
+	      break;
+	    }
+	  elem = elem->q_forw;
+	}
+
+      if (GetValueFromUser("TTL for record", &args[3]) == SUB_ERROR)
+	return DM_NORMAL;
+
+      if (stat = do_mr_query("set_host_resource_record_ttl", 4, args, NULL, NULL))
+	com_err(program_name, stat, " in set_host_resource_record_ttl.");
+    }
+
+  FreeQueue(elem);
+  return DM_NORMAL;
+}
+

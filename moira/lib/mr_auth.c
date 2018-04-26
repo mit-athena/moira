@@ -15,9 +15,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#endif
 #include <krb5.h>
 
 krb5_context context = NULL;
@@ -31,51 +28,7 @@ RCSID("$HeadURL$ $Id$");
 
 int mr_auth(char *prog)
 {
-#ifdef HAVE_KRB4
-  int status;
-  mr_params params, reply;
-  char *args[2];
-  int argl[2];
-  char realm[REALM_SZ], host[BUFSIZ], *p;
-  KTEXT_ST auth;
-
-  CHECK_CONNECTED;
-
-  if ((status = mr_host(host, sizeof(host) - 1)))
-    return status;
-
-  strcpy(realm, krb_realmofhost(host));
-  for (p = host; *p && *p != '.'; p++)
-    {
-      if (isupper(*p))
-	*p = tolower(*p);
-    }
-  *p = '\0';
-
-  status = krb_mk_req(&auth, MOIRA_SNAME, host, realm, 0);
-  if (status != KSUCCESS)
-    {
-      status += ERROR_TABLE_BASE_krb;
-      return status;
-    }
-  params.u.mr_procno = MR_AUTH;
-  params.mr_argc = 2;
-  params.mr_argv = args;
-  params.mr_argl = argl;
-  params.mr_argv[0] = (char *)auth.dat;
-  params.mr_argl[0] = auth.length;
-  params.mr_argv[1] = prog;
-  params.mr_argl[1] = strlen(prog) + 1;
-
-  if ((status = mr_do_call(&params, &reply)) == MR_SUCCESS)
-    status = reply.u.mr_status;
-
-  mr_destroy_reply(reply);
-
-  return status;
-#else
   return MR_NO_KRB4;
-#endif
 }
 
 int mr_proxy(char *principal, char *orig_authtype)

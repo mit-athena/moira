@@ -64,8 +64,6 @@
 #define ALIAS_NAME_POS 1
 #define ALIAS_ID_POS 2
 
-#define DEFAULT_TTL 1800
-
 void check_dns(void);
 int get_creds(char *file, char **buffer);
 int get_hmac_key(char *file, char **buffer);

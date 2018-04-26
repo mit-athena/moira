@@ -21,11 +21,7 @@
 #include <unistd.h>
 
 #include <com_err.h>
-#ifdef HAVE_KRB4
-#include <krb.h>
-#else
 #include <mr_krb.h>
-#endif
 #include <krb5.h>
 
 #include <afs/param.h>

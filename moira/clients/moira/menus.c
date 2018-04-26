@@ -502,25 +502,84 @@ Menu cname_menu = {
   }
 };
 
-Menu hwaddr_menu = {
+Menu address_menu = {
   NULLFUNC,
   NULLFUNC,
-  "Hardware Address Menu",
+  "Host Address Menu",
+  5,
+  {
+    { ShowAddresses, NULLMENU, 2, {
+	{ "show", "Get host address information"},
+	{ "name", "Machine's Name: " },
+      } },
+    { AddAddress, NULLMENU, 4, {
+	{ "add", "Add Host Address"},
+	{ "name", "Machine's Name: "},
+	{ "network", "Network: "},
+	{ "address", "Address: "}
+      } },
+    { DeleteAddress, NULLMENU, 4, {
+	{ "delete", "Delete Host Address"},
+	{ "name", "Machine's Name: "},
+	{ "network", "Network: "},
+	{ "address", "Address: "}
+      } },
+    { SetAddressTTL, NULLMENU, 3, {
+	{"setttl", "Set DNS TTL for this host address"},
+	{"name", "Machine's Name: "},
+	{"address", "Address: "}
+      } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+  }
+};
+
+Menu record_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Host DNS Record Menu",
+  5,
+  {
+    { ShowRecords, NULLMENU, 2, {
+	{ "show", "Get host record information"},
+	{ "name", "Machine's Name: " },
+      } },
+    { AddRecord, NULLMENU, 2, {
+	{ "add", "Add Host Record"},
+	{ "name", "Machine's Name: " },
+      } },
+    { DeleteRecord, NULLMENU, 2, {
+	{ "delete", "Delete Host Record"},
+	{ "name", "Machine's Name: " },
+      } },
+    { SetRecordTTL, NULLMENU, 2, {
+	{ "setttl", "Set DNS TTL for this host record"},
+	{ "name", "Machine's Name: "},
+      } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+  }
+};
+
+Menu identifier_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Host Identifier Menu",
   4,
   {
-    { ShowHWAddrs, NULLMENU, 2, {
-      {"show", "Get Host hardware address information"},
+    { ShowIdentifiers, NULLMENU, 2, {
+      {"show", "Get Host identifier information"},
       {"name", "Machine's Name: "},
     } },
-    { AddHWAddr, NULLMENU, 3, {
-      {"add", "Add Host hardware address"},
+    { AddIdentifier, NULLMENU, 4, {
+      {"add", "Add Host identifier"},
       {"name", "Machine's Name: "},
-      {"hwaddr", "Hardware Address: "},
+      {"type", "Identifier Type: "},
+      {"identifier", "Identifier Value: "},
     } },
-    { DeleteHWAddr, NULLMENU, 3, {
-      {"delete", "Delete Host hardware address"},
+    { DeleteIdentifier, NULLMENU, 4, {
+      {"delete", "Delete Host identifier"},
       {"name", "Machine's Name: "},
-      {"hwaddr", "Hardware Address: "},
+      {"type", "Identifier Type: "},
+      {"identifier", "Identifier Value: "},
     } },
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
   }
@@ -534,25 +593,28 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  13,
+  16,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show", "Get machine information"},
       {"name", "Machine's Name: "}
     } },
-    { ShowMachineQuery, NULLMENU, 5, {
+    { ShowMachineQuery, NULLMENU, 3, {
       {"query", "Lookup machines"},
       {"name", "Machine Name (or leave empty to match any): "},
-      {"address", "Address in dotted notation (or leave empty to match any): "},
       {"location", "Location (or leave empty to match any): "},
-      {"network", "Network (or leave empty to match any): "}
+    } },
+    { ShowMachineByAddress, NULLMENU, 3, {
+      {"byaddress", "Lookup machine by address"},
+      {"network", "Network (or leave empty to match any): "},
+      {"address", "Address (or leave empty to match any): "},
     } },
     SIMPLEFUNC("owner", "Lookup machines by owner", MachineByOwner),
     SIMPLEFUNC("acctnumber", "Lookup machines by account number",
 	       MachineByAcctNumber),
     { AddMachine, NULLMENU, 2, {
       {"add", "Add a new machine"},
-      {"network", "Network assignment: "},
+      {"name", "Machine's Name: "},
     } },
     { UpdateMachine, NULLMENU, 2, {
       {"update", "Update machine information"},
@@ -562,17 +624,19 @@ Menu machine_menu = {
       {"delete", "Delete this machine"},
       {"name", "Machine's Name: "}
     } },
+    { ShowMachineUsage, NULLMENU, 2, {
+      {"usage", "Show where this machine is referenced"},
+      {"name", "Machine's Name: "}
+    } },
     { SetMachineOpt, NULLMENU, 2, {
       {"setopt", "Set network security options for this machine"},
       {"name", "Machine's Name: "},
     } },
     SUBMENU("cnames", "Alias names for machines", &cname_menu),
+    SUBMENU("addresses", "IP adddresses for machines", &address_menu),
     SUBMENU("mappings", "Machine To Cluster Mappings Menu", &mappings_menu),
-    SUBMENU("hwaddrs", "Hardware Addresses for machines", &hwaddr_menu),
-    { SetMachineTTL, NULLMENU, 2, {
-      {"setttl", "Set DNS TTL for this machine"},
-      {"name", "Machine's Name: "},
-    } },
+    SUBMENU("identifiers", "Identifiers for machines", &identifier_menu),
+    SUBMENU("records", "DNS records for machines", &record_menu),
     SIMPLEFUNC("dynamic", "Assign a dynamic host record", AddDynamicHost),
   }
 };
@@ -829,7 +893,7 @@ Menu printer_menu = {
       {"delete", "Delete Printer"},
       {"name", "Printer Name: "}
     } },
-    SUBMENU("hwaddrs", "Hardware Addresses for machines", &hwaddr_menu),
+    SUBMENU("identifiers", "Identifiers for machines", &identifier_menu),
     SUBMENU("server", "Print Servers Menu", &printserver_menu),
   }
 };

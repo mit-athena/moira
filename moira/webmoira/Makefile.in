@@ -9,6 +9,7 @@ JAVA_CPPFLAGS=@JAVA_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(JAVA_CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
 LDFLAGS=@LDFLAGS@
 SO_LDFLAGS=@SO_LDFLAGS@
 LIBS=@LIBS@
@@ -20,25 +21,29 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 BUILDTOP=..
+top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
 
 CLASSES= mit/moira/AuthenticationError.class mit/moira/Coder.class mit/moira/Delmember.class mit/moira/Kticket.class mit/moira/ListInfo.class mit/moira/Member.class mit/moira/Moira.class mit/moira/MoiraConnectInternal.class mit/moira/MoiraException.class mit/moira/MoiraServlet.class
-OBJ=     moirai.o
-SOBJ=    mit/moira/libmoirajava.so
-SOBJG=   mit/moira/libmoirajava_g.so
+OBJ=     moirai.lo
+SOBJ=    mit/moira/libmoirajava.la
 JHEADER= mit_moira_MoiraConnectInternal.h
 
 TARGET=	 $(SOBJ)
 
-.c.o:
-	$(CC) -c $(ALL_CFLAGS) $<
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+.SUFFIXES: .lo
 
 all: $(TARGET)
 
 clean:
-	rm -f $(CLASSES) $(OBJ) $(SOBJ) $(SOBJG) $(JHEADER)
+	$(LIBTOOL) --mode=clean rm $(CLASSES) $(OBJ) $(SOBJ) $(SOBJG) $(JHEADER)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -46,8 +51,7 @@ cleandir distclean: clean
 depend:
 
 $(SOBJ): $(JHEADER) $(OBJ)
-	$(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	cp -p $@ $(SOBJG)
+	$(LIBTOOL) --mode=link $(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS) -rpath ${libdir} -version-info 0:0:0
 
 $(JHEADER): java
 	javah -jni mit.moira.MoiraConnectInternal

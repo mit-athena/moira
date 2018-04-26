@@ -44,19 +44,19 @@ const char *pageprice = "10";
 
 /* flags from command line */
 int info_flag, verbose, noauth, duplex_default, hold_default;
-int create_flag, delete_flag, rename_flag, ka, banner, update_flag, update_hwaddr_flag;
+int create_flag, delete_flag, rename_flag, ka, banner, update_flag, update_identifier_flag;
 char *lpracl, *lpcacl, *report_list;
 char *contact, *newname, *printserver, *type, *hwtype, *mac, *hostname, *queuename;
 char *duplexname, *logserver, *location, *realname, *pr_status;
 
 char *queuename, *whoami, *testqueue;
 
-struct string_list *hwaddr_add_queue, *hwaddr_remove_queue;
+struct string_list *identifier_add_queue, *identifier_remove_queue;
 
 void usage(char **argv);
 int show_printer_info(char *queuename);
 int save_printer_info(int argc, char **argv, void *hint);
-int show_hwaddrs(int argc, char **argv, void *hint);
+int show_identifiers(int argc, char **argv, void *hint);
 void recursive_display_list_members(void);
 char *get_username(void);
 int wrap_mr_query(char *handle, int argc, char **argv,
@@ -89,20 +89,21 @@ int main(int argc, char **argv)
 {
   int status, success;
   char **arg = argv;
-  char *uargv[2];
+  char *uargv[3];
   char *pargv[PRN_END + 1];
   char *membervec[4];
   struct member *memberstruct;
+  struct mrcl_identifier_type *idstruct;
   char *server = NULL, *p;
   int i;
 
   /* clear all flags & lists */
   i = info_flag = verbose = noauth = 0;
-  create_flag = delete_flag = update_flag = update_hwaddr_flag = 0;
+  create_flag = delete_flag = update_flag = update_identifier_flag = 0;
   ka = duplex_default = hold_default = banner = -1;
   location = lpracl = lpcacl = report_list = pr_status = NULL;
   logserver = duplexname = realname = newname = printserver = type = hwtype = mac = hostname = NULL;
-  hwaddr_add_queue = hwaddr_remove_queue = NULL;
+  identifier_add_queue = identifier_remove_queue = NULL;
   contact = NULL;
 
   whoami = argv[0];
@@ -294,27 +295,27 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
-	  else if (argis("ahw", "addhwaddr"))
+	  else if (argis("aid", "addidentifier"))
 	    {
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  hwaddr_add_queue=add_to_string_list(hwaddr_add_queue, *arg);
+		  identifier_add_queue=add_to_string_list(identifier_add_queue, *arg);
 		}
 	      else
 		usage(argv);
-	      update_hwaddr_flag++;
+	      update_identifier_flag++;
 	    }
-	  else if (argis("dhw", "delhwaddr"))
+	  else if (argis("did", "delidentifier"))
 	    {
 	      if (arg - argv < argc - 1)
 		{
 		  ++arg;
-		  hwaddr_remove_queue=add_to_string_list(hwaddr_remove_queue, *arg);
+		  identifier_remove_queue=add_to_string_list(identifier_remove_queue, *arg);
 		}
 	      else
 		usage(argv);
-	      update_hwaddr_flag++;
+	      update_identifier_flag++;
 	    }
 	  else if (argis("b", "banner"))
 	    {
@@ -372,11 +373,11 @@ int main(int argc, char **argv)
     usage(argv);
 
 
-  if (!update_flag && !rename_flag && !delete_flag && !create_flag && !update_hwaddr_flag)
+  if (!update_flag && !rename_flag && !delete_flag && !create_flag && !update_identifier_flag)
     info_flag++;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "eunice", 13, !noauth);
+  status = mrcl_connect(server, "eunice", 17, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Authentication error while working on queue %s",
@@ -602,9 +603,9 @@ int main(int argc, char **argv)
   if (info_flag)
     show_printer_info(queuename);
 
-  /* add hwaddrs if necessary */
-  if (hwaddr_add_queue) {
-    struct string_list *q = hwaddr_add_queue;
+  /* add identifiers if necessary */
+  if (identifier_add_queue) {
+    struct string_list *q = identifier_add_queue;
 
     status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
     if (status)
@@ -620,12 +621,25 @@ int main(int argc, char **argv)
 
     while(q) {
 
-      uargv[1] = q->string;
+      idstruct = mrcl_parse_mach_identifier(q->string);
+      uargv[2] = idstruct->value;
 
-      status = wrap_mr_query("add_host_hwaddr", 2, uargv, NULL, NULL);
+      switch (idstruct->type)
+	{
+	case MRCL_MID_ANY:
+	case MRCL_MID_HWADDR:
+	  uargv[1] = "HWADDR";
+	  break;
+
+	case MRCL_MID_DUID:
+	  uargv[1] = "DUID";
+	  break;
+	}
+	  
+      status = wrap_mr_query("add_host_identifier", 3, uargv, NULL, NULL);
       if (status)
 	{
-	  com_err(whoami, status, "while adding host hardware address");
+	  com_err(whoami, status, "while adding host identifier");
 	  exit(1);
 	}
 
@@ -633,9 +647,9 @@ int main(int argc, char **argv)
     }
   }
 
-  /* delete hwaddrs if necessary */
-  if (hwaddr_remove_queue) {
-    struct string_list *q = hwaddr_remove_queue;
+  /* delete identifiers if necessary */
+  if (identifier_remove_queue) {
+    struct string_list *q = identifier_remove_queue;
 
     status = wrap_mr_query("get_printer", 1, &queuename, save_printer_info, pargv);
     if (status)
@@ -651,12 +665,25 @@ int main(int argc, char **argv)
 
     while(q) {
 
-      uargv[1] = q->string;
+      idstruct = mrcl_parse_mach_identifier(q->string);
+      uargv[2] = idstruct->value;
 
-      status = wrap_mr_query("delete_host_hwaddr", 2, uargv, NULL, NULL);
+      switch (idstruct->type)
+        {
+        case MRCL_MID_ANY:
+        case MRCL_MID_HWADDR:
+          uargv[1] = "HWADDR";
+          break;
+
+        case MRCL_MID_DUID:
+          uargv[1] = "DUID";
+          break;
+        }
+
+      status = wrap_mr_query("delete_host_identifier", 3, uargv, NULL, NULL);
       if (status)
         {
-          com_err(whoami, status, "while deleting host hardware address");
+          com_err(whoami, status, "while deleting host identifier");
           exit(1);
         }
 
@@ -713,20 +740,20 @@ void usage(char **argv)
 	  "-ac  | -lpracl list");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d   | -duplex name",
 	  "-n   | -noauth");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ahw | -addhwaddr hwaddr", 
-	  "-dhw | -delhwaddr hwaddr");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-aid | -addidentifier identifier", 
+	  "-did | -delidentifier identifier");
   fprintf(stderr, "  %-39s\n" , "-db  | -database host[:port]");
   exit(1);
 }
 
-static int show_has_hwaddrs;
+static int show_has_identifiers;
 
-int show_hwaddrs(int argc, char **argv, void *hint)
+int show_identifiers(int argc, char **argv, void *hint)
 {
-  if(!show_has_hwaddrs++)
-    printf("Hardware Addresses:  %s", argv[1]);
+  if(!show_has_identifiers++)
+    printf("Host identifiers:  %s:%s", argv[1], argv[2]);
   else
-    printf(", %s", argv[1]);
+    printf(", %s:%s", argv[1], argv[2]);
 
   return MR_CONT;
 }
@@ -734,6 +761,7 @@ int show_hwaddrs(int argc, char **argv, void *hint)
 int show_printer_info(char *queuename)
 {
   char *pargv[PRN_END + 1];
+  char *uargv[3];
   int status, banner, i;
   struct mqelem *elem = NULL;
 
@@ -759,14 +787,17 @@ int show_printer_info(char *queuename)
           pargv[PRN_TYPE + 1], pargv[PRN_HWTYPE + 1]);
   printf("Printer hostname: %s\n", pargv[PRN_HOSTNAME + 1]);
 
-  show_has_hwaddrs = 0;
-  status = wrap_mr_query("get_host_hwaddr_mapping", 1, &pargv[PRN_HOSTNAME + 1], show_hwaddrs, &elem);
+  show_has_identifiers = 0;
+  
+  uargv[0] = pargv[PRN_HOSTNAME + 1];
+  uargv[1] = "*";
+  status = wrap_mr_query("ghim", 2, uargv, show_identifiers, &elem);
   if (status)
     {
       if (status != MR_NO_MATCH)
-	com_err(whoami, status, "while getting hardware addresses");
+	com_err(whoami, status, "while getting host identifiers");
       else
-	printf("Hardware Addresses: none\n");
+	printf("Host Identifiers: none\n");
     }
   else
     printf("\n");

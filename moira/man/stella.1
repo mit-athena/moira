@@ -42,18 +42,33 @@ specified host.  Unlike clusters, a machine may only belong to a
 single container.
 .IP \fB-addcontainer\ \fIcontainer\ \fRor\ \fB-acn\ \fIcontainer\fR
 This will add the specified host to \fIcontainer\fR.
-.IP \fB-deletecontainer\ \fIcontainer\fRor \ \fB-dcn\ \fIcontainer\fR
+.IP \fB-deletecontainer\ \fIcontainer\ \fRor\ \fB-dcn\ \fIcontainer\fR
 This will delete the specified host from \fIcontainer\fR. 
 
-.IP \fB-listhwaddr\ \fRor\ \fB-lhw\fR
-This will list the Ethernet hardware addresses associated with the
+.IP \fB-listidentifier\ \fRor\ \fB-lid\fR
+This will list the identifiers associated with the
 specified host.
-.IP \fB-addhwaddr\ \fIhwaddr\ \fRor\ \fB-ahw\ \fIhwaddr\fR
-This will associated the hardware address \fIhwaddr\fR with the
-specified host.
-.IP \fB-delhwaddr\ \fIhwaddr\fRor \ \fB-dhw\ \fIhwaddr\fR
-This will disassociate the hardware address \fIhwaddr\fR from the
-specified host.
+.IP \fB-addidentifier\ \fIidentifier\ \fRor\ \fB-aid\ \fIidentifier\fR
+This will associate the identifier \fIidentifier\fR with the
+specified host. Identifier should be of the form
+type:value, where type is one of HWADDR or DUID.  If no type is
+specified, a default of HWADDR will be assumed.
+.IP \fB-delidentifier\ \fIidentifier\ \fRor\ \fB-did\ \fIidentifier\fR
+This will disassociate the identifier \fIidentifier\fR from the
+specified host. Identifier should be of the form
+type:value, where type is one of HWADDR or DUID.  If no type is
+specified, a default of HWADDR will be assumed.
+
+.IP \fB-listrecords\ \fRor\ \fB-lrr\fR
+List all DNS resource records associated with the specified host.
+.IP \fB-addrecord\ \fIrecord\ \fRor\ \fB-arr\ \fIrecord\fR
+This will associate the DNS resource record \fIrecord\fR with the
+specified host. The record should be of the form type:value, where type
+is a DNS RR type such as MX, NS, SRV, etc.
+.IP \fB-delrecord\ \fIrecord\ \fRor\ \fB-drr\ \fIrecord\fR
+THis will disassociate the DNS resource record \fIrecord\fR from the
+specified host.  The record should be of the form type:value, where type
+is a DNS RR type such as MX, NS, SRV, etc.
 
 .IP \fB-vendor\ \fIvendor\ \fRor\ \fB-V\ \fIvendor\fR
 Update the vendor field for the specified host to \fIvendor\fR.
@@ -64,10 +79,17 @@ Update the OS field for the specified host to \fIos\fR.
 .IP \fB-location\ \fIlocation\ \fRor\ \fB-L\ \fIlocation\fR
 Update the location field for the specified host to \fIlocation\fR.
 
-.IP \fB-address\ \fIaddress\ \fRor\ \fB-A\ \fIaddress\fR
-Change the address of the given host to \fIaddress\fR.
-.IP \fB-network\ \fInetwork\ \fRor\ \fB-N\ \fInetwork\fR
-Change the network for the given host to \fInetwork\fR.
+.IP \fB-address\ \fInetwork:address\ \fRor\ \fB-A\ \fInetwork:address\fR
+Add an IP address to the host record.  Address must be specified as 
+\fInetwork:address\fR, where network corresponds to a subnet defined in Moira
+and address is either an IP address appropriately formatted for the type of
+network (either IPv4 or IPv4) or the string "unique" to assign a unique
+address approriate for that network.
+.IP \fB-deleteaddress\ \fInetwork:address\ \fRor\ \fB-DA\ \fInetwork:address\fR
+Removes an IP address to the host record.  Address must be specified as
+\fInetwork:address\fR, where network corresponds to a subnet defined in
+Moira and address is an IP address that has previously been assigned to
+this host record.
 
 .IP \fB-opcmt\ \fIop_cmt\ \fRor\ \fB-oc\ \fIop_cmt\fR
 Set the operational comment for the specified host to \fIop_cmt\fR.
@@ -100,12 +122,20 @@ option will clear the associated operational comment for the host.
 Disable the network firewall policy for the specified host.
 When this option is given, \fB-opcmt\ \fIop_cmt\ \fR must also be specified
 with the reason for the opt-out.
-.IP \fB-ttl\ \fIttl\ \fRor\ \fB-setttl\ \fIttl\fR
-Set the DNS TTL for the specified host to \fIttl\fR.
+.IP \fB-ttl\ \fIaddress\ or\ record\ type:ttl\ \fRor\ \fB-setttl\ \fIaddress\ or\ record\ type:ttl\fR
+If an IP address is specified, set the DNS TTL for the corresponding
+host and address to \fIttl\fR.  If a DNS resource record type is
+specified, set the DNS TTL for all corresponding records for the host to \fIttl\fR.
 .IP \fB-adh\ \fIowner\ \fRor\ \fB-adddynamic\ \fIowner\fR
 Assign a dynamic host record owned by \fIowner\fR.  The name assigned
 will be printed upon successful completion.  This field is mutually exclusive
 with all other operations.
+
+.IP \fB-showusage\ \fRor\ \fB-su\fR
+Show all references to the specified host in Moira, i.e. assigned
+addresses, aliases, DNS records, cluster / container memberships, etc.
+Hosts may not be deleted unless all such references are removed.
+
 .IP \fB-unformatted\ \fRor\ \fB-u\fR
 Display host information with each field on a seperate line, in the 
 form "fieldname: value".

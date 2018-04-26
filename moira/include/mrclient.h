@@ -24,9 +24,29 @@
 #define MRCL_M_MACHINE       5
 #define MRCL_M_NONE          6
 
+#define MRCL_MID_ANY           0
+#define MRCL_MID_HWADDR        1
+#define MRCL_MID_DUID          2
+#define MRCL_MID_NONE          3
+
 struct mrcl_ace_type {
   int type;
   char *name, *tag;
+};
+
+struct mrcl_identifier_type {
+  int type;
+  char *value;
+};
+
+struct mrcl_netaddr_type {
+  char *network;
+  char *address;
+};
+
+struct mrcl_addropt_type {
+  char *address;
+  char *opt;
 };
 
 int mrcl_connect(char *server, char *client, int version, int auth);
@@ -34,8 +54,12 @@ char *mrcl_krb_user(void);
 char *partial_canonicalize_hostname(char *s);
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret);
+int mrcl_validate_kerberos_member(char *str, char **ret);
 
 struct mrcl_ace_type *mrcl_parse_member(char *s);
+struct mrcl_identifier_type *mrcl_parse_mach_identifier(char *s);
+struct mrcl_netaddr_type *mrcl_parse_netaddr(char *s);
+struct mrcl_addropt_type *mrcl_parse_addropt(char *s);
 
 char *mrcl_get_message(void);
 void mrcl_com_err(char *whoami);

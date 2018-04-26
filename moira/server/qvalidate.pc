@@ -401,7 +401,7 @@ int validate_typedata(struct query *q, char *argv[], struct valobj *vo)
 	   * that we're trying to resolve, we should get the value of
 	   * numvalues.[idfield] for the id.
 	   */
-	  if (vo->idfield && (*(int *)argv[0] == *(int *)argv[vo->index]))
+	  if (vo->idfield && *argv[vo->index] && !(strcmp(argv[0], argv[vo->index])))
 	    {
 	      set_next_object_id(q->validate->object_id, q->rtable, 0);
 	      name = vo->idfield;

@@ -30,3 +30,4 @@ drop table containers;
 drop table mcntmap;
 drop table accountnumbers;
 drop table incremental_queue;
+drop table incremental_pipe;

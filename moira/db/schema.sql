@@ -86,8 +86,8 @@ create table machine
 	use		INTEGER		DEFAULT 0	NOT NULL,
 	status		INTEGER		DEFAULT 0	NOT NULL,
 	statuschange	DATE    	DEFAULT SYSDATE	NOT NULL,
-	snet_id		INTEGER		DEFAULT 0	NOT NULL,
-	address		VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
+	unusedsnet_id		INTEGER		DEFAULT 0	NOT NULL,
+	unusedaddress		VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
 	unusedhwaddr		VARCHAR(12)	DEFAULT CHR(0)	NOT NULL,
 	owner_type	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
 	owner_id	INTEGER		DEFAULT 0	NOT NULL,
@@ -98,8 +98,7 @@ create table machine
 	inuse		DATE		DEFAULT SYSDATE	NOT NULL,
 	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
 	modby		INTEGER		DEFAULT 0	NOT NULL,
-	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
-	ttl             INTEGER         DEFAULT 1800    NOT NULL
+	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
 );
 
 create table hostalias
@@ -108,21 +107,41 @@ create table hostalias
 	mach_id		INTEGER	 	DEFAULT 0	NOT NULL
 );
 
+create table hostaddress
+(
+	mach_id		INTEGER		DEFAULT 0	NOT NULL,
+	snet_id		INTEGER		DEFAULT 0	NOT NULL,
+	address		VARCHAR(46)	DEFAULT CHR(0)	NOT NULL,
+	ttl             INTEGER         DEFAULT 1800    NOT NULL,
+	ptr		INTEGER		DEFAUlT 0	NOT NULL
+
+);
+
+create table hostrecord
+(
+	mach_id		INTEGER		DEFAULT 0	NOT NULL,
+	rr_type		VARCHAR(12)	DEFAULT CHR(0)	NOT NULL,
+	rr_value	VARCHAR(255)	DEFAULT CHR(0)	NOT NULL,
+	ttl		INTEGER		DEFAULT 1800	NOT NULL
+);
+
 create table subnet
 (
-	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
 	snet_id		INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(48) 	DEFAULT CHR(0)	NOT NULL,
 	status		INTEGER		DEFAULT 0	NOT NULL,
 	contact		VARCHAR(255)	DEFAULT CHR(0)	NOT NULL,
 	account_number	VARCHAR(10)	DEFAULT CHR(0)	NOT NULL,
-	saddr		INTEGER		DEFAULT 0	NOT NULL,
+	saddr		VARCHAR(46)	DEFAULT CHR(0)	NOT NULL,
 	mask		INTEGER		DEFAULT 0	NOT NULL,
-	low		INTEGER		DEFAULT 0	NOT NULL,
-	high		INTEGER		DEFAULT 0	NOT NULL,
+	low		VARCHAR(46)	DEFAULT CHR(0)	NOT NULL,
+	high		VARCHAR(46)	DEFAULT CHR(0)	NOT NULL,
 	prefix		VARCHAR(8)	DEFAULT CHR(0)	NOT NULL,
 	owner_type	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
 	owner_id	INTEGER		DEFAULT 0	NOT NULL,
+	vlan_tag	INTEGER		DEFAULT 0	NOT NULL,
+	addr_type	VARCHAR(8)	DEFAULT 'IPV4'	NOT NULL,
 	modtime		DATE 		DEFAULT SYSDATE	NOT NULL,
 	modby		INTEGER		DEFAULT 0	NOT NULL,
 	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
@@ -207,7 +226,7 @@ create table servers
 
 create table serverhosts 
 (
-	service		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	service		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	success		INTEGER 	DEFAULT 0	NOT NULL,
 	enable		INTEGER 	DEFAULT 0	NOT NULL,
@@ -326,7 +345,7 @@ create table strings
 
 create table services 
 (
-	name		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	protocol	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
 	port		SMALLINT 	DEFAULT 0	NOT NULL,
 	description	VARCHAR(64) 	DEFAULT CHR(0)	NOT NULL,
@@ -398,7 +417,7 @@ create table numvalues
 
 create table tblstats 
 (
-	table_name	VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
+	table_name	VARCHAR(32)	DEFAULT CHR(0)	NOT NULL,
 	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
 	appends		INTEGER		DEFAULT 0	NOT NULL,
 	updates		INTEGER		DEFAULT 0	NOT NULL,
@@ -407,8 +426,8 @@ create table tblstats
 
 create table incremental
 (
-	table_name	VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
-	service		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL
+	table_name	VARCHAR(32)	DEFAULT CHR(0)	NOT NULL,
+	service		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL
 );
 
 create table containers
@@ -496,16 +515,17 @@ create table userhistory
 	purged		DATE		DEFAULT SYSDATE NOT NULL
 );
 
-create table hwaddrmap
+create table machidentifiermap
 (
-	mach_id		INTEGER		DEFAULT 0	NOT NULL,
-	hwaddr		VARCHAR(12)	DEFAULT CHR(0)	NOT NULL
+	mach_id			INTEGER		DEFAULT 0	 NOT NULL,
+	mach_identifier_type	VARCHAR(8)	DEFAULT 'HWADDR' NOT NULL,
+	mach_identifier		VARCHAR(37)	DEFAULT CHR(0)	 NOT NULL
 );
 
 create table incremental_queue
 (
-	table_name      VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
-	service         VARCHAR(16)     DEFAULT CHR(0)  NOT NULL,
+	table_name      VARCHAR(32)     DEFAULT CHR(0)  NOT NULL,
+	service         VARCHAR(32)     DEFAULT CHR(0)  NOT NULL,
 	beforec		INTEGER		DEFAUlT 0	NOT NULL,
 	afterc		INTEGER		DEFAULT 0	NOT NULL,
 	before		VARCHAR(4000)	DEFAULT CHR(0)	NOT NULL,
@@ -514,3 +534,7 @@ create table incremental_queue
 	incremental_id	INTEGER		DEFAULT 0	NOT NULL
 );
 	
+create table incremental_pipe
+(
+	service		VARCHAR(32)	DEFAULT CHR (0)	NOT NULL
+);

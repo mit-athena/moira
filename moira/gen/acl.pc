@@ -19,10 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#endif
-
 EXEC SQL INCLUDE sqlca;
 
 RCSID("$HeadURL$ $Id$");

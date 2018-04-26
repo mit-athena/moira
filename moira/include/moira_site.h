@@ -171,19 +171,17 @@
 #define M_USE		8
 #define M_STAT		9
 #define M_STAT_CHNG	10
-#define M_SUBNET	11
-#define M_ADDR		12
-#define M_OWNER_TYPE	13
-#define M_OWNER_NAME	14
-#define M_ACOMMENT	15
-#define M_OCOMMENT	16
-#define M_CREATED	17
-#define M_CREATOR	18
-#define M_INUSE		19
-#define M_MODTIME	20
-#define M_MODBY		21
-#define M_MODWITH	22
-#define M_END		23
+#define M_OWNER_TYPE	11
+#define M_OWNER_NAME	12
+#define M_ACOMMENT	13
+#define M_OCOMMENT	14
+#define M_CREATED	15
+#define M_CREATOR	16
+#define M_INUSE		17
+#define M_MODTIME	18
+#define M_MODBY		19
+#define M_MODWITH	20
+#define M_END		21
 
 /*  Machine to Cluster mapping */
 
@@ -345,10 +343,12 @@
 #define SN_PREFIX	9
 #define SN_ACE_TYPE	10
 #define SN_ACE_NAME	11
-#define SN_MODTIME	12
-#define SN_MODBY	13
-#define SN_MODWITH	14
-#define SN_END		15
+#define SN_VLAN_TAG     12
+#define SN_ADDR_TYPE    13
+#define SN_MODTIME	14
+#define SN_MODBY	15
+#define SN_MODWITH	16
+#define SN_END		17
 
 /* Subnet statuses */
 #define SNET_STATUS_RESERVED         0
@@ -462,5 +462,7 @@
 #define REGJOURNAL	"/moira/journal.reg"
 #define NODCMFILE	"/etc/nodcm"	/* flag to inhibit DCM running */
 #define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
+
+#define DEFAULT_TTL     1800
 
 #endif /* _moira_site_ */	     /* Do not add anything after this line. */

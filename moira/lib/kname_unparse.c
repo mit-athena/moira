@@ -14,11 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#else
 #include <mr_krb.h>
-#endif
 
 RCSID("$HeadURL$ $Id$");
 

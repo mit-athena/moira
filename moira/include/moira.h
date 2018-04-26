@@ -86,6 +86,7 @@ struct hash {
 /* prototypes from critical.c */
 void critical_alert(char *whoami, char *instance, char *msg, ...);
 void send_zgram(char *inst, char *msg);
+void send_slack(char *msg);
 
 /* prototypes from fixhost.c */
 char *canonicalize_hostname(char *s);

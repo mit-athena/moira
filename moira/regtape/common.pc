@@ -18,7 +18,7 @@
 #include <stdio.h>
 
 EXEC SQL INCLUDE sqlca;
-extern void sqlglm(char *, unsigned int *, unsigned int *);
+extern void sqlglm(char *, size_t *, size_t *);
 
 RCSID("$HeadURL$ $Id$");
 
@@ -504,7 +504,7 @@ void sqlexit(void)
 void dbmserr(char *where, int what)
 {
   char err_msg[256];
-  int bufsize = 256, msglength = 0;
+  size_t bufsize = 256, msglength = 0;
 
   sqlglm(err_msg, &bufsize, &msglength);
   err_msg[msglength] = '\0';

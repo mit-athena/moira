@@ -127,7 +127,7 @@ void hosts(FILE *out)
   int i;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[MACHINE_NAME_SIZE], owner_type[MACHINE_OWNER_TYPE_SIZE];
-  char addr[MACHINE_ADDRESS_SIZE];
+  char addr[HOSTADDRESS_ADDRESS_SIZE];
   int id, use, status, owner;
   EXEC SQL END DECLARE SECTION;
 
@@ -163,8 +163,9 @@ void hosts(FILE *out)
   fprintf(stderr, "hosts (for real)...\n");
 
   EXEC SQL DECLARE hosts3 CURSOR FOR SELECT 
-    name, mach_id, address, use, status, owner_type, owner_id
-    FROM machine;
+    m.name, m.mach_id, ha.address, m.use, m.status, m.owner_type, m.owner_id
+    FROM machine m, hostaddress ha
+    WHERE m.mach_id = ha.mach_id;
   EXEC SQL OPEN hosts3;
   while (1)
     {

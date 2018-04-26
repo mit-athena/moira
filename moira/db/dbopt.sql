@@ -17,18 +17,24 @@ create index i_krb_str on  krbmap (string_id);
 
 create unique index i_mac_mid on machine  (mach_id);
 create index i_mac_name on  machine (name);
-create index i_mac_addr on machine (address);
 create index i_mac_loc on machine (location);
-create index i_mac_snet on machine (snet_id);
 create index i_mac_owner on machine (owner_id);
 create index i_mac_acctnumber on machine(account_number);
 
 create unique index i_hal_name on hostalias  (name);
 create index i_hal_id on hostalias (mach_id);
 
+create index i_haddr_id on hostaddress (mach_id);
+create index i_haddr_snet on hostaddress (snet_id);
+create index i_haddr_addr on hostaddress (address);
+
+create index i_hrec_id on hostrecord (mach_id);
+create index i_hec_value on hostrecord (rr_value);
+
 create unique index i_snt_sid on subnet  (snet_id);
 create index i_snt_name on subnet (name);
 create index i_snt_saddr on subnet(saddr);
+create index i_snt_vlan on subnet (vlan_tag);
 
 create unique index i_clu_clid on clusters (clu_id);
 create index i_clu_name on  clusters (name);
@@ -96,8 +102,9 @@ create unique index i_containers_cname on containers (name);
 create unique index i_mcntmap_machid on mcntmap (mach_id);
 create index i_mcntmap_cntid on mcntmap (cnt_id);
 
-create index i_hwaddrmap_machid on hwaddrmap (mach_id);
-create index i_hwaddrmap_hwaddr on hwaddrmap (hwaddr);
+create index i_machidentifiermap_machid on machidentifiermap (mach_id);
+create index i_machidentifiermap_type on machidentifiermap (mach_identifier_type);
+create index i_machidentifiermap_value on machidentifiermap (mach_identifier);
 
 create index i_incr_queue_ts on incremental_queue (timestamp);
 create index i_incr_queue_serv on incremental_queue (service);

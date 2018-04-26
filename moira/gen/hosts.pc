@@ -40,7 +40,7 @@ int main(int argc, char **argv)
   int id;
   char name[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
   char model[MACHINE_MODEL_SIZE], os[MACHINE_OS_SIZE];
-  char addr[MACHINE_ADDRESS_SIZE];
+  char addr[HOSTADDRESS_ADDRESS_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL CONNECT :db;
@@ -105,9 +105,10 @@ int main(int argc, char **argv)
     }
 
   EXEC SQL DECLARE x CURSOR FOR SELECT
-    name, mach_id, vendor, model, os, address
-    FROM machine WHERE status = 1 AND mach_id > 0
-    ORDER BY address;
+    m.name, m.mach_id, m.vendor, m.model, m.os, ha.address
+    FROM machine m, hostaddress ha, subnet s WHERE m.status = 1 AND m.mach_id > 0
+    AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    ORDER BY ha.address;
   EXEC SQL OPEN x;
   while (1)
     {

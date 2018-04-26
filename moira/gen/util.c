@@ -21,7 +21,7 @@ RCSID("$HeadURL$ $Id$");
 /* Julian day of the UNIX epoch (January 1, 1970) */
 #define UNIX_EPOCH 2440588
 
-extern void sqlglm(char buf[], int *, int *);
+extern void sqlglm(char buf[], size_t *, size_t *);
 
 void fix_file(char *targetfile)
 {
@@ -87,7 +87,7 @@ void db_error(int code)
 {
   extern char *whoami;
   char buf[256];
-  int bufsize = 256, len = 0;
+  size_t bufsize = 256, len = 0;
 
   if (code == -1013)
     {

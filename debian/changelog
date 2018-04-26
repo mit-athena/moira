@@ -1,3 +1,10 @@
+debathena-moira (4.0.0.3+70+g36ab6660-0debathena1) unstable; urgency=medium
+
+  * New upstream snapshot.
+  * Use dh_autoreconf
+
+ -- Anders Kaseorg <andersk@mit.edu>  Wed, 25 Apr 2018 23:45:54 -0400
+
 debathena-moira (4.0.0.3+51+g65d55c5-0debathena1) unstable; urgency=medium
 
   * New upstream snapshot.  (The version string is given by

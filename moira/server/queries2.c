@@ -2324,7 +2324,7 @@ static struct validate dhad_validate = {
   3,
   0,
   access_ahad,
-  0,
+  setup_dhad,
   followup_dhad,
 };
 

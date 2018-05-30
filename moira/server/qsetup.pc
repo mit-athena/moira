@@ -1679,6 +1679,43 @@ int setup_ahad(struct query *q, char **argv, client *cl)
   return MR_SUCCESS;
 }
 
+int setup_dhad(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+
+  /* Get address type of specified subnet */
+  EXEC SQL SELECT addr_type INTO :addr_type FROM subnet WHERE snet_id = :sid;
+
+  if (!strcmp(strtrim(addr_type), "IPV4"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'HWADDR';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  else if (!strcmp(strtrim(addr_type), "IPV6"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'DUID';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  
+  return MR_SUCCESS;
+}
+
 int setup_uhp4(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -1856,6 +1893,28 @@ int setup_ahid(struct query *q, char **argv, client *cl)
     FROM machidentifiermap WHERE mach_id = :mid AND mach_identifier_type = :type;
   if (count)
     return MR_NOT_UNIQUE;
+
+  /* Host must have one and only one address of the appropriate type. */
+  if (!strcasecmp(type, "hwaddr"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
+    }
+  else if (!strcasecmp(type, "duid"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV6';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
+    }
 
   return MR_SUCCESS;
 }

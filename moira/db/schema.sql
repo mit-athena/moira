@@ -538,3 +538,11 @@ create table incremental_pipe
 (
 	service		VARCHAR(32)	DEFAULT CHR (0)	NOT NULL
 );
+
+create table regmail
+(
+	mitid		VARCHAR(16)	DEFAULT CHR(0) NOT NULL,
+	email		VARCHAR(128)	DEFAULT CHR(0) NOT NULL,
+	status		SMALLINT	DEFAULT 0      NOT NULL,
+	issued		INTEGER		DEFAULT 0      NOT NULL
+);

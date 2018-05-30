@@ -536,10 +536,8 @@ def ib_add_host_duid(record):
         else:
             search_result = search_results[view][0]
 
-            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
-                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
-            else:
-                ipv6addrs = [ {} ]
+            # If we got here, this is guaranteed to exist because of the data model Moira enforces.
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
 
             ipv6addrs[0]['duid'] = id_value
             ipv6addrs[0]['configure_for_dhcp'] = True
@@ -577,9 +575,8 @@ def ib_add_host_mac(record):
             critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
         else:
             search_result = search_results[view][0]
-
-            # preserve existing IP address
             ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
+
             ipv4addrs[0]['mac'] = id_value
             ipv4addrs[0]['configure_for_dhcp'] = True
 
@@ -1098,11 +1095,7 @@ def ib_delete_host_duid(record):
             critical_log('Multiple host records exist for %s in view %s while deleting %s %s, should not happen!' % (ib_record['name'], view, id_type, id_value))
         else:
             search_result = search_results[view][0]
-
-            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
-                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
-            else:
-                ipv6addrs = [ {} ]
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
 
             if 'duid' in search_result['ipv6addrs'][0]:
                 if search_result['ipv6addrs'][0]['duid'] == id_value:
@@ -1146,7 +1139,6 @@ def ib_delete_host_mac(record):
         else:
             # exactly one result
             search_result = search_results[view][0]
-
             ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
 
             if 'mac' in search_result['ipv4addrs'][0]:

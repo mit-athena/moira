@@ -36,6 +36,8 @@ default_domain = "mit.edu"
 views = ['internal', 'external']
 # Supported types for hostrecord
 rr_types = ['MX', 'NS', 'SRV', 'TXT']
+# Subnets to skip; performance hack
+omitted_networks = ('whitelist', 'blacklist', 'quarantine')
 
 # Display an informational message to incr-runner.log.
 def log(msg):
@@ -1695,9 +1697,15 @@ def do_hostaddress(before, after):
     # Add
     if before == []:
         hostname = after[0]
+        subnet_name = after[1]
         has_ptr = int(after[5])
         addr_type = after[2]
         status = int(get_moira_host_status(hostname))
+
+        # Don't bother with processing addresses on select networks.
+        if subnet_name.lower().startswith(omitted_networks):
+            return
+
         if status == 1 and canonical_for_hostname(hostname) == True:
             if has_ptr == 1:
                 if addr_type == 'IPV4':
@@ -1714,8 +1722,14 @@ def do_hostaddress(before, after):
     # Delete
     elif after == []:
         hostname = before[0]
+        subnet_name = before[1]
         has_ptr = int(before[5])
         addr_type = before[2]
+
+        # Don't bother with processing addresses on select networks.
+        if subnet_name.lower().startswith(omitted_networks):
+            return
+
         if canonical_for_hostname(hostname) == True:
             if has_ptr == 1:
                 if addr_type == 'IPV4':
@@ -1732,6 +1746,8 @@ def do_hostaddress(before, after):
     # Update - TTL, PTR, or address might change, but only one at a time.
     else:
         hostname = after[0]
+        before_subnet_name = before[1]
+        after_subnet_name = after[1]
         before_ptr = int(before[5])
         after_ptr = int(after[5])
         addr_type = after[2]
@@ -1744,8 +1760,10 @@ def do_hostaddress(before, after):
             # This can only change if we're upgrading a host to a public address.
             # Otherwise it would be a delete and an add.
             if status == 1:
-                ib_delete_host_ipv4_address(before)
-                ib_add_host_ipv4_address(after)
+                if not before_subnet_nanme.lower().startswith(omitted_networks):
+                    ib_delete_host_ipv4_address(before)
+                if not after_subnet_name.lower().startswith(omitted_networks):
+                    ib_add_host_ipv4_address(after)
         elif before_ptr != after_ptr:
             # ptr bit changed.
             if status == 1:

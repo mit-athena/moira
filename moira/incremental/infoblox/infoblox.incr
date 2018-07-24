@@ -1676,6 +1676,10 @@ def do_machine(before, after):
 def do_hostalias(before, after):
     # Add
     if before == []:
+        alias = after[0]
+        if canonical_for_hostname(alias) == False:
+            return
+
         hostname = after[1]
         status = int(get_moira_host_status(hostname))
         if status == 1:

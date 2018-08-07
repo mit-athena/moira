@@ -259,8 +259,7 @@ struct entry *get_next_entry(FILE *in)
   e.type = "MITS";
 
   if ((strstr(uppercase(e.xtitle), "PROF") &&
-       !strstr(uppercase(e.xtitle), "PROFESSION")) ||
-      strstr(uppercase(e.xtitle), "LECTURE"))
+       !strstr(uppercase(e.xtitle), "PROFESSION")))
     e.type = "FACULTY";
   if (strstr(uppercase(e.dept), "LINCOLN LAB"))
     e.type = "LINCOLN";

@@ -807,6 +807,11 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
   if (cnt > 0)
     return MR_IN_USE;
 
+  EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
+    WHERE default_vpn_group = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+
   EXEC SQL SELECT COUNT(entity_id) INTO :cnt FROM quota
     WHERE entity_id = :id AND type = 'GROUP';
   if (cnt > 0)
@@ -2260,23 +2265,44 @@ int check_mailman_listname(char *name, const char *suffix)
 int canonical_for_hostname(char *name)
 {
   char *p;
+  char domain[ALIAS_TRANS_SIZE];
   int i;
 
   if (!strstr(name, ".MIT.EDU"))
     return MR_BAD_HOSTNAME;
+
+  for (p = name, i = 0; *p; p++)
+    {
+      if (*p == '.')
+	i++;
+    }
+    
+  /* Allow foo.mit.edu but not foo.subdomain.mit.edu unless it's in our whitelist */
+  if (i == 2)
+    return MR_SUCCESS;
   else
     {
-      for (p = name, i = 0; *p; p++)
+      EXEC SQL DECLARE csr_canon_domains CURSOR FOR
+	SELECT trans FROM alias WHERE name = 'canon_domain'
+	AND type = 'TYPE';
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr_canon_domains;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
 	{
-	  if (*p == '.')
-	    i++;
+	  EXEC SQL FETCH csr_canon_domains INTO :domain;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (strstr(name, strtrim(domain)))
+	    return MR_SUCCESS;
 	}
-      /* Allow foo.mit.edu but not foo.subdomain.mit.edu */
-      if (i != 2)
-	return MR_BAD_HOSTNAME;
     }
 
-  return MR_SUCCESS;
+  return MR_BAD_HOSTNAME;
 }
 
 int setup_sttl(struct query *q, char *argv[], client *cl)

@@ -292,6 +292,7 @@ typedef struct _SID
 #define MOIRA_STRINGS   0x4
 #define MOIRA_LISTS     0x8
 #define MOIRA_MACHINE   0x16
+#define MOIRA_IDS       0x32
 
 #define CHECK_GROUPS    1
 #define CLEANUP_GROUPS  2
@@ -419,6 +420,7 @@ LDAP *ldap_handle = NULL;
 
 char   PrincipalName[128];
 static char tbl_buf[1024];
+char  id_ou[] = "OU=mitids,OU=moira";
 char  kerberos_ou[] = "OU=kerberos,OU=moira";
 char  contact_ou[] = "OU=strings,OU=moira";
 char  user_ou[] = "OU=users,OU=moira";
@@ -516,6 +518,7 @@ int get_group_membership(char *group_membership, char *group_ou,
 
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, 
 		   char *machine_ou, char *pPtr);
+int check_id(LDAP *ldap_handle, char *dn_path, char *idstring);
 
 int Moira_container_group_create(char **after);
 int Moira_container_group_delete(char **before);
@@ -1555,6 +1558,16 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
 	  pUserOu = kerberos_ou;
 	}
+      else if (!strcasecmp(ptr[LM_TYPE], "ID"))
+	{
+	  if (Exchange)
+	    return;
+
+	  if (check_id(ldap_handle, dn_path, ptr[LM_MEMBER]))
+	    return;
+
+	  pUserOu = id_ou;
+	}
 
       if (rc = moira_connect()) {
 	critical_alert(whoami, "Ldap incremental",
@@ -1625,6 +1638,16 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         return;
 
       pUserOu = kerberos_ou;
+    }
+  else if (!strcasecmp(ptr[LM_TYPE], "ID"))
+    {
+      if (Exchange)
+	return;
+
+      if (check_id(ldap_handle, dn_path, ptr[LM_MEMBER]))
+	return;
+
+      pUserOu = id_ou;
     }
   else if (!strcasecmp(ptr[LM_TYPE], "USER"))
     {
@@ -3822,6 +3845,11 @@ int member_list_build(int ac, char **av, void *ptr)
 			 kerberos_ou))
         return(0);
 
+    }
+  else if (!strcmp(av[ACE_TYPE], "ID"))
+    {
+      if (!((int)(long)call_args[3] & MOIRA_IDS))
+	return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "MACHINE"))
     {
@@ -8893,7 +8921,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS | 
-			  MOIRA_MACHINE);
+			  MOIRA_MACHINE | MOIRA_IDS);
   call_args[4] = NULL;
   member_base = NULL;
   group_members = 0;
@@ -9086,6 +9114,26 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
 		      pUserOu, dn_path);
             }
+	  else if (!strcasecmp(ptr->type, "ID"))
+	    {
+	      if (Exchange)
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!check_id(ldap_handle, dn_path, ptr->member))
+		{
+		  pUserOu = id_ou;
+		  sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member),
+			  pUserOu, dn_path);
+		}
+	      else
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+	    }
 	  else if (!strcasecmp(ptr->type, "MACHINE"))
 	    {
 	      memset(machine_ou, '\0', sizeof(machine_ou));
@@ -9524,6 +9572,43 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       strcpy(rFilter, filter);
       return(0);
     }
+
+  return(0);
+}
+
+int check_id(LDAP *ldap_handle, char *dn_path, char *idstring)
+{
+  char filter[128];
+  char *attr_array[3];
+  int group_count;
+  int rc;
+  LK_ENTRY *group_base;
+
+  group_count = 0;
+  group_base = NULL;
+
+  sprintf(filter, "(&(objectClass=user)(sAMAccountName=%s))", idstring);
+  attr_array[0] = "sAMAccountName";
+  attr_array[1] = NULL;
+
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+			   &group_base, &group_count,
+			   LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      com_err(whoami, 0, "Unable to process ID %s: %s",
+	      idstring, ldap_err2string(rc));
+      return(rc);
+    }
+
+  if (group_count != 1)
+    {
+      linklist_free(group_base);
+      return 1;
+    }
+
+  linklist_free(group_base);
+  group_count = 0;
+  rc = 0;
 
   return(0);
 }

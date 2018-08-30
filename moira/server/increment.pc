@@ -319,7 +319,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	  sprintf(before[11], "%d", id);
 	  beforec = 12;
 	}
-      else if (!strcmp(before[1], "STRING") || !strcmp(before[1], "KERBEROS"))
+      else if (!strcmp(before[1], "STRING") || !strcmp(before[1], "KERBEROS") || !strcmp(before[1], "ID"))
 	{
 	  id_to_name(id, STRINGS_TABLE, &name2);
 	  EXEC SQL SELECT list_id INTO :before[10] FROM list
@@ -596,7 +596,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
 	  sprintf(after[11], "%d", id);
 	  afterc = 12;
 	}
-      else if (!strcmp(after[1], "STRING") || !strcmp(after[1], "KERBEROS"))
+      else if (!strcmp(after[1], "STRING") || !strcmp(after[1], "KERBEROS") || !strcmp(after[1], "ID"))
 	{
 	  id_to_name(id, STRINGS_TABLE, &name2);
 	  EXEC SQL SELECT list_id INTO :after[10] FROM list

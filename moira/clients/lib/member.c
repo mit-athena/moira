@@ -9,6 +9,7 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <moira_site.h>
 #include <mrclient.h>
 #include "mrclient-internal.h"
 
@@ -137,6 +138,58 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
   return MRCL_SUCCESS;
 }
 
+/* MIT ID must be 9 digits, all numeric. */
+#define ID_MEMBER_LENGTH 9
+
+int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **ret_member)
+{
+  int len, status;
+  char *p, *args[1], *argv[30];
+
+  mrcl_clear_message();
+
+  len = strlen(member);
+  if (len != ID_MEMBER_LENGTH) 
+    {
+      mrcl_set_message("ID \"%s\" must be 9 digits long.", member);
+      return MRCL_REJECT;
+    }
+
+  for (p = member; *p; p++)
+    {
+      if (!isdigit(*p))
+	{
+	  mrcl_set_message("ID \"%s\" contains non-numeric characters, "
+			   "which are not allowed.", member);
+	  return MRCL_REJECT;
+	}
+    }
+
+  args[0] = member;
+  status = mr_query("get_user_account_by_id", 1, args, save_query_info, argv);
+  if (status && (status != MR_NO_MATCH))
+    {
+      mrcl_set_message("Could not look up user accounts for ID \"%s\": %s",
+		       member, error_message(status));
+      return MRCL_MOIRA_ERROR;
+    }
+
+  /* No user accounts for this ID, return it as is. */
+  if (status == MR_NO_MATCH)
+    {
+      *ret_type = strdup(type);
+      *ret_member = strdup(member);
+      return MRCL_SUCCESS;
+    }
+
+  /* If we got here, we successfully resolved the MIT ID to an active USER. */
+  mrcl_set_message("Resolved ID \"%s\" to USER \"%s\".", member, argv[U_NAME]);
+  *ret_type = strdup("USER");
+  *ret_member = strdup(argv[U_NAME]);
+
+  return MRCL_SUCCESS;
+}
+
 /* Parse a line of input, fetching a member.  NULL is returned if a member
  * is not found.  ';' is a comment character.
  */
@@ -179,6 +232,8 @@ struct mrcl_ace_type *mrcl_parse_member(char *s)
         m->type = MRCL_M_KERBEROS;
       else if (!strcasecmp("machine", s))
         m->type = MRCL_M_MACHINE;
+      else if (!strcasecmp("id", s))
+	m->type = MRCL_M_ID;
       else if (!strcasecmp("none", s))
         m->type = MRCL_M_NONE;
       else
@@ -195,4 +250,18 @@ struct mrcl_ace_type *mrcl_parse_member(char *s)
       m->type = strcasecmp(s, "none") ? MRCL_M_ANY : MRCL_M_NONE;
     }
   return m;
+}
+
+int save_query_info(int argc, char **argv, void *hint)
+{
+  int i;
+  char **nargv = hint;
+
+  if (atoi(argv[U_STATE]) != US_REGISTERED && atoi(argv[U_STATE]) != US_REGISTERED_KERBEROS_ONLY)
+    return MR_CONT;
+
+  for(i = 0; i < argc; i++)
+    nargv[i] = strdup(argv[i]);
+
+  return MR_CONT;
 }

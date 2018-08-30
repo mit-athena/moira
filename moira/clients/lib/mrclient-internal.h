@@ -13,5 +13,6 @@ void mrcl_clear_message(void);
 enum { MAILTYPE_ERROR, MAILTYPE_IMAP, MAILTYPE_EXCHANGE, MAILTYPE_POP, 
        MAILTYPE_LOCAL, MAILTYPE_MAILHUB, MAILTYPE_SMTP };
 int mailtype(char *machine);
+int save_query_info(int argc, char **argv, void *hint);
 
 #endif /* _mrclient_internal_h_ */

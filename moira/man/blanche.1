@@ -63,22 +63,29 @@ members from the target list.  The file format is specified above.
 Display the membership of the target list.  This is the default if no
 other options are specified.
 .IP \fB-users\ \fRor\ \fB-u\fR
-Only display list members that are users (not lists or strings).  If
-none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
-of them will be displayed.
+Only display list members that are users (not lists, strings, Kerberos principals,
+machines, or MIT IDs).  If none of \fB-users, -lists, -strings, -kerberos, -machines,
+\fRor \fB-ids\fR is specified, then all of them will be displayed.
 .IP \fB-lists\ \fRor\ \fB-l\fR
-Only display list members that are lists (not users or strings).  If
-none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
-of them will be displayed.
+Only display list members that are lists (not users, strings, Kerberos principals,
+machines, or MIT IDs).  If none of \fB-users, -lists, -strings, -kerberos, -machines,
+\fRor \fB-ids\fR is specified, then all of them will be displayed.
 .IP \fB-strings\ \fRor\ \fB-s\fR
-Only display list members that are strings (not users or lists).  If
-none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
-of them will be displayed.
+Only display list members that are strings (not users, lists, Kerberos principals,
+machines, or MIT IDs).  If none of \fB-users, -lists, -strings, -kerberos, -machines,
+\fRor \fB-ids\fR is specified, then all of them will be displayed.
 .IP \fB-kerberos\ \fRor\ \fB-k\fR
 Only display list members that are Kerberos principals (not users,
-lists, or strings).  If
-none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is
-specified, then all of them will be displayed.
+lists, strings, machines, or MIT IDs).  If none of \fB-users, -lists, -strings,
+-kerberos, -machines, \fRor \fB-ids\fR is specified, then all of them will be displayed.
+.IP \fB-machines\ \fRor\ \fB-mach\fR
+Only display list members that are machines (not users, lists, strings, 
+Kerberos principals, or MIT IDs).  If none of \fB-users, -lists, -strings, -kerberos, -machines,
+\fRor \fB-ids\fR is specified, then all of them will be displayed.
+.IP \fB-ids\ \fRor\ \fB-id\fR
+Only display list members that are MIT IDs (not users, lists, strings,
+Kerberos principals, or machines). If none of \fB-users, -lists, -strings, -kerberos, -machines,
+\fRor \fB-ids\fR is specified, then all of them will be displayed.
 .IP \fB-recursive\ \fRor\ \fB-r\fR
 When displaying the membership of the target list, recursively track
 down all lists that are members of the target, and get their

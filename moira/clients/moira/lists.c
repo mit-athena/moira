@@ -808,6 +808,20 @@ int AddMember(int argc, char **argv)
       free(args[LM_MEMBER]);
       args[LM_MEMBER] = canon;
     }
+  else if (!strcmp(args[LM_TYPE], "ID"))
+    {
+      char *canon_type, *canon_member;
+
+      status = mrcl_validate_id_member(args[LM_TYPE], &canon_type, args[LM_MEMBER], &canon_member);
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return DM_NORMAL;
+      free(args[LM_TYPE]);
+      args[LM_TYPE] = canon_type;
+      free(args[LM_MEMBER]);
+      args[LM_MEMBER] = canon_member;
+    }
 
   if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,
 			    NULL, NULL)) != MR_SUCCESS)

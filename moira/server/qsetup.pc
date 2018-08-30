@@ -53,9 +53,9 @@ int check_mailman_listname(char *name, const char *suffix);
 
 int setup_ausr(struct query *q, char *argv[], client *cl)
 {
-  int row, err;
+  int row, err, count;
   EXEC SQL BEGIN DECLARE SECTION;
-  int nuid, status;
+  int nuid, status, old_status;
   EXEC SQL END DECLARE SECTION;
   char *p;
 
@@ -64,7 +64,8 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
-  /* Temporary: don't let people modify accounts to status 3 */
+  /* Don't let people modify accounts to status 3 if they're
+   * not already status 3 and have reservations. */
   if (q->type == MR_Q_UPDATE)
     {
       if (q->version > 2)
@@ -72,7 +73,13 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
       else
 	status = atoi(argv[7]);
 
-      if (status == 3)
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	WHERE login = :argv[row - 1] AND reservations != CHR(0);
+
+      EXEC SQL SELECT status INTO :old_status FROM users
+	WHERE login = :argv[row - 1];
+
+      if (old_status != 3 && status == 3 && count > 0)
 	return MR_PERM;
     }
 
@@ -2388,15 +2395,24 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
-/* Temporary setup function for uust to prevent accounts from being set to deleted */
 int setup_uust(struct query *q, char *argv[], client *cl)
 {
-  int status;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int status, old_status, id, count = 0;
+  EXEC SQL END DECLARE SECTION;
 
   if (!strcmp(q->shortname, "uust"))
     {
+      id = *(int *)argv[0];
       status = atoi(argv[1]);
-      if (status == 3)
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	WHERE users_id = :id AND reservations != CHR(0);
+
+      EXEC SQL SELECT status INTO :old_status FROM users
+	WHERE users_id = :id;
+
+      if (old_status != 3 && status == 3 && count > 0)
 	return MR_PERM;
     }
 

@@ -2834,6 +2834,7 @@ int group_create(int ac, char **av, void *ptr)
 
   if(!check_string(av[L_NAME]))
     {
+      callback_rc = AD_INVALID_NAME;
       com_err(whoami, 0, "Unable to process invalid LDAP list name %s", 
 	      av[L_NAME]);
       return(AD_INVALID_NAME);

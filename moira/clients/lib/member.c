@@ -145,6 +145,7 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
 {
   int len, status;
   char *p, *args[1], *argv[30];
+  char *canon;
 
   mrcl_clear_message();
 
@@ -163,6 +164,15 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
 			   "which are not allowed.", member);
 	  return MRCL_REJECT;
 	}
+    }
+
+  /* Allow user to disable this behavior at runtime. */
+  canon = getenv("MOIRA_CANONICALIZE_ID_MEMBER");
+  if (canon && !strcmp(canon, "0"))
+    {
+      *ret_type = strdup(type);
+      *ret_member = strdup(member);
+      return MRCL_SUCCESS;
     }
 
   args[0] = member;

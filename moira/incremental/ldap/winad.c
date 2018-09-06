@@ -9030,6 +9030,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 			  MOIRA_MACHINE | MOIRA_IDS);
   call_args[4] = NULL;
   member_base = NULL;
+  id_member_count = 0;
   group_members = 0;
 
   if((max_group_members == -1) && !synchronize) 

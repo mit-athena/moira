@@ -948,18 +948,27 @@ EXEC SQL END DECLARE SECTION;
 
 int setup_afil(struct query *q, char *argv[], client *cl)
 {
-  char *type, *name;
+  char *type, *name, *label;
   int mach_id;
   EXEC SQL BEGIN DECLARE SECTION;
-  int ok;
+  int ok, count;
   char ftype[FILESYS_TYPE_SIZE + 10], *rwaccess;
   EXEC SQL END DECLARE SECTION;
 
+  label = argv[0];
   type = argv[1];
   mach_id = *(int *)argv[2];
   name = argv[3];
   rwaccess = argv[5];
   _var_phys_id = 0;
+
+  /* Does this name already exist as an alias? */
+  EXEC SQL SELECT COUNT(*) INTO :count FROM alias
+    WHERE name = :label AND type = 'FILESYS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (count != 0)
+    return MR_EXISTS;
 
   sprintf(ftype, "fs_access_%s", type);
   EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias

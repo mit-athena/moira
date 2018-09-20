@@ -22,6 +22,8 @@
 
 RCSID("$HeadURL$ $Id$");
 
+static int mrcl_save_query_info(int argc, char **argv, void *hint);
+
 int mrcl_validate_string_member(char *str)
 {
   char *p, *lname, *ret;
@@ -144,7 +146,7 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
 int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **ret_member)
 {
   int len, status;
-  char *p, *args[1], *argv[30];
+  char *p, *args[1], *qargv[30];
   char *canon;
 
   mrcl_clear_message();
@@ -176,7 +178,7 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
     }
 
   args[0] = member;
-  status = mr_query("get_user_account_by_id", 1, args, save_query_info, argv);
+  status = mr_query("get_user_account_by_id", 1, args, mrcl_save_query_info, qargv);
   if (status && (status != MR_NO_MATCH))
     {
       mrcl_set_message("Could not look up user accounts for ID \"%s\": %s",
@@ -193,7 +195,7 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
     }
 
   /* If the account isn't active yet, same deal. */
-  status = atoi(argv[U_STATE]);
+  status = atoi(qargv[U_STATE]);
   if (status == US_NO_LOGIN_YET || status == US_NO_LOGIN_YET_KERBEROS_ONLY)
     {
       *ret_type = strdup(type);
@@ -202,9 +204,9 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
     }
 
   /* If we got here, we successfully resolved the MIT ID to an active USER. */
-  mrcl_set_message("Resolved ID \"%s\" to USER \"%s\".", member, argv[U_NAME]);
+  mrcl_set_message("Resolved ID \"%s\" to USER \"%s\".", member, qargv[U_NAME]);
   *ret_type = strdup("USER");
-  *ret_member = strdup(argv[U_NAME]);
+  *ret_member = strdup(qargv[U_NAME]);
 
   return MRCL_SUCCESS;
 }
@@ -271,13 +273,10 @@ struct mrcl_ace_type *mrcl_parse_member(char *s)
   return m;
 }
 
-int save_query_info(int argc, char **argv, void *hint)
+static int mrcl_save_query_info(int argc, char **argv, void *hint)
 {
   int i;
   char **nargv = hint;
-
-  if (atoi(argv[U_STATE]) != US_REGISTERED && atoi(argv[U_STATE]) != US_REGISTERED_KERBEROS_ONLY)
-    return MR_CONT;
 
   for(i = 0; i < argc; i++)
     nargv[i] = strdup(argv[i]);

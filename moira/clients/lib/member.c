@@ -192,6 +192,15 @@ int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **re
       return MRCL_SUCCESS;
     }
 
+  /* If the account isn't active yet, same deal. */
+  status = atoi(argv[U_STATE]);
+  if (status == US_NO_LOGIN_YET || status == US_NO_LOGIN_YET_KERBEROS_ONLY)
+    {
+      *ret_type = strdup(type);
+      *ret_member = strdup(member);
+      return MRCL_SUCCESS;
+    }
+
   /* If we got here, we successfully resolved the MIT ID to an active USER. */
   mrcl_set_message("Resolved ID \"%s\" to USER \"%s\".", member, argv[U_NAME]);
   *ret_type = strdup("USER");

@@ -1669,8 +1669,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = moira_user_id;
-          call_args[3] = NULL;
-	  
+          call_args[3] = "";
+	  call_args[4] = NULL;
+
           callback_rc = 0;
 
           if (rc = mr_query("get_user_account_by_login", 1, av, 
@@ -8898,7 +8899,8 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = "";
-          call_args[3] = NULL;
+          call_args[3] = "";
+	  call_args[4] = NULL;
           callback_rc = 0;
 
 	  if(!strcasecmp(AceName, PRODUCTION_PRINCIPAL) ||
@@ -9129,7 +9131,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		  call_args[0] = (char *)ldap_handle;
 		  call_args[1] = dn_path;
 		  call_args[2] = "";
-		  call_args[3] = NULL;
+		  call_args[3] = "";
+		  call_args[4] = NULL;
 		  callback_rc = 0;
 		  
 		  if (rc = mr_query("get_user_account_by_login", 1, av, 

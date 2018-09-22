@@ -314,6 +314,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 	      break;
 	    case 'I':
 	      dtypes[dcount] = "ID";
+	      break;
 	    default:
 	      error++;
 	      break;

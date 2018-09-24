@@ -9032,6 +9032,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 			  MOIRA_MACHINE | MOIRA_IDS);
   call_args[4] = NULL;
   member_base = NULL;
+  id_members = NULL;
   id_member_count = 0;
   group_members = 0;
 
@@ -9264,7 +9265,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	    {
 	      int j;
 
-	      members = (char **)realloc(members, ((id_member_count + 2) * sizeof(char *)));
+	      members = (char **)realloc(members, ((i + id_member_count + 2) * sizeof(char *)));
 	      
 	      for (j = 0; j < id_member_count; j++)
 		{

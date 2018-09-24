@@ -1469,6 +1469,7 @@ int setup_ahad(struct query *q, char **argv, client *cl)
   mid = *(int *)argv[0];
   sid = *(int *)argv[1];
   address = argv[2];
+  memset(buf, '\0', sizeof(buf);
 
   /* Don't allow adding addresses for non-MIT.EDU names. */
   EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
@@ -1545,7 +1546,7 @@ int setup_ahad(struct query *q, char **argv, client *cl)
 		break;
 	    }
 
-	  if (cnt != 0)
+	  if (cnt != 0 || strlen(buf) == 0)
 	    return MR_NO_ID;
 	  else
 	    strcpy(argv[2], buf);

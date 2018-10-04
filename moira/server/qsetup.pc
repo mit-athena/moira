@@ -2365,12 +2365,13 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, count;
-  char *rr_type, mname[MACHINE_NAME_SIZE];
+  char *rr_type, *rr_value, mname[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
   mid = *(int *)argv[0];
   rr_type = argv[1];
+  rr_value = argv[2];
 
   EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
   if (dbms_errno)
@@ -2381,6 +2382,18 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
   status = canonical_for_hostname(mname);
   if (status)
     return status;
+
+  /* Don't allow explicit PTR record if the address is already the primary
+     address for any record. */
+  if (!strcmp(rr_type, "PTR"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+	WHERE address = :rr_value AND ptr = 1;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+    }
 
   /* Don't allow adding NS records to anything that has other identifiers */
   if (!strcmp(rr_type, "NS"))

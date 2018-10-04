@@ -9,6 +9,7 @@ import requests
 import struct
 import sys
 import netaddr
+import ipaddress
 from netaddr import IPAddress
 from netaddr import EUI
 from subprocess import call
@@ -35,7 +36,7 @@ default_ttl = 1800
 default_domain = "mit.edu"
 views = ['internal', 'external']
 # Supported types for hostrecord
-rr_types = ['MX', 'NS', 'SRV', 'TXT']
+rr_types = ['MX', 'NS', 'SRV', 'TXT', 'PTR']
 # Subnets to skip; performance hack
 omitted_networks = ('whitelist', 'blacklist', 'quarantine')
 
@@ -733,11 +734,35 @@ def ib_add_hostrecord(record):
         primary_rr_value = ib_record['text']
         object = '/record:txt'
 
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
+        # Only one of these will be defined.
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error assigning PTR record')
+            return
+        
+        object = '/record:ptr'
+
     else:
         critical_log('Unexpected RR type %s in ib_add_hostrecord' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+    # Separate function because ib_record['name'] isn't defined for PTR records.
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
 
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
@@ -745,19 +770,61 @@ def ib_add_hostrecord(record):
 
     for view in views:
         ib_record['view'] = view
+        # PTR records referencing private IPs shouldn't be added to external view.
+        if view == 'external' and rr_type == 'PTR':
+            if 'ipv4addr' in ib_record and IPAddress(ib_record['ipv4addr']).is_private() == True:
+                continue
+            elif 'ipv6addr' in ib_record and IPAddress(ib_record['ipv6addr']).is_private() == True:
+                continue
         if len(search_results[view]) > 0:
-            critical_log('%s record already exists for name %s value %s in view %s, not adding' % (rr_type, ib_record['name'], primary_rr_value, view))
+            critical_log('%s record already exists for name %s value %s in view %s, not adding' % (rr_type, name, primary_rr_value, view))
         else:
             ib_url = ib_base_url + object + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
             r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+                critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
 
-            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
+            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, name, primary_rr_value, view, r.text))
 
+def ib_search_hostrecord_ptr(ib_record):
+    object = '/record:ptr'
+    name = ib_record['ptrdname']
+    if 'ipv4addr' in ib_record:
+        search_key = 'ipv4addr'
+        value = ib_record['ipv4addr']
+    elif 'ipv6addr' in ib_record:
+        search_key = 'ipv6addr'
+        value = ib_record['ipv6addr']
+    else:
+        error = 'Internal error: ib_search_hostrecord_ptr passed malformed ib_record object'
+        critcal_log(error)
+        return { 'error' : error }
+
+    ib_search_url = ib_base_url + object + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'ptrdname' : name, search_key : value }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_hostrecord_ptr for URL %s payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view] = item
+
+    return results_by_view
+        
 def ib_search_hostrecord(name, rr_type, value):
     if rr_type == 'MX':
         object = '/record:mx'
@@ -896,6 +963,37 @@ def ib_add_delegated_zone(record):
                 continue
 
             log('Created delegated zone %s with delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegate_to'][0]['name'], view, r.text))
+
+def ptr_to_ib(record):
+    ib_ptr_record = {
+        'ptrdname' : record[0].lower(),
+        'disable' : False
+        }
+
+    # Figure out if we were given a v4 or v6 address.
+    address = unicode(record[2])
+    try:
+        addr_obj = ipaddress.ip_address(address)
+    except:
+        return { 'error' : 'Could not parse address as IPv4 or IPv6 address' }
+
+    if isinstance(addr_obj, ipaddress.IPv4Address):
+        ib_ptr_record['ipv4addr'] = str(addr_obj)
+    elif isinstance(addr_obj, ipaddress.IPv6Address):
+        ib_ptr_record['ipv6addr'] = str(addr_obj)
+    else:
+        # Shouldn't ever get here; we should be caught by the try block above.
+        return { 'error' : 'Could not parse address as IPv4 or IPv6 address' }
+        
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_ptr_record['ttl'] = default_ttl
+        ib_ptr_record['use_ttl'] = False
+    else:
+        ib_ptr_record['ttl'] = ttl
+        ib_ptr_record['use_ttl'] = True
+
+    return ib_ptr_record
 
 def txt_to_ib(record):
     ib_txt_record = {
@@ -1274,13 +1372,38 @@ def ib_delete_hostrecord(record):
         ib_record = txt_to_ib(record)
         if 'error' in ib_record:
             critical_log(ib_record['error'])
+            return
         primary_rr_value = ib_record['text']
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
+        # Only one of these will be defined
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error deleting PTR record')
+            return
+
+        object = '/record:ptr'
+                                                                                    
     else:
         critical_log('Unexpected RR type %s in ib_delete_hostrecord' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
-
+    # Separate function because ib_record['name'] isn't defined for PTR records.
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+        
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
         return
@@ -1292,7 +1415,7 @@ def ib_delete_hostrecord(record):
                 search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value.strip('"'))
         
         if len(search_results[view]) == 0:
-            log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, ib_record['name'], primary_rr_value, view))
+            log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, name, primary_rr_value, view))
         else:
             ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
@@ -1300,10 +1423,10 @@ def ib_delete_hostrecord(record):
 
             r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
 
-            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
+            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, name, primary_rr_value, view, r.text))
 
 def ib_delete_delegated_zone(record):
     ib_record = ns_to_ib(record)
@@ -1457,11 +1580,29 @@ def ib_set_record_ttl(record):
     elif rr_type == 'TXT':
         ib_record = txt_to_ib(record)
         primary_rr_value = ib_record['text']
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+
+        # Only one of these will be defined.
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error modifying PTR record')
+            return
+                                                                                   
     else:
         critical_log('Unexpected RR type %s in ib_set_record_ttl' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
 
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
@@ -1470,7 +1611,7 @@ def ib_set_record_ttl(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, ib_record['name'], primary_rr_value, view))
+            critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, name, primary_rr_value, view))
         else:
             ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
@@ -1478,10 +1619,10 @@ def ib_set_record_ttl(record):
 
             r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
 
-            log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, ib_record['name'], primary_rr_value, view, ib_record['ttl']))
+            log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, name, primary_rr_value, view, ib_record['ttl']))
 
 def ib_set_delegated_zone_ttl(record):
     zonename = record[0].lower()

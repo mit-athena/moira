@@ -264,6 +264,7 @@ int setup_dcon(struct query *q, char *argv[], client *cl);
 int setup_acon(struct query *q, char *argv[], client *cl);
 int setup_scli(struct query *q, char *argv[], client *cl);
 int setup_aali(struct query *q, char *argv[], client *cl);
+int setup_uust(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);

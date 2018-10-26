@@ -781,6 +781,7 @@ int set_next_object_id(char *object, enum tables table, int limit)
     return MR_NO_ID;
 
   starting_value = value;
+
   while (1)
     {
 #ifdef ULTRIX_ID_HOLE

@@ -71,9 +71,14 @@ sub critical_alert {
     $error = $1;
 
     my $zwrite = "/usr/local/bin/zwrite";
+    my $slack = "/moira/bin/slack-send";
 
     if (-f $zwrite) {
         system($zwrite, "-q", "-d", "-n", "-c", "moira", "-i", "incremental", "-m", "$error");
+    }
+
+    if (-f $slack) {
+	system($slack, "$error");
     }
 
     exit 1;
@@ -111,6 +116,11 @@ sub do_user {
 	    $primary_person_type = "O";
 	}
 	$status_code = "A";
+
+	if (length($mit_id) > 10) {
+	    print "$whoami: User $login MIT ID $mit_id too long, skipping.\n";
+	    return;
+	}
 	
 	print "mit_id = $mit_id\n";
 	print "lname = $lname\n";
@@ -141,6 +151,10 @@ sub do_user {
 		$roles->disconnect;
 		next;
 	    }
+
+	    # fix quotes
+	    $lname =~ s/\'/\'\'/;
+	    $fname =~ s/\'/\'\'/;
 
 	    # Create user.
 	    # DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.

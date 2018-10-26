@@ -292,6 +292,7 @@ typedef struct _SID
 #define MOIRA_STRINGS   0x4
 #define MOIRA_LISTS     0x8
 #define MOIRA_MACHINE   0x16
+#define MOIRA_IDS       0x32
 
 #define CHECK_GROUPS    1
 #define CLEANUP_GROUPS  2
@@ -419,6 +420,8 @@ LDAP *ldap_handle = NULL;
 
 char   PrincipalName[128];
 static char tbl_buf[1024];
+char  id_ou[] = "OU=mitids,OU=moira";
+char  trans_ou[] = "OU=transponders,OU=moira";
 char  kerberos_ou[] = "OU=kerberos,OU=moira";
 char  contact_ou[] = "OU=strings,OU=moira";
 char  user_ou[] = "OU=users,OU=moira";
@@ -516,6 +519,7 @@ int get_group_membership(char *group_membership, char *group_ou,
 
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, 
 		   char *machine_ou, char *pPtr);
+int check_id(LDAP *ldap_handle, char *dn_path, char *idstring);
 
 int Moira_container_group_create(char **after);
 int Moira_container_group_delete(char **before);
@@ -615,6 +619,9 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
                    char *group_ou, char *group_membership, 
                    int group_security_flag, char *MoiraId, int synchronize);
 
+int get_id_member_entities(LDAP *ldap_handle, char *dn_path, char *member,
+			   int *count, char ***members);
+
 int SetHomeDirectory(LDAP *ldap_handle, char *user_name, 
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
@@ -642,6 +649,9 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
 void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                char **before, int beforec, char **after, int afterc);
+
+void do_id_member(LDAP *ldap_handle, char *dn_path, char *group_ou,
+		  char **before, int beforec, char **after, int afterc);
 
 void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 char **before, int beforec, char **after, int afterc);
@@ -1499,6 +1509,21 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   rc = 0;
 
+  /* At this point, group we're populating has been sanity checked.
+   *
+   * Are we adding an ID member?  If so, punt to our separate routine,
+   * since the logic is quite different.
+   */
+
+  if (!strcasecmp(ptr[LM_TYPE], "ID"))
+    {
+      if (Exchange)
+	return;
+
+      do_id_member(ldap_handle, dn_path, group_ou, before, beforec, after, afterc);
+      return;
+    }
+
   if (beforec)
     {
       com_err(whoami, 0, "removing user %s from list %s", user_name, 
@@ -1644,8 +1669,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = moira_user_id;
-          call_args[3] = NULL;
-	  
+          call_args[3] = "";
+	  call_args[4] = NULL;
+
           callback_rc = 0;
 
           if (rc = mr_query("get_user_account_by_login", 1, av, 
@@ -1703,6 +1729,107 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     com_err(whoami, 0, "Unable to add %s to group %s", user_name, group_name);
 
   return;
+}
+
+void do_id_member(LDAP *ldap_handle, char *dn_path, char *group_ou,
+		  char **before, int beforec, char **after, int afterc)
+{
+  ULONG rc;
+  char group_dn[512];
+  char *modvalues[2];
+  char **id_members;
+  int id_member_count;
+  int i, n;
+  LDAPMod *mods[20];
+
+  if (beforec)
+    {
+      com_err(whoami, 0, "removing entries for ID %s from list %s", before[LM_MEMBER], before[LM_LIST]);
+      if (get_id_member_entities(ldap_handle, dn_path, before[LM_MEMBER], &id_member_count, &id_members))
+	{
+	  com_err(whoami, 0, "Unable to get entities for ID member %s", before[LM_MEMBER]);
+	  return;
+	}
+
+      sprintf(group_dn, "cn=%s,%s,%s", before[LM_LIST], group_ou, dn_path);
+
+      /* id_members now holds all of the entries to be removed from the list */
+      for (i = 0; i < id_member_count; i++)
+	{
+	  int j;
+
+	  modvalues[0] = id_members[i];
+	  modvalues[1] = NULL;
+
+	  n = 0;
+	  ADD_ATTR("member", modvalues, LDAP_MOD_DELETE);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s(ldap_handle, group_dn, mods);
+
+	  for (j = 0; j < n; j++)
+	    free(mods[j]);
+
+	  if (rc == LDAP_UNWILLING_TO_PERFORM)
+	    rc = LDAP_SUCCESS;
+
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      com_err(whoami, 0, "Unable to remove ID member from list %s : %s",
+		      before[LM_LIST], ldap_err2string(rc));
+	    }
+	}
+
+      for (i = 0; i < id_member_count; i++)
+	free(id_members[i]);
+      if (id_member_count != 0)
+	free(id_members);
+      id_member_count = 0;
+    }
+
+  if (afterc)
+    {
+      com_err(whoami, 0, "adding entries for ID %s to list %s", after[LM_MEMBER], after[LM_LIST]);
+      if (get_id_member_entities(ldap_handle, dn_path, after[LM_MEMBER], &id_member_count, &id_members))
+	{
+	  com_err(whoami, 0, "Unable to get entities for ID member %s", after[LM_MEMBER]);
+	  return;
+	}
+
+      sprintf(group_dn, "cn=%s,%s,%s", after[LM_LIST], group_ou, dn_path);
+
+      /* id_members now holds all of the entries to be removed from the list */
+      for (i = 0; i < id_member_count; i++)
+        {
+          int j;
+
+          modvalues[0] = id_members[i];
+          modvalues[1] = NULL;
+
+          n = 0;
+          ADD_ATTR("member", modvalues, LDAP_MOD_ADD);
+          mods[n] = NULL;
+          rc = ldap_modify_s(ldap_handle, group_dn, mods);
+
+          for (j = 0; j < n; j++)
+            free(mods[j]);
+
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+	    rc = LDAP_SUCCESS;
+
+          if (rc != LDAP_SUCCESS)
+            {
+              com_err(whoami, 0, "Unable to add ID member to list %s : %s",
+                      after[LM_LIST], ldap_err2string(rc));
+            }
+        }
+
+      for (i = 0; i < id_member_count; i++)
+        free(id_members[i]);
+      if (id_member_count != 0)
+	free(id_members);
+      id_members = NULL;
+      id_member_count = 0;
+    }
 }
 
 #define U_USER_ID            10
@@ -2811,6 +2938,7 @@ int group_create(int ac, char **av, void *ptr)
 
   if(!check_string(av[L_NAME]))
     {
+      callback_rc = AD_INVALID_NAME;
       com_err(whoami, 0, "Unable to process invalid LDAP list name %s", 
 	      av[L_NAME]);
       return(AD_INVALID_NAME);
@@ -3822,6 +3950,11 @@ int member_list_build(int ac, char **av, void *ptr)
 			 kerberos_ou))
         return(0);
 
+    }
+  else if (!strcmp(av[ACE_TYPE], "ID"))
+    {
+      if (!((int)(long)call_args[3] & MOIRA_IDS))
+	return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "MACHINE"))
     {
@@ -8766,7 +8899,8 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = "";
-          call_args[3] = NULL;
+          call_args[3] = "";
+	  call_args[4] = NULL;
           callback_rc = 0;
 
 	  if(!strcasecmp(AceName, PRODUCTION_PRINCIPAL) ||
@@ -8886,6 +9020,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   char      search_filter[1024];
   LK_ENTRY  *group_base;
   int       group_count;
+  int       id_member_count;
+  char      **id_members;
 
   com_err(whoami, 0, "Populating group %s", group_name);
   av[0] = group_name;
@@ -8893,9 +9029,11 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS | 
-			  MOIRA_MACHINE);
+			  MOIRA_MACHINE | MOIRA_IDS);
   call_args[4] = NULL;
   member_base = NULL;
+  id_members = NULL;
+  id_member_count = 0;
   group_members = 0;
 
   if((max_group_members == -1) && !synchronize) 
@@ -8994,7 +9132,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		  call_args[0] = (char *)ldap_handle;
 		  call_args[1] = dn_path;
 		  call_args[2] = "";
-		  call_args[3] = NULL;
+		  call_args[3] = "";
+		  call_args[4] = NULL;
 		  callback_rc = 0;
 		  
 		  if (rc = mr_query("get_user_account_by_login", 1, av, 
@@ -9086,6 +9225,23 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
 		      pUserOu, dn_path);
             }
+	  else if (!strcasecmp(ptr->type, "ID"))
+	    {
+	      if (Exchange)
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      /* This function populates id_member_count and id_members. 
+	       * Skip to next entry if it fails for any reason.
+	       */
+	      if (get_id_member_entities(ldap_handle, dn_path, ptr->member, &id_member_count, &id_members))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+	    }
 	  else if (!strcasecmp(ptr->type, "MACHINE"))
 	    {
 	      memset(machine_ou, '\0', sizeof(machine_ou));
@@ -9105,13 +9261,33 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 	    }
 
-	  if(i > 1) 
-	    members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
+	  if (id_member_count > 0)
+	    {
+	      int j;
 
-	  members[i++] = strdup(member);
-          ptr = ptr->next;
-        }
-    
+	      members = (char **)realloc(members, ((i + id_member_count + 2) * sizeof(char *)));
+	      
+	      for (j = 0; j < id_member_count; j++)
+		{
+		  members[i++] = strdup(id_members[j]);
+		  free(id_members[j]);
+		}
+
+	      free(id_members);
+	      id_member_count = 0;
+	      id_members = NULL;
+	      ptr = ptr->next;
+	    }
+	  else 
+	    {
+	      if (i > 1) 
+		members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
+	      
+	      members[i++] = strdup(member);
+	      ptr = ptr->next;
+	    }
+	}
+	  
       linklist_free(member_base);
       member_base = NULL;
     }
@@ -9526,6 +9702,60 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
     }
 
   return(0);
+}
+
+int get_id_member_entities(LDAP *ldap_handle, char *dn_path, char *member, int *count, char ***members)
+{
+  ULONG rc;
+  char filter[128];
+  char *attr_array[3];
+  LK_ENTRY *group_base;
+  LK_ENTRY *gPtr;
+  int group_count, i;
+
+  rc = 0;
+  (*count) = 0;
+  (*members) = NULL;
+  
+  sprintf(filter, "(&(objectClass=user)(employeeID=%s))", member);
+  attr_array[0] = "distinguishedName";
+  attr_array[1] = NULL;
+
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base,
+			   &group_count, LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      com_err(whoami, 0, "Unable to process ID member %s: %s",
+	      member, ldap_err2string(rc));
+      return(rc);
+    }
+
+  *members = (char **)malloc((group_count + 1) * sizeof (char *));
+  for (i = 0; i < (group_count + 1); i++)
+    (*members)[i] = NULL;
+
+  gPtr = group_base;
+  while (gPtr)
+    {
+      /* Skip user records */
+      if (strcasestr(gPtr->dn, user_ou))
+	{
+	  com_err(whoami, 0, "Skipping user dn %s while getting ID member entities for %s", gPtr->dn, member);
+	  gPtr = gPtr->next;
+	  continue;
+	}
+
+      /* Anything else should get added to our return array */
+      com_err(whoami, 0, "Found dn %s while getting ID member entities for %s", gPtr->dn, member);
+      (*members)[(*count)++] = strdup(gPtr->dn);
+      gPtr = gPtr->next;
+      continue;
+    }
+
+  linklist_free(group_base);
+  group_count = 0;
+  rc = 0;
+  
+  return(rc);
 }
 
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)

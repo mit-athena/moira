@@ -27,11 +27,13 @@ extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #include <syslog.h>
 #endif
 #include <time.h>
+#include <unistd.h>
 
 RCSID("$HeadURL$ $Id$");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
+#define SLACK_SCRIPT    "/moira/bin/slack-send"
 
 /* This routine sends a class MOIRA zephyrgram of specified instance
  * and logs to a special logfile the message passed to it via msg
@@ -42,7 +44,7 @@ RCSID("$HeadURL$ $Id$");
 void critical_alert(char *whoami, char *instance, char *msg, ...)
 {
   FILE *crit;
-  char *buf;
+  char *buf, sysbuf[BUFSIZ];
   va_list ap;
   long start;
 
@@ -74,7 +76,7 @@ void critical_alert(char *whoami, char *instance, char *msg, ...)
 
 	  send_zgram(instance, buf);
 	  com_err(whoami, 0, "%s", buf);
-
+	  send_slack(buf);
 	  free(buf);
 	}
     }
@@ -83,6 +85,7 @@ void critical_alert(char *whoami, char *instance, char *msg, ...)
     {
       send_zgram(instance, "Couldn't format critical syslog!");
       com_err(whoami, 0, "Couldn't format critical syslog!");
+      send_slack("Couldn't format critical syslog!");
     }
 }
 
@@ -118,4 +121,24 @@ void send_zgram(char *inst, char *msg)
       free(buf);
     }
 #endif
+}
+
+/* Sends a message via Slack; channel / username is expected to be handled
+ * via the sending script.
+ */
+
+void send_slack(char *msg)
+{
+  char *buf;
+
+  if (access(SLACK_SCRIPT, F_OK|X_OK) == 0)
+    {
+      buf = malloc(4 + strlen(msg) + strlen(SLACK_SCRIPT));
+      if (buf)
+	{
+	  sprintf(buf, "%s \"%s\"", SLACK_SCRIPT, msg);
+	  system(buf);
+	  free(buf);
+	}
+    }
 }

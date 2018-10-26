@@ -53,9 +53,9 @@ int check_mailman_listname(char *name, const char *suffix);
 
 int setup_ausr(struct query *q, char *argv[], client *cl)
 {
-  int row, err;
+  int row, err, count;
   EXEC SQL BEGIN DECLARE SECTION;
-  int nuid;
+  int nuid, status, old_status;
   EXEC SQL END DECLARE SECTION;
   char *p;
 
@@ -64,15 +64,42 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
-  /* Don't allow adding new users with caps in the username
-     or renaming accounts to something containing caps */
+  /* Don't let people modify accounts to status 3 if they're
+   * not already status 3 and have reservations. */
+  if (q->type == MR_Q_UPDATE)
+    {
+      if (q->version > 2)
+        status = atoi(argv[8]);
+      else
+        status = atoi(argv[7]);
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+        WHERE login = :argv[row - 1] AND reservations != CHR(0);
+      
+      EXEC SQL SELECT status INTO :old_status FROM users
+        WHERE login = :argv[row - 1];
+
+      if (old_status != 3 && status == 3 && count > 0)
+        return MR_PERM;
+    }
+
+  /* Don't allow usernames to contain anything but lower case letters,
+   * numbers, or underscores.  First character must be lowercase letter or '#'.
+   */
   if (strcmp(argv[row - 1], UNIQUE_LOGIN))
     {
-      for (p = argv[row - 1]; *p; p++)
-	{
-	  if (isupper(*p))
-	    return MR_BAD_CHAR;
-	}
+      p = argv[row - 1];
+
+      if (!islower(*p) && *p != '#')
+        return MR_BAD_CHAR;
+
+      /* Check rest of login name */
+      p++;
+      for (p; *p; p++)
+        {
+          if (!(islower(*p) || isdigit(*p) || *p == '_'))
+            return MR_BAD_CHAR;
+        }
     }
 
   if (q->version > 2)
@@ -451,6 +478,10 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 	return MR_BAD_CHAR;
     }
 
+  /* Don't allow _ as a leading character */
+  if (name[0] == '_')
+    return MR_BAD_CHAR;
+
   for (p = (unsigned char *) desc; *p; p++)
     {
       if (*p == '\n')
@@ -616,6 +647,11 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
   if (cnt > 0)
     return MR_IN_USE;
 
+  EXEC SQL SELECT COUNT(name) INTO :cnt FROM machine
+    WHERE owner_id = :id AND owner_type = 'LIST';
+  if (cnt > 0)
+    return MR_IN_USE;
+
   EXEC SQL SELECT COUNT(name) INTO :cnt FROM servers
     WHERE acl_id = :id AND acl_type = 'LIST';
   if (cnt > 0)
@@ -755,18 +791,27 @@ EXEC SQL END DECLARE SECTION;
 
 int setup_afil(struct query *q, char *argv[], client *cl)
 {
-  char *type, *name;
+  char *type, *name, *label;
   int mach_id;
   EXEC SQL BEGIN DECLARE SECTION;
-  int ok;
+  int ok, count;
   char ftype[FILESYS_TYPE_SIZE + 10], *rwaccess;
   EXEC SQL END DECLARE SECTION;
 
+  label = argv[0];
   type = argv[1];
   mach_id = *(int *)argv[2];
   name = argv[3];
   rwaccess = argv[5];
   _var_phys_id = 0;
+
+  /* Does this name already exist as an alias? */
+  EXEC SQL SELECT COUNT(*) INTO :count FROM alias
+    WHERE name = :label AND type = 'FILESYS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (count != 0)
+    return MR_EXISTS;
 
   sprintf(ftype, "fs_access_%s", type);
   EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
@@ -1219,6 +1264,10 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	}
       else
 	{
+	  /* We may exist from the for loop below before name is set
+	   * and it was used previously, so empty it out. */
+	  name = NULL;
+
 	  /*
 	   * a "unique" address was specified. Walk through the
 	   * range specified in the network record, return
@@ -1237,7 +1286,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	      if (cnt == 0)
 		break;
 	    }
-	  if (cnt != 0)
+	  if (cnt != 0 || !name)
 	    return MR_NO_ID;
 	  else
 	    value = htonl(id);
@@ -1675,6 +1724,30 @@ int check_mailman_listname(char *name, const char *suffix)
 	  if (cnt > 0)
 	    return MR_EXISTS;
 	}
+    }
+
+  return MR_SUCCESS;
+}
+
+int setup_uust(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int status, old_status, id, count = 0;
+  EXEC SQL END DECLARE SECTION;
+
+  if (!strcmp(q->shortname, "uust"))
+    {
+      id = *(int *)argv[0];
+      status = atoi(argv[1]);
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	WHERE users_id = :id AND reservations != CHR(0);
+
+      EXEC SQL SELECT status INTO :old_status FROM users
+	WHERE users_id = :id;
+
+      if (old_status != 3 && status == 3 && count > 0)
+        return MR_PERM;
     }
 
   return MR_SUCCESS;

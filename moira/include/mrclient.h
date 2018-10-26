@@ -22,7 +22,8 @@
 #define MRCL_M_STRING        3
 #define MRCL_M_KERBEROS      4
 #define MRCL_M_MACHINE       5
-#define MRCL_M_NONE          6
+#define MRCL_M_ID            6
+#define MRCL_M_NONE          7
 
 struct mrcl_ace_type {
   int type;
@@ -34,6 +35,9 @@ char *mrcl_krb_user(void);
 char *partial_canonicalize_hostname(char *s);
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret);
+int mrcl_validate_kerberos_member(char *str, char **ret);
+int mrcl_validate_string_member(char *str);
+int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **ret_member);
 
 struct mrcl_ace_type *mrcl_parse_member(char *s);
 

@@ -1253,7 +1253,7 @@ static struct validate uust_validate = {
   0,
   "users_id",
   0,
-  0,
+  setup_uust,
   set_modtime_by_id,
 };
 

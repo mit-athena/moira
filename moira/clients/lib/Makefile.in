@@ -20,7 +20,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 
-OBJS=error.lo mail.lo member.lo pobox.lo utils.lo
+OBJS=error.lo machine.lo mail.lo member.lo pobox.lo utils.lo
 
 .SUFFIXES: .lo
 

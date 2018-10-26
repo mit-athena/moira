@@ -9274,8 +9274,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 
 	      free(id_members);
-	      id_member_count = 0;
 	      id_members = NULL;
+	      id_member_count = 0;
 	      ptr = ptr->next;
 	    }
 	  else 

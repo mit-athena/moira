@@ -240,4 +240,10 @@ ec	MR_BAD_MAIL_STRING,
 ec	MR_NO_KRB4,
 	"Unable to complete operation using Kerberos v4"
 
+ec	MR_VLAN_TAG,
+	"VLAN number specified is not in allowed range"
+
+ec	MR_BAD_HOSTNAME,
+	"Hostname is not in .MIT.EDU domain"
+
 	end

@@ -25,10 +25,6 @@ Update the contact field for the specified printer to \fIcontact\fR.
 
 .IP \fB-hostname\ \fIhostname\ \fRor\ \fB-H\ \fIhostname\fR
 Update the hostname for the specified printer to \fIhostname\fR.
-.IP \fB-mac\ \fIhwaddr\ \fRor\ \fB-m\ \fIhwaddr\fR
-Update the Ethernet hardware address for the printer's hostname record
-to \fIhwaddr\fR.  Note that this information is associated with the host
-record, not the print queue record.
 .IP \fB-remotename\ \fIname\ \fRor\ \fB-r\ \fIname\fR
 Update the remote queue name for the specified printer to \fIname\fR.
 .IP \fB-duplex\ \fIname\ \fRor\ \fB-d\ \fIname\fR
@@ -63,12 +59,16 @@ Set the LPC acl for the specified printer to \fIlist\fR.
 .IP \fB-lpracl\ \fIlist\ \fRor\ \fB-ac\ \fIlist\fR
 Set the restrict list for the specified printer to \fIlist\fR.
 
-.IP \fB-addhwaddr\ \fIhwaddr\ \fRor\ \fB-ahw\ \fIhwaddr\fR
-This will associated the hardware address \fIhwaddr\fR with the
-host record for the specified printer.
-.IP \fB-delhwaddr\ \fIhwaddr\fRor \ \fB-dhw\ \fIhwaddr\fR
-This will disassociate the hardware address \fIhwaddr\fR from the
-host record for the specified printer.
+.IP \fB-addidentifier\ \fIidentifier\ \fRor\ \fB-aid\ \fIidentifier\fR
+This will associate the host identifier \fIidentifier\fR with the
+host record for the specified printer.  Identifier should be of the form
+type:value, where type is one of HWADDR or DUID.  If no type is
+specified, a default of HWADDR will be assumed.
+.IP \fB-delidentifier\ \fIidentifier\ \fRor\ \fB-did\ \fIidentifier\fR
+This will disassociate the hardware address \fIidentifier\fR from the
+host record for the specified printer.  Identifier should be of the form
+type:value, where type is one of HWADDR or DUID.  If no type is
+specified, a default of HWADDR will be assumed.
 
 .IP \fB-verbose\ \fRor\ \fB-v\fR
 Give more information.  With this flag, mitch will display the

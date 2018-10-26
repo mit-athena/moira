@@ -37,8 +37,6 @@
 #define DEFAULT_NO      ("0")
 #define DEFAULT_COMMENT ("none")
 
-#define DEFAULT_TTL "1800"
-
 #define SUB_NORMAL 0
 #define SUB_ERROR 1
 
@@ -52,7 +50,7 @@ typedef int Bool;
 
 /* What version of the queries are we asking for? */
 
-#define QUERY_VERSION 16
+#define QUERY_VERSION 17
 
 /* This is unimplemented in the menu stuff, but would be nice. */
 

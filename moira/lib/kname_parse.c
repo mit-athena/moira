@@ -13,14 +13,10 @@
 
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <krb.h>
-#else
 #include <mr_krb.h>
 
 #define KRBET_KNAME_FMT                          (39525457L)
 #define KNAME_FMT                                (KRBET_KNAME_FMT - ERROR_TABLE_BASE_krb)
-#endif
 
 RCSID("$HeadURL$ $Id$");
 

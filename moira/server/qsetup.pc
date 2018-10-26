@@ -69,18 +69,18 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   if (q->type == MR_Q_UPDATE)
     {
       if (q->version > 2)
-        status = atoi(argv[8]);
+	status = atoi(argv[8]);
       else
-        status = atoi(argv[7]);
+	status = atoi(argv[7]);
 
       EXEC SQL SELECT COUNT(*) INTO :count FROM users
-        WHERE login = :argv[row - 1] AND reservations != CHR(0);
-      
+	WHERE login = :argv[row - 1] AND reservations != CHR(0);
+
       EXEC SQL SELECT status INTO :old_status FROM users
-        WHERE login = :argv[row - 1];
+	WHERE login = :argv[row - 1];
 
       if (old_status != 3 && status == 3 && count > 0)
-        return MR_PERM;
+	return MR_PERM;
     }
 
   /* Don't allow usernames to contain anything but lower case letters,
@@ -91,15 +91,15 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
       p = argv[row - 1];
 
       if (!islower(*p) && *p != '#')
-        return MR_BAD_CHAR;
+	return MR_BAD_CHAR;
 
       /* Check rest of login name */
       p++;
       for (p; *p; p++)
-        {
-          if (!(islower(*p) || isdigit(*p) || *p == '_'))
-            return MR_BAD_CHAR;
-        }
+	{
+	  if (!(islower(*p) || isdigit(*p) || *p == '_'))
+	    return MR_BAD_CHAR;
+	}
     }
 
   if (q->version > 2)
@@ -248,6 +248,7 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, id, cnt;
+  char nameglob[MACHINE_NAME_SIZE + 2];
   EXEC SQL END DECLARE SECTION;
 
   id = *(int *)argv[0];
@@ -296,8 +297,23 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     WHERE mach_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+    WHERE mach_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostrecord
+    WHERE mach_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
   EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
     WHERE member_type = 'MACHINE' and member_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT '%' || name || '%' INTO :nameglob FROM machine
+    WHERE mach_id = :id;
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord
+    WHERE rr_value LIKE :nameglob;
   if (cnt > 0)
     return MR_IN_USE;
 
@@ -308,6 +324,11 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
   EXEC SQL DELETE FROM mcntmap WHERE mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
+
+  EXEC SQL DELETE FROM machidentifiermap WHERE mach_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+
   return MR_SUCCESS;
 }
 
@@ -318,8 +339,11 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
 
 int setup_asnt(struct query *q, char *argv[], client *cl)
 {
-  int high, low, row, status;
+  int row, status, ilow, ihigh, imask;
   char *account_number;
+  char buf[INET_ADDRSTRLEN], buf6[INET6_ADDRSTRLEN];
+  struct sockaddr_in addr, mask, low, high;
+  struct sockaddr_in6 addr6, mask6, low6, high6;
 
   /* Check for asnt or usnt. */
   if (q->type == MR_Q_APPEND)
@@ -327,8 +351,6 @@ int setup_asnt(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
-  low = atoi(argv[row + 7]);
-  high = atoi(argv[row + 8]);
   status = atoi(argv[row + 2]);
   account_number = argv[row + 4];
   
@@ -344,11 +366,146 @@ int setup_asnt(struct query *q, char *argv[], client *cl)
       if (sqlca.sqlcode == SQL_NO_MATCH)
 	return MR_ACCOUNT_NUMBER;
     }
+
+  /* If query is before v17, clients will be sending IPv4 addresses
+   * in decimal format.  Convert to dotted quad notation for addresses,
+   * int for mask.
+   */
+
+  if (q->version < 17)
+    {
+      /* broadcast address */
+      addr.sin_addr.s_addr = htonl(atoi(argv[row + 5]));
+      if (inet_ntop(AF_INET, &(addr.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+	return MR_ADDRESS;
+
+      strcpy(argv[row + 5], buf);
+
+      /* subnet mask */
+      mask.sin_addr.s_addr = htonl(atoi(argv[row + 6]));
+      if (inet_ntop(AF_INET, &(mask.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+        return MR_ADDRESS;
+
+      imask = mask_to_masksize("IPV4", buf);
+      if (imask < 0 || imask > 32)
+	return MR_ADDRESS;
       
-  /* Special case 0.0.0.0 and 255.255.255.255 */
-  if (!(low == 0 || low == -1 || high == 0 || high == -1))
-    if (low > high)
-      return MR_ADDRESS;
+      sprintf(argv[row + 6], "%d", imask);
+
+      /* address low value */
+      low.sin_addr.s_addr = htonl(atoi(argv[row + 7]));
+      if (inet_ntop(AF_INET, &(low.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+        return MR_ADDRESS;
+
+      strcpy(argv[row + 7], buf);
+
+      /* address high value */
+      high.sin_addr.s_addr = htonl(atoi(argv[row + 8]));
+      if (inet_ntop(AF_INET, &(high.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+        return MR_ADDRESS;
+
+      strcpy(argv[row + 8], buf);
+
+      ilow = ntohl(low.sin_addr.s_addr);
+      ihigh = ntohl(high.sin_addr.s_addr);
+
+      /* Sanity check low and high values, special case 0.0.0.0 and 255.255.255.255 */
+      if (!(ilow == 0 || ilow == -1 || ihigh == 0 || ihigh == -1))
+	if (ilow > ihigh)
+	  return MR_ADDRESS;
+    }
+  else if (q->version >= 17)
+    {
+      int vlan_tag;
+
+      /* Check VLAN tag */
+      vlan_tag = atoi(argv[row + 12]);
+      if (vlan_tag != 0 && (vlan_tag < MIN_VLAN_VALUE || vlan_tag > MAX_VLAN_VALUE))
+	return MR_VLAN_TAG;
+
+      /* What kind of subnet is this? */
+      if (!strcmp(argv[row + 13], "IPV4"))
+	{
+	  /* For this version and above, address arguments are strings.
+	   * Use inet_pton() to check format. If no error, use as-is. */
+
+	  /* broadcast address */
+	  if (inet_pton(AF_INET, argv[row + 5], &(addr.sin_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  /* subnet mask - bit size, not string */
+	  if ((atoi(argv[row + 6]) < 0 || atoi(argv[row + 6]) > 32))
+	    return MR_ADDRESS;
+
+	  /* address low value */
+	  if (inet_pton(AF_INET, argv[row + 7], &(low.sin_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  /* address high value */
+	  if (inet_pton(AF_INET, argv[row + 8], &(high.sin_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  ilow = ntohl(low.sin_addr.s_addr);
+	  ihigh = ntohl(high.sin_addr.s_addr);
+
+	  /* Sanity check low and high values, special case 0.0.0.0 and 255.255.255.255 */
+	  if (!(ilow == 0 || ilow == -1 || ihigh == 0 || ihigh == -1))
+	    if (ilow > ihigh)
+	      return MR_ADDRESS;
+	}
+      else if (!strcmp(argv[row + 13], "IPV6"))
+	{
+	  struct sockaddr_in6 allzeroes6, allones6;
+
+	  /* ditto above, arguments are IPV6 addresses formatted as strings.
+	   * If if validates, pass it through inet_ntop() to normalize format. */
+
+	  /* broadcast address */
+	  if (inet_pton(AF_INET6, argv[row + 5], &(addr6.sin6_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  if (inet_ntop(AF_INET6, &(addr6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+	    return MR_ADDRESS;
+
+	  strcpy(argv[row + 5], buf6);
+
+	  /* subnet mask  - prefix length, not string
+	   * minimum allocation is a /64 for now.
+	   */
+	  if ((atoi(argv[row + 6]) < 0 || atoi(argv[row + 6]) > MIN_IPV6_PREFIX_LEN))
+	    return MR_ADDRESS;
+
+	  /* address low value */
+	  if (inet_pton(AF_INET6, argv[row + 7], &(low6.sin6_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  if (inet_ntop(AF_INET6, &(low6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+	    return MR_ADDRESS;
+
+	  strcpy(argv[row + 7], buf6);
+
+	  /* address high value */
+	  if (inet_pton(AF_INET6, argv[row + 8], &(high6.sin6_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  if (inet_ntop(AF_INET6, &(high6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+	    return MR_ADDRESS;
+
+	  strcpy(argv[row + 8], buf6);
+
+	  /* Sanity check low and high addresses, special-casing the all-zeroes
+	   * and all-ones addresses like we did in IPV4. */
+	  inet_pton(AF_INET6, MIN_IPV6_ADDR, &(allzeroes6.sin6_addr));
+	  inet_pton(AF_INET6, MAX_IPV6_ADDR, &(allones6.sin6_addr));
+
+	  if (!(memcmp(&(low6.sin6_addr), &(allzeroes6.sin6_addr), sizeof(struct in6_addr)) == 0 ||
+		memcmp(&(low6.sin6_addr), &(allones6.sin6_addr), sizeof(struct in6_addr)) == 0 ||
+		memcmp(&(high6.sin6_addr), &(allzeroes6.sin6_addr), sizeof(struct in6_addr)) == 0 ||
+		memcmp(&(high6.sin6_addr), &(allones6.sin6_addr), sizeof(struct in6_addr)) == 0))
+	    if (memcmp(&(low6.sin6_addr), &(high6.sin6_addr), sizeof(struct in6_addr)) > 0)
+	      return MR_ADDRESS;
+	}
+    }
 
   /* If this is update_subnet, we're done. */
   if (row == 1)
@@ -372,7 +529,7 @@ int setup_dsnt(struct query *q, char *argv[], client *cl)
   EXEC SQL END DECLARE SECTION;
 
   id = *(int *)argv[0];
-  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM machine
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
     WHERE snet_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
@@ -659,6 +816,11 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
 
   EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
     WHERE sponsor_id = :id AND sponsor_type = 'LIST';
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
+    WHERE default_vpn_group = :id;
   if (cnt > 0)
     return MR_IN_USE;
 
@@ -1129,8 +1291,7 @@ int prefetch_filesys(struct query *q, char **argv, client *cl)
 
 int setup_ghst(struct query *q, char **argv, client *cl)
 {
-  if (strcmp(argv[0], "*") || strcmp(argv[1], "*") ||
-      strcmp(argv[2], "*") || strcmp(argv[3], "*"))
+  if (strcmp(argv[0], "*") || strcmp(argv[1], "*"))
     return MR_SUCCESS;
   else
     return MR_PERM;
@@ -1144,11 +1305,14 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   EXEC SQL BEGIN DECLARE SECTION;
   char *name, oldname[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
   char model[MACHINE_MODEL_SIZE], os[MACHINE_OS_SIZE];
-  int value, id, ssaddr, smask, shigh, slow, cnt;
-  unsigned int saddr, mask, high, low;
+  int id, value, cnt;
   EXEC SQL END DECLARE SECTION;
-  int row, idx;
-  struct in_addr addr;
+  int row;
+
+  /* Add and update queries have changed enough that we just don't
+     allow them from old clients anymore */
+  if (q->version < 17)
+    return MR_VERSION_MISMATCH;
 
   id = *(int *)argv[0];
 
@@ -1161,13 +1325,6 @@ int setup_ahst(struct query *q, char **argv, client *cl)
     }
   else
     row = 0;
-
-  if (q->version < 6)
-    idx = 0;
-  else if (q->version >= 6 && q->version < 8)
-    idx = 1;
-  else
-    idx = 2;
 
   /* Sanity check name, vendor, model, and os. */
   if ((row == 0 || strcasecmp(argv[1], oldname)) &&
@@ -1192,112 +1349,8 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   if (cnt != 0)
     return MR_EXISTS;
 
-  /* check address */
-  if (!strcmp(argv[9 + row + idx], "unassigned"))
-    value = -1;
-  else if (!strcmp(argv[9 + row + idx], "unique"))
-    {
-      if (*(int *)argv[8 + row + idx] == 0)
-	value = -1;
-      else
-	value = -2;
-    }
-  else
-    {
-      value = ntohl(inet_addr(argv[9 + row + idx]));
-      if (value == -1)
-	return MR_ADDRESS;
-    }
-  if (value == 0)
-    return MR_ADDRESS;
-  if (value != -1)
-    {
-      /*
-       * an address or unique was specified.
-       */
-      id = *(int *)argv[8 + row + idx];
-      EXEC SQL SELECT saddr, mask, high, low INTO :ssaddr, :smask,
-	:shigh, :slow FROM subnet WHERE snet_id = :id;
-      if (dbms_errno)
-	return mr_errcode;
-      saddr = (unsigned) ssaddr;
-      mask = (unsigned) smask;
-      high = (unsigned) shigh;
-      low = (unsigned) slow;
-      if (value != -2)
-	{
-	  /*
-	   * someone specified an IP address for the host record
-	   */
-	  if ((value & mask) != saddr || value < low || value > high)
-	    return MR_ADDRESS;
-	  /*
-	   * run the address argument through inet_addr(). This
-	   * has the effect that any out of bounds host addrs will
-	   * be converted to a valid host addr. We do this now
-	   * so that the uniqueness check works. We should also
-	   * link in an inet_addr() that returns an error for
-	   * this case.
-	   */
-	  addr.s_addr = inet_addr(argv[9 + row + idx]);
-	  name = inet_ntoa(addr);
-	  EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
-	    WHERE address = :name;
-	  if (dbms_errno)
-	    return mr_errcode;
-	  if (cnt > 0)
-	    {
-	      /*
-	       * make IP address is unique. If this a modify request
-	       * (row == 1), then we expect one record to exist.
-	       */
-	      if (row == 0 || (row == 1 && cnt > 1))
-		return MR_ADDRESS;
-	      if (row == 1 && cnt == 1)
-		{
-		  EXEC SQL SELECT mach_id INTO :id FROM machine
-		    WHERE address = :name;
-		  if (id != *(int *)argv[0])
-		    return MR_ADDRESS;
-		}
-	    }
-	}
-      else
-	{
-	  /* We may exist from the for loop below before name is set
-	   * and it was used previously, so empty it out. */
-	  name = NULL;
-
-	  /*
-	   * a "unique" address was specified. Walk through the
-	   * range specified in the network record, return
-	   * error if no room left.
-	   */
-	  for (id = low; id <= high; id++)
-	    {
-	      if (((id & 0xff) == 0) || ((id & 0xff) == 255))
-		continue;
-	      addr.s_addr = htonl(id);
-	      name = inet_ntoa(addr);
-	      EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
-		WHERE address = :name;
-	      if (dbms_errno)
-		return mr_errcode;
-	      if (cnt == 0)
-		break;
-	    }
-	  if (cnt != 0 || !name)
-	    return MR_NO_ID;
-	  else
-	    value = htonl(id);
-	}
-      strcpy(argv[9 + row + idx], name);
-    }
-  else
-    strcpy(argv[9 + row + idx], "unassigned");
-
   /* status checking */
-  value = atoi(argv[7 + row + idx]);
+  value = atoi(argv[8 + row]);
   if (row == 0 && !(value == 1 || value == 0))
     return MR_TYPE;
   if (row == 1)
@@ -1311,6 +1364,44 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	  EXEC SQL UPDATE machine SET statuschange = SYSDATE
 	    WHERE mach_id = :id;
 	}
+    }
+
+  /* Don't allow name to change from something.mit.edu to something non-mit.edu
+   * if you still have addresses, records, or host identifiers assigned.
+   */
+  if (row == 1 && canonical_for_hostname(argv[row]) != MR_SUCCESS)
+    {
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress
+	WHERE mach_id = :id;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt != 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord
+	WHERE mach_id = :id;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt != 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap
+	WHERE mach_id = :id;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt != 0)
+	return MR_EXISTS;
+    }
+
+  /* Don't allow renaming at all if you have NS records */
+  if (row == 1)
+    {
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord
+	WHERE mach_id = :id AND rr_type = 'NS';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt != 0)
+	return MR_EXISTS;
     }
 
   /*
@@ -1353,39 +1444,503 @@ int setup_ahal(struct query *q, char **argv, client *cl)
   if (cnt > 0)
     return MR_EXISTS;
 
+  /* No aliases if you have NS records / are a delegated zone */
+  EXEC SQL SELECT count(*) INTO :cnt FROM hostrecord hr, machine m
+    WHERE m.name = UPPER(:name) AND m.mach_id = hr.mach_id AND hr.rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt > 0)
+    return MR_EXISTS;
+
   return MR_SUCCESS;
 }
 
-/* setup_ahha(): Check characters in hwaddr, and make sure it's not
- * a duplicate.
- */
-int setup_ahha(struct query *q, char **argv, client *cl)
+/* setup_ahad - add a host address */
+int setup_ahad(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *hwaddr = argv[1];
-  int count;
+  int cnt, mid, sid, mask;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE], high[SUBNET_HIGH_SIZE];
+  char saddr[SUBNET_SADDR_SIZE], low[SUBNET_LOW_SIZE];
+  char buf[INET_ADDRSTRLEN], buf6[INET6_ADDRSTRLEN];
+  char mname[MACHINE_NAME_SIZE];
+  char *address, *maskstr;
   EXEC SQL END DECLARE SECTION;
-  char *p;
+  struct sockaddr_in sa, saddr_sa, mask_sa, low_sa, high_sa;
+  struct sockaddr_in6 sa6, saddr_sa6, mask_sa6, low_sa6, high_sa6;
+  unsigned int isaddr, imask, ihigh, ilow, value;
+  int status;
 
-  if (strlen(hwaddr) == 0)
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+  address = argv[2];
+  memset(buf, '\0', sizeof(buf);
+
+  /* Don't allow adding addresses for non-MIT.EDU names. */
+  EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  strmove(mname, strtrim(mname));
+
+  status = canonical_for_hostname(mname);
+  if (status)
+    return status;
+
+  /* Don't allow adding addresses for NS records / delegated zones */
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostrecord WHERE mach_id = :mid
+    AND rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt > 0)
+    return MR_EXISTS;
+
+  /* Get address type of specified subnet */
+  EXEC SQL SELECT addr_type, saddr, mask, low, high INTO :addr_type, :saddr, :mask, :low, :high
+    FROM subnet WHERE snet_id = :sid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  if (!strcmp(strtrim(addr_type), "IPV4"))
+    {
+      /* Two scenarios - we either were given a specific address or "unique".
+       * In particular, we don't need to handle / accept "unassigned" anymore
+       * because that behavior is provided by just not assigning a host record
+       * any addresses.
+       */
+
+      /* First, convert subnet strings into something we can work with */
+      if (inet_pton(AF_INET, strtrim(saddr), &(saddr_sa.sin_addr)) < 1)
+	return MR_ADDRESS;
+
+      /* mask - bit size, not string */
+      maskstr = masksize_to_mask("IPV4", mask);
+      if (!maskstr)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET, maskstr, &(mask_sa.sin_addr)) < 1)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET, strtrim(low), &(low_sa.sin_addr)) < 1)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET, strtrim(high), &(high_sa.sin_addr)) < 1)
+	return MR_ADDRESS;
+
+      isaddr = ntohl(saddr_sa.sin_addr.s_addr);
+      imask = ntohl(mask_sa.sin_addr.s_addr);
+      ilow = ntohl(low_sa.sin_addr.s_addr);
+      ihigh = ntohl(high_sa.sin_addr.s_addr);
+
+      if (!strcmp(address, "unique"))
+	{
+	  for (value = ilow; value <= ihigh; value++)
+	    {
+	      if (((value & 0xff) == 0) || ((value & 0xff) == 255))
+		continue;
+
+	      sa.sin_addr.s_addr = htonl(value);
+	      if (inet_ntop(AF_INET, &(sa.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+		return MR_ADDRESS;
+	      
+	      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+		WHERE address = :buf;
+	      if (dbms_errno)
+		return mr_errcode;
+	      if (cnt == 0)
+		break;
+	    }
+
+	  if (cnt != 0 || strlen(buf) == 0)
+	    return MR_NO_ID;
+	  else
+	    strcpy(argv[2], buf);
+	}
+      else
+	{
+	  /* Someone specified a specific address.  Confirm we can parse it as
+	   * as a v4 address. */
+
+	  if (inet_pton(AF_INET, address, &(sa.sin_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  /* It looks like a v4 address; is it appropriate for the subnet? */
+	  value = ntohl(sa.sin_addr.s_addr);
+
+	  if ((value & imask) != isaddr || value < ilow || value > ihigh)
+	    return MR_ADDRESS;
+
+	  /* You can't add the same address to a host twice */
+	  EXEC SQL SELECT COUNT(*) INTO :cnt FROM machine m, hostaddress ha
+	    WHERE m.mach_id = :mid AND m.mach_id = ha.mach_id AND ha.address = :address;
+	  if (dbms_errno)
+	    return mr_errcode;
+	  if (cnt > 0)
+	    return MR_EXISTS;
+	}
+    }
+  else if (!strcmp(strtrim(addr_type), "IPV6"))
+    {
+      /* Convert strings to something we can work with. */
+
+      if (inet_pton(AF_INET6, strtrim(saddr), &(saddr_sa6.sin6_addr)) < 1)
+	return MR_ADDRESS;
+
+      maskstr = masksize_to_mask("IPV6", mask);
+      if (!maskstr)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET6, maskstr, &(mask_sa6.sin6_addr)) < 1)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET6, strtrim(low), &(low_sa6.sin6_addr)) < 1)
+	return MR_ADDRESS;
+
+      if (inet_pton(AF_INET6, strtrim(high), &(high_sa6.sin6_addr)) < 1)
+	return MR_ADDRESS;
+
+      if (!strcmp(address, "unique"))
+	{
+	  char *prefixstr;
+	  int i;
+	  struct in6_addr prefix;
+
+	  /* start at bottom of range */
+	  sa6.sin6_addr = low_sa6.sin6_addr;
+
+	  /* Mask off minimum allocation size bits of low address */
+	  prefixstr = masksize_to_mask("IPV6", MIN_IPV6_PREFIX_LEN);
+	  if (!prefixstr)
+	    return MR_ADDRESS;
+
+	  if (inet_pton(AF_INET6, prefixstr, &prefix) < 1)
+	    return MR_ADDRESS;
+
+	  for (i = 0; i < 16; i++)
+	    sa6.sin6_addr.s6_addr[i] = sa6.sin6_addr.s6_addr[i] & prefix.s6_addr[i];
+
+	  for (;;)
+	    {
+	      int octet;
+
+              if (memcmp(&(sa6.sin6_addr), &(high_sa6.sin6_addr), sizeof(struct in6_addr)) >= 0)
+                break;
+
+	      if (inet_ntop(AF_INET6, &(sa6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+		return MR_ADDRESS;
+
+	      /* Any addresses with this prefix? */
+	      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+		WHERE address LIKE :buf6 || '%';
+	      if (dbms_errno)
+		return mr_errcode;
+	      if (cnt == 0)
+		{
+		  /* Found one, set last octet to last octet of "low" address, and stringify */
+		  sa6.sin6_addr.s6_addr[15] = low_sa6.sin6_addr.s6_addr[15];
+		  if (inet_ntop(AF_INET6, &(sa6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+		    return MR_ADDRESS;
+		  break;
+		}
+
+	      /* increment in /64s; this must be kept in sync with MIN_IPV6_PREFIX_LEN */
+	      for (octet = 7; octet >= 0; --octet)
+		{
+		  if (sa6.sin6_addr.s6_addr[octet] < 255)
+		    {
+		      sa6.sin6_addr.s6_addr[octet]++;
+		      break;
+		    } 
+		  else 
+		    sa6.sin6_addr.s6_addr[octet] = 0;
+		}
+
+	      if (octet < 0) break;
+	    }
+
+	  if (cnt != 0)
+	    return MR_NO_ID;
+	  else
+	    strcpy(argv[2], buf6);
+	}
+      else
+	{
+	  int i;
+	  struct in6_addr temp;
+
+	  /* Someone specified a specific address.  Confirm we can parse it as a
+	     v6 address */
+
+	  if (inet_pton(AF_INET6, address, &(sa6.sin6_addr)) < 1)
+	    return MR_ADDRESS;
+
+	  /* It looks like a v6 address; is it appropriate for the subnet? */
+	  if (memcmp(&(sa6.sin6_addr), &(low_sa6.sin6_addr), sizeof(struct in6_addr)) < 0 ||
+	      memcmp(&(sa6.sin6_addr), &(high_sa6.sin6_addr), sizeof(struct in6_addr)) > 0)
+	    return MR_ADDRESS;
+
+	  /* Address with prefix length masked off should equal saddr for subnet */
+	  temp = sa6.sin6_addr;
+	  for (i = 0; i < 16; i++)
+	    temp.s6_addr[i] = temp.s6_addr[i] & mask_sa6.sin6_addr.s6_addr[i];
+
+	  if (memcmp(&temp, &(saddr_sa6.sin6_addr), sizeof(struct in6_addr)) != 0)
+	    return MR_ADDRESS;
+
+	  /* Convert back to printable form to normalize format */
+	  if (inet_ntop(AF_INET6, &(sa6.sin6_addr), buf6, INET6_ADDRSTRLEN) == NULL)
+	    return MR_ADDRESS;
+
+          /* You can't add the same address to a host twice */
+          EXEC SQL SELECT COUNT(*) INTO :cnt FROM machine m, hostaddress ha
+            WHERE m.mach_id = :mid AND m.mach_id = ha.mach_id AND ha.address = :buf6;
+          if (dbms_errno)
+            return mr_errcode;
+          if (cnt > 0)
+            return MR_EXISTS;
+
+	  strcpy(argv[2], buf6);
+	}
+    }
+
+  return MR_SUCCESS;
+}
+
+int setup_dhad(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+
+  /* Get address type of specified subnet */
+  EXEC SQL SELECT addr_type INTO :addr_type FROM subnet WHERE snet_id = :sid;
+
+  if (!strcmp(strtrim(addr_type), "IPV4"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'HWADDR';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  else if (!strcmp(strtrim(addr_type), "IPV6"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'DUID';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  
+  return MR_SUCCESS;
+}
+
+int setup_uhp4(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid;
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+
+  /* Host must have 1 IPv4 address marked as primary on a subnet ending in -PRIVATE */
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, subnet s WHERE
+    ha.mach_id = :mid and ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND s.name LIKE '%-PRIVATE';
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt != 1)
+    return MR_ADDRESS;
+
+  return MR_SUCCESS;
+}
+
+int setup_srrt(struct query *q, char **argv, client *cl)
+{
+  char *p;
+  if (!strcmp(argv[3], "default"))
+    sprintf(argv[3], "%d", DEFAULT_TTL);
+
+  p = argv[3];
+  for (; *p; p++)
+    {
+      if (*p < '0' || *p > '9')
+	return MR_INTEGER;
+    }
+
+  if (atoll(argv[3]) > MAX_TTL_VALUE)
+    return MR_ARG_TOO_LONG;
+
+  return MR_SUCCESS;
+}
+
+/* setup_shap(): Require value to be 0 / 1; don't allow ptr flag to be set to 1 if it's
+ * already set for another address of the same address type assigned to this host.
+ */
+int setup_shap(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, ptr;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+  ptr = atoi(argv[2]);
+
+  if (((ptr !=0) && (ptr != 1)))
     return MR_BAD_CHAR;
 
-  if (*hwaddr && strcasecmp(hwaddr, "unknown"))
+  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha
+    WHERE ha.mach_id = :mid AND ha.address = :argv[1];
+  if (cnt == 0)
+    return MR_NO_MATCH;
+
+  if (ptr == 1)
     {
-      for (p = hwaddr; *p; p++)
+      /* get address type for the subnet this address is on */
+      EXEC SQL SELECT s.addr_type INTO addr_type FROM subnet s, hostaddress ha, machine m
+	WHERE m.mach_id = :mid AND m.mach_id = ha.mach_id AND ha.address = :argv[1] AND ha.snet_id = s.snet_id;
+      if (dbms_errno)
+	return mr_errcode;
+
+      strmove(addr_type, strtrim(addr_type));
+
+      /* PTR flag set for any other rows for this address and another machine? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, machine m
+	WHERE ha.ptr = 1 AND ha.address = :argv[1] AND ha.mach_id = m.mach_id AND m.mach_id != :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_EXISTS;
+
+      /* Any other addresses associated with this host have ptr flag set? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, machine m, subnet s
+	WHERE m.mach_id = :mid AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
+	AND s.addr_type = :addr_type AND ha.address != :argv[1] AND ha.ptr = 1;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_EXISTS;
+    }
+
+  return MR_SUCCESS;
+}
+
+/* setup_ahid(): Check characters in identifier, and make sure it's not
+ * a duplicate.
+ */
+int setup_ahid(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *identifier, *type;
+  char mname[MACHINE_NAME_SIZE];
+  int mid, count, i;
+  EXEC SQL END DECLARE SECTION;
+  char *p;
+  int status;
+
+  mid = *(int *)argv[0];
+
+  /* legacy queries */
+  if (!strcmp(q->shortname, "ahha") || !strcmp(q->shortname, "uhha"))
+    {
+      type = "HWADDR";
+      identifier = argv[1];
+    }
+  else
+    {
+      type = argv[1];
+      identifier = argv[2];
+    }
+
+  /* Don't allow identifiers to be added to hosts that aren't in .MIT.EDU. */
+  EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  strmove(mname, strtrim(mname));
+
+  status = canonical_for_hostname(mname);
+  if (status)
+    return status;
+
+  /* Don't allow adding identifiers to anything with NS records */
+  EXEC SQL SELECT COUNT(*) INTO :count FROM hostrecord WHERE mach_id = :mid
+    AND rr_type = 'NS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (count > 0)
+    return MR_EXISTS;
+
+  /* Don't allow empty string */
+  if (strlen(identifier) == 0)
+    return MR_BAD_CHAR;
+
+  /* Identifiers must be all lowercase hex digits and appropriate 
+   * length for their type. */
+  if (*identifier && strcasecmp(identifier, "unknown"))
+    {
+      for (p = identifier; *p; p++)
 	{
 	  if (isupper(*p))
 	    *p = tolower(*p);
 	  if (!isxdigit(*p))
 	    return MR_BAD_CHAR;
 	}
-      if (p != hwaddr + 12)
-	return MR_ADDRESS;
 
-      EXEC SQL SELECT COUNT(hwaddr) INTO :count
-	FROM hwaddrmap WHERE hwaddr = :hwaddr;
-      if (count)
-	return MR_NOT_UNIQUE;
+      if (!strcasecmp(type, "hwaddr"))
+	{
+	  if (p != identifier + 12)
+	    return MR_ADDRESS;
+	}
+      else if (!strcasecmp(type, "duid"))
+	{
+	  if (p != identifier + 32)
+	    return MR_ADDRESS;
+	}
+    }
+
+  /* Identifier can only be assigned to one host */
+  EXEC SQL SELECT COUNT(mach_identifier) INTO :count
+    FROM machidentifiermap WHERE mach_identifier_type = :type AND
+    mach_identifier = :identifier;
+  if (count)
+    return MR_NOT_UNIQUE;
+
+  /* Host can only have one identifier of each type */
+  EXEC SQL SELECT COUNT(*) INTO :count 
+    FROM machidentifiermap WHERE mach_id = :mid AND mach_identifier_type = :type;
+  if (count)
+    return MR_NOT_UNIQUE;
+
+  /* Host must have one and only one address of the appropriate type. */
+  if (!strcasecmp(type, "hwaddr"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
+    }
+  else if (!strcasecmp(type, "duid"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV6';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
     }
 
   return MR_SUCCESS;
@@ -1729,6 +2284,145 @@ int check_mailman_listname(char *name, const char *suffix)
   return MR_SUCCESS;
 }
 
+int canonical_for_hostname(char *name)
+{
+  char *p;
+  char domain[ALIAS_TRANS_SIZE];
+  int i;
+
+  if (!strstr(name, ".MIT.EDU"))
+    return MR_BAD_HOSTNAME;
+
+  for (p = name, i = 0; *p; p++)
+    {
+      if (*p == '.')
+	i++;
+    }
+    
+  /* Allow foo.mit.edu but not foo.subdomain.mit.edu unless it's in our whitelist */
+  if (i == 2)
+    return MR_SUCCESS;
+  else
+    {
+      EXEC SQL DECLARE csr_canon_domains CURSOR FOR
+	SELECT trans FROM alias WHERE name = 'canon_domain'
+	AND type = 'TYPE';
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr_canon_domains;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
+	{
+	  EXEC SQL FETCH csr_canon_domains INTO :domain;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (strstr(name, strtrim(domain)))
+	    return MR_SUCCESS;
+	}
+    }
+
+  return MR_BAD_HOSTNAME;
+}
+
+int setup_sttl(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, count;
+  char *address, *p;
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+  address = argv[1];
+
+  EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+    WHERE mach_id = :mid AND address = :address;
+  if (dbms_errno)
+    return mr_errcode;
+
+  if (count == 0)
+    return MR_NO_MATCH;
+
+  if (!strcmp(argv[2], "default"))
+    sprintf(argv[2], "%d", DEFAULT_TTL);
+
+  p = argv[2];
+  for (; *p; p++)
+    {
+      if (*p < '0' || *p > '9')
+        return MR_INTEGER;
+    }
+
+  if (atoll(argv[2]) > MAX_TTL_VALUE)
+    return MR_ARG_TOO_LONG;
+
+  return MR_SUCCESS;
+}
+
+int setup_ahrr(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, count;
+  char *rr_type, *rr_value, mname[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  mid = *(int *)argv[0];
+  rr_type = argv[1];
+  rr_value = argv[2];
+
+  EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  strmove(mname, strtrim(mname));
+
+  status = canonical_for_hostname(mname);
+  if (status)
+    return status;
+
+  /* Don't allow explicit PTR record if the address is already the primary
+     address for any record. */
+  if (!strcmp(rr_type, "PTR"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+	WHERE address = :rr_value AND ptr = 1;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+    }
+
+  /* Don't allow adding NS records to anything that has other identifiers */
+  if (!strcmp(rr_type, "NS"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostalias
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM machidentifiermap
+	WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+    }
+
+  return MR_SUCCESS;
+}
+
 int setup_uust(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -1747,8 +2441,10 @@ int setup_uust(struct query *q, char *argv[], client *cl)
 	WHERE users_id = :id;
 
       if (old_status != 3 && status == 3 && count > 0)
-        return MR_PERM;
+	return MR_PERM;
     }
 
   return MR_SUCCESS;
 }
+
+

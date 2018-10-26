@@ -25,9 +25,6 @@
 #include <unistd.h>
 #include <syslog.h>
 
-#ifdef HAVE_KRB4
-#include <des.h>
-#endif
 #include "update.h"
 
 RCSID("$HeadURL$ $Id$");
@@ -35,9 +32,6 @@ RCSID("$HeadURL$ $Id$");
 char *whoami, *hostname;
 
 int have_authorization = 0;
-#ifdef HAVE_KRB4
-des_cblock session;
-#endif
 int uid = 0;
 
 void child_handler(int signal);

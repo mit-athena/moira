@@ -1,4 +1,4 @@
-/* $Id$
+/* $id$
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -20,14 +20,16 @@
 
 #include "util.h"
 
-#define HWADDRMAP_CHWADDR_SIZE 18
-
 EXEC SQL INCLUDE sqlca;
 
 RCSID("$HeadURL$ $Id$");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
+
+#define MAXIMUM_HWADDR_SIZE 12
+/* add colons */
+#define MAXIMUM_CHWADDR_SIZE MAXIMUM_HWADDR_SIZE + 6
 
 void hwcolonify(char *from, char *to);
 
@@ -36,22 +38,24 @@ void sqlerr(void);
 int main(int argc, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[MACHINE_NAME_SIZE];
-  char hwaddr[HWADDRMAP_HWADDR_SIZE], chwaddr[HWADDRMAP_CHWADDR_SIZE];
-  char ohwaddr[HWADDRMAP_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
-  char addr[MACHINE_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
-  char contact[PRINTERS_CONTACT_SIZE], logaddr[MACHINE_ADDRESS_SIZE];
+  char name[MACHINE_NAME_SIZE], pname[PRINTERS_NAME_SIZE];
+  char hwaddr[MAXIMUM_HWADDR_SIZE], chwaddr[MAXIMUM_CHWADDR_SIZE];
+  char ohwaddr[MAXIMUM_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
+  char addr[HOSTADDRESS_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE], logaddr[HOSTADDRESS_ADDRESS_SIZE];
   char modtime[PRINTERS_MODTIME_SIZE], type[PRINTERS_TYPE_SIZE];
+  char opname[PRINTERS_NAME_SIZE];
   char *unixtime_fmt = UNIXTIME_FMT;
-  char host[MACHINE_ADDRESS_SIZE], types[SERVERHOSTS_VALUE3_SIZE];
-  int mid, alcount, status;
+  char host[HOSTADDRESS_ADDRESS_SIZE], types[SERVERHOSTS_VALUE3_SIZE];
+  int mid, alcount, logaddrcount, status;
   EXEC SQL END DECLARE SECTION;
-  char shortname[MACHINE_NAME_SIZE], net[MACHINE_ADDRESS_SIZE];
+  char shortname[MACHINE_NAME_SIZE], net[HOSTADDRESS_ADDRESS_SIZE];
   char filename[MAXPATHLEN];
   struct {
     char types[SERVERHOSTS_VALUE3_SIZE];
-    char host[MACHINE_ADDRESS_SIZE];
+    char host[HOSTADDRESS_ADDRESS_SIZE];
   } *allowlist;
+  char **logaddrs;
   char *p, *q;
   int i, allows, typelen;
   TARFILE *tf;
@@ -68,18 +72,18 @@ int main(int argc, char **argv)
       exit(MR_ARGS);
     }
 
-  /* Get print spoolers for allow lists. */
-  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m
+  /* Get print spoolers for allow lists. IPv4 addresses only */
+  EXEC SQL SELECT COUNT(service) INTO :alcount FROM serverhosts sh, machine m, hostaddress ha, subnet s
     WHERE (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT') 
-    AND sh.mach_id = m.mach_id 
-    AND (m.status = 1 OR m.status = 2) AND m.address != 'unassigned';
+    AND sh.mach_id = m.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND (m.status = 1 OR m.status = 2) AND ha.address != 'unassigned';
   allowlist = malloc(alcount * sizeof(*allowlist));
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
-    SELECT m.address, sh.value3 FROM machine m, serverhosts sh
-    WHERE m.mach_id = sh.mach_id AND 
-    (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT')
-    AND (m.status = 1 OR m.status = 2) AND m.address != 'unassigned';
+    SELECT ha.address, sh.value3 FROM machine m, serverhosts sh, hostaddress ha, subnet s
+    WHERE m.mach_id = sh.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
+    AND s.addr_type = 'IPV4' AND (sh.service = 'PRINT' OR sh.service = 'CUPS-PRINT')
+    AND (m.status = 1 OR m.status = 2) AND ha.address != 'unassigned';
   EXEC SQL OPEN csr_spool;
   for (i = 0; i < alcount; i++)
     {
@@ -100,17 +104,19 @@ int main(int argc, char **argv)
 		      "root", "root", now);
   ohwaddr[0] = '\0';
   EXEC SQL DECLARE csr_boot CURSOR FOR
-    SELECT LOWER(m.name), hw.hwaddr, m.address, m2.address,
+    SELECT pr.name, LOWER(m.name), mid.mach_identifier, ha.address,
     pr.location, pr.contact, pr.hwtype
-    FROM printers pr, machine m, machine m2, hwaddrmap hw
+    FROM printers pr, machine m, machidentifiermap mid, hostaddress ha, subnet s
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
-    AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
-    AND pr.loghost = m2.mach_id AND (pr.status = 1 OR pr.status = 2 OR pr.status = 4)
-    ORDER BY hw.hwaddr, m.name;
+    AND pr.mach_id = m.mach_id AND m.mach_id = mid.mach_id
+    AND mid.mach_id = ha.mach_id AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND m.status != 3 AND mid.mach_identifier_type = 'HWADDR'
+    AND (pr.status = 1 OR pr.status = 2 OR pr.status = 4)
+    ORDER BY mid.mach_identifier, m.name, ha.address;
   EXEC SQL OPEN csr_boot;
   while (1)
     {
-      EXEC SQL FETCH csr_boot INTO :name, :hwaddr, :addr, :logaddr,
+      EXEC SQL FETCH csr_boot INTO :pname, :name, :hwaddr, :addr,
 	:location, :contact, :hwtype;
       if (sqlca.sqlcode)
 	break;
@@ -127,9 +133,9 @@ int main(int argc, char **argv)
 
       hwcolonify(hwaddr, chwaddr); 
 
+      strtrim(pname);
       strtrim(name);
       strtrim(addr);
-      strtrim(logaddr);
       strtrim(location);
       strtrim(contact);
       strtrim(hwtype);
@@ -145,13 +151,44 @@ int main(int argc, char **argv)
       else
 	continue;
 
+      /* May be multiple logaddrs */
+      EXEC SQL SELECT COUNT(ha.address) INTO :logaddrcount FROM hostaddress ha, machine m, printers pr, subnet s
+	WHERE pr.loghost = m.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
+	AND s.addr_type = 'IPV4' AND pr.name = :pname;
+      logaddrs = malloc(logaddrcount * sizeof(char *));
+
+      EXEC SQL DECLARE csr_logaddr CURSOR FOR
+	SELECT ha.address FROM hostaddress ha, machine m, printers pr, subnet s
+	WHERE pr.loghost = m.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
+	AND s.addr_type = 'IPV4' AND pr.name = :pname;
+      EXEC SQL OPEN csr_logaddr;
+      for (i = 0; i < logaddrcount; i++)
+	{
+	  EXEC SQL FETCH csr_logaddr INTO :logaddr;
+	  if (sqlca.sqlcode)
+	    sqlerr();
+	  logaddrs[i] = malloc(HOSTADDRESS_ADDRESS_SIZE);
+	  strcpy(logaddrs[i], strtrim(logaddr));
+	}
+      EXEC SQL CLOSE csr_logaddr;
+
       fprintf(out, "# %s: %s\n# contact: %s\nhost %s {\n\t"
 	      "hardware ethernet %s;\n\tfixed-address %s;\n",
 	      shortname, location, contact, hwaddr, chwaddr, addr);
       
-      if (strlen(logaddr) != 0)
-	      fprintf(out, "\toption log-servers %s;\n", logaddr);
-	      
+      if (logaddrcount > 0)
+	{
+	  fprintf(out, "\toption log-servers ");
+	  fprintf(out, "%s", logaddrs[0]);
+	  for (i = 1; i < logaddrcount; i++)
+	    fprintf(out, ",%s", logaddrs[i]);
+	  fprintf(out, ";\n");
+	}
+
+      for (i = 0; i < logaddrcount; i++)
+	free(logaddrs[i]);
+      free(logaddrs);
+
       if (!strncmp(hwtype, "HP", 2))
 	fprintf(out, "\toption option-144 \"/hp/%s\";\n", shortname);
       fprintf(out, "}\n\n");
@@ -160,18 +197,21 @@ int main(int argc, char **argv)
   tarfile_end(tf);
 
   /* Now generate /var/boot/hp/ files */
+  opname[0] = '\0';
   EXEC SQL DECLARE csr_boot2 CURSOR FOR
-    SELECT LOWER(m.name), hw.hwaddr, m2.address, m3.address, pr.type,
+    SELECT LOWER(m.name), pr.name, mid.mach_identifier, ha2.address, ha3.address, pr.type,
     pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt), pr.status
-    FROM printers pr, machine m, machine m2, machine m3, hwaddrmap hw
+    FROM printers pr, machine m, machine m2, machine m3, hostaddress ha2, hostaddress ha3, machidentifiermap mid
     WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
-    AND pr.mach_id = m.mach_id AND m.mach_id = hw.mach_id AND m.status != 3
-    AND pr.rm = m2.mach_id AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS'
+    AND pr.mach_id = m.mach_id AND m.mach_id = mid.mach_id
+    AND m.status != 3 AND mid.mach_identifier_type = 'HWADDR'
+    AND pr.rm = ha2.mach_id AND ha2.mach_id = m2.mach_id
+    AND pr.loghost = ha3.mach_id AND ha3.mach_id = m3.mach_id AND pr.type != 'ALIAS'
     AND (pr.status = 1 OR pr.status = 2 OR pr.status = 4);
   EXEC SQL OPEN csr_boot2;
   while (1)
     {
-      EXEC SQL FETCH csr_boot2 INTO :name, :hwaddr, :addr, :logaddr,
+      EXEC SQL FETCH csr_boot2 INTO :name, :pname, :hwaddr, :addr, :logaddr,
 	:type, :location, :contact, :modtime, :status;
       if (sqlca.sqlcode)
 	break;
@@ -179,6 +219,14 @@ int main(int argc, char **argv)
       strtrim(hwaddr);
       if (!*hwaddr || !strcasecmp(hwaddr, "unknown"))
 	continue;
+
+      strtrim(pname);
+      if (!strcmp(pname, opname))
+	{
+	  fprintf(stderr, "Ignoring duplicate row for printer %s\n", pname);
+	  continue;
+	}
+      strcpy(opname, pname);
 
       strtrim(name);
       strtrim(addr);
@@ -254,7 +302,7 @@ void hwcolonify(char *from, char *to)
   int f = 0, t = 0;
   int mod = 2;
 
-  for (f = 0 ; f < HWADDRMAP_HWADDR_SIZE - 1 ; )
+  for (f = 0 ; f < MAXIMUM_HWADDR_SIZE - 1 ; )
     {
       to[t++] = from[f++];
       if (f % mod == 0)

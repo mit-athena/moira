@@ -138,7 +138,7 @@ $moira->disconnect;
 if (scalar(@mailout) > 0) {
     print LOG "Found problems.  Sending mail.\n";
     open(MAIL, "|$sendmail -t -f errors\@mit.edu" ) || die "Failed to run $sendmail";
-    print MAIL "From: errors\@mit.edu\nTo: class-wiki-request\@mit.edu\nCc: zacheiss\@mit.edu\n";
+    print MAIL "From: errors\@mit.edu\nTo: moira-admin\@mit.edu\n";
     print MAIL "Subject: Moira Stellar group data load problems\n";
     print MAIL "The following problems were found during the Moira import of Stellar group data:\n\n";
     foreach $line (@mailout) {

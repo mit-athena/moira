@@ -17,21 +17,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_KRB4
-#include <des.h>
-#endif
-
 RCSID("$HeadURL$ $Id$");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
 #endif /* MIN */
-
-#ifdef HAVE_KRB4
-static des_key_schedule sched;
-static des_cblock ivec;
-extern des_cblock session;
-#endif
 
 static int get_block(int conn, int fd, int max_size, int encrypt);
 
@@ -126,17 +116,7 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
   send_ok(conn);
 
   if (encrypt)
-    {
-#ifdef HAVE_KRB4
-      des_key_sched(session, sched);
-      memcpy(ivec, session, sizeof(ivec));
-#else
-      /* The session key only gets stored if auth happens in krb4 to
-         begin with. If you don't have krb4, you can't possibly be
-         coming up with a valid session key. */
-      return MR_NO_KRB4;
-#endif
-    }
+    return MR_NO_KRB4;
 
   n_written = 0;
   while (n_written < file_size)
@@ -181,25 +161,6 @@ static int get_block(int conn, int fd, int max_size, int encrypt)
   int n_read, n, i, code;
 
   recv_string(conn, &data, &len);
-
-  if (encrypt)
-    {
-#ifdef HAVE_KRB4
-      char *unenc = malloc(len);
-
-      if (!unenc)
-	{
-	  send_int(conn, ENOMEM);
-	  return -1;
-	}
-
-      des_pcbc_encrypt((des_cblock *)data, (des_cblock *)unenc, len, sched, &ivec, 1);
-      for (i = 0; i < 8; i++)
-	ivec[i] = data[len - 8 + i] ^ unenc[len - 8 + i];
-      free(data);
-      data = unenc;
-#endif
-    }
 
   n_read = MIN(len, max_size);
   n = 0;

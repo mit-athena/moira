@@ -1005,13 +1005,12 @@ int ghbo_internal(char *atype, int aid,
     {
       /* Check for permissions granted via Roles */
       EXEC SQL DECLARE csr115c CURSOR FOR
-	SELECT m.name FROM machine m, subnet s
+	SELECT m.name FROM machine m
 	WHERE m.account_number IN (SELECT SUBSTR(ra.qualifier_code, 2)
 	FROM roles_authorization ra, users u WHERE ra.kerberos_name = UPPER(u.login)
 	AND u.users_id = :id AND ra.function_name = 'CAN SPEND OR COMMIT FUNDS'
-        AND ra.do_function = 'Y' AND ra.effective_date <= SYSDATE
-	AND (SYSDATE <= ra.expiration_date OR ra.expiration_date IS NULL))
-        AND m.snet_id = s.snet_id AND (s.status != 0 AND s.status != 6);
+	AND ra.do_function = 'Y' AND ra.effective_date <= SYSDATE
+	AND (SYSDATE <= ra.expiration_date OR ra.expiration_date IS NULL));
       if (dbms_errno)
 	return mr_errcode;
       EXEC SQL OPEN csr115c;
@@ -1112,7 +1111,7 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
       rargv[0] = name;
 
       EXEC SQL DECLARE csr108r CURSOR FOR
-	SELECT m.name FROM machine m, subnet s WHERE m.account_number IN
+	SELECT m.name FROM machine m WHERE m.account_number IN
 	(SELECT SUBSTR(qualifier_code, 2) FROM roles_qualifier WHERE qualifier_id IN
 	(SELECT child_id FROM roles_qualifier_descendent WHERE parent_id IN
 	(SELECT qualifier_id FROM roles_authorization ra, users u
@@ -1120,8 +1119,7 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
 	AND ra.do_function = 'Y' AND ra.descend = 'Y' AND ra.effective_date <= SYSDATE 
 	AND (SYSDATE <= ra.expiration_date OR ra.expiration_date IS NULL)))
 	AND qualifier_type = (SELECT qualifier_type FROM roles_function
-        WHERE function_name = 'CAN SPEND OR COMMIT FUNDS'))
-	AND m.snet_id = s.snet_id AND (s.status != 0 AND s.status != 6);
+	WHERE function_name = 'CAN SPEND OR COMMIT FUNDS'));
       if (dbms_errno)
 	return mr_errcode;
       EXEC SQL OPEN csr108r;
@@ -1174,7 +1172,401 @@ int get_host_by_owner(struct query *q, char *argv[], client *cl,
   return MR_SUCCESS;
 }
 
+/* Inspired by the checking we do in setup_dmac.
+ * Tell the user where this host is being used rather than
+ * making them guess */
+int get_host_usage(struct query *q, char *argv[], client *cl,
+                      int (*action)(int, char *[], void *), void *actarg)
+{
+  char *rargv[3], *buf, ace[BUFSIZ], identifier[BUFSIZ];
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, acl_id;
+  char mname[MACHINE_NAME_SIZE], nfsdir[NFSPHYS_DIR_SIZE];
+  char login[USERS_LOGIN_SIZE], service[SERVERHOSTS_SERVICE_SIZE];
+  char acl_type[HOSTACCESS_ACL_TYPE_SIZE], pname[PRINTERS_NAME_SIZE];
+  char pkinds[PRINTSERVERS_KIND_SIZE], alias[HOSTALIAS_NAME_SIZE];
+  char address[HOSTADDRESS_ADDRESS_SIZE], rr_type[HOSTRECORD_RR_TYPE_SIZE];
+  char rr_value[HOSTRECORD_RR_VALUE_SIZE], mname2[MACHINE_NAME_SIZE];
+  char record[HOSTRECORD_RR_TYPE_SIZE + HOSTRECORD_RR_VALUE_SIZE];
+  char lname[LIST_NAME_SIZE], cntname[CONTAINERS_NAME_SIZE];
+  char cname[CLUSTERS_NAME_SIZE], mach_identifier_type[MACHIDENTIFIERMAP_MACH_IDENTIFIER_TYPE_SIZE];
+  char mach_identifier[MACHIDENTIFIERMAP_MACH_IDENTIFIER_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+
+  EXEC SQL SELECT name INTO :mname FROM machine where mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  rargv[0] = mname;
+
+  rargv[1] = "LIST";
+  rargv[2] = lname;
+  EXEC SQL DECLARE csr_ghus_list CURSOR FOR
+    SELECT l.name FROM list l, imembers i
+    WHERE l.list_id = i.list_id AND i.member_type = 'MACHINE'
+    AND i.member_id = :mid AND i.direct = 1;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_list;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_list INTO :lname;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_list;
+
+  rargv[1] = "CLUSTER";
+  rargv[2] = cname;
+  EXEC SQL DECLARE csr_ghus_cluster CURSOR FOR
+    SELECT c.name FROM clusters c, mcmap mc
+    WHERE mc.mach_id = :mid AND mc.clu_id = c.clu_id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_cluster;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_cluster INTO :cname;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_cluster;
+
+  rargv[1] = "CONTAINER";
+  rargv[2] = cntname;
+  EXEC SQL DECLARE csr_ghus_cont CURSOR FOR
+    SELECT cnt.name FROM containers cnt, mcntmap mc
+    WHERE mc.mach_id = :mid AND mc.cnt_id = cnt.cnt_id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_cont;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_cont INTO :cntname;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_cont;
+
+  rargv[1] = "MACHIDENTIFIER";
+  rargv[2] = identifier;
+  EXEC SQL DECLARE csr_ghus_machidentifier CURSOR FOR
+    SELECT mach_identifier_type, mach_identifier
+    FROM machidentifiermap WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_machidentifier;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_machidentifier
+	INTO :mach_identifier_type, :mach_identifier;
+      if (sqlca.sqlcode)
+	break;
+      sprintf(identifier, "%s:%s", strtrim(mach_identifier_type), strtrim(mach_identifier));
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_machidentifier;
+
+  rargv[1] = "POP";
+  rargv[2] = login;
+  EXEC SQL DECLARE csr_ghus_pop CURSOR FOR
+    SELECT login FROM users WHERE potype = 'POP'
+    AND pop_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_pop;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_pop INTO :login;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_pop;
+
+  rargv[1] = "EXCHANGE";
+  rargv[2] = login;
+  EXEC SQL DECLARE csr_ghus_exchange CURSOR FOR
+    SELECT login FROM users WHERE potype = 'EXCHANGE'
+    AND exchange_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_exchange;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_exchange INTO :login;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_exchange;
+
+  rargv[1] = "SERVICE";
+  rargv[2] = service;
+  EXEC SQL DECLARE csr_ghus_service CURSOR FOR
+    SELECT service FROM serverhosts WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_service;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_service INTO :service;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_service;
+
+  rargv[1] = "NFSPHYS";
+  rargv[2] = nfsdir;
+  EXEC SQL DECLARE csr_ghus_nfsdir CURSOR FOR
+    SELECT dir FROM nfsphys WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_nfsdir;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_nfsdir INTO :nfsdir;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_nfsdir;
+
+  rargv[1] = "HOSTACCESS";
+  rargv[2] = ace;
+  EXEC SQL DECLARE csr_ghus_hostaccess CURSOR FOR
+    SELECT acl_type, acl_id FROM hostaccess WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_hostaccess;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_hostaccess INTO :acl_type, :acl_id;
+      if (sqlca.sqlcode)
+	break;
+      buf = xmalloc(0);
+      if (!strcmp(acl_type, "USER"))
+	id_to_name(acl_id, USERS_TABLE, &buf);
+      else if (!strcmp(acl_type, "LIST"))
+	id_to_name(acl_id, LIST_TABLE, &buf);
+      else if (!strcmp(acl_type, "KERBEROS"))
+	id_to_name(-acl_id, STRINGS_TABLE, &buf);
+      else if (!strcmp(acl_type, "NONE"))
+	buf = strdup("NONE");
+      sprintf(ace, "%s:%s", acl_type, buf);
+      (*action)(3, rargv, actarg);
+      found++;
+      free(buf);
+    }
+  EXEC SQL CLOSE csr_ghus_hostaccess;
+
+  rargv[1] = "PRINTER";
+  rargv[2] = pname;
+  EXEC SQL DECLARE csr_ghus_printer CURSOR FOR
+    SELECT name FROM printers WHERE 
+    (mach_id = :mid OR rm = :mid OR rq = :mid OR loghost = :mid);
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_printer;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_printer INTO :pname;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_printer;
+
+  rargv[1] = "PRINTSERVERS";
+  rargv[2] = pkinds;
+  EXEC SQL DECLARE csr_ghus_printservers CURSOR FOR
+    SELECT kind FROM printservers WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_printservers;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_printservers INTO :pkinds;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_printservers;
+
+  rargv[1] = "HOSTALIAS";
+  rargv[2] = alias;
+  EXEC SQL DECLARE csr_ghus_alias CURSOR FOR
+    SELECT name FROM hostalias WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_alias;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_alias INTO :alias;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_alias;
+
+  rargv[1] = "HOSTADDRESS";
+  rargv[2] = address;
+  EXEC SQL DECLARE csr_ghus_address CURSOR FOR
+    SELECT address FROM hostaddress WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_address;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_address INTO :address;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_address;
+
+  rargv[1] = "HOSTRECORD";
+  rargv[2] = record;
+  EXEC SQL DECLARE csr_ghus_record CURSOR FOR
+    SELECT rr_type, rr_value FROM hostrecord WHERE mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_record;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_record INTO :rr_type, :rr_value;
+      if (sqlca.sqlcode)
+	break;
+      sprintf(record, "%s:%s", strtrim(rr_type), strtrim(rr_value));
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_record;
+
+  EXEC SQL DECLARE csr_ghus_record2 CURSOR FOR
+    SELECT m.name, hr.rr_type, hr.rr_value FROM hostrecord hr, machine m WHERE hr.rr_value LIKE '%' || :mname || '%'
+    AND m.mach_id = hr.mach_id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_ghus_record2;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_ghus_record2 INTO :mname2, :rr_type, :rr_value;
+      if (sqlca.sqlcode)
+	break;
+      rargv[0] = mname2;
+      sprintf(record, "%s:%s", strtrim(rr_type), strtrim(rr_value));
+      (*action)(3, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr_ghus_record2;
+
+  /* if you add anything after this, be aware that rargv[0] needs to be pointed back at mname */
+
+  if (!found)
+    return MR_NO_MATCH;
+
+  return MR_SUCCESS;
+}
+
 int guas_internal(char *atype, int aid,
+		  int (*action)(int, char *[], void *), void *actarg)
+{
+  char *rargv[8], status_buf[BUFSIZ];
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *type = atype;
+  int id = aid;
+  char login[USERS_LOGIN_SIZE];
+  char first[USERS_FIRST_SIZE], last[USERS_LAST_SIZE], middle[USERS_MIDDLE_SIZE];
+  char clearid[USERS_CLEARID_SIZE], class[USERS_TYPE_SIZE], comments[STRINGS_STRING_SIZE];
+  int status;
+  EXEC SQL END DECLARE SECTION;
+
+  rargv[0] = login;
+  rargv[1] = last;
+  rargv[2] = first;
+  rargv[3] = middle;
+  rargv[4] = status_buf;
+  rargv[5] = clearid;
+  rargv[6] = class;
+  rargv[7] = comments;
+
+  EXEC SQL DECLARE csr_guas_internal CURSOR FOR
+    SELECT u.login, u.last, u.first, u.middle, u.status, u.clearid, u.type, s.string
+    FROM users u, strings s
+    WHERE u.sponsor_type = :type AND u.sponsor_id = :id AND u.users_id != 0 AND u.comments = s.string_id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr_guas_internal;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr_guas_internal INTO :login, :last, :first, :middle, :status, :clearid, :class, :comments;
+      if (sqlca.sqlcode)
+	break;
+      sprintf(status_buf, "%d", status);
+      (*action)(8, rargv, actarg);
+      found++;
+    }
+
+  EXEC SQL CLOSE csr_guas_internal;
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+int gsua_internal(char *atype, int aid,
 		  int (*action)(int, char *[], void *), void *actarg)
 {
   char *rargv[1];
@@ -1209,8 +1601,8 @@ int guas_internal(char *atype, int aid,
   return MR_SUCCESS;
 }
 
-/* get_user_account_by_sponsor - like gaus but limited to user accounts */
-int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
+/* get_sponsored_user_accounts - like gaus but limited to user accounts */
+int get_sponsored_user_accounts(struct query *q, char *argv[], client *cl,
 				int (*action)(int, char *[], void *),
 				void *actarg)
 {
@@ -1225,8 +1617,13 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
   aid = *(int *)argv[1];
   if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
       !strcmp(atype, "KERBEROS"))
-    return guas_internal(atype, aid, action, actarg);
-
+    {
+      if (!strcmp(q->shortname, "gsua"))
+	return gsua_internal(atype, aid, action, actarg);
+      else
+	return guas_internal(atype, aid, action, actarg);
+    }
+      
   sq = sq_create();
   if (!strcmp(atype, "RLIST"))
     {
@@ -1251,8 +1648,16 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
-	    found++;
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
 	}
     }
 
@@ -1277,11 +1682,27 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	}
+      if (!strcmp(q->shortname, "gsua"))
+	{
+	  if (gsua_internal("USER", aid, action, actarg) == MR_SUCCESS)
 	    found++;
 	}
-      if (guas_internal("USER", aid, action, actarg) == MR_SUCCESS)
-	found++;
+      else
+	{
+	  if (guas_internal("USER", aid, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
     }
 
   if (!strcmp(atype, "RKERBEROS"))
@@ -1305,11 +1726,28 @@ int get_user_account_by_sponsor(struct query *q, char *argv[], client *cl,
       /* now process each one */
       while (sq_get_data(sq, &id))
 	{
-	  if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	  if (!strcmp(q->shortname, "gsua"))
+	    {
+	      if (gsua_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	  else
+	    {
+	      if (guas_internal("LIST", id, action, actarg) == MR_SUCCESS)
+		found++;
+	    }
+	}
+
+      if (!strcmp(q->shortname, "gsua"))
+	{
+	  if (gsua_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
 	    found++;
 	}
-      if (guas_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
-	found++;
+      else
+	{
+	  if (guas_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
     }
 
   sq_destroy(sq);
@@ -1798,7 +2236,7 @@ int register_user(struct query *q, char **argv, client *cl)
   for (p = login; *p; p++)
     {
       if (!(islower(*p) || isdigit(*p) || *p == '_'))
-        return MR_BAD_CHAR;
+	return MR_BAD_CHAR;
     }
 
   EXEC SQL SELECT COUNT(login) INTO :rowcount FROM users
@@ -2578,7 +3016,7 @@ int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
 			    int (*action)(int, char *[], void *), void *actarg)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int sid, value, aid, mid;
+  int value, aid, mid;
   char mname[MACHINE_NAME_SIZE];
   char *atype;
   EXEC SQL END DECLARE SECTION;
@@ -2589,10 +3027,6 @@ int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
   atype = argv[0];
   aid = *(int *)argv[1];
   mid = atoi(argv[2]);
-
-  EXEC SQL SELECT s.snet_id INTO :sid FROM subnet s WHERE s.name = 'DHCP';
-  if (dbms_errno)
-    return mr_errcode;
 
   /* Can't use set_next_object_id() here because our incrementing counter is in
    * the name, not a standalone field.
@@ -2639,10 +3073,10 @@ int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
 
   incremental_clear_before();
   EXEC SQL INSERT INTO machine (name, vendor, model, os, location, contact, billing_contact,
-				account_number, use, status, statuschange, snet_id, address, owner_type,
+				account_number, use, status, statuschange, owner_type,
 				owner_id, acomment, ocomment, created, inuse, mach_id, creator)
     VALUES (:mname, CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), CHR(0), 0, 1, SYSDATE,
-	    :sid, 'unassigned', :atype, :aid, 0, 0, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), :mid, :cl->client_id);
+	    :atype, :aid, 0, 0, SYSDATE, TO_DATE('01-JAN-1970', 'DD-mon-YYYY'), :mid, :cl->client_id);
   if (dbms_errno)
     return mr_errcode;
   if (sqlca.sqlerrd[2] != 1)
@@ -2656,6 +3090,128 @@ int add_dynamic_host_record(struct query *q, char *argv[], client *cl,
 
   rargv[0] = mname;
   (*action)(1, rargv, actarg);
+
+  return MR_SUCCESS;
+}
+
+int upgrade_host_private_ipv4_addr(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid, public_sid, mask, table, ttl;
+  char sname[SUBNET_NAME_SIZE], public_sname[SUBNET_NAME_SIZE];
+  char address[HOSTADDRESS_ADDRESS_SIZE], public_address[HOSTADDRESS_ADDRESS_SIZE];
+  char saddr[SUBNET_SADDR_SIZE], high[SUBNET_HIGH_SIZE], low[SUBNET_LOW_SIZE];
+  char buf[INET_ADDRSTRLEN];
+  EXEC SQL END DECLARE SECTION;
+  struct sockaddr_in sa, saddr_sa, mask_sa, low_sa, high_sa;
+  unsigned int isaddr, imask, ihigh, ilow, value;
+  int status;
+  char *maskstr, *incr_argv[3];;
+
+  mid = *(int *)argv[0];
+  table = q->rtable;
+
+  /* Get existing private address.  This must return only one row if we got this far. */
+  EXEC SQL SELECT ha.address, s.name, s.snet_id, ha.ttl INTO :address, :sname, :sid, :ttl
+    FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid AND ha.ptr = 1 
+    AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND s.name LIKE '%-PRIVATE';
+  if (dbms_errno)
+    return mr_errcode;
+
+  strmove(address, strtrim(address));
+  strmove(sname, strtrim(sname));
+
+  /* Get informtion for corresponding public subnet */
+  strcpy(public_sname, sname);
+  public_sname[strlen(sname) - strlen("-PRIVATE")] = '\0';
+  EXEC SQL SELECT snet_id INTO :public_sid FROM SUBNET WHERE name = :public_sname;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Generate a unique address on the public subnet */
+  EXEC SQL SELECT saddr, mask, low, high INTO :saddr, :mask, :low, :high FROM subnet
+    WHERE snet_id = :public_sid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* First, convert subnet strings into something we can work with */
+  if (inet_pton(AF_INET, strtrim(saddr), &(saddr_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  /* mask - bit size, not string */
+  maskstr = masksize_to_mask("IPV4", mask);
+  if (!maskstr)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, maskstr, &(mask_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, strtrim(low), &(low_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  if (inet_pton(AF_INET, strtrim(high), &(high_sa.sin_addr)) < 1)
+    return MR_ADDRESS;
+
+  isaddr = ntohl(saddr_sa.sin_addr.s_addr);
+  imask = ntohl(mask_sa.sin_addr.s_addr);
+  ilow = ntohl(low_sa.sin_addr.s_addr);
+  ihigh = ntohl(high_sa.sin_addr.s_addr);
+
+  for (value = ilow; value <= ihigh; value++)
+    {
+      if (((value & 0xff) == 0) || ((value & 0xff) == 255))
+	continue;
+
+      sa.sin_addr.s_addr = htonl(value);
+      if (inet_ntop(AF_INET, &(sa.sin_addr), buf, INET_ADDRSTRLEN) == NULL)
+	return MR_ADDRESS;
+
+      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaddress
+	WHERE address = :buf;
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt == 0)
+	break;
+    }
+
+  if (cnt != 0)
+    return MR_NO_ID;
+  else
+    strcpy(public_address, buf);
+
+  /* Build "before" incremental argv */
+  incr_argv[0] = xmalloc(0);
+  status = id_to_name(mid, MACHINE_TABLE, &incr_argv[0]);
+  if (status)
+    return status;
+
+  incr_argv[1] = address;
+  incr_argv[2] = sname;
+
+  incremental_before(table, NULL, incr_argv);
+
+  /* Delete old host address record */
+  EXEC SQL DELETE FROM hostaddress WHERE mach_id = :mid
+    AND address = :address AND snet_id = :sid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Insert new record */
+  EXEC SQL INSERT INTO HOSTADDRESS (mach_id, snet_id, address, ttl, ptr)
+    VALUES (:mid, :public_sid, :public_address, :ttl, 1);
+  if (dbms_errno)
+    return mr_errcode;
+
+  /* Build "after" incremental argv, argv[0] remains the same */
+  incr_argv[1] = public_address;
+  incr_argv[2] = public_sname;
+
+  incremental_after(table, NULL, incr_argv);
+
+  status = set_mach_modtime_by_id(q, argv, cl);
+  if (status)
+    return status;
 
   return MR_SUCCESS;
 }

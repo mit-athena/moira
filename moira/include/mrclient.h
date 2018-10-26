@@ -25,9 +25,29 @@
 #define MRCL_M_ID            6
 #define MRCL_M_NONE          7
 
+#define MRCL_MID_ANY           0
+#define MRCL_MID_HWADDR        1
+#define MRCL_MID_DUID          2
+#define MRCL_MID_NONE          3
+
 struct mrcl_ace_type {
   int type;
   char *name, *tag;
+};
+
+struct mrcl_identifier_type {
+  int type;
+  char *value;
+};
+
+struct mrcl_netaddr_type {
+  char *network;
+  char *address;
+};
+
+struct mrcl_addropt_type {
+  char *address;
+  char *opt;
 };
 
 int mrcl_connect(char *server, char *client, int version, int auth);
@@ -40,6 +60,9 @@ int mrcl_validate_string_member(char *str);
 int mrcl_validate_id_member(char *type, char **ret_type, char *member, char **ret_member);
 
 struct mrcl_ace_type *mrcl_parse_member(char *s);
+struct mrcl_identifier_type *mrcl_parse_mach_identifier(char *s);
+struct mrcl_netaddr_type *mrcl_parse_netaddr(char *s);
+struct mrcl_addropt_type *mrcl_parse_addropt(char *s);
 
 char *mrcl_get_message(void);
 void mrcl_com_err(char *whoami);

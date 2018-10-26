@@ -17,17 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_KRB4
-#include <des.h>
-#include <krb.h>
-#endif
 #include <krb5.h>
 
 RCSID("$HeadURL$ $Id$");
 
-#ifdef HAVE_KRB4
-extern des_cblock session;
-#endif
 extern char *whoami;
 extern krb5_context context;
 
@@ -75,68 +68,7 @@ int mr_send_krb5_auth(int conn, char *host_name)
 
 int mr_send_auth(int conn, char *host_name)
 {
-#ifdef HAVE_KRB4
-  KTEXT_ST ticket_st;
-  int code, auth_version = 2;
-  long response;
-
-  code = get_mr_update_ticket(host_name, &ticket_st);
-  if (code)
-    return code;
-  code = send_string(conn, "AUTH_002", 9);
-  if (code)
-    return code;
-  code = recv_int(conn, &response);
-  if (code)
-    return code;
-  if (response)
-    {
-      code = send_string(conn, "AUTH_001", 9);
-      if (code)
-	return code;
-      code = recv_int(conn, &response);
-      if (code)
-	return code;
-      if (response)
-	return response;
-      auth_version = 1;
-    }
-  code = send_string(conn, (char *)ticket_st.dat, ticket_st.length);
-  if (code)
-    return code;
-  code = recv_int(conn, &response);
-  if (code)
-    return code;
-  if (response)
-    return response;
-
-  if (auth_version == 2)
-    {
-      des_key_schedule sched;
-      C_Block enonce;
-      char *data;
-      size_t size;
-
-      code = recv_string(conn, &data, &size);
-      if (code)
-	return code;
-      des_key_sched(session, sched);
-      des_ecb_encrypt((des_cblock *)data, &enonce, sched, 1);
-      free(data);
-      code = send_string(conn, (char *)enonce, sizeof(enonce));
-      if (code)
-	return code;
-      code = recv_int(conn, &response);
-      if (code)
-	return code;
-      if (response)
-	return response;
-    }
-
-  return MR_SUCCESS;
-#else
   return MR_NO_KRB4;
-#endif
 }
 
 int mr_execute(int conn, char *path)

@@ -154,13 +154,13 @@ int main(int argc, char **argv)
       /* May be multiple logaddrs */
       EXEC SQL SELECT COUNT(ha.address) INTO :logaddrcount FROM hostaddress ha, machine m, printers pr, subnet s
 	WHERE pr.loghost = m.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
-	AND s.addr_type = 'IPV4' AND pr.name = :pname;
+	AND ha.address != CHR(0) AND s.addr_type = 'IPV4' AND pr.name = :pname;
       logaddrs = malloc(logaddrcount * sizeof(char *));
 
       EXEC SQL DECLARE csr_logaddr CURSOR FOR
 	SELECT ha.address FROM hostaddress ha, machine m, printers pr, subnet s
 	WHERE pr.loghost = m.mach_id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
-	AND s.addr_type = 'IPV4' AND pr.name = :pname;
+	AND ha.address != CHR(0) AND s.addr_type = 'IPV4' AND pr.name = :pname;
       EXEC SQL OPEN csr_logaddr;
       for (i = 0; i < logaddrcount; i++)
 	{

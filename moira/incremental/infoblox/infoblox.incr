@@ -14,6 +14,8 @@ from netaddr import IPAddress
 from netaddr import EUI
 from subprocess import call
 from time import sleep, ctime
+import requests.packages.urllib3 as requestsurllib3
+requestsurllib3.disable_warnings()
 
 # For printing JSON
 indent = 2
@@ -55,7 +57,7 @@ def critical_log(msg):
         call([zwrite, '-q', '-d', '-n', '-c', 'moira', '-i', 'incremental', '-m', progname + msg])
     slack = '/moira/bin/slack-send'
     if os.path.exists(slack):
-        call(slack, progname + msg)
+        call([slack, progname + msg])
 
 # Is hostname one we're canonical for?
 def canonical_for_hostname(hostname):

@@ -1,26 +1,51 @@
-# $Id$
+# $Id: Makefile.in 3956 2010-01-05 20:56:56Z zacheiss $
 
 SHELL=/bin/sh
 @SET_MAKE@
 
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ -I/usr/include/mysql
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LIBTOOL=@LIBTOOL@
+LDFLAGS=@LDFLAGS@ -L/usr/lib64/mysql
+LIBS=@LIBS@ -lmysqlclient
+MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@
 VPATH=@srcdir@
 SRCTOP=@top_srcdir@
+top_builddir=@top_builddir@
 BUILDTOP=../..
 mrbindir=@mrbindir@
 
+ROUTE_SERVER_OBJS=route-server.lo
+
 TARGET=route-server.incr
 
-all:
+.SUFFIXES: .pc .lo
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
 
 clean:
+	$(LIBTOOL) --mode=clean rm -f $(ROUTE_SERVER_OBJS) $(TARGET)
 
-cleandir distclean:
+cleandir distclean: clean
+	rm -f Makefile
 
 depend:
 
 install:
-	${INSTALL_PROGRAM} ${TARGET} $(DESTDIR)${mrbindir}
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) route-server.incr $(mrbindir)
+
+route-server.incr: $(ROUTE_SERVER_OBJS) $(MR_LIBDEP)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LDFLAGS) $(ROUTE_SERVER_OBJS) $(LIBS)

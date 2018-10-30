@@ -350,7 +350,7 @@ static struct validate guas_validate =
   0,
   0,
   0,
-  0,
+  access_member,
   0,
   get_sponsored_user_accounts,
 };

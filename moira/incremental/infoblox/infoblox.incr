@@ -1295,7 +1295,7 @@ def ib_delete_host_ipv4_address(record):
                 if 'mac' in search_result['ipv4addrs'][0]:
                     ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
                     ipv4addrs[0]['configure_for_dhcp'] = True
-                    ib_record['disable'] = True
+                ib_record['disable'] = True
 
             ib_record['ipv4addrs'] = ipv4addrs
 

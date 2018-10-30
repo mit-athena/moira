@@ -343,6 +343,10 @@ int main(int argc, char **argv)
   if (username == NULL && !create_flag)
     usage(argv);
 
+  if (create_flag && (info_flag || deact_flag || reg_flag || list_res_flag || \
+		      update_res_flag || list_vpn_group_flag || set_vpn_group_flag))
+    usage(argv);
+
   /* default to info_flag if nothing else was specified */
   if(!(info_flag       || update_flag || create_flag   || \
        deact_flag      || reg_flag    || list_res_flag || \
@@ -451,7 +455,10 @@ int main(int argc, char **argv)
         argv[U_ALT_EMAIL] = alternate_email;
       if (alternate_phone)
         argv[U_ALT_PHONE] = alternate_phone;
-      argv[U_TWOFACTOR] = "2";
+      if (twofactor_status)
+	argv[U_TWOFACTOR] = twofactor_status;
+      else
+	argv[U_TWOFACTOR] = "2";
       if (sponsor)
 	{
 	  argv[U_SPONSOR_NAME] = sponsor->name;
@@ -827,7 +834,7 @@ int main(int argc, char **argv)
 	}
     }
 
-  if (set_twofactor_status_flag)
+  if (set_twofactor_status_flag && !create_flag)
     {
       char *args[2];
 

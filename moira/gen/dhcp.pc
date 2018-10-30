@@ -27,7 +27,7 @@ RCSID("$HeadURL$ $Id$");
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
 
-#define MAXIMUM_HWADDR_SIZE 12
+#define MAXIMUM_HWADDR_SIZE 13
 /* add colons */
 #define MAXIMUM_CHWADDR_SIZE MAXIMUM_HWADDR_SIZE + 6
 
@@ -302,7 +302,7 @@ void hwcolonify(char *from, char *to)
   int f = 0, t = 0;
   int mod = 2;
 
-  for (f = 0 ; f < MAXIMUM_HWADDR_SIZE - 1 ; )
+  for (f = 0 ; f < MAXIMUM_HWADDR_SIZE - 1; )
     {
       to[t++] = from[f++];
       if (f % mod == 0)

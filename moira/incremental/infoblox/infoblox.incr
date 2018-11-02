@@ -33,6 +33,8 @@ ib_api_version = 'v2.2.2'
 ib_base_url = 'https://' + ib_host + '/wapi/' + ib_api_version
 ib_common_args = '?_return_type=json-pretty'
 ib_search_args = '_return_fields=ipv4addrs,ipv6addrs,name,aliases,use_ttl,ttl,disable,extattrs,view'
+# timeout for response from IB API endpoint.
+ib_timeout = 1
 
 default_ttl = 1800
 default_domain = "mit.edu"
@@ -149,7 +151,15 @@ def ib_search_by_mach_id(mach_id):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_mach_id for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_mach_id for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_mach_id for URL %s, payload %s with HTTP status %s, %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -172,7 +182,15 @@ def ib_search_by_name(name):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name for URL %s, payload %s with HTTP status: %s, %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -221,7 +239,15 @@ def ib_create_host(record, myviews=None):
             ib_url = ib_base_url + '/record:host' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_create_host for host %s view %s with HTTP status %s, %s' % (ib_record['name'], view, r.status_code, r.text))
                 continue
@@ -250,7 +276,15 @@ def ib_delete_host(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host for host %s view %s' % (ib_record['name'], view))
                 continue
@@ -297,7 +331,15 @@ def ib_update_host(before, after):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(after_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(after_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_update_host for host %s view %s' % (after_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_update_host for host %s view %s' % (after_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_update_host for host %s view %s' % (after_record['name'], view))
                 continue
@@ -350,7 +392,15 @@ def ib_search_by_name_and_address(name, addr_type, address):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name_and_address for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name_and_address for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name_and_address for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -381,7 +431,15 @@ def ib_add_a_record(record):
             ib_url = ib_base_url + '/record:a' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view)) 
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
                 continue
@@ -407,7 +465,15 @@ def ib_add_aaaa_record(record):
             ib_url = ib_base_url + '/record:aaaa' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
                 continue
@@ -437,7 +503,15 @@ def ib_search_by_name_and_cname(name, alias):
 
     data = json.dumps(payload)
                
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name_and_cname for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name_and_cname for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name_and_cname for URL %s, payload %s with HTTP status %s: %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -470,7 +544,15 @@ def ib_add_cname(record):
             ib_url = ib_base_url + '/record:cname' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_cname for name %s alias %s view %s with HTTP status %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.status_code, r.text))
                 continue
@@ -507,7 +589,15 @@ def ib_add_host_alias(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_alias for name %s alias %s view %s'  % (ib_record['name'], alias, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_alias for name %s alias %s view %s'  % (ib_record['name'], alias, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
@@ -556,7 +646,15 @@ def ib_add_host_duid(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
                 continue
@@ -594,7 +692,15 @@ def ib_add_host_mac(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_mac for name %s %s %s in view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -645,7 +751,15 @@ def ib_add_host_ipv4_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -700,7 +814,15 @@ def ib_add_host_ipv6_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -787,7 +909,15 @@ def ib_add_hostrecord(record):
             ib_url = ib_base_url + object + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out creating RR type %s for name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception creating RR type %s for name %s view %s' % (rr_type, name, view))
+                continue
+
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
@@ -818,7 +948,15 @@ def ib_search_hostrecord_ptr(ib_record):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_hostrecord_ptr for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_hostrecord_ptr for URL %s' % (ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_hostrecord_ptr for URL %s payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -851,7 +989,15 @@ def ib_search_hostrecord(name, rr_type, value):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_hostrecord for RR type %s URL %s' % (rr_type, ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_hostrecord for RR type %s URL %s' % (rr_type, ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_hostrecord for RR type %s URL %s payload %s with HTTP status: %s' % (rr_type, ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -901,7 +1047,15 @@ def ib_search_delegated_zone(fqdn):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_delegated_zone for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_delegated_zone for URL %s' % (ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_delegated_zone for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -948,7 +1102,14 @@ def ib_add_delegated_zone(record):
             headers = { 'Content-Type' : 'application/json' }
 
             data = json.dumps(ib_record)
-            r = requests.put(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out updating delegated zone %s in view %s' % (record[0].lower(), view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception  updating delegated zone %s in view %s' % (record[0].lower(), view))
+                continue
 
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed updating delegated zone %s in view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
@@ -961,7 +1122,14 @@ def ib_add_delegated_zone(record):
             headers = { 'Content-Type' : 'application/json' }
 
             data = json.dumps(ib_record)
-            r = requests.post(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
 
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed creating delegated zone %s in view %s with HTTP return %s: %s' % (ib_record['fqdn'], view, r.status_code, r.text))
@@ -1085,7 +1253,15 @@ def ib_delete_a_record(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
                 continue
@@ -1108,7 +1284,15 @@ def ib_delete_aaaa_record(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
                 continue
@@ -1131,7 +1315,15 @@ def ib_delete_cname(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
                 continue
@@ -1163,7 +1355,15 @@ def ib_delete_host_alias(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
@@ -1216,7 +1416,15 @@ def ib_delete_host_duid(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_duid for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -1260,7 +1468,15 @@ def ib_delete_host_mac(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_mac for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_mac for name %s %s %s view %s'% (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_mac for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -1303,7 +1519,15 @@ def ib_delete_host_ipv4_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -1349,7 +1573,15 @@ def ib_delete_host_ipv6_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -1426,7 +1658,15 @@ def ib_delete_hostrecord(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, name, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
@@ -1453,7 +1693,15 @@ def ib_delete_delegated_zone(record):
             new_delegated_to = [ x for x in search_results[view]['delegate_to'] if x not in deleted_delegation ]
 
             if len(new_delegated_to) == 0:
-                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+                try:
+                    r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+                except requests.exceptions.ReadTimeout:
+                    critical_log('Infoblox API call timed out for DELETE in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                except:
+                    critical_log('Infoblox API call generated unexpected exception for DELETE in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                
                 if r.status_code != requests.codes.ok:
                     critical_log('Infoblox API call failed for DELETE in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
@@ -1486,7 +1734,15 @@ def ib_delete_delegated_zone(record):
                     del ib_record['fqdn']
                 
                 ib_record['delegate_to'] = new_delegated_to
-                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+                try:
+                    r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+                except requests.exceptions.ReadTimeout:
+                    critical_log('Infoblox API call timed out for PUT in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                except:
+                    critical_log('Infoblox API call generated unexpected exception for PUT in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                
                 if r.status_code != requests.codes.ok:
                     critical_log('Infoblox API call failed for PUT in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
@@ -1511,7 +1767,15 @@ def ib_set_aaaa_record_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_aaaa_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv6addr'], view, r.status_code, r.text))
                 continue
@@ -1536,7 +1800,15 @@ def ib_set_a_record_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_a_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv4addr'], view, r.status_code, r.text))
                 continue
@@ -1564,7 +1836,15 @@ def ib_set_host_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
                 continue
@@ -1622,7 +1902,15 @@ def ib_set_record_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_record_ttl for type %s name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_record_ttl for type %s name %s view %s' % (rr_type, name, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
@@ -1660,7 +1948,14 @@ def ib_set_delegated_zone_ttl(record):
             if 'fqdn' in ib_record:
                 del ib_record['fqdn']
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out setting TTL for delegated zone %s view %s' % (zonename, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception setting TTL for delegated zone %s view %s' % (zonename, view))
+                continue
 
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed setting TTL for delegated zone %s view %s with HTTP return %s: %s' % (zonename, view, r.status_code, r.text))

@@ -321,7 +321,7 @@ def ib_update_host(before, after):
             critical_log('Record already exists in view %s for new name %s, old name %s' % (view, before_record['name'], after_record['name']))
         elif len(mach_id_results[view]) == 0:
             log('No record exists for mach id %s in view %s, creating' % (moira_mach_id, view))
-            ib_create_host(after, myviews=view)
+            ib_create_host(after, myviews=[view])
         elif len(mach_id_results[view]) > 1:
             critical_log('Mutiple records exist for mach_id %s in view %s, should not happen!' % (moira_mach_id, view))
         elif mach_id_results[view][0]['extattrs']['moira_managed']['value'] != 1:

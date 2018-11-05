@@ -111,9 +111,9 @@ while(($f_type, $f_label, $f_name, $f_mount, $f_owner, $f_owners, $f_comments) =
   }
 
   # We expect $f_name to be like /site/biscuit
-  ($f_dest) = $f_name =~ m;^/site/([a-z0-9-]+)/?$; ;
-  if ($f_dest eq '') {
-    print "site $f_label: must find alias destination in $f_name, skipping.\n";
+  ($f_dest) = $f_name =~ m;^/site/([a-z0-9-.]+)/?$; ;
+  if ((not defined($f_dest)) or ($f_dest eq '')) {
+    print "site $f_label: must find valid alias destination in packname: $f_name, skipping.\n";
     next;
   }
 
@@ -122,7 +122,7 @@ while(($f_type, $f_label, $f_name, $f_mount, $f_owner, $f_owners, $f_comments) =
     next;
   }
 
-  ($f_path) = $f_mount =~ m;^/site/$f_dest(/[a-zA-Z0-9/_-]+)$; ;
+  ($f_path) = $f_mount =~ m;^/site/$f_dest(/[a-zA-Z0-9/_.-]+)$; ;
 
   if ((not defined($f_path)) or ($f_path eq '')) {
     $f_path = '/'

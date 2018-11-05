@@ -867,10 +867,19 @@ int followup_ahad(struct query *q, char *argv[], client *cl)
       else
 	{
 	  /* TTL should match to what's set for existing addresses of this type */
-	  EXEC SQL SELECT ttl INTO :ttl FROM hostaddress ha, subnet s WHERE
+	  EXEC SQL SELECT COUNT(*) INTO :cnt FROM hostaddress ha, subnet s WHERE
 	    ha.mach_id = :mid AND ha.snet_id = s.snet_id AND s.addr_type = :addr_type;
 	  if (dbms_errno)
 	    return mr_errcode;
+	  if (cnt > 1)
+	    ttl = DEFAULT_TTL;
+	  else
+	    {
+	      EXEC SQL SELECT DISTINCT ttl INTO :ttl FROM hostaddress ha, subnet s WHERE
+		ha.mach_id = :mid AND ha.snet_id = s.snet_id AND s.addr_type = :addr_type;
+	      if (dbms_errno)
+		return mr_errcode;
+	    }
 	}
 
       /* Is this address in use by any other hosts with reverse resolution? */

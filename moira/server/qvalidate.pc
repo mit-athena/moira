@@ -157,8 +157,14 @@ int validate_chars(char *argv[], struct valobj *vo)
   /* check for bad characters */
   while (*s)
     {
-      if (illegalchars[(int)*s++])
-	return MR_BAD_CHAR;
+      if (illegalchars[(int)*s])
+	{
+	  /* kludge - allow * in machine table records for name but nowhere else */
+	  if (vo->table != MACHINE_TABLE || *s != '*')
+	    return MR_BAD_CHAR;
+	}
+
+      *s++;
     }
 
   /* check for length */

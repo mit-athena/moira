@@ -715,7 +715,7 @@ int access_host(struct query *q, char *argv[], client *cl)
   int mid, sid, id, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
-  int status;
+  int status, is_owner = 0;
 
   /* This query has changed enough that we just can't support old versions
    * without making bizarre assumptions.  If the client is before v17, just
@@ -727,9 +727,54 @@ int access_host(struct query *q, char *argv[], client *cl)
 
   if (q->type == MR_Q_APPEND)
     {
-      /* With subnet no longer an intrinsic part of a host record,
-	 who should be allowed to add new ones? For now, be conservative. */
-      return MR_PERM;
+      /* Non-query owner must only create hosts that start with a letter. */
+      if (isdigit(argv[0][0]))
+	return MR_BAD_CHAR;
+
+      /* Non-query owner can't created wildcard DNS records.  setup_ahst() will
+       * have already confirmed * can only be the first character so that's all
+       * we need to check.
+       */
+      if (argv[0][0] == '*')
+	return MR_BAD_CHAR;
+
+      /* Non-query owner also can't create records containing _ */
+      if (strchr(argv[0], '_'))
+	return MR_BAD_CHAR;
+
+      /* Reserved prefix */
+      if (!strncasecmp(argv[0], "HOSTLESS-", 9))
+	return MR_RESERVED;
+
+      /* Check if the user has been granted access to any subnet */
+      EXEC SQL DECLARE csr_snet_owner CURSOR FOR
+	SELECT DISTINCT owner_type, owner_id FROM subnet;
+      if (dbms_errno)
+	return mr_errcode;
+
+      EXEC SQL OPEN csr_snet_owner;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
+	{
+	  EXEC SQL FETCH csr_snet_owner INTO :stype, :sid;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (find_member(stype, sid, cl))
+	    {
+	      is_owner = 1;
+	      break;
+	    }
+	}
+
+      EXEC SQL CLOSE csr_snet_owner;
+      
+      if (is_owner)
+	return MR_SUCCESS;
+      else
+	return MR_PERM;
     }
   else /* q-type == MR_Q_UPDATE */
     {
@@ -753,16 +798,16 @@ int access_host(struct query *q, char *argv[], client *cl)
       if (dbms_errno)
 	return mr_errcode;
 
-      if (atoi(argv[8]) != 3)
+      if (atoi(argv[9]) != 3)
 	{
 	  EXEC SQL SELECT account_number FROM accountnumbers 
-	    WHERE account_number = :argv[7];
+	    WHERE account_number = :argv[8];
 	  if (sqlca.sqlcode == SQL_NO_MATCH)
 	    return MR_ACCOUNT_NUMBER;
 	}
 
       /* non-query-owner cannot ocomment */
-      if (ocomment != *(int *)argv[12])
+      if (ocomment != *(int *)argv[13])
 	return MR_PERM;
 
       /* or rename to start with digit */
@@ -772,6 +817,37 @@ int access_host(struct query *q, char *argv[], client *cl)
       /* Or use reserved prefix */
       if (!strncasecmp(argv[0], "HOSTLESS-", 9) && strcmp(strtrim(name), argv[1]))
 	return MR_RESERVED;
+
+      /* If someone is the owner of any subnets this record has addresses on, treat them
+       * as authorized.
+       */
+      EXEC SQL DECLARE csr_snet_owner_update CURSOR FOR
+	SELECT s.owner_type, s.owner_id FROM subnet s, hostaddress ha
+	WHERE ha.mach_id = :id AND ha.snet_id = s.snet_id;
+      if (dbms_errno)
+	return mr_errcode;
+
+      EXEC SQL OPEN csr_snet_owner_update;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
+	{
+	  EXEC SQL FETCH csr_snet_owner_update INTO :stype, :sid;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (find_member(stype, sid, cl))
+	    {
+	      is_owner = 1;
+	      break;
+	    }
+	}
+
+      EXEC SQL CLOSE csr_snet_owner_update;
+
+      if (is_owner)
+	return MR_SUCCESS;
 
       /* Check host owner */
       if (find_member(mtype, mid, cl))
@@ -812,14 +888,14 @@ int access_host(struct query *q, char *argv[], client *cl)
 	return MR_PERM;
       
       /* host owner also cannot change contact, status, owner, or acomment */
-      if (strcmp(argv[5], strtrim(contact)) ||
-	  (status != atoi(argv[8])) ||
-	  strcmp(argv[9], strtrim(mtype)) ||
-	  (mid != *(int *)argv[10]) || 
-	  (acomment != *(int *)argv[11]))
+      if (strcmp(argv[6], strtrim(contact)) ||
+	  (status != atoi(argv[9])) ||
+	  strcmp(argv[10], strtrim(mtype)) ||
+	  (mid != *(int *)argv[11]) || 
+	  (acomment != *(int *)argv[12]))
 	return MR_PERM;
 
-      if (strcmp(argv[6], strtrim(billing_contact)))
+      if (strcmp(argv[7], strtrim(billing_contact)))
 	return MR_PERM;
 
       return MR_SUCCESS;
@@ -931,7 +1007,7 @@ int access_ahad(struct query *q, char *argv[], client *cl)
   char login[USERS_LOGIN_SIZE], addr_type[SUBNET_ADDR_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   char roles_qualifier[MACHINE_ACCOUNT_NUMBER_SIZE + 1];
-  int status;
+  int status, machine_status;
 
   if (q->type == MR_Q_RETRIEVE)
     return MR_SUCCESS;
@@ -939,8 +1015,8 @@ int access_ahad(struct query *q, char *argv[], client *cl)
   mid = *(int *)argv[0];
   sid = *(int *)argv[1];
 
-  EXEC SQL SELECT s.owner_type, s.owner_id, s.addr_type INTO :stype, :soid, :addr_type
-    FROM subnet s WHERE s.snet_id = :sid;
+  EXEC SQL SELECT s.owner_type, s.owner_id, s.addr_type, s.status INTO :stype, :soid,
+    :addr_type, :subnet_status FROM subnet s WHERE s.snet_id = :sid;
 
   if (q->type == MR_Q_APPEND)
     {
@@ -950,6 +1026,15 @@ int access_ahad(struct query *q, char *argv[], client *cl)
       if (dbms_errno)
 	return mr_errcode;
       if (cnt > 0)
+	return MR_PERM;
+
+      /* If host status isn't 1 and there are no address assigned, only
+       * query owner can change it.
+       */
+      EXEC SQL SELECT status INTO :machine_status FROM machine WHERE mach_id = :mid;
+      if (dbms_errno)
+	return mr_errcode;
+      if (machine_status != 1 && cnt == 0)
 	return MR_PERM;
 
       /* Don't allow duplicate addresses */

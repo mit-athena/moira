@@ -162,10 +162,12 @@ void hosts(FILE *out)
 
   fprintf(stderr, "hosts (for real)...\n");
 
+  /* Only get primary IPv4 address for each host */
   EXEC SQL DECLARE hosts3 CURSOR FOR SELECT 
     m.name, m.mach_id, ha.address, m.use, m.status, m.owner_type, m.owner_id
-    FROM machine m, hostaddress ha
-    WHERE m.mach_id = ha.mach_id;
+    FROM machine m, hostaddress ha, subnet s
+    WHERE m.mach_id = ha.mach_id AND ha.ptr = 1 AND ha.snet_id = s.snet_id 
+    AND s.addr_type = 'IPV4';
   EXEC SQL OPEN hosts3;
   while (1)
     {

@@ -78,7 +78,7 @@ void incremental_init(void)
 void incremental_before(enum tables table, char *qual, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, sid, cnt, use, ttl, ptr, vlan_tag;
+  int id, sid, cnt, use, ttl, ptr, vlan_tag, status;
   char sname[SUBNET_NAME_SIZE];
   char addr_type[SUBNET_ADDR_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -146,8 +146,8 @@ void incremental_before(enum tables table, char *qual, char **argv)
       strcpy(before[0], argv[0]);
       name_to_id(before[0], MACHINE_TABLE, &id);
 
-      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag
-	INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag
+      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag, m.status
+	INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag, :status
 	FROM machine m, subnet s, hostaddress ha
 	WHERE m.mach_id = :id AND m.mach_id = ha.mach_id AND s.snet_id = ha.snet_id AND ha.address = :argv[1];
 
@@ -163,6 +163,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(before[7], "%d", vlan_tag);
       sprintf(before[8], "%d", id);
       sprintf(before[9], "%d", sid);
+      sprintf(before[10], "%d", status);
       beforec = 10;
       break;
     case HOSTRECORD_TABLE:
@@ -359,7 +360,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
 {
   char *name, *name2;
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, sid, cnt, use, ttl, ptr, vlan_tag;
+  int id, sid, cnt, use, ttl, ptr, vlan_tag, status;
   char sname[SUBNET_NAME_SIZE], addr_type[SUBNET_ADDR_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct iupdate *iu;
@@ -423,8 +424,8 @@ void incremental_after(enum tables table, char *qual, char **argv)
       strcpy(after[0], argv[0]);
       name_to_id(after[0], MACHINE_TABLE, &id);
 
-      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag
-        INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag
+      EXEC SQL SELECT m.use, ha.ttl, ha.ptr, s.name, s.snet_id, s.addr_type, s.vlan_tag, m.status
+        INTO :use, :ttl, :ptr, :sname, :sid, :addr_type, :vlan_tag, :status
         FROM machine m, subnet s, hostaddress ha
         WHERE m.mach_id = :id AND m.mach_id = ha.mach_id AND s.snet_id = ha.snet_id AND ha.address = :argv[1];
 
@@ -440,7 +441,8 @@ void incremental_after(enum tables table, char *qual, char **argv)
       sprintf(after[7], "%d", vlan_tag);
       sprintf(after[8], "%d", id);
       sprintf(after[9], "%d", sid);
-      afterc = 10;
+      sprintf(after[10], "%d", status);
+      afterc = 11;
       break;
     case HOSTRECORD_TABLE:
       strcpy(after[0], argv[0]);

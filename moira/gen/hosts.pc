@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   EXEC SQL DECLARE x CURSOR FOR SELECT
     m.name, m.mach_id, m.vendor, m.model, m.os, ha.address
     FROM machine m, hostaddress ha, subnet s WHERE m.status = 1 AND m.mach_id > 0
-    AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
+    AND m.mach_id = ha.mach_id AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4'
     ORDER BY ha.address;
   EXEC SQL OPEN x;
   while (1)

@@ -292,6 +292,7 @@ typedef struct _SID
 #define MOIRA_STRINGS   0x4
 #define MOIRA_LISTS     0x8
 #define MOIRA_MACHINE   0x16
+#define MOIRA_IDS       0x32
 
 #define CHECK_GROUPS    1
 #define CLEANUP_GROUPS  2
@@ -413,12 +414,19 @@ do {					\
 #define MAX_DOMAINS 10
 char DomainNames[MAX_DOMAINS][128];
 
+static const char *mailman_suffixes[] = { "-admin", "-owner", "-request",
+                                          "-bounces", "-confirm", "-join",
+                                          "-leave", "-subscribe",
+                                          "-unsubscribe", NULL };
+
 LK_ENTRY *member_base = NULL;
 
 LDAP *ldap_handle = NULL;
 
 char   PrincipalName[128];
 static char tbl_buf[1024];
+char  id_ou[] = "OU=mitids,OU=moira";
+char  trans_ou[] = "OU=transponders,OU=moira";
 char  kerberos_ou[] = "OU=kerberos,OU=moira";
 char  contact_ou[] = "OU=strings,OU=moira";
 char  user_ou[] = "OU=users,OU=moira";
@@ -516,6 +524,7 @@ int get_group_membership(char *group_membership, char *group_ou,
 
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, 
 		   char *machine_ou, char *pPtr);
+int check_id(LDAP *ldap_handle, char *dn_path, char *idstring);
 
 int Moira_container_group_create(char **after);
 int Moira_container_group_delete(char **before);
@@ -615,6 +624,9 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
                    char *group_ou, char *group_membership, 
                    int group_security_flag, char *MoiraId, int synchronize);
 
+int get_id_member_entities(LDAP *ldap_handle, char *dn_path, char *member,
+			   int *count, char ***members);
+
 int SetHomeDirectory(LDAP *ldap_handle, char *user_name, 
 		     char *DistinguishedName,
                      char *WinHomeDir, char *WinProfileDir,
@@ -642,6 +654,9 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
 void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                char **before, int beforec, char **after, int afterc);
+
+void do_id_member(LDAP *ldap_handle, char *dn_path, char *group_ou,
+		  char **before, int beforec, char **after, int afterc);
 
 void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 char **before, int beforec, char **after, int afterc);
@@ -682,6 +697,10 @@ int destroy_cache(void);
 int dest_tkt(void);
 int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
 		 char **homeServerName);
+void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path);
+void delete_forwarding_pointer(LDAP *ldap_handle, char *name, char *dn_path);
+void create_owner_listname(LDAP *ldap_handle, char *name, char *ace_type, char *ace_name, char *dn_path);
+int save_ace_usage(int argc, char **argv, void *sq);
 
 int main(int argc, char **argv)
 {
@@ -930,7 +949,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   if (strlen(MachineName) == 0)
     {
       moira_disconnect();
-      com_err(whoami, 0, "Unable to find alais for machine %s in Moira", 
+      com_err(whoami, 0, "Unable to find aliass for machine %s in Moira", 
 	      OriginalMachineName);
       return;
     }
@@ -1283,8 +1302,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                char **before, int beforec, char **after, int afterc)
 {
-  LK_ENTRY *group_base;
-  int group_count;
+  LK_ENTRY *group_base = NULL;
+  int group_count = 0;
   char  filter[128];
   char *attr_array[3];
   char  group_name[128];
@@ -1296,17 +1315,27 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   char  group_ou[256];
   char  machine_ou[256];
   char  member[256];
+  char  generated_name[512];
+  char  distinguished_name[512];
+  char  search_filter[1024];
   char  *args[16];
   char  **ptr;
   char  *av[7];
   char  *call_args[7];
   char  *pUserOu;
   char  *s;
+  char  *ace_name;
   char  NewMachineName[1024];
   int   security_flag;
   int   rc;
+  int   n;
+  int   i;
   int   ProcessGroup;
-  char  *save_argv[U_END];
+  char *save_argv[U_END];
+  char **members;
+  struct save_queue *ace_usage;
+  LDAPMod *mods[20];
+
 
   pUserOu = NULL;
   ptr = NULL;
@@ -1499,6 +1528,21 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   rc = 0;
 
+  /* At this point, group we're populating has been sanity checked.
+   *
+   * Are we adding an ID member?  If so, punt to our separate routine,
+   * since the logic is quite different.
+   */
+
+  if (!strcasecmp(ptr[LM_TYPE], "ID"))
+    {
+      if (Exchange)
+	return;
+
+      do_id_member(ldap_handle, dn_path, group_ou, before, beforec, after, afterc);
+      return;
+    }
+
   if (beforec)
     {
       com_err(whoami, 0, "removing user %s from list %s", user_name, 
@@ -1569,7 +1613,6 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 	com_err(whoami, 0, "Unable to remove %s from group %s", user_name, 
 		group_name);
       
-      moira_disconnect();
     
       if (rc = member_remove(ldap_handle, dn_path, group_name,
                              group_ou, group_membership, 
@@ -1577,7 +1620,94 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                              pUserOu, moira_list_id))
         com_err(whoami, 0, "Unable to remove %s from group %s", user_name,
                 group_name);
-      
+
+
+      if (!strcasecmp(ptr[LM_TYPE], "USER") || !strcasecmp(ptr[LM_TYPE], "STRING"))
+	{
+	  /* Does this list own any other lists? If so, also update owner-listname */
+	  av[0] = "LIST";
+	  av[1] = group_name;
+	  
+	  ace_usage = sq_create();
+
+	  if (rc = mr_query("get_ace_use", 2, av, save_ace_usage, ace_usage))
+	    {
+	      com_err(whoami, 0, "Unable to retrieve ACE usage for %s", group_name);
+	      moira_disconnect();
+	      return;
+	    }
+	  
+	  while (sq_get_data(ace_usage, &ace_name))
+	    {
+	      sprintf(distinguished_name, "cn=owner-%s,%s,%s", ace_name, group_ou_distribution, dn_path);
+
+	      if (!strcasecmp(ptr[LM_TYPE], "USER"))
+		{
+                  if(ActiveDirectory)
+                    sprintf(member, "cn=%s,%s,%s", ptr[LM_MEMBER], pUserOu,
+                            dn_path);
+                  else
+                    sprintf(member, "uid=%s,%s,%s", ptr[LM_MEMBER], pUserOu,
+                            dn_path);
+		}
+	      else if (!strcasecmp(ptr[LM_TYPE], "STRING"))
+		{
+		  if (Exchange)
+		    {
+		      if (group_base)
+			{
+			  linklist_free(group_base);
+			  group_base = NULL;
+			  group_count = 0;
+			}
+		      
+		      sprintf(search_filter,
+			      "(proxyAddresses=smtp:%s)", ptr[LM_MEMBER]);
+		      attr_array[0] = "cn";
+		      attr_array[1] = NULL;
+		    
+		      if ((rc = linklist_build(ldap_handle, dn_path,
+					       search_filter,
+					       attr_array, &group_base,
+					       &group_count,
+					       LDAP_SCOPE_SUBTREE)) != 0)
+			{
+			  com_err(whoami, 0,
+				  "Unable to search for STRING object %s: %s",
+				  ptr[LM_MEMBER], ldap_err2string(rc));
+			  return;
+			}
+		      
+		      if (group_count)
+			{
+			  sprintf(member, "%s", group_base->dn);
+			}
+		    }
+		  else
+		      sprintf(member, "cn=%s,%s,%s", escape_string(ptr[LM_MEMBER]),
+			      pUserOu, dn_path);
+		}
+	      
+	      members = (char **)malloc(sizeof(char *) * 2);
+	      members[0] = strdup(member);
+	      members[1] = NULL;
+
+	      n = 0;
+	      ADD_ATTR("member", members, LDAP_MOD_DELETE);
+	      mods[n] = NULL;
+
+	      if ((rc = ldap_modify_s(ldap_handle, distinguished_name, mods)) != LDAP_SUCCESS)
+		{
+		  com_err(whoami, 0, "Unable to remove member %s for owner listname %s: %s", member, distinguished_name, ldap_err2string(rc));
+		}
+
+	      for (i = 0; i < n; i++)
+		free(mods[i]);
+	      free(members);
+	    }
+	}
+
+      moira_disconnect();
       return;
     }
   
@@ -1644,7 +1774,8 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = moira_user_id;
-          call_args[3] = NULL;
+	  call_args[3] = "";
+          call_args[4] = NULL;
 	  
           callback_rc = 0;
 
@@ -1694,15 +1825,200 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     com_err(whoami, 0, "Unable to add %s to group %s", user_name, 
 	    group_name);
   
-  moira_disconnect();
-
   if (rc = member_add(ldap_handle, dn_path, group_name,
                       group_ou, group_membership, 
 		      escape_string(ptr[LM_MEMBER]),
                       pUserOu, moira_list_id))
     com_err(whoami, 0, "Unable to add %s to group %s", user_name, group_name);
 
+  if (!strcasecmp(ptr[LM_TYPE], "USER") || !strcasecmp(ptr[LM_TYPE], "STRING"))
+    {
+      /* Does this list own any other lists? If so, also update owner-listname */
+      av[0] = "LIST";
+      av[1] = group_name;
+
+      ace_usage = sq_create();
+
+      if (rc = mr_query("get_ace_use", 2, av, save_ace_usage, ace_usage))
+	{
+	  com_err(whoami, 0, "Unable to retrieve ACE usage for %s", group_name);
+	  moira_disconnect();
+	  return;
+	}
+
+      while (sq_get_data(ace_usage, &ace_name))
+	{
+	  sprintf(distinguished_name, "cn=owner-%s,%s,%s", ace_name, group_ou_distribution, dn_path);
+
+	  if (!strcasecmp(ptr[LM_TYPE], "USER"))
+	    {
+	      if(ActiveDirectory)
+		sprintf(member, "cn=%s,%s,%s", ptr[LM_MEMBER], pUserOu,
+			dn_path);
+	      else
+		sprintf(member, "uid=%s,%s,%s", ptr[LM_MEMBER], pUserOu,
+			dn_path);
+	    }
+	  else if (!strcasecmp(ptr[LM_TYPE], "STRING"))
+	    {
+	      if (Exchange)
+		{
+		  if (group_base)
+		    {
+		      linklist_free(group_base);
+		      group_base = NULL;
+		      group_count = 0;
+		    }
+
+		  sprintf(search_filter,
+			  "(proxyAddresses=smtp:%s)", ptr[LM_MEMBER]);
+		  attr_array[0] = "cn";
+		  attr_array[1] = NULL;
+
+		  if ((rc = linklist_build(ldap_handle, dn_path,
+					   search_filter,
+					   attr_array, &group_base,
+					   &group_count,
+					   LDAP_SCOPE_SUBTREE)) != 0)
+		    {
+		      com_err(whoami, 0,
+			      "Unable to search for STRING object %s: %s",
+			      ptr[LM_MEMBER], ldap_err2string(rc));
+		      return;
+		    }
+
+		  if (group_count)
+		    {
+		      sprintf(member, "%s", group_base->dn);
+		    }
+		}
+	      else
+		sprintf(member, "cn=%s,%s,%s", escape_string(ptr[LM_MEMBER]),
+			pUserOu, dn_path);
+	    }
+
+	  members = (char **)malloc(sizeof(char *) * 2);
+	  members[0] = strdup(member);
+	  members[1] = NULL;
+
+	  n = 0;
+	  ADD_ATTR("member", members, LDAP_MOD_ADD);
+	  mods[n] = NULL;
+
+	  if ((rc = ldap_modify_s(ldap_handle, distinguished_name, mods)) != LDAP_SUCCESS)
+	    {
+	      com_err(whoami, 0, "Unable to add member %s for owner listname %s: %s", member, distinguished_name, ldap_err2string(rc));
+	    }
+
+	  for (i = 0; i < n; i++)
+	    free(mods[i]);
+	  free(members);
+	}
+    }
+
+  moira_disconnect();
   return;
+}
+
+void do_id_member(LDAP *ldap_handle, char *dn_path, char *group_ou,
+		  char **before, int beforec, char **after, int afterc)
+{
+  ULONG rc;
+  char group_dn[512];
+  char *modvalues[2];
+  char **id_members;
+  int id_member_count;
+  int i, n;
+  LDAPMod *mods[20];
+
+  if (beforec)
+    {
+      com_err(whoami, 0, "removing entries for ID %s from list %s", before[LM_MEMBER], before[LM_LIST]);
+      if (get_id_member_entities(ldap_handle, dn_path, before[LM_MEMBER], &id_member_count, &id_members))
+	{
+	  com_err(whoami, 0, "Unable to get entities for ID member %s", before[LM_MEMBER]);
+	  return;
+	}
+
+      sprintf(group_dn, "cn=%s,%s,%s", before[LM_LIST], group_ou, dn_path);
+
+      /* id_members now holds all of the entries to be removed from the list */
+      for (i = 0; i < id_member_count; i++)
+	{
+	  int j;
+
+	  modvalues[0] = id_members[i];
+	  modvalues[1] = NULL;
+
+	  n = 0;
+	  ADD_ATTR("member", modvalues, LDAP_MOD_DELETE);
+	  mods[n] = NULL;
+	  rc = ldap_modify_s(ldap_handle, group_dn, mods);
+
+	  for (j = 0; j < n; j++)
+	    free(mods[j]);
+
+	  if (rc == LDAP_UNWILLING_TO_PERFORM)
+	    rc = LDAP_SUCCESS;
+
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      com_err(whoami, 0, "Unable to remove ID member from list %s : %s",
+		      before[LM_LIST], ldap_err2string(rc));
+	    }
+	}
+
+      for (i = 0; i < id_member_count; i++)
+	free(id_members[i]);
+      if (id_member_count != 0)
+	free(id_members);
+      id_member_count = 0;
+    }
+
+  if (afterc)
+    {
+      com_err(whoami, 0, "adding entries for ID %s to list %s", after[LM_MEMBER], after[LM_LIST]);
+      if (get_id_member_entities(ldap_handle, dn_path, after[LM_MEMBER], &id_member_count, &id_members))
+	{
+	  com_err(whoami, 0, "Unable to get entities for ID member %s", after[LM_MEMBER]);
+	  return;
+	}
+
+      sprintf(group_dn, "cn=%s,%s,%s", after[LM_LIST], group_ou, dn_path);
+
+      /* id_members now holds all of the entries to be removed from the list */
+      for (i = 0; i < id_member_count; i++)
+        {
+          int j;
+
+          modvalues[0] = id_members[i];
+          modvalues[1] = NULL;
+
+          n = 0;
+          ADD_ATTR("member", modvalues, LDAP_MOD_ADD);
+          mods[n] = NULL;
+          rc = ldap_modify_s(ldap_handle, group_dn, mods);
+
+          for (j = 0; j < n; j++)
+            free(mods[j]);
+
+	  if (rc == LDAP_ALREADY_EXISTS || rc == LDAP_TYPE_OR_VALUE_EXISTS)
+	    rc = LDAP_SUCCESS;
+
+          if (rc != LDAP_SUCCESS)
+            {
+              com_err(whoami, 0, "Unable to add ID member to list %s : %s",
+                      after[LM_LIST], ldap_err2string(rc));
+            }
+        }
+
+      for (i = 0; i < id_member_count; i++)
+        free(id_members[i]);
+      if (id_member_count != 0)
+	free(id_members);
+      id_members = NULL;
+      id_member_count = 0;
+    }
 }
 
 #define U_USER_ID            10
@@ -2436,6 +2752,10 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   int       group_count;
   int       MailDisabled = 0;
   char      search_filter[1024];
+  char      *argv[3];
+  char      *save_argv[L_END];
+  char      generated_name[512];
+  char      mailman_member[512];
 
   if(UseGroupUniversal)
     groupTypeControl = ADS_GROUP_TYPE_UNIVERSAL_GROUP;
@@ -2468,6 +2788,25 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 	  lowercase(office365_mail_domain));
 
   sprintf(mail_nickname, "%s", after_group_name);
+
+  if (rc = moira_connect())
+    {
+      critical_alert(whoami, "LDAP incremental", "Error contacting Moira server : %s",
+		     error_message(rc));
+      return rc;
+    }
+
+  argv[0] = after_group_name;
+  if (rc = mr_query("get_list_info", 1, argv, save_query_info, save_argv))
+    {
+      moira_disconnect();
+      com_err(whoami, 0, "Unable to get list information for %s : %s", after_group_name,
+	      error_message(rc));
+      return rc;
+    }
+
+  /* done getting info from moira */
+  moira_disconnect();
 
   if (Exchange) 
     {
@@ -2744,6 +3083,51 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   for (i = 0; i < n; i++)
     free(mods[i]);
 
+  /* Uconditionally try to delete forwarding pointers for mailman lists for old name.
+   * Create new ones iff the list is still a mailman list.
+   */ 
+  if (rc == LDAP_SUCCESS)
+    {
+      /* fire up moira, needed for create_forwarding_pointer */
+      if (rc = moira_connect())
+	{
+	  critical_alert(whoami, "LDAP incremental", "Error contacting Moira server : %s",
+			 error_message(rc));
+	  return rc;
+	}
+
+      for (i = 0; mailman_suffixes[i]; i++)
+	{
+	  sprintf(generated_name, "%s%s", before_group_name, mailman_suffixes[i]);
+	  delete_forwarding_pointer(ldap_handle, generated_name, dn_path);
+
+	  if (atoi(save_argv[L_MAILMAN]) && strcmp(save_argv[L_MAILMAN_SERVER], "[NONE]"))
+	    {
+	      sprintf(generated_name, "%s%s", save_argv[L_NAME], mailman_suffixes[i]);
+	      sprintf(mailman_member, "%s@%s", generated_name, save_argv[L_MAILMAN_SERVER]);
+
+	      create_forwarding_pointer(ldap_handle, generated_name, mailman_member, dn_path);
+	    }
+	}
+
+      /* Create owner-listname for all lists, not just mailman lists. */
+      sprintf(generated_name, "%s%s", "owner-", before_group_name);
+      delete_forwarding_pointer(ldap_handle, generated_name, dn_path);
+
+      if (atoi(save_argv[L_MAILMAN]) && strcmp(save_argv[L_MAILMAN_SERVER], "[NONE]"))
+	{
+	  sprintf(generated_name, "%s%s", "owner-", save_argv[L_NAME]);
+	  sprintf(mailman_member, "%s-owner@%s", save_argv[L_NAME], save_argv[L_MAILMAN_SERVER]);
+	  create_forwarding_pointer(ldap_handle, generated_name, mailman_member, dn_path);
+	}
+      else
+	{
+	  sprintf(generated_name, "%s%s", "owner-", save_argv[L_NAME]);
+	  create_owner_listname(ldap_handle, generated_name, save_argv[L_ACE_TYPE], save_argv[L_ACE_NAME], dn_path);
+	}
+    }
+
+  moira_disconnect();
   return(rc);
 }
 
@@ -2762,6 +3146,8 @@ int group_create(int ac, char **av, void *ptr)
   char proxy_address_mit[256];
   char proxy_address_office365[256];
   char address_book[256];
+  char generated_name[512];
+  char mailman_member[512];
   char *cn_v[] = {NULL, NULL};
   char *objectClass_v[] = {"top", "group", NULL};
   char *objectClass_ldap_v[] = {"top", "microsoftComTop", "securityPrincipal",
@@ -2811,6 +3197,7 @@ int group_create(int ac, char **av, void *ptr)
 
   if(!check_string(av[L_NAME]))
     {
+      callback_rc = AD_INVALID_NAME;
       com_err(whoami, 0, "Unable to process invalid LDAP list name %s", 
 	      av[L_NAME]);
       return(AD_INVALID_NAME);
@@ -3053,7 +3440,6 @@ int group_create(int ac, char **av, void *ptr)
 	  mitMoiraId_v[0] = call_args[5];
 	  ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD);
 	}
-	  
       mods[n] = NULL;      
       rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
       
@@ -3067,6 +3453,33 @@ int group_create(int ac, char **av, void *ptr)
           callback_rc = rc;
           return(rc);
         }
+
+      if (rc == LDAP_SUCCESS)
+	{
+	  if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+	    {
+	      int i;
+	      
+	      for (i = 0; mailman_suffixes[i]; i++)
+		{
+		  sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
+		  sprintf(mailman_member, "%s@%s", generated_name, av[L_MAILMAN_SERVER]);
+		  
+		  create_forwarding_pointer((LDAP *)call_args[0], generated_name, mailman_member, call_args[1]);
+		}
+	      
+	      /* Also create owner-listname */
+	      sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
+	      sprintf(mailman_member, "%s-owner@%s", av[L_NAME], av[L_MAILMAN_SERVER]);
+	      create_forwarding_pointer((LDAP *)call_args[0], generated_name, mailman_member, call_args[1]);
+	      
+	    }
+	  else
+	    {
+              sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
+	      create_owner_listname((LDAP *)call_args[0], generated_name, av[L_ACE_TYPE], av[L_ACE_NAME], call_args[1]);
+	    }
+	}
     }
 
   if ((rc == LDAP_ALREADY_EXISTS) || (updateGroup))
@@ -3323,6 +3736,47 @@ int group_create(int ac, char **av, void *ptr)
               return(rc);
             }
         }
+
+      /* fire up moira, needed for create_forwarding_pointer */
+      if (rc = moira_connect())
+        {
+          critical_alert(whoami, "LDAP incremental", "Error contacting Moira server : %s",
+                         error_message(rc));
+          return rc;
+        }
+
+      /* refresh forwarding pointers */
+      for (i = 0; mailman_suffixes[i]; i++)
+        {
+          sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
+          delete_forwarding_pointer((LDAP *)call_args[0], generated_name, call_args[1]);
+
+          if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+            {
+              sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
+              sprintf(mailman_member, "%s@%s", generated_name, av[L_MAILMAN_SERVER]);
+
+              create_forwarding_pointer((LDAP *)call_args[0], generated_name, mailman_member, call_args[1]);
+            }
+        }
+
+      /* refresh owner-listname, since ACE might have changed */
+      sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
+      delete_forwarding_pointer((LDAP *)call_args[0], generated_name, call_args[1]);
+
+      if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+        {
+          sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
+          sprintf(mailman_member, "%s-owner@%s", av[L_NAME], av[L_MAILMAN_SERVER]);
+          create_forwarding_pointer((LDAP *)call_args[0], generated_name, mailman_member, call_args[1]);
+        }
+      else
+        {
+          sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
+          create_owner_listname((LDAP *)call_args[0], generated_name, av[L_ACE_TYPE], av[L_ACE_NAME], call_args[1]);
+        }
+
+      moira_disconnect();
     }
 
   ProcessGroupSecurity((LDAP *)call_args[0], call_args[1], av[L_NAME], 
@@ -3699,8 +4153,10 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
   LK_ENTRY  *group_base;
   char      temp[512];
   char      filter[128];
+  char      generated_name[512];
   int       group_count;
   int       rc;
+  int       i;
 
   if (!check_string(group_name))
     {
@@ -3731,6 +4187,18 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
         }
 
       linklist_free(group_base);
+
+      /* Delete any auto-created forwarding pointers that might exist. */
+      for (i = 0; mailman_suffixes[i]; i++)
+	{
+	  sprintf(generated_name, "%s%s", group_name, mailman_suffixes[i]);
+	  delete_forwarding_pointer(ldap_handle, generated_name, temp);
+	}
+
+      /* Also delete owner-listname if it exists */
+      sprintf(generated_name, "%s%s", "owner-", group_name);
+      delete_forwarding_pointer(ldap_handle, generated_name, temp);
+
     }
   else
     {
@@ -3822,6 +4290,11 @@ int member_list_build(int ac, char **av, void *ptr)
 			 kerberos_ou))
         return(0);
 
+    }
+  else if (!strcmp(av[ACE_TYPE], "ID"))
+    {
+      if (!((int)(long)call_args[3] & MOIRA_IDS))
+	return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "MACHINE"))
     {
@@ -8766,7 +9239,8 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type,
           call_args[0] = (char *)ldap_handle;
           call_args[1] = dn_path;
           call_args[2] = "";
-          call_args[3] = NULL;
+          call_args[3] = "";
+	  call_args[4] = NULL;
           callback_rc = 0;
 
 	  if(!strcasecmp(AceName, PRODUCTION_PRINCIPAL) ||
@@ -8825,6 +9299,7 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   char filter[128];
   char *attr_array[3];
   char temp[256];
+  char *save_argv[L_END];
 
   sprintf(temp, "%d", updateGroup);
 
@@ -8842,11 +9317,18 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   group_count = 0;
   group_base = NULL;
 
-  if (rc = mr_query("get_list_info", 1, av, group_create, call_args))
+  if (rc = mr_query("get_list_info", 1, av, save_query_info, save_argv))
     {
       moira_disconnect();
       com_err(whoami, 0, "Unable to create list %s : %s", group_name, 
 	      error_message(rc));
+      return(rc);
+    }
+
+  if (rc = group_create(L_END, save_argv, call_args))
+    {
+      moira_disconnect();
+      com_err(whoami, 0, "Unable to create list %s", group_name);
       return(rc);
     }
 
@@ -8886,6 +9368,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   char      search_filter[1024];
   LK_ENTRY  *group_base;
   int       group_count;
+  int       id_member_count;
+  char      **id_members;
 
   com_err(whoami, 0, "Populating group %s", group_name);
   av[0] = group_name;
@@ -8893,9 +9377,11 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   call_args[1] = dn_path;
   call_args[2] = group_name;
   call_args[3] = (char *)(MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS | 
-			  MOIRA_MACHINE);
+			  MOIRA_MACHINE | MOIRA_IDS);
   call_args[4] = NULL;
   member_base = NULL;
+  id_members = NULL;
+  id_member_count = 0;
   group_members = 0;
 
   if((max_group_members == -1) && !synchronize) 
@@ -8994,7 +9480,8 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		  call_args[0] = (char *)ldap_handle;
 		  call_args[1] = dn_path;
 		  call_args[2] = "";
-		  call_args[3] = NULL;
+		  call_args[3] = "";
+		  call_args[4] = NULL;
 		  callback_rc = 0;
 		  
 		  if (rc = mr_query("get_user_account_by_login", 1, av, 
@@ -9086,6 +9573,23 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 	      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member), 
 		      pUserOu, dn_path);
             }
+	  else if (!strcasecmp(ptr->type, "ID"))
+	    {
+	      if (Exchange)
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      /* This function populates id_member_count and id_members. 
+	       * Skip to next entry if it fails for any reason.
+	       */
+	      if (get_id_member_entities(ldap_handle, dn_path, ptr->member, &id_member_count, &id_members))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+	    }
 	  else if (!strcasecmp(ptr->type, "MACHINE"))
 	    {
 	      memset(machine_ou, '\0', sizeof(machine_ou));
@@ -9105,13 +9609,33 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 		}
 	    }
 
-	  if(i > 1) 
-	    members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
+	  if (id_member_count > 0)
+	    {
+	      int j;
 
-	  members[i++] = strdup(member);
-          ptr = ptr->next;
-        }
-    
+	      members = (char **)realloc(members, ((i + id_member_count + 2) * sizeof(char *)));
+	      
+	      for (j = 0; j < id_member_count; j++)
+		{
+		  members[i++] = strdup(id_members[j]);
+		  free(id_members[j]);
+		}
+
+	      free(id_members);
+	      id_members = NULL;
+	      id_member_count = 0;
+	      ptr = ptr->next;
+	    }
+	  else 
+	    {
+	      if (i > 1) 
+		members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
+	      
+	      members[i++] = strdup(member);
+	      ptr = ptr->next;
+	    }
+	}
+	  
       linklist_free(member_base);
       member_base = NULL;
     }
@@ -9526,6 +10050,60 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
     }
 
   return(0);
+}
+
+int get_id_member_entities(LDAP *ldap_handle, char *dn_path, char *member, int *count, char ***members)
+{
+  ULONG rc;
+  char filter[128];
+  char *attr_array[3];
+  LK_ENTRY *group_base;
+  LK_ENTRY *gPtr;
+  int group_count, i;
+
+  rc = 0;
+  (*count) = 0;
+  (*members) = NULL;
+  
+  sprintf(filter, "(&(objectClass=user)(employeeID=%s))", member);
+  attr_array[0] = "distinguishedName";
+  attr_array[1] = NULL;
+
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base,
+			   &group_count, LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      com_err(whoami, 0, "Unable to process ID member %s: %s",
+	      member, ldap_err2string(rc));
+      return(rc);
+    }
+
+  *members = (char **)malloc((group_count + 1) * sizeof (char *));
+  for (i = 0; i < (group_count + 1); i++)
+    (*members)[i] = NULL;
+
+  gPtr = group_base;
+  while (gPtr)
+    {
+      /* Skip user records */
+      if (strcasestr(gPtr->dn, user_ou))
+	{
+	  com_err(whoami, 0, "Skipping user dn %s while getting ID member entities for %s", gPtr->dn, member);
+	  gPtr = gPtr->next;
+	  continue;
+	}
+
+      /* Anything else should get added to our return array */
+      com_err(whoami, 0, "Found dn %s while getting ID member entities for %s", gPtr->dn, member);
+      (*members)[(*count)++] = strdup(gPtr->dn);
+      gPtr = gPtr->next;
+      continue;
+    }
+
+  linklist_free(group_base);
+  group_count = 0;
+  rc = 0;
+  
+  return(rc);
 }
 
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
@@ -12212,4 +12790,689 @@ void ad_kdc_disconnect()
 
   close(kdc_socket);
 
+}
+
+void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path)
+{
+  LDAPMod *mods[20];
+  char new_dn[512];
+  char contact_mail[512];
+  char mail[512];
+  char mail_nickname[512];
+  char proxy_address[512];
+  char proxy_address_mit[512];
+  char proxy_address_office365[512];
+  char sam_group_name[512];
+  char cn_group_name[512];
+  char groupTypeControlStr[80];
+  char member_dn[512];
+  char *pUserOu;
+  u_int groupTypeControl;
+  char *groupTypeControl_v[] = {NULL, NULL};
+  char *samAccountName_v[] = {NULL, NULL};
+  char *cn_v[] = {NULL, NULL};
+  char *name_v[] = {NULL, NULL};
+  char *mail_v[] = {NULL, NULL};
+  char *null_v[] = {NULL, NULL};
+  char *objectClass_v[] = {"top", "group", NULL};
+  char *objectClass_ldap_v[] = {"top", "microsoftComTop", "securityPrincipal",
+                                "group", "mailRecipient", NULL};
+  char *mitMoiraPublic_v[] = {NULL, NULL};
+  char *mitMoiraHidden_v[] = {NULL, NULL};
+  char *mitMoiraActive_v[] = {NULL, NULL};
+  char *mitMoiraNFSGroup_v[] = {NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
+  char *mail_nickname_v[] = {NULL, NULL};
+  char *report_to_originator_v[] = {NULL, NULL};
+  char *attr_array[3];
+  char search_filter[1024];
+  LK_ENTRY *group_base;
+  int group_count;
+  char **members;
+  int n, rc, i;
+
+  sprintf(new_dn, "cn=%s,%s,%s", name, group_ou_distribution, dn_path);
+  sprintf(contact_mail, "%s@mit.edu", name);
+  sprintf(mail, "%s@mit.edu", name);
+  sprintf(mail_nickname, "%s", name);
+  sprintf(proxy_address, "smtp:%s@%s", name, lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", name, lowercase(office365_mail_domain));
+
+  if(UseGroupUniversal)
+    groupTypeControl = ADS_GROUP_TYPE_UNIVERSAL_GROUP;
+  else
+    groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
+
+  sprintf(groupTypeControlStr, "%ld", groupTypeControl);
+  groupTypeControl_v[0] = groupTypeControlStr;
+
+  strcpy(cn_group_name, name);
+
+  sprintf(sam_group_name, "%s%s", name, group_suffix);
+  samAccountName_v[0] = sam_group_name;
+
+  name_v[0] = name;
+  cn_v[0] = name;
+
+  n = 0;
+  ADD_ATTR("cn", cn_v, LDAP_MOD_ADD);
+
+  if(ActiveDirectory)
+    {
+      ADD_ATTR("objectClass", objectClass_v, LDAP_MOD_ADD);
+    }
+  else
+    {
+      mitMoiraPublic_v[0] = "0";
+      mitMoiraHidden_v[0] = "1";
+      mitMoiraActive_v[0] = "1";
+      mitMoiraNFSGroup_v[0] = "0";
+      ADD_ATTR("objectClass", objectClass_ldap_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraPublic", mitMoiraPublic_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraHidden", mitMoiraHidden_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraActive", mitMoiraActive_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraNFSGroup", mitMoiraNFSGroup_v, LDAP_MOD_ADD);
+    }
+
+  ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_ADD);
+  ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
+  ADD_ATTR("name", name_v, LDAP_MOD_ADD);
+
+  if (Exchange)
+    {
+      mail_nickname_v[0] = mail_nickname;
+      proxy_address_v[0] = proxy_address;
+      proxy_address_v[1] = proxy_address_mit;
+      proxy_address_v[2] = proxy_address_office365;
+      report_to_originator_v[0] = "TRUE";
+      mail_v[0] = mail;
+
+      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_ADD);
+      ADD_ATTR("reportToOriginator", report_to_originator_v,
+	       LDAP_MOD_ADD);
+
+    }
+  else
+    {
+      mail_v[0] = contact_mail;
+      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+
+      if(!ActiveDirectory)
+	{
+	  null_v[0] = "/dev/null";
+	  ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_ADD);
+	  ADD_ATTR("mitMoiraMail", mail_v, LDAP_MOD_ADD);
+	}
+    }
+
+  ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_ADD);
+
+  mods[n] = NULL;
+  rc = ldap_add_ext_s(ldap_handle, new_dn, mods, NULL, NULL);
+
+  if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
+    {
+      com_err(whoami, 0, "Unable to create forwarding pointer %s in directory : %s",
+	      name, ldap_err2string(rc));
+      return;
+    }
+
+  /* populate with single member */
+  if (contact_create(ldap_handle, dn_path, member, contact_ou))
+    com_err(whoami, 0, "Unable to add member %s to forwarding pointer %s",
+	    member, name);
+
+  if (Exchange)
+    {
+      group_base = NULL;
+      group_count = 0;
+
+      sprintf(search_filter, "(proxyAddresses=smtp:%s)", member);
+      attr_array[0] = "cn";
+      attr_array[1] = NULL;
+
+      if ((rc = linklist_build(ldap_handle, dn_path,
+			       search_filter,
+			       attr_array, &group_base,
+			       &group_count,
+			       LDAP_SCOPE_SUBTREE)) != 0)
+	{
+	  com_err(whoami, 0, "Unable to search for STRING object %s: %s", member, ldap_err2string(rc));
+	  return;
+	}
+
+      if (group_count)
+	{
+	  sprintf(member_dn, "%s", group_base->dn);
+	}
+    }
+  else
+    {
+      pUserOu = contact_ou;
+      sprintf(member_dn, "cn=%s,%s,%s", escape_string(member),
+	      pUserOu, dn_path);
+    }
+
+  members = (char **)malloc(sizeof(char *) * 2);
+  members[0] = strdup(member_dn);
+  members[1] = NULL;
+
+  n = 0;
+  ADD_ATTR("member", members, LDAP_MOD_REPLACE);
+  mods[n] = NULL;
+
+  if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
+    {
+      com_err(whoami, 0, "Unable to populate member %s for forwarding pointer %s: %s", member, name, ldap_err2string(rc));
+    }
+
+  for (i = 0; i < n; i++)
+    free(mods[i]);
+  free(members);
+
+  return;
+}
+
+void delete_forwarding_pointer(LDAP *ldap_handle, char *name, char *dn_path)
+{
+  char filter[1024];
+  char *attr_array[3];
+  LK_ENTRY  *group_base;
+  int group_count;
+  int rc;
+
+  memset(filter, '\0', sizeof(filter));
+  sprintf(filter, "samAccountName=%s%s", name, group_suffix);
+
+  attr_array[0] = "samAccountName";
+  attr_array[1] = NULL;
+
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+			   &group_base, &group_count,
+			   LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      com_err(whoami, 0, "Unable to get list info for forwarding pointer %s : %s",
+	      name, ldap_err2string(rc));
+      return;
+    }
+
+  if (group_count > 1)
+    {
+      com_err(whoami, 0, "Multiple entries for forwarding pointer %s", name);
+      return;
+    }
+
+  /* If we got this far, we can delete the object. */
+  if (group_count == 1)
+    {
+      if ((rc = ldap_delete_s(ldap_handle, group_base->dn)) != LDAP_SUCCESS)
+	{
+	  linklist_free(group_base);
+	  com_err(whoami, 0, "Unable to delete forwarding pointer %s from directory: %s",
+		  name, ldap_err2string(rc));
+	  return;
+	}
+
+      linklist_free(group_base);
+      return;
+    }
+}
+
+void create_owner_listname(LDAP *ldap_handle, char *name, char *ace_type, char *ace_name, char *dn_path)
+{
+  LDAPMod *mods[20];
+  char new_dn[512];
+  char contact_mail[512];
+  char mail[512];
+  char mail_nickname[512];
+  char proxy_address[512];
+  char proxy_address_mit[512];
+  char proxy_address_office365[512];
+  char sam_group_name[512];
+  char cn_group_name[512];
+  char groupTypeControlStr[80];
+  char member_dn[512];
+  char *pUserOu;
+  u_int groupTypeControl;
+  char *groupTypeControl_v[] = {NULL, NULL};
+  char *samAccountName_v[] = {NULL, NULL};
+  char *cn_v[] = {NULL, NULL};
+  char *name_v[] = {NULL, NULL};
+  char *mail_v[] = {NULL, NULL};
+  char *null_v[] = {NULL, NULL};
+  char *objectClass_v[] = {"top", "group", NULL};
+  char *objectClass_ldap_v[] = {"top", "microsoftComTop", "securityPrincipal",
+                                "group", "mailRecipient", NULL};
+  char *mitMoiraPublic_v[] = {NULL, NULL};
+  char *mitMoiraHidden_v[] = {NULL, NULL};
+  char *mitMoiraActive_v[] = {NULL, NULL};
+  char *mitMoiraNFSGroup_v[] = {NULL, NULL};
+  char *proxy_address_v[] = {NULL, NULL, NULL, NULL};
+  char *mail_nickname_v[] = {NULL, NULL};
+  char *report_to_originator_v[] = {NULL, NULL};
+  char *attr_array[3];
+  char *call_args[7];
+  char search_filter[1024];
+  LK_ENTRY *group_base = NULL;
+  LK_ENTRY  *ptr;
+  int group_count = 0;
+  char member[512];
+  char **members;
+  int n, rc, i;
+  char *av[2];
+  char *save_argv[U_END];
+
+  /* Don't do anything if ACE isn't USER or LIST */
+  if (!strcasecmp(ace_type, "KERBEROS"))
+    return;
+
+  sprintf(new_dn, "cn=%s,%s,%s", name, group_ou_distribution, dn_path);
+  sprintf(contact_mail, "%s@mit.edu", name);
+  sprintf(mail, "%s@mit.edu", name);
+  sprintf(mail_nickname, "%s", name);
+  sprintf(proxy_address, "smtp:%s@%s", name, lowercase(ldap_domain));
+  sprintf(proxy_address_mit, "SMTP:%s@mit.edu", name);
+  sprintf(proxy_address_office365, "smtp:%s@%s", name, lowercase(office365_mail_domain));
+
+  if(UseGroupUniversal)
+    groupTypeControl = ADS_GROUP_TYPE_UNIVERSAL_GROUP;
+  else
+    groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
+
+  sprintf(groupTypeControlStr, "%ld", groupTypeControl);
+  groupTypeControl_v[0] = groupTypeControlStr;
+
+  strcpy(cn_group_name, name);
+
+  sprintf(sam_group_name, "%s%s", name, group_suffix);
+  samAccountName_v[0] = sam_group_name;
+
+  name_v[0] = name;
+  cn_v[0] = name;
+
+  n = 0;
+  ADD_ATTR("cn", cn_v, LDAP_MOD_ADD);
+
+  if(ActiveDirectory)
+    {
+      ADD_ATTR("objectClass", objectClass_v, LDAP_MOD_ADD);
+    }
+  else
+    {
+      mitMoiraPublic_v[0] = "0";
+      mitMoiraHidden_v[0] = "1";
+      mitMoiraActive_v[0] = "1";
+      mitMoiraNFSGroup_v[0] = "0";
+      ADD_ATTR("objectClass", objectClass_ldap_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraPublic", mitMoiraPublic_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraHidden", mitMoiraHidden_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraActive", mitMoiraActive_v, LDAP_MOD_ADD);
+      ADD_ATTR("mitMoiraNFSGroup", mitMoiraNFSGroup_v, LDAP_MOD_ADD);
+    }
+
+  ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_ADD);
+  ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
+  ADD_ATTR("name", name_v, LDAP_MOD_ADD);
+
+  if (Exchange)
+    {
+      mail_nickname_v[0] = mail_nickname;
+      proxy_address_v[0] = proxy_address;
+      proxy_address_v[1] = proxy_address_mit;
+      proxy_address_v[2] = proxy_address_office365;
+      report_to_originator_v[0] = "TRUE";
+      mail_v[0] = mail;
+
+      ADD_ATTR("mailNickName", mail_nickname_v, LDAP_MOD_ADD);
+      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+      ADD_ATTR("proxyAddresses", proxy_address_v, LDAP_MOD_ADD);
+      ADD_ATTR("reportToOriginator", report_to_originator_v,
+               LDAP_MOD_ADD);
+
+    }
+  else
+    {
+      mail_v[0] = contact_mail;
+      ADD_ATTR("mail", mail_v, LDAP_MOD_ADD);
+
+      if(!ActiveDirectory)
+        {
+          null_v[0] = "/dev/null";
+          ADD_ATTR("mailRoutingAddress", null_v, LDAP_MOD_ADD);
+          ADD_ATTR("mitMoiraMail", mail_v, LDAP_MOD_ADD);
+        }
+    }
+
+  ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_ADD);
+
+  mods[n] = NULL;
+  rc = ldap_add_ext_s(ldap_handle, new_dn, mods, NULL, NULL);
+
+  if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
+    {
+      com_err(whoami, 0, "Unable to create owner listname %s in directory : %s",
+              name, ldap_err2string(rc));
+      return;
+    }
+
+  /* Populate owner list with owner informartion if USER or LIST. */
+  if (!strcasecmp(ace_type, "USER"))
+    {
+      if (!strcasecmp(ace_name, PRODUCTION_PRINCIPAL) ||
+	  !strcasecmp(ace_name, TEST_PRINCIPAL))
+	return;
+
+      if ((rc = check_user(ldap_handle, dn_path, ace_name, "")) == AD_NO_USER_FOUND)
+	{
+	  com_err(whoami, 0, "creating user %s", ace_name);
+
+	  av[0] = ace_name;
+	  call_args[0] = (char *)ldap_handle;
+	  call_args[1] = dn_path;
+	  call_args[2] = "";
+	  call_args[3] = "";
+	  call_args[4] = NULL;
+	  callback_rc = 0;
+
+	  if (rc = mr_query("get_user_account_by_login", 1, av,
+			    save_query_info, save_argv))
+	    {
+	      com_err(whoami, 0, "Unable to lookup user %s while populating "
+		      "owner listname %s", ace_name, name);
+	      return;
+	    }
+
+	  if (rc = user_create(U_END, save_argv, call_args))
+	    {
+	      com_err(whoami, 0, "Unable to create user %s while populating "
+		      "owner listname %s", ace_name, name);
+	      return;
+	    }
+
+	  if (callback_rc)
+	    {
+	      com_err(whoami, 0, "Unable to create user %s while populating "
+		      "owner listname %s", ace_name, name);
+	      return;
+	    }
+	}
+
+      pUserOu = user_ou;
+
+      if(ActiveDirectory)
+	sprintf(member, "cn=%s,%s,%s", ace_name, pUserOu, dn_path);
+      else
+	sprintf(member, "uid=%s,%s,%s", ace_name, pUserOu, dn_path);
+
+      members = (char **)malloc(sizeof(char *) * 2);
+      members[0] = strdup(member);
+      members[1] = NULL;
+
+      n = 0;
+      ADD_ATTR("member", members, LDAP_MOD_REPLACE);
+      mods[n] = NULL;
+
+      if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
+	{
+	  com_err(whoami, 0, "Unable to populate member %s for owner listname %s: %s", member, name, ldap_err2string(rc));
+	}
+
+      for (i = 0; i < n; i++)
+	free(mods[i]);
+      free(members);
+    }
+  else if (!strcasecmp(ace_type, "LIST"))
+    {
+      av[0] = ace_name;
+      call_args[0] = (char *)ldap_handle;
+      call_args[1] = dn_path;
+      call_args[2] = ace_name;
+      call_args[3] = (char *)(MOIRA_USERS | MOIRA_STRINGS);
+      call_args[4] = NULL;
+      member_base = NULL;
+      group_members = 0;
+
+      if (rc = mr_query("get_end_members_of_list", 1, av, member_list_build, call_args))
+	{
+	  if (rc == MR_LIST)
+	    return;
+
+	  com_err(whoami, 0, "Unable to populate owner listname %s : %s",
+		  name, error_message(rc));
+	  return;
+	}
+
+      if (member_base != NULL)
+	{
+	  ptr = member_base;
+
+	  while (ptr != NULL)
+	    {
+	      if (!strcasecmp(ptr->type, "LIST"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "MACHINE"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "ID"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "KERBEROS"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "USER"))
+		{
+		  if(!strcasecmp(ptr->member, PRODUCTION_PRINCIPAL) ||
+		     !strcasecmp(ptr->member, TEST_PRINCIPAL))
+		    {
+		      ptr = ptr->next;
+		      continue;
+		    }
+		}
+
+	      ptr = ptr->next;
+	      group_members++;
+	    }
+	}
+
+      if (max_group_members && max_group_members > 0 && (group_members > max_group_members))
+	{
+	  com_err(whoami, 0, "Group %s membership of %d exceeds maximum %d, skipping",
+		  name, group_members, max_group_members);
+	  return;
+	}
+
+      members = (char **)malloc(sizeof(char *) * 2);
+
+      if (member_base != NULL)
+	{
+	  ptr = member_base;
+
+	  while (ptr != NULL)
+	    {
+	      if (!strcasecmp(ptr->type, "LIST"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "MACHINE"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "ID"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "KERBEROS"))
+		{
+		  ptr = ptr->next;
+		  continue;
+		}
+
+	      if (!strcasecmp(ptr->type, "USER"))
+		{
+		  if(!strcasecmp(ptr->member, PRODUCTION_PRINCIPAL) ||
+		     !strcasecmp(ptr->member, TEST_PRINCIPAL))
+		    {
+		      ptr = ptr->next;
+		      continue;
+		    }
+
+		  if ((rc = check_user(ldap_handle, dn_path, ptr->member,
+				       "")) == AD_NO_USER_FOUND)
+		    {
+		      com_err(whoami, 0, "creating user %s", ptr->member);
+		      
+		      av[0] = ptr->member;
+		      call_args[0] = (char *)ldap_handle;
+		      call_args[1] = dn_path;
+		      call_args[2] = "";
+		      call_args[3] = "";
+		      call_args[4] = NULL;
+		      callback_rc = 0;
+		      
+		      if (rc = mr_query("get_user_account_by_login", 1, av,
+					save_query_info, save_argv))
+			{
+			  com_err(whoami, 0, "Unable to create user %s "
+				  "while populating group %s.", ptr->member,
+				  name);
+			  return;
+			}
+
+		      if (rc = user_create(U_END, save_argv, call_args))
+			{
+			  com_err(whoami, 0, "Unable to create user %s "
+				  "while populating group %s.", ptr->member,
+				  name);
+			  return;
+			}
+
+		      if (callback_rc)
+			{
+			  com_err(whoami, 0, "Unable to create user %s "
+				  "while populating group %s", ptr->member,
+				  name);
+			  return;
+			}
+		    }
+
+		  pUserOu = user_ou;
+
+		  if(ActiveDirectory)
+		    sprintf(member, "cn=%s,%s,%s", ptr->member, pUserOu,
+			    dn_path);
+		  else
+		    sprintf(member, "uid=%s,%s,%s", ptr->member, pUserOu,
+			    dn_path);
+		}
+	      else if (!strcasecmp(ptr->type, "STRING"))
+		{
+		  if (contact_create(ldap_handle, dn_path, ptr->member,
+				     contact_ou))
+		    return;
+
+		  if (Exchange)
+		    {
+		      if (group_base)
+			{
+			  linklist_free(group_base);
+			  group_base = NULL;
+			  group_count = 0;
+			}
+		      
+		      sprintf(search_filter,
+			      "(proxyAddresses=smtp:%s)", ptr->member);
+		      attr_array[0] = "cn";
+		      attr_array[1] = NULL;
+
+		      if ((rc = linklist_build(ldap_handle, dn_path,
+					       search_filter,
+					       attr_array, &group_base,
+					       &group_count,
+					       LDAP_SCOPE_SUBTREE)) != 0)
+			{
+			  com_err(whoami, 0,
+				  "Unable to search for STRING object %s: %s",
+				  ptr->member, ldap_err2string(rc));
+			  return;
+			}
+
+		      if (group_count)
+			{
+			  sprintf(member, "%s", group_base->dn);
+			}
+		    }
+		  else
+		    {
+		      pUserOu = contact_ou;
+		      sprintf(member, "cn=%s,%s,%s", escape_string(ptr->member),
+			      pUserOu, dn_path);
+		    }
+
+		}
+
+	      if(i > 1)
+		members = (char **)realloc(members, ((i + 2) * sizeof(char *)));
+
+	      members[i++] = strdup(member);
+	      ptr = ptr->next;
+	    }
+
+	  linklist_free(member_base);
+	  member_base = NULL;
+	}
+
+      members[i] = NULL;
+
+      n = 0;
+      ADD_ATTR("member", members, LDAP_MOD_REPLACE);
+      mods[n] = NULL;
+
+      if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
+	{
+	  com_err(whoami, 0, "Unable to populate membership for owner listname %s: %s", name, ldap_err2string(rc));
+	}
+
+      for (i = 0; i < n; i++)
+	free(mods[i]);
+      free(members);
+    }
+
+  return;
+}
+
+int save_ace_usage(int argc, char **argv, void *sq)
+{
+  struct save_queue *q = sq;
+  char *ace_list_name;
+
+  /* only care about LISTs */
+  if (!strcmp(argv[0], "LIST"))
+    {
+      ace_list_name = strdup(argv[1]);
+      sq_save_data(q, ace_list_name);
+    }
+
+  return MR_CONT;
 }

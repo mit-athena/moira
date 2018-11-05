@@ -34,7 +34,7 @@ ib_base_url = 'https://' + ib_host + '/wapi/' + ib_api_version
 ib_common_args = '?_return_type=json-pretty'
 ib_search_args = '_return_fields=ipv4addrs,ipv6addrs,name,aliases,use_ttl,ttl,disable,extattrs,view'
 # timeout for response from IB API endpoint.
-ib_timeout = 1
+ib_timeout = 300
 
 default_ttl = 1800
 default_domain = "mit.edu"

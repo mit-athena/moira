@@ -539,7 +539,7 @@ def ib_add_cname(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) > 0:
-            critical_log('A record already exists for name %s alias %s in view %s' % (ib_record['canonical'], ib_record['name']. view))
+            critical_log('A record already exists for name %s alias %s in view %s' % (ib_record['canonical'], ib_record['name'], view))
         else:
             ib_url = ib_base_url + '/record:cname' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }

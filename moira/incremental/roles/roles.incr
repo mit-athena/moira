@@ -152,18 +152,24 @@ sub do_user {
 		next;
 	    }
 
-	    # fix quotes
-	    $lname =~ s/\'/\'\'/;
-	    $fname =~ s/\'/\'\'/;
+	    $quoted_mitid = $roles->quote($mit_id);
+	    $quoted_lname = $roles->quote($lname);
+	    $quoted_fname = $roles->quote($fname);
+	    $quoted_login = $roles->quote($login);
+	    $quoted_email = $roles->quote($email);
+	    $quoted_dept_code = $roles->quote($dept_code);
+	    $quoted_ptype = $roles->quote($primary_person_type);
+	    $quoted_status = $roles->quote($status_code);
 
 	    # Create user.
 	    # DECODE statement maps dept_code 0 into NULL; Moira hates SQL-style NULLs.
-	    $sth = $roles->prepare("INSERT INTO person (mit_id, last_name, first_name, " .
-				   "kerberos_name, email_addr, dept_code, primary_person_type, " .
-				   "status_code, created_date) VALUES ('$mit_id', '$lname', '$fname', '$login', '$email', " .
-				   "DECODE('$dept_code', '0', NULL, '$dept_code'), '$primary_person_type', '$status_code', SYSDATE)");
+	    $insert_sql = "INSERT INTO person (mit_id, last_name, first_name, " .
+		"kerberos_name, email_addr, dept_code, primary_person_type, " .
+		"status_code, created_date) VALUES ($quoted_mitid, $quoted_lname, $quoted_fname, $quoted_login, $quoted_email, " .
+		"DECODE($quoted_dept_code, '0', NULL, $quoted_dept_code), $quoted_ptype, $quoted_status, SYSDATE)";
+	    print "$insert_sql\n";
+	    $sth = $roles->prepare($insert_sql);
 
-	    
 	    $sth->execute;
 	    $sth->finish;
 

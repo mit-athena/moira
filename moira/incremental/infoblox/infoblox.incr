@@ -2111,7 +2111,9 @@ def do_machine(before, after):
                                 elif addr_type == 'IPV6':
                                     ib_delete_aaaa_record(recordlist)
                 else:
-                    ib_update_host(before, after)
+                    # If hostname hasn't changed, canonical status can't have changed either.
+                    if canon_after == True:
+                        ib_update_host(before, after)
 
 # Handle hostalias incremental
 def do_hostalias(before, after):

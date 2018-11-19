@@ -2085,10 +2085,10 @@ def do_machine(before, after):
                             ib_delete_cname(recordlist)
                             ib_add_host_alias(record)
                         elif canon_before == False and canon_after == False:
-                            ib_add_cname(record)
                             recordlist = list(record)
                             recordlist[1] = before_hostname
                             ib_delete_cname(recordlist)
+                            ib_add_cname(record)
 
                     # Host addreses        
                     for record in get_moira_hostaddresses(after_hostname):

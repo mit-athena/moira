@@ -1347,8 +1347,12 @@ def ib_delete_host_alias(record):
             critical_log('Multiple host records exist for %s in view %s while deleting alias %s, should not happen!' % (ib_record['name'], view, alias))
         else:
             search_result = search_results[view][0]
+
+            if 'aliases' in search_results:
+                aliases = [ x for x in search_result['aliases'] if x != alias]
+            else:
+                aliases = [ ]
             
-            aliases = [ x for x in search_result['aliases'] if x != alias]
             ib_record['aliases'] = aliases
 
             ib_ref = search_result['_ref']

@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 		  setinfo++;
 		  ++arg;
 		  memacl = mrcl_parse_member(*arg);
-		  if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE || owner->type == MRCL_M_ID)
+		  if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE || memacl->type == MRCL_M_ID)
 		    {
 		      com_err(whoami, 0, "Invalid memacl format.  Must be one of USER, LIST, KERBEROS, or NONE.");
 		      exit(1);

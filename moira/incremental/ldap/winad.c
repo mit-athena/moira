@@ -58,7 +58,7 @@
  * arguments for creating a "special" group/list
  * list 0 11 listname 1 1 0 0 0 -1 NONE 0 description 92616
  *
- * listname, active, publicflg, hidden, maillist, grouplist, gid, acl_type, 
+ * listname, active, publicflg, hidden, ma	millist, grouplist, gid, acl_type, 
  * acl_id, description, moiraid
  * 
  * arguments for creating a "mail" group/list
@@ -697,7 +697,7 @@ int destroy_cache(void);
 int dest_tkt(void);
 int find_homeMDB(LDAP *ldap_handle, char *dn_path, char **homeMDB,
 		 char **homeServerName);
-void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path);
+int create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path);
 void delete_forwarding_pointer(LDAP *ldap_handle, char *name, char *dn_path);
 void create_owner_listname(LDAP *ldap_handle, char *name, char *ace_type, char *ace_name, char *dn_path);
 int save_ace_usage(int argc, char **argv, void *sq);
@@ -1280,7 +1280,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (atoi(after[L_ACTIVE]))
 	populate_group(ldap_handle, dn_path, after[L_NAME], group_ou, 
 		       group_membership, security_flag, list_id, 1);
-
+      
       moira_disconnect();
     }
 
@@ -3083,6 +3083,19 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   for (i = 0; i < n; i++)
     free(mods[i]);
 
+  /* If this is a mailman list, delete and recreate */
+  if (atoi(save_argv[L_MAILMAN]) && strcmp(save_argv[L_MAILMAN_SERVER], "[NONE]"))
+    {
+      delete_forwarding_pointer(ldap_handle, save_argv[L_NAME], dn_path);
+      sprintf(mailman_member, "%s@%s", save_argv[L_NAME], save_argv[L_MAILMAN_SERVER]);
+      rc = create_forwarding_pointer(ldap_handle, save_argv[L_NAME], mailman_member, dn_path);
+      if (rc != LDAP_SUCCESS)
+	{
+	  com_err(whoami, 0, "Unable to create new record for mailman list %s: %s", save_argv[L_NAME], ldap_err2string(rc));
+	  return rc;
+	}
+    }
+
   /* Uconditionally try to delete forwarding pointers for mailman lists for old name.
    * Create new ones iff the list is still a mailman list.
    */ 
@@ -3441,7 +3454,15 @@ int group_create(int ac, char **av, void *ptr)
 	  ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD);
 	}
       mods[n] = NULL;      
-      rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
+
+      /* Mailman lists have implied membership */
+      if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+	{
+	  sprintf(mailman_member, "%s@%s", av[L_NAME], av[L_MAILMAN_SERVER]);
+	  rc = create_forwarding_pointer((LDAP *)call_args[0], av[L_NAME], mailman_member, call_args[1]);
+	}
+      else
+	rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
       
       for (i = 0; i < n; i++)
         free(mods[i]);
@@ -3459,7 +3480,7 @@ int group_create(int ac, char **av, void *ptr)
 	  if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
 	    {
 	      int i;
-	      
+
 	      for (i = 0; mailman_suffixes[i]; i++)
 		{
 		  sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
@@ -3760,7 +3781,7 @@ int group_create(int ac, char **av, void *ptr)
           sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
           delete_forwarding_pointer((LDAP *)call_args[0], generated_name, call_args[1]);
 
-          if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+          if (atoi(av[L_MAILMAN]) && atoi(av[L_ACTIVE]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
             {
               sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
               sprintf(mailman_member, "%s@%s", generated_name, av[L_MAILMAN_SERVER]);
@@ -3773,7 +3794,7 @@ int group_create(int ac, char **av, void *ptr)
       sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
       delete_forwarding_pointer((LDAP *)call_args[0], generated_name, call_args[1]);
 
-      if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+      if (atoi(av[L_MAILMAN]) && atoi(av[L_ACTIVE]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
         {
           sprintf(generated_name, "%s%s", "owner-", av[L_NAME]);
           sprintf(mailman_member, "%s-owner@%s", av[L_NAME], av[L_MAILMAN_SERVER]);
@@ -9379,6 +9400,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   int       group_count;
   int       id_member_count;
   char      **id_members;
+  char      mailman_member[512];
 
   com_err(whoami, 0, "Populating group %s", group_name);
   av[0] = group_name;
@@ -9392,6 +9414,24 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   id_members = NULL;
   id_member_count = 0;
   group_members = 0;
+
+  if (rc = mr_query("get_list_info", 1, av, save_query_info, save_argv))
+    {
+      moira_disconnect();
+      com_err(whoami, 0, "Unable to get list information for %s : %s", group_name,
+              error_message(rc));
+      return rc;
+    }
+
+  if (atoi(save_argv[L_MAILMAN]) && strcmp(save_argv[L_MAILMAN_SERVER], "[NONE]"))
+    {
+      delete_forwarding_pointer(ldap_handle, save_argv[L_NAME], dn_path);
+      sprintf(mailman_member, "%s@%s", save_argv[L_NAME], save_argv[L_MAILMAN_SERVER]);
+      rc = create_forwarding_pointer(ldap_handle, save_argv[L_NAME], mailman_member, dn_path);
+      if (rc != LDAP_SUCCESS)
+	com_err(whoami, 0, "Unable to populate group for mailman list %s: %s", save_argv[L_NAME], ldap_err2string(rc));
+      return rc;
+    }
 
   if((max_group_members == -1) && !synchronize) 
     {
@@ -12801,7 +12841,7 @@ void ad_kdc_disconnect()
 
 }
 
-void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path)
+int create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char *dn_path)
 {
   LDAPMod *mods[20];
   char new_dn[512];
@@ -12926,14 +12966,13 @@ void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char
     {
       com_err(whoami, 0, "Unable to create forwarding pointer %s in directory : %s",
 	      name, ldap_err2string(rc));
-      return;
+      return rc;
     }
 
   /* populate with single member */
   if (contact_create(ldap_handle, dn_path, member, contact_ou))
     com_err(whoami, 0, "Unable to add member %s to forwarding pointer %s",
 	    member, name);
-
   if (Exchange)
     {
       group_base = NULL;
@@ -12950,7 +12989,7 @@ void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char
 			       LDAP_SCOPE_SUBTREE)) != 0)
 	{
 	  com_err(whoami, 0, "Unable to search for STRING object %s: %s", member, ldap_err2string(rc));
-	  return;
+	  return rc;
 	}
 
       if (group_count)
@@ -12976,13 +13015,14 @@ void create_forwarding_pointer(LDAP *ldap_handle, char *name, char *member, char
   if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
     {
       com_err(whoami, 0, "Unable to populate member %s for forwarding pointer %s: %s", member, name, ldap_err2string(rc));
+      return rc;
     }
 
   for (i = 0; i < n; i++)
     free(mods[i]);
   free(members);
 
-  return;
+  return LDAP_SUCCESS;
 }
 
 void delete_forwarding_pointer(LDAP *ldap_handle, char *name, char *dn_path)

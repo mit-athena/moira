@@ -164,7 +164,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(before[8], "%d", id);
       sprintf(before[9], "%d", sid);
       sprintf(before[10], "%d", status);
-      beforec = 10;
+      beforec = 11;
       break;
     case HOSTRECORD_TABLE:
       strcpy(before[0], argv[0]);

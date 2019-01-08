@@ -187,12 +187,7 @@ void do_machine(char **before, int beforec, char **after, int afterc)
       moira_disconnect();
 
       while (sq_get_data(host_addresses, &hostaddress))
-        {
-          if (strcmp(hostaddress, "unassigned"))
-            {
-	      update_route_server(after_state, hostaddress);
-	    }
-	}
+	update_route_server(after_state, hostaddress);
     }
 }
 
@@ -239,29 +234,19 @@ void do_hostaddress(char **before, int beforec, char **after, int afterc)
           exit(1);
         }
 
-      if (strcmp(hostaddress, "unassigned")) 
-        {
-          if (after_use == 1 || after_use == 2 || after_use == 3) 
-            {
-              if (after_status == 0 || after_status == 1) 
-                {
-                  update_route_server(after_state, hostaddress);
-                }
-            }
-        }
+      if (after_use == 1 || after_use == 2 || after_use == 3) 
+	{
+	  if (after_status == 0 || after_status == 1) 
+	    {
+	      update_route_server(after_state, hostaddress);
+	    }
+	}
     }
   /* address was deleted, state is always none */
   else if (afterc == 0)
     {
       hostaddress = before[HOSTADDRESS_ADDR_POS];
-
-      if (strcmp(hostaddress, "unassigned"))
-        {
-          if (before_status == 0 || before_status == 1) 
-            {
-              update_route_server("none", hostaddress);
-            }
-        }
+      update_route_server("none", hostaddress);
     }
   /* update, address might've changed if this was a NAT -> routable upgrade.
    * If it didn't, no action required */
@@ -291,15 +276,8 @@ void do_hostaddress(char **before, int beforec, char **after, int afterc)
 
       if (strcmp(before_hostaddress, after_hostaddress))
 	{
-	  if (strcmp(before_hostaddress, "unassigned"))
-            {
-              update_route_server("none", before_hostaddress);
-            }
-
-          if (strcmp(after_hostaddress, "unassigned")) 
-            {
-              update_route_server(after_state, after_hostaddress);
-            }
+	  update_route_server("none", before_hostaddress);
+	  update_route_server(after_state, after_hostaddress);
         }
     }
 }

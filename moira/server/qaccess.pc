@@ -780,6 +780,7 @@ int access_host(struct query *q, char *argv[], client *cl)
     {
       EXEC SQL BEGIN DECLARE SECTION;
       int count, status, acomment, use, ocomment, snid;
+      int billable_status = SNET_STATUS_BILLABLE;
       char contact[MACHINE_CONTACT_SIZE];
       char name[MACHINE_NAME_SIZE];
       char billing_contact[MACHINE_BILLING_CONTACT_SIZE];
@@ -803,7 +804,7 @@ int access_host(struct query *q, char *argv[], client *cl)
 	  /* Does this have any addresses on a billable subnet? */
 	  EXEC SQL SELECT COUNT(*) INTO :count FROM machine m, subnet s, hostaddress ha
 	    WHERE m.mach_id = :id AND m.mach_id = ha.mach_id AND ha.snet_id = s.snet_id
-	    AND s.status = SNET_STATUS_BILLABLE;
+	    AND s.status = :billable_status;
 	  if (count != 0)
 	    {
 	      EXEC SQL SELECT account_number FROM accountnumbers 

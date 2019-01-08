@@ -1347,8 +1347,12 @@ def ib_delete_host_alias(record):
             critical_log('Multiple host records exist for %s in view %s while deleting alias %s, should not happen!' % (ib_record['name'], view, alias))
         else:
             search_result = search_results[view][0]
+
+            if 'aliases' in search_results:
+                aliases = [ x for x in search_result['aliases'] if x != alias]
+            else:
+                aliases = [ ]
             
-            aliases = [ x for x in search_result['aliases'] if x != alias]
             ib_record['aliases'] = aliases
 
             ib_ref = search_result['_ref']
@@ -2085,10 +2089,10 @@ def do_machine(before, after):
                             ib_delete_cname(recordlist)
                             ib_add_host_alias(record)
                         elif canon_before == False and canon_after == False:
-                            ib_add_cname(record)
                             recordlist = list(record)
                             recordlist[1] = before_hostname
                             ib_delete_cname(recordlist)
+                            ib_add_cname(record)
 
                     # Host addreses        
                     for record in get_moira_hostaddresses(after_hostname):
@@ -2111,7 +2115,9 @@ def do_machine(before, after):
                                 elif addr_type == 'IPV6':
                                     ib_delete_aaaa_record(recordlist)
                 else:
-                    ib_update_host(before, after)
+                    # If hostname hasn't changed, canonical status can't have changed either.
+                    if canon_after == True:
+                        ib_update_host(before, after)
 
 # Handle hostalias incremental
 def do_hostalias(before, after):

@@ -42,12 +42,6 @@ $admits_ref = $grade20->selectcol_arrayref("SELECT pidm, application_source from
 %admits = @$admits_ref;
 
 foreach $pidm (keys %admits) {
-    # Are they from Sloan?  If so, skip.
-    if ($admits{$pidm} eq "ST") {
-	print STDERR "SLOAN: PIDM $pidm is from Sloan Slate, skipping.\n";
-	next;
-    }
-
     # get MITID, first, and last from SPRIDEN table.
     ($mitid, $first, $last) = $grade20->selectrow_array("SELECT spriden_id, spriden_first_name, spriden_last_name FROM spriden " .
 							"WHERE spriden_pidm = " . $grade20->quote($pidm) .

@@ -3503,6 +3503,15 @@ int group_create(int ac, char **av, void *ptr)
         {
           member_v[0] = NULL;
           ADD_ATTR("member", member_v, LDAP_MOD_REPLACE);
+	  
+	  if (atoi(av[L_MAILMAN]) && strcmp(av[L_MAILMAN_SERVER], "[NONE]"))
+	    {
+	      for (i = 0; mailman_suffixes[i]; i++)
+		{
+		  sprintf(generated_name, "%s%s", av[L_NAME], mailman_suffixes[i]);
+		  delete_forwarding_pointer((LDAP *)call_args[0], generated_name, call_args[1]);
+		}
+	    }
         }
    
       if (!ActiveDirectory) 

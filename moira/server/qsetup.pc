@@ -639,6 +639,10 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   if (name[0] == '_')
     return MR_BAD_CHAR;
 
+  /* Don't let anyone take lists ending with -forwarding */
+  if (!strncasecmp(&name[strlen(name)-strlen("-forwarding")], "-forwarding", strlen("-forwarding")))
+    return MR_RESERVED;
+  
   for (p = (unsigned char *) desc; *p; p++)
     {
       if (*p == '\n')

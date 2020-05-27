@@ -3125,7 +3125,6 @@ int upgrade_host_private_ipv4_addr(struct query *q, char *argv[], client *cl)
   /* Get informtion for corresponding public subnet */
   strcpy(public_sname, sname);
   public_sname[strlen(sname) - strlen("-PRIVATE")] = '\0';
-  strcat(public_sname, "-PUBLIC");
   EXEC SQL SELECT snet_id INTO :public_sid FROM SUBNET WHERE name = :public_sname;
   if (dbms_errno)
     return mr_errcode;

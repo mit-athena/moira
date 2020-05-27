@@ -1307,12 +1307,11 @@ int setup_ghst(struct query *q, char **argv, client *cl)
 int setup_ahst(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *name, namesuffix[MACHINE_NAME_SIZE], oldname[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
+  char *name, oldname[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
   char model[MACHINE_MODEL_SIZE], os[MACHINE_OS_SIZE];
   int id, value, cnt;
   EXEC SQL END DECLARE SECTION;
   int row;
-  char *p;
 
   /* Add and update queries have changed enough that we just don't
      allow them from old clients anymore */
@@ -1353,37 +1352,6 @@ int setup_ahst(struct query *q, char **argv, client *cl)
     return mr_errcode;
   if (cnt != 0)
     return MR_EXISTS;
-
-  /* If this is a wildcard record, no more specific records can already exist.
-   * hostname_check() ensures that if this substring exists, it's the first 2
-   * characters of the string.
-   */
-  p = strstr(name, "*.");
-  if (p)
-    {
-      p++;
-      sprintf(namesuffix, "%%%s", p);
-      EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM machine WHERE name LIKE UPPER(:namesuffix);
-      if (dbms_errno)
-	return mr_errcode;
-      if (cnt != 0)
-	return MR_EXISTS;
-    }
-  else
-    {
-      /* Not a wildcard record; make sure the wildcard record doesn't exist. */
-      p = strchr(name, '.');
-      if (p)
-	{
-	  p++;
-	  sprintf(namesuffix, "*.%s", p);
-	  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM machine WHERE name = UPPER(:namesuffix);
-	  if (dbms_errno)
-	    return mr_errcode;
-	  if (cnt != 0)
-	    return MR_EXISTS;
-	}
-    }
 
   /* status checking */
   value = atoi(argv[8 + row]);
@@ -2194,58 +2162,30 @@ int setup_scli(struct query *q, char *argv[], client *cl)
 int hostname_check(char *name)
 {
   char *p;
-  int count, ndots, nstars;
+  int count;
 
-  /* does name contain a *? */
-  if (strchr(name, '*'))
-    {
-      /* if so, first two characters must be *. */
-      if (!(name[0] == '*' && name[1] == '.'))
-	return 0;
-
-      for (p = name, ndots = 0, nstars = 0; *p; p++)
-	{
-	  if (*p == '.')
-	    ndots++;
-	  else if (*p == '*')
-	    nstars++;
-	}
-
-      /* if there's more than 1 *, bail. */
-      if (nstars > 1)
-	return 0;
-
-      /* Is this *.mit.edu? */
-      if (ndots == 2)
-	return 0;
-    }
+  /* Sanity check name: must contain only letters, numerals, and
+   * hyphen, and not start or end with a hyphen. Also make sure no
+   * label (the thing the .s seperate) is longer than 63 characters,
+   * or empty.
+   */
 
   for (p = name, count = 0; *p; p++)
     {
       count++;
-      /* valid characters are alphanumeric, dot, hyphen, asterisk, and underscore. */
-      if ((!isalnum(*p) && *p != '-' && *p != '.' && *p != '_' && *p != '*'))
+      if ((!isalnum(*p) && *p != '-' && *p != '.') ||
+	  (*p == '-' && p[1] == '.'))
 	return 0;
-
-      /* label can't end up with hyphen or underscore. */
-      if ((*p == '-' && p[1] == '.') || (*p == '_' && p[1] == '.'))
-	return 0;
-      
-      /* label can't be empty (e.g. foo..mit.edu. Reset count between labels. */
       if (*p == '.')
 	{
 	  if (count == 1)
 	    return 0;
 	  count = 0;
 	}
-
-      /* Label can't be more than 63 characters long. */
       if (count == 64)
 	return 0;
     }
-
-  /* name can't end up hyphen or underscore */
-  if ((*(p - 1) == '-') || (*(p - 1) == '_'))
+  if (*(p - 1) == '-')
     return 0;
   return 1;
 }

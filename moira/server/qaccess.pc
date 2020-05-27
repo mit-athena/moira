@@ -731,17 +731,6 @@ int access_host(struct query *q, char *argv[], client *cl)
       if (isdigit(argv[0][0]))
 	return MR_BAD_CHAR;
 
-      /* Non-query owner can't created wildcard DNS records.  setup_ahst() will
-       * have already confirmed * can only be the first character so that's all
-       * we need to check.
-       */
-      if (argv[0][0] == '*')
-	return MR_BAD_CHAR;
-
-      /* Non-query owner also can't create records containing _ */
-      if (strchr(argv[0], '_'))
-	return MR_BAD_CHAR;
-
       /* Reserved prefix */
       if (!strncasecmp(argv[0], "HOSTLESS-", 9))
 	return MR_RESERVED;

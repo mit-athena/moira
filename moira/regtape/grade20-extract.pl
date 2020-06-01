@@ -22,8 +22,8 @@ $month = (localtime)[4];
 # months are zero-indexed.
 $month++;
 
-# Check for expected entry in the next 6 months.
-$end_month = $month + 6;
+# Check for expected entry in the next 9 months.
+$end_month = $month + 9;
 $end_year = $year;
 if ($end_month > 12) {
     $end_month = $end_month % 12;

@@ -1233,8 +1233,11 @@ int followup_get_user(struct query *q, struct save_queue *sq, struct
 		      validate *v, int (*action)(int, char *[], void *),
 		      void *actarg, client *cl)
 {
+  EXEC SQL BEGIN DECLARE SECTION;
   char **argv;
   int i, j, k, status, id;
+  char *department, school_department[USERS_DEPARTMENT_SIZE];
+  EXEC SQL END DECLARE SECTION;
 
   i = q->vcnt - 4;
   j = q->vcnt - 1;
@@ -1263,6 +1266,27 @@ int followup_get_user(struct query *q, struct save_queue *sq, struct
 	  status = fix_ace(argv[15], &argv[16]);
 	  if (status && status != MR_NO_MATCH)
 	    return status;
+	}
+
+      /* Fix the lookup of the department code for students */
+
+      if (q->version > 18) 
+	{
+	  if(!strcmp(argv[21], "student")) {
+	    department = argv[23];
+
+	    EXEC SQL SELECT department INTO :school_department 
+	      FROM school_codes WHERE code = :department;
+
+	    if (dbms_errno)
+	      return mr_errcode;
+
+	    strcpy(argv[23], school_department);
+	  } 
+
+	  if(!strcmp(argv[21], "affiliate")) {
+	    strcpy(argv[23], "");
+	  }
 	}
 
       (*action)(q->vcnt, argv, actarg);

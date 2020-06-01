@@ -484,7 +484,8 @@ int validate_num(char *argv[], struct valobj *vo)
 {
   char *p = argv[vo->index];
 
-  if (!strcmp(p, UNIQUE_GID) || !strcmp(p, UNIQUE_UID))
+  if (!strcmp(p, UNIQUE_GID) || !strcmp(p, UNIQUE_UID) || 
+      !strcmp(p, UNIQUE_PIN))
     {
       strcpy(p, "-1");
       return MR_EXISTS;

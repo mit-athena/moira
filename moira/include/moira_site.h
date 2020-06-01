@@ -142,10 +142,11 @@
 #define L_MEMACE_TYPE     12
 #define L_MEMACE_NAME     13
 #define L_DESC            14
-#define L_MODTIME         15
-#define L_MODBY           16
-#define L_MODWITH         17
-#define L_END             18
+#define L_PACSLIST	  15
+#define L_MODTIME         16
+#define L_MODBY           17
+#define L_MODWITH         18
+#define L_END             19
 
 /* List Member information queries. */
 
@@ -386,12 +387,13 @@
 #define U_TWOFACTOR 20
 #define U_AFF_BASIC 21
 #define U_AFF_DETAILED 22
-#define U_MODTIME 23
-#define U_MODBY   24
-#define U_MODWITH 25
-#define U_CREATED 26
-#define U_CREATOR 27
-#define U_END     28
+#define U_DEPARTMENT 23
+#define U_MODTIME 24
+#define U_MODBY   25
+#define U_MODWITH 26
+#define U_CREATED 27
+#define U_CREATOR 28
+#define U_END     29
 
 /* User states (the value of argv[U_STATE] from a user query) */
 
@@ -464,5 +466,6 @@
 #define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
 
 #define DEFAULT_TTL     1800
+#define PIN_LENGTH      6
 
 #endif /* _moira_site_ */	     /* Do not add anything after this line. */

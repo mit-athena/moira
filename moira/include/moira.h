@@ -65,6 +65,7 @@
 #define UNIQUE_GID	"create unique GID"
 #define UNIQUE_UID	"create unique UID"
 #define UNIQUE_LOGIN	"create unique login ID"
+#define UNIQUE_PIN	"create unique PIN"
 
 /* Structure used by Save Queue routines (for temporary storage of data) */
 struct save_queue

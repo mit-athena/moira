@@ -618,6 +618,8 @@ int setup_alis(struct query *q, char *argv[], client *cl)
     desc = argv[10 + idx];
   else if (q->version == 4)
     desc = argv[12 + idx];
+  else if (q->version >= 18)
+    desc = argv[15 + idx];
   else if (q->version >= 10)
     desc = argv[14 + idx];
 
@@ -2451,4 +2453,118 @@ int setup_uust(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
+int setup_uupi(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id, random_pin, count = 0, panic_count = 0;
+  char pin[PIN_LENGTH + 1], panic_pin[PIN_LENGTH + 1];
+  EXEC SQL END DECLARE SECTION;
 
+  /* The pin queries have changed sufficiently, that we can no longer
+   * allow the older queries as it does not guarantee uniqueness
+   */
+  if (q->version < 18)
+    return MR_VERSION_MISMATCH;
+
+  if (!strcmp(q->shortname, "uupi"))
+    {
+      id = *(int *)argv[0];
+      
+      if (!strcmp(argv[1], UNIQUE_PIN) || atoi(argv[1]) == -1)
+	{
+	  /* Generate a random pin */
+	  random_pin = generate_random_pin(PIN_LENGTH);
+	  
+	  /* Panic pin is the pin + 1 */
+	  sprintf(pin, "%d", random_pin);
+	  sprintf(panic_pin, "%d", random_pin + 1);
+
+	  /* Ensure that the pin we generated is unique */
+	  EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	    WHERE pin = :pin AND users_id != :id;
+
+	  EXEC SQL SELECT COUNT(*) INTO :panic_count FROM users
+	    WHERE pin = :panic_pin;
+	  
+	  while(count || panic_count) {
+	    random_pin = generate_random_pin(PIN_LENGTH);
+	  
+	    sprintf(pin, "%d", random_pin);
+	    sprintf(panic_pin, "%d", random_pin + 1);
+	    
+	    EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	      WHERE pin = :pin AND users_id != :id;
+
+	    EXEC SQL SELECT COUNT(*) INTO :panic_count FROM users
+	      WHERE pin = :panic_pin;
+	  }
+	}
+      else 
+	{
+	  /* Ensure that the PIN specified meets the length requirements
+	   * otherwise reject it.
+	   */
+	  if(strlen(argv[1]) > PIN_LENGTH) 
+	    return MR_ARG_TOO_LONG;
+	  
+	  if(strlen(argv[1]) < PIN_LENGTH) 
+	    return MR_ARG_TOO_SHORT;
+
+	  /* The user specified a pin, we return in use if there is 
+	   * an entry with the same pin already in the database 
+	   */ 
+	  strcpy(pin, argv[1]);
+	  
+	  EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	    WHERE pin = :pin AND users_id != :id;
+	  
+	  if (count)
+	    return MR_IN_USE;
+	}
+      
+      strcpy(argv[1], pin);
+    }
+
+  return MR_SUCCESS;
+}
+
+void shuffle(int *array, size_t n)
+{
+  if (n > 1) 
+    {
+      size_t i;
+      for (i = 0; i < n - 1; i++) 
+        {
+          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+          int t = array[j];
+          array[j] = array[i];
+          array[i] = t;
+        }
+    }
+}
+
+int generate_random_pin(int numDigits) 
+{
+  int i, x;
+  int digits[] = {0,1,2,3,4,5,6,7,8,9};
+
+  /* Initialize the random generator */
+  srand(time(NULL));
+
+  /* Ensure the first digit of the array is not a zero */
+  while(digits[0] == 0) {
+    shuffle(digits, 10);
+  }
+  
+  /* Initialize our number */
+  x = digits[0];
+
+  /* Loop over the array until we have a sufficient number of digits */
+  for(i = 1; i < numDigits; ++i)
+    {
+      x *= 10;
+      x += digits[i];
+    }
+
+  return x;
+}

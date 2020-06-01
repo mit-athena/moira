@@ -211,7 +211,7 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
 int add_member_to_list(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, lid, mid, tag, error, who, ref, rowcnt;
+  int id, lid, mid, tag, error, who, ref, rowcnt, mailman;
   char *mtype, dtype[IMEMBERS_MEMBER_TYPE_SIZE], *entity;
   EXEC SQL END DECLARE SECTION;
   int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -225,6 +225,21 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
   mid = *(int *)argv[2];
   tag = !strcmp(q->shortname, "atml") ? *(int *)argv[3] : 0;
 
+  /* No one is allowed to add members to mailman lists; the membership is implied. */
+  EXEC SQL SELECT mailman INTO :mailman FROM list
+    WHERE list_id = :lid;
+  if (mailman)
+    return MR_PERM;
+
+  /* Also don't allow adding a mailman list to another list. */
+  if (!strcasecmp(mtype, "LIST"))
+    {
+      EXEC SQL SELECT mailman INTO :mailman FROM list
+	WHERE list_id = :mid;
+      if (mailman)
+	return MR_PERM;
+    }
+  
   if (acl_access_check(lid, cl))
     return MR_PERM;
 

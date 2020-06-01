@@ -98,10 +98,6 @@ def get_moira_hostaddresses(hostname):
 def get_moira_host_identifiers(hostname):
     return domoira('get_host_identifier_mapping', (hostname, '*'))
 
-def get_moira_host_status(hostname):
-    data, = domoira('get_host', (hostname, '*'))
-    return int(data[9])
-
 def get_moira_host(hostname):
     return domoira('get_host', (hostname, '*'))
 
@@ -605,7 +601,7 @@ def ib_add_host_alias(record):
             log('Added alias %s to host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
 
 def ib_add_host_identifier(record):
-    id_type = record[1]
+    id_type = record[1].upper()
     if id_type == 'DUID':
         ib_add_host_duid(record)
     elif id_type == 'HWADDR':
@@ -615,7 +611,7 @@ def ib_add_host_identifier(record):
 
 def ib_add_host_duid(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
+    id_type = record[1].upper()
     id_value = record[2]
     search_results = ib_search_by_name(ib_record['name'])
 
@@ -663,8 +659,13 @@ def ib_add_host_duid(record):
 
 def ib_add_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
-    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    id_type = record[1].upper()
+    try:
+        id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    except:
+        critical_log('Unable to parse %s as a MAC address for host %s' % (id_type, record[0]))
+        return
+    
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -1375,7 +1376,7 @@ def ib_delete_host_alias(record):
             log('Deleted alias %s from host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
 
 def ib_delete_host_identifier(record):
-    id_type = record[1]
+    id_type = record[1].upper()
     if id_type == 'DUID':
         ib_delete_host_duid(record)
     elif id_type == 'HWADDR':
@@ -1385,7 +1386,7 @@ def ib_delete_host_identifier(record):
 
 def ib_delete_host_duid(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
+    id_type = record[1].upper()
     # Infoblox formats these things like MAC addresses, but longer, for some reason.
     id_value = ':'.join(s.encode('hex') for s in record[2].decode('hex'))
     search_results = ib_search_by_name(ib_record['name'])
@@ -1437,8 +1438,13 @@ def ib_delete_host_duid(record):
 
 def ib_delete_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
-    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    id_type = record[1].upper()
+    try: 
+        id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    except:
+        critical_log('Unable to parse %s as MAC address for host %s' % (id_type, record[0]))
+        return
+
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -2128,7 +2134,7 @@ def do_hostalias(before, after):
             return
 
         hostname = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[3])
         if status == 1:
             if canonical_for_hostname(hostname) == True:
                 ib_add_host_alias(after)
@@ -2151,7 +2157,7 @@ def do_hostaddress(before, after):
         subnet_name = after[1]
         has_ptr = int(after[5])
         addr_type = after[2]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[10])
 
         # Don't bother with processing addresses on select networks.
         if subnet_name.lower().startswith(omitted_networks):
@@ -2164,18 +2170,17 @@ def do_hostaddress(before, after):
                 elif addr_type == 'IPV6':
                     ib_add_host_ipv6_address(after)
             else:
-                status = int(get_moira_host_status(hostname))
-                if status == 1:
-                    if addr_type == 'IPV4':
-                        ib_add_a_record(after)
-                    elif addr_type == 'IPV6':
-                        ib_add_aaaa_record(after)
+                if addr_type == 'IPV4':
+                    ib_add_a_record(after)
+                elif addr_type == 'IPV6':
+                    ib_add_aaaa_record(after)
     # Delete
     elif after == []:
         hostname = before[0]
         subnet_name = before[1]
         has_ptr = int(before[5])
         addr_type = before[2]
+        status = int(before[10])
 
         # Don't bother with processing addresses on select networks.
         if subnet_name.lower().startswith(omitted_networks):
@@ -2188,12 +2193,10 @@ def do_hostaddress(before, after):
                 elif addr_type == 'IPV6':
                     ib_delete_host_ipv6_address(before)
             else:
-                status = int(get_moira_host_status(hostname))
-                if status == 1:
-                    if addr_type == 'IPV4':
-                        ib_delete_a_record(before)
-                    elif addr_type == 'IPV6':
-                        ib_delete_aaaa_record(before)
+                if addr_type == 'IPV4':
+                    ib_delete_a_record(before)
+                elif addr_type == 'IPV6':
+                    ib_delete_aaaa_record(before)
     # Update - TTL, PTR, or address might change, but only one at a time.
     else:
         hostname = after[0]
@@ -2205,7 +2208,7 @@ def do_hostaddress(before, after):
         before_address = before[3]
         after_address = after[3]
 
-        status = int(get_moira_host_status(hostname))
+        status = int(after[10])
 
         if before_address != after_address:
             # This can only change if we're upgrading a host to a public address.
@@ -2249,7 +2252,7 @@ def do_hostrecord(before, after):
     if before == []:
         hostname = after[0]
         rr_type = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[5])
         if status == 1 and canonical_for_hostname(hostname) == True:
             if rr_type in rr_types:
                 ib_add_hostrecord(after)
@@ -2268,7 +2271,7 @@ def do_hostrecord(before, after):
     else:
         hostname = after[0]
         rr_type = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[5])
         if status == 1 and canonical_for_hostname(hostname) == True:
             if rr_type in rr_types:
                 ib_set_record_ttl(after)
@@ -2320,6 +2323,9 @@ while True:
     beforev = incrargv[3:3+beforec]
     afterv = incrargv[3+beforec:3+beforec+afterc]
 
+    # print arguments
+    print progname, ' '.join(map(str,incrargv))
+    
     if table == 'machine':
         do_machine(beforev, afterv)
     elif table == 'hostalias':

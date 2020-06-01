@@ -129,6 +129,8 @@ static void PrintUserInfo(char **info)
   Put_message(buf);
   sprintf(buf, "Alternate Phone: %s", info[U_ALT_PHONE]);
   Put_message(buf);
+  sprintf(buf, "Department: %s", info[U_DEPARTMENT]);
+  Put_message(buf);
   sprintf(buf, "Login shell: %-19s Windows Console shell: %s", info[U_SHELL],
          info[U_WINCONSOLESHELL]);
   Put_message(buf);
@@ -1108,6 +1110,83 @@ int SetVPNGroup(int argc, char **argv)
   if ((stat = do_mr_query("set_user_vpn_group", 2, &argv[1],
                           NULL, NULL)))
     com_err(program_name, stat, " in SetVPNGroup.");
+  return DM_NORMAL;
+}
+
+int GetPIN(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+
+  if ((stat = do_mr_query("get_user_pin", 1, &argv[1],
+                          StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in GetPIN.");
+      return DM_NORMAL;
+    }
+
+  top = elem = QueueTop(elem);
+  Put_message("");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "PIN: %s", info[KMAP_USER]);
+
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));
+  return DM_NORMAL;
+}
+
+int UpdatePIN(int argc, char **argv)
+{
+  int stat;
+
+  if ((stat = do_mr_query("update_user_pin", 2, &argv[1],
+                          NULL, NULL)))
+    com_err(program_name, stat, " in UpdatePIN.");
+  return DM_NORMAL;
+}
+
+int GetZoomAccount(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+
+  if ((stat = do_mr_query("get_user_zoom_account", 1, &argv[1],
+                          StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in GetZoomAccount.");
+      return DM_NORMAL;
+    }
+
+  top = elem = QueueTop(elem);
+  Put_message("");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "User: %-9s Zoom Account: %s",
+              info[KMAP_USER], info[KMAP_PRINCIPAL]);
+
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));
+  return DM_NORMAL;
+}
+
+int UpdateZoomAccount(int argc, char **argv)
+{
+  int stat;
+
+  if ((stat = do_mr_query("update_user_zoom_account", 2, &argv[1],
+                          NULL, NULL)))
+    com_err(program_name, stat, " in UpdateZoomAccount.");
   return DM_NORMAL;
 }
 

@@ -3186,7 +3186,7 @@ static void RealSetRecordTTL(char **info, Bool junk)
 int SetRecordTTL(int argc, char **argv)
 {
   int stat;
-  char *args[3], *yesno;
+  char *args[4], *yesno;
   struct mqelem *elem = NULL;
 
   args[0] = canonicalize_hostname(strdup(argv[1]));

@@ -187,6 +187,10 @@ void PrintReservationTypes(void);
 int UserBySponsor(int argc, char **argv);
 int GetVPNGroup(int argc, char **argv);
 int SetVPNGroup(int argc, char **argv);
+int GetPIN(int argc, char **argv);
+int UpdatePIN(int argc, char **argv);
+int GetZoomAccount(int argc, char **argv);
+int UpdateZoomAccount(int argc, char **argv);
 
 /* printer.c */
 int GetPrn(int argc, char **argv);

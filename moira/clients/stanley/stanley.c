@@ -36,7 +36,8 @@ struct string_list {
 int info_flag, update_flag, create_flag, deact_flag, reg_flag;
 int list_res_flag, update_res_flag, unformatted_flag, verbose, noauth;
 int list_vpn_group_flag, set_vpn_group_flag, set_twofactor_status_flag;
-
+int list_pin_flag, update_pin_flag, list_zoom_account_flag;
+int update_zoom_account_flag;
 int count;
 
 struct mrcl_ace_type *sponsor;
@@ -46,7 +47,8 @@ char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
 char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir, *expiration;
-char *alternate_email, *alternate_phone, *twofactor_status, *vpn_group;
+char *alternate_email, *alternate_phone, *twofactor_status, *vpn_group, *pin;
+char *zoom_account;
 
 static char *states[] = {
   "Registerable (0)",
@@ -79,6 +81,8 @@ static char *UserState(int state)
 void usage(char **argv);
 int save_query_info(int argc, char **argv, void *hint);
 int show_vpn_group(int argc, char **argv, void *hint);
+int show_pin(int argc, char **argv, void *hint);
+int show_zoom_account(int argc, char **argv, void *hint);
 int show_reservations(int argc, char **argv, void *hint);
 int show_user_info(int argc, char **argv, void *hint);
 int show_user_info_unformatted(int argc, char **argv, void *hint);
@@ -97,10 +101,12 @@ int main(int argc, char **argv)
   info_flag = update_flag = create_flag = deact_flag = reg_flag = 0;
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
   list_vpn_group_flag = set_vpn_group_flag = set_twofactor_status_flag = 0;
+  list_pin_flag = update_pin_flag = 0;
+  list_zoom_account_flag = update_zoom_account_flag = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
   winhomedir = winprofiledir = expiration = alternate_email = alternate_phone = NULL;
-  twofactor_status = vpn_group = NULL;
+  twofactor_status = vpn_group = pin = zoom_account = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   sponsor = NULL;
   whoami = argv[0];
@@ -297,6 +303,30 @@ int main(int argc, char **argv)
 	      usage(argv);
 	    set_vpn_group_flag++;
 	  }
+	  else if (argis("lp", "listpin")) {
+	    list_pin_flag++;
+	  }
+	  else if (argis("up", "updatepin")) {
+	    update_pin_flag++;
+	  }
+	  else if (argis("p", "pin")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      pin = *arg;
+	    } else
+	      usage(argv);
+	  }
+	  else if (argis("lz", "listzoom")) {
+	    list_zoom_account_flag++;
+	  }
+	  else if (argis("uz", "updatezoom")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      zoom_account = *arg;
+	    } else
+	      usage(argv);
+	    update_zoom_account_flag++;
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -343,20 +373,23 @@ int main(int argc, char **argv)
   if (username == NULL && !create_flag)
     usage(argv);
 
-  if (create_flag && (info_flag || deact_flag || reg_flag || list_res_flag || \
-		      update_res_flag || list_vpn_group_flag || set_vpn_group_flag))
+  if (create_flag && (info_flag || deact_flag || reg_flag || list_res_flag ||
+		      update_res_flag || list_vpn_group_flag || 
+		      set_vpn_group_flag || list_pin_flag || 
+		      update_zoom_account_flag || list_zoom_account_flag))
     usage(argv);
 
   /* default to info_flag if nothing else was specified */
   if(!(info_flag       || update_flag || create_flag   || \
        deact_flag      || reg_flag    || list_res_flag || \
-       update_res_flag || list_vpn_group_flag || set_vpn_group_flag || \
-       set_twofactor_status_flag)) {
+       update_res_flag || list_vpn_group_flag || set_vpn_group_flag ||
+       set_twofactor_status_flag || list_pin_flag || update_pin_flag || 
+       list_zoom_account_flag || update_zoom_account_flag)) {
     info_flag++;
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 16, !noauth);
+  status = mrcl_connect(server, "stanley", 19, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -802,6 +835,21 @@ int main(int argc, char **argv)
 	}
     }
 
+  if (set_vpn_group_flag)
+    {
+      char *args[2];
+
+      args[0] = username;
+      args[1] = vpn_group;
+
+      status = wrap_mr_query("set_user_vpn_group", 2, args,
+			     NULL, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while setting user vpn group.");
+	  exit(1);
+	}
+    }
 
   /* list user default vpn group */
   if (list_vpn_group_flag)
@@ -818,18 +866,68 @@ int main(int argc, char **argv)
 	}
     }
 
-  if (set_vpn_group_flag)
+  if (update_pin_flag)
     {
       char *args[2];
 
       args[0] = username;
-      args[1] = vpn_group;
 
-      status = wrap_mr_query("set_user_vpn_group", 2, args,
+      if (pin)
+	args[1] = pin;
+      else
+	args[1] = UNIQUE_PIN;
+
+      status = wrap_mr_query("update_user_pin", 2, args,
 			     NULL, NULL);
       if (status)
 	{
-	  com_err(whoami, status, "while setting user vpn group.");
+	  com_err(whoami, status, "while updating user PIN.");
+	  exit(1);
+	}
+    }
+
+  /* list user pin */
+  if (list_pin_flag)
+    {
+      char *args[1];
+
+      args[0] = username;
+      status = wrap_mr_query("get_user_pin", 1, args,
+			     show_pin, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while getting user PIN.");
+	  exit(1);
+	}
+    }
+
+  if (update_zoom_account_flag)
+    {
+      char *args[2];
+
+      args[0] = username;
+      args[1] = zoom_account;
+
+      status = wrap_mr_query("update_user_zoom_account", 2, args,
+			     NULL, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while setting user zoom account.");
+	  exit(1);
+	}
+    }
+
+  /* list user default vpn group */
+  if (list_zoom_account_flag)
+    {
+      char *args[1];
+
+      args[0] = username;
+      status = wrap_mr_query("get_user_zoom_account", 1, args,
+			     show_zoom_account, NULL);
+      if (status)
+	{
+	  com_err(whoami, status, "while getting user zoom account.");
 	  exit(1);
 	}
     }
@@ -881,6 +979,20 @@ int show_vpn_group(int argc, char **argv, void *hint)
   return MR_CONT;
 }
 
+int show_pin(int argc, char **argv, void *hint)
+{
+  printf("PIN: %s\n", argv[0]);
+
+  return MR_CONT;
+}
+
+int show_zoom_account(int argc, char **argv, void *hint)
+{
+  printf("Login: %s, Zoom Account: %s\n", argv[0], argv[1]);
+
+  return MR_CONT;
+}
+
 struct string_list *add_to_string_list(struct string_list *old_list, char *s) {
   struct string_list *new_list;
 
@@ -925,6 +1037,7 @@ int show_user_info(int argc, char **argv, void *hint)
   printf("Sponsor: %-23s Expiration date: %s\n", tbuf, argv[U_EXPIRATION]);
   printf("Alternate Email: %s\n", argv[U_ALT_EMAIL]);
   printf("Alternate Phone: %s\n", argv[U_ALT_PHONE]);
+  printf("Department: %-25s\n", argv[U_DEPARTMENT]);
   printf("Login shell: %-19s Windows Console shell: %s\n", argv[U_SHELL],
 	 argv[U_WINCONSOLESHELL]);
   printf("Windows Home Directory: %-08s Windows Profile Directory: %s\n",
@@ -1018,6 +1131,10 @@ void usage(char **argv)
 	  "-ap  | -alternatephone phone number");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lv  | -listvpn",
           "-sv  | -setvpn listname");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lp  | -listpin",
+          "-up  | -updatepin");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lz  | -listzoom",
+          "-uz  | -updatezoom");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
           "-n   | -noauth");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",

@@ -756,6 +756,42 @@ Menu vpn_menu = {
   }
 };
 
+Menu pin_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "User PIN Menu",
+  2,
+  {
+    { GetPIN, NULLMENU, 2, {
+	{ "get", "Get User PIN" },
+	{ "user", "User login name: " },
+    } },
+    { UpdatePIN, NULLMENU, 3, {
+	{ "update", "Update User PIN" },
+	{ "user", "User login name: " },
+	{ "pin", "PIN: " },
+    } },
+  }
+};
+
+Menu zoom_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "User Zoom Account Menu",
+  2,
+  {
+    { GetZoomAccount, NULLMENU, 2, {
+	{ "get", "Get User Zoom Account" },
+	{ "user", "User login name: " },
+    } },
+    { UpdateZoomAccount, NULLMENU, 3, {
+	{ "update", "Update User Zoom Account" },
+	{ "user", "User login name: " },
+	{ "zoomaccount", "Zoom account: " },
+    } },
+  }
+};
+
 /*
  * User Menu
  */
@@ -764,7 +800,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  14,
+  16,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -803,6 +839,8 @@ Menu user_menu = {
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
     SUBMENU("reservations", "User Reservations Menu", &reservations_menu),
     SUBMENU("vpn", "VPN Group Menu", &vpn_menu),
+    SUBMENU("pin", "PIN Menu", &pin_menu),
+    SUBMENU("zoom", "Zoom Account Menu", &zoom_menu),
   }
 };
 

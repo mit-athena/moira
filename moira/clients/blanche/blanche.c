@@ -29,7 +29,7 @@ RCSID("$HeadURL$ $Id$");
 int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
 int showusers, showstrings, showkerberos, showlists, showtags, showmachines, showids;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
-int nfsgroup, mailman;
+int nfsgroup, mailman, pacslist;
 struct mrcl_ace_type *owner, *memacl;
 char *desc, *newname, *mailman_server, *gid;
 
@@ -65,6 +65,7 @@ int main(int argc, char **argv)
   noauth = showusers = showstrings = showkerberos = showlists = 0;
   showtags = showmachines = showids = createflag = setinfo = 0;
   active = public = hidden = maillist = grouplist = nfsgroup = mailman = -1;
+  pacslist = -1;
   listname = newname = desc = gid = NULL;
   owner = NULL;
   memacl = NULL;
@@ -292,6 +293,16 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("p", "pacs"))
+	    {
+	      setinfo++;
+	      pacslist = 1;
+	    }
+	  else if (argis("np", "notpacs"))
+	    {
+	      setinfo++;
+	      pacslist = 0;
+	    }
 	  else if (argis("D", "desc"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -376,11 +387,12 @@ int main(int argc, char **argv)
 
   /* If none of {users,strings,lists,kerberos,machines} specified, 
      turn them all on */
-  if (!(showusers || showstrings || showlists || showkerberos || showmachines || showids))
+  if (!(showusers || showstrings || showlists || showkerberos || 
+	showmachines || showids))
     showusers = showstrings = showlists = showkerberos = showmachines = showids = 1;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "blanche", 10, !noauth);
+  status = mrcl_connect(server, "blanche", 18, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Authentication error while working on list %s",
@@ -420,6 +432,7 @@ int main(int argc, char **argv)
 
       argv[L_NFSGROUP] = (nfsgroup == 1) ? "1" : "0";
       argv[L_MAILMAN] = (mailman == 1) ? "1" : "0";
+      argv[L_PACSLIST] = (pacslist == 1) ? "1" : "0";
       argv[L_DESC] = desc ? desc : "none";
 
       if (mailman)
@@ -475,13 +488,13 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE] = "USER";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE] = "LIST";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
@@ -492,11 +505,11 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE] = argv[L_ACE_NAME] = "NONE";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -505,7 +518,7 @@ int main(int argc, char **argv)
 	  argv[L_ACE_TYPE] = "USER";
 	  argv[L_ACE_NAME] = get_username();
 
-	  status = mr_query("add_list", 15, argv, NULL, NULL);
+	  status = mr_query("add_list", 16, argv, NULL, NULL);
 	}
 
       if (status)
@@ -545,6 +558,8 @@ int main(int argc, char **argv)
 	argv[L_NFSGROUP + 1] = nfsgroup ? "1" : "0";
       if (mailman != -1)
 	argv[L_MAILMAN + 1] = mailman ? "1" : "0";
+      if (pacslist != -1)
+	argv[L_PACSLIST + 1] = pacslist ? "1" : "0";
 
       /* If someone toggled the mailman bit, but didn't specify a server,
        * default to [ANY].
@@ -602,13 +617,13 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE + 1] = "USER";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE + 1] = "LIST";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
@@ -619,16 +634,16 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE + 1] = argv[L_ACE_NAME + 1] = "NONE";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = mr_query("update_list", 16, argv, NULL, NULL);
+	status = mr_query("update_list", 17, argv, NULL, NULL);
 
       if (status)
 	{
@@ -1197,6 +1212,8 @@ void usage(char **argv)
 	  "-ms  | -mailman_server server");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-O    | -owner owner",
 	  "-MA  | -memacl membership_acl"); 
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-p    | -pacs",
+	  "-np  | -notpacs"); 
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n    | -noauth",
 	  "-db  | -database host[:port]");
   exit(1);
@@ -1295,6 +1312,8 @@ int show_list_info(int argc, char **argv, void *hint)
   if (atoi(argv[L_MAILMAN]))
     printf("%s is a Mailman list on server %s\n", argv[L_NAME],
 	   argv[L_MAILMAN_SERVER]);
+  printf("%s is %sa PACS list\n", argv[L_NAME], 
+	 atoi(argv[L_PACSLIST]) ? "" : "not ");
   printf("Owner: %s %s\n", argv[L_ACE_TYPE], argv[L_ACE_NAME]);
   if (strcmp(argv[L_MEMACE_TYPE], "NONE"))
     printf("Membership ACL: %s %s\n", argv[L_MEMACE_TYPE], 

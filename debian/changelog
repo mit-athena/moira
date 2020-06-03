@@ -1,3 +1,10 @@
+debathena-moira (4.2.4.0-0debathena1) UNRELEASED; urgency=medium
+
+  * New upstream snapshot
+  * Release 4.2.4.0
+
+ -- Jonathon Weiss <jweiss@mit.edu>  Wed, 03 Jun 2020 15:55:10 -0400
+
 debathena-moira (4.0.0.3+70+g36ab6660-0debathena1) unstable; urgency=medium
 
   * New upstream snapshot.

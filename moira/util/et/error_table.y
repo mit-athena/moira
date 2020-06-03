@@ -82,7 +82,11 @@ description	:	QUOTED_STRING
 #include <assert.h>
 #include <ctype.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/time.h>
+#endif
 #include "error_table.h"
 
 static const char rcsid[] = "$Id$";
@@ -91,6 +95,7 @@ static const char rcsid[] = "$Id$";
 
 extern FILE *hfile, *cfile;
 
+#ifndef _WIN32
 char *gensym(const char *x)
 {
 	char *symbol;
@@ -106,6 +111,7 @@ char *gensym(const char *x)
 	sprintf(symbol, "et%ld", gensym_n);
 	return(symbol);
 }
+#endif
 
 static char *ds(const char *string)
 {

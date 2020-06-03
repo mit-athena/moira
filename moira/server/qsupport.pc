@@ -206,12 +206,12 @@ int set_pobox_pop(struct query *q, char **argv, client *cl)
  * how many different ancestors a member is allowed to have.
  */
 
-#define MAXLISTDEPTH	4096
+#define MAXLISTDEPTH	8192
 
 int add_member_to_list(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, lid, mid, tag, error, who, ref, rowcnt;
+  int id, lid, mid, tag, error, who, ref, rowcnt, mailman;
   char *mtype, dtype[IMEMBERS_MEMBER_TYPE_SIZE], *entity;
   EXEC SQL END DECLARE SECTION;
   int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -225,6 +225,21 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
   mid = *(int *)argv[2];
   tag = !strcmp(q->shortname, "atml") ? *(int *)argv[3] : 0;
 
+  /* No one is allowed to add members to mailman lists; the membership is implied. */
+  EXEC SQL SELECT mailman INTO :mailman FROM list
+    WHERE list_id = :lid;
+  if (mailman)
+    return MR_PERM;
+
+  /* Also don't allow adding a mailman list to another list. */
+  if (!strcasecmp(mtype, "LIST"))
+    {
+      EXEC SQL SELECT mailman INTO :mailman FROM list
+	WHERE list_id = :mid;
+      if (mailman)
+	return MR_PERM;
+    }
+  
   if (acl_access_check(lid, cl))
     return MR_PERM;
 
@@ -311,6 +326,9 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 	      break;
 	    case 'M':
 	      dtypes[dcount] = "MACHINE";
+	      break;
+	    case 'I':
+	      dtypes[dcount] = "ID";
 	      break;
 	    default:
 	      error++;
@@ -486,6 +504,9 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
 	      break;
 	    case 'M':
 	      dtypes[dcount] = "MACHINE";
+	      break;
+	    case 'I':
+	      dtypes[dcount] = "ID";
 	      break;
 	    default:
 	      error++;
@@ -1800,6 +1821,11 @@ int get_lists_of_member(struct query *q, char *argv[], client *cl,
       atype = "MACHINE";
       direct = 0;
     }
+  if (!strcmp(atype, "RID"))
+    {
+      atype = "ID";
+      direct = 0;
+    }
 
   rargv[0] = name;
   rargv[1] = active;
@@ -2012,6 +2038,28 @@ int get_members_of_list(struct query *q, char *argv[], client *cl,
       (*action)(targc, targv, actarg);
     }
   EXEC SQL CLOSE csr123;
+  if (dbms_errno)
+    return mr_errcode;
+
+  targv[0] = "ID";
+  EXEC SQL DECLARE csr124 CURSOR FOR
+    SELECT str.string, s.string FROM strings str, imembers im, strings s
+    WHERE im.list_id = :list_id AND im.member_type = 'ID'
+    AND im.member_id = str.string_id AND im.direct > :direct
+    AND s.string_id = im.tag ORDER BY 1;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr124;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr124 INTO :member_name, :tag;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(targc, targv, actarg);
+    }
+  EXEC SQL CLOSE csr124;
   if (dbms_errno)
     return mr_errcode;
 

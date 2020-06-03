@@ -63,7 +63,8 @@ create table users
 	default_vpn_group	INTEGER		DEFAULT 0		NOT NULL,
 	twofactor_status	INTEGER		DEFAULT 0		NOT NULL,
 	unit_id			INTEGER		DEFAULT 0		NOT NULL,
-	pwd_change_options	INTEGER		DEFAULT 0		NOT NULL
+	pwd_change_options	INTEGER		DEFAULT 0		NOT NULL,
+	zoom_account	VARCHAR(255)	DEFAULT 'NONE'	NOT NULL
 );
 
 create table krbmap
@@ -185,6 +186,7 @@ create table list
 	mailman		INTEGER		DEFAULT 0	NOT NULL,
 	mailman_id	INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
+	pacslist	INTEGER		DEFAULT 0	NOT NULL,
 	acl_type	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
 	acl_id		INTEGER		DEFAULT 0	NOT NULL,
 	memacl_type	VARCHAR(8)	DEFAULT 'NONE'	NOT NULL,
@@ -537,4 +539,19 @@ create table incremental_queue
 create table incremental_pipe
 (
 	service		VARCHAR(32)	DEFAULT CHR (0)	NOT NULL
+);
+
+create table regmail
+(
+	mitid		VARCHAR(16)	DEFAULT CHR(0) NOT NULL,
+	email		VARCHAR(128)	DEFAULT CHR(0) NOT NULL,
+	status		SMALLINT	DEFAULT 0      NOT NULL,
+	issued		INTEGER		DEFAULT 0      NOT NULL
+);
+
+create table school_codes
+(
+	code		VARCHAR(50)	DEFAULT CHR(0) NOT NULL,
+	school		VARCHAR(50)	DEFAULT CHR(0) NOT NULL,
+	department	VARCHAR(50)	DEFAULT CHR(0) NOT NULL
 );

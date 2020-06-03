@@ -10,12 +10,21 @@
 #include "mit-sipb-copyright.h"
 
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/param.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+
+#ifdef _WIN32
+#define MAXPATHLEN _MAX_PATH
+#define strcasecmp _stricmp
+#endif
 
 static const char copyright[] =
     "Copyright 1987,1988 by MIT Student Information Processing Board";

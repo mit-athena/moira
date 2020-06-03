@@ -46,6 +46,7 @@ int GetMemberInfo(char *action, char **ret_argv);
 #define DEFAULT_NFSGROUP          DEFAULT_NO
 #define DEFAULT_MAILMAN           DEFAULT_NO
 #define DEFAULT_MAILMAN_SERVER    "[ANY]"
+#define DEFAULT_PACSLIST          DEFAULT_NO
 #define DEFAULT_ACE_TYPE          "user"
 #define DEFAULT_ACE_NAME          (user)
 #define DEFAULT_MEMACE_TYPE       "NONE"
@@ -106,6 +107,11 @@ static void PrintListInfo(char **info)
 	      info[L_MAILMAN_SERVER]);
       Put_message(buf);
     }
+
+  if (atoi(info[L_PACSLIST]))
+    Put_message("This list is a PACS list.");
+  else
+    Put_message("This list is NOT a PACS list.");
 
   if (!strcmp(info[L_ACE_TYPE], "NONE"))
     Put_message("This list has no Administrator, how strange?!");
@@ -258,6 +264,10 @@ char **AskListInfo(char **info, Bool name)
       strcpy(info[L_ACE_TYPE], "LIST");
       strcpy(info[L_ACE_NAME], "mailman");
     }
+
+  if (GetYesNoValueFromUser("Is this a PACS list", &info[L_PACSLIST]) == 
+      SUB_ERROR)
+    return NULL;
 
   do {
     if (GetTypeFromUser("What Type of Administrator", "ace_type",
@@ -452,6 +462,7 @@ static char **SetDefaults(char **info, char *name)
   info[L_NFSGROUP] = strdup(DEFAULT_NFSGROUP);
   info[L_MAILMAN]  = strdup(DEFAULT_MAILMAN);
   info[L_MAILMAN_SERVER] = strdup(DEFAULT_MAILMAN_SERVER);
+  info[L_PACSLIST] = strdup(DEFAULT_PACSLIST);
   info[L_ACE_TYPE] = strdup(DEFAULT_ACE_TYPE);
   info[L_ACE_NAME] = strdup(DEFAULT_ACE_NAME);
   info[L_MEMACE_TYPE] = strdup(DEFAULT_MEMACE_TYPE);
@@ -807,6 +818,20 @@ int AddMember(int argc, char **argv)
       canon = canonicalize_hostname(strdup(args[LM_MEMBER]));
       free(args[LM_MEMBER]);
       args[LM_MEMBER] = canon;
+    }
+  else if (!strcmp(args[LM_TYPE], "ID"))
+    {
+      char *canon_type, *canon_member;
+
+      status = mrcl_validate_id_member(args[LM_TYPE], &canon_type, args[LM_MEMBER], &canon_member);
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return DM_NORMAL;
+      free(args[LM_TYPE]);
+      args[LM_TYPE] = canon_type;
+      free(args[LM_MEMBER]);
+      args[LM_MEMBER] = canon_member;
     }
 
   if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,

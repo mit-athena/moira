@@ -9,10 +9,13 @@ import requests
 import struct
 import sys
 import netaddr
+import ipaddress
 from netaddr import IPAddress
 from netaddr import EUI
 from subprocess import call
 from time import sleep, ctime
+import requests.packages.urllib3 as requestsurllib3
+requestsurllib3.disable_warnings()
 
 # For printing JSON
 indent = 2
@@ -30,12 +33,16 @@ ib_api_version = 'v2.2.2'
 ib_base_url = 'https://' + ib_host + '/wapi/' + ib_api_version
 ib_common_args = '?_return_type=json-pretty'
 ib_search_args = '_return_fields=ipv4addrs,ipv6addrs,name,aliases,use_ttl,ttl,disable,extattrs,view'
+# timeout for response from IB API endpoint.
+ib_timeout = 300
 
 default_ttl = 1800
 default_domain = "mit.edu"
 views = ['internal', 'external']
 # Supported types for hostrecord
-rr_types = ['MX', 'NS', 'SRV', 'TXT']
+rr_types = ['MX', 'NS', 'SRV', 'TXT', 'PTR']
+# Subnets to skip; performance hack
+omitted_networks = ('whitelist', 'blacklist', 'quarantine')
 
 # Display an informational message to incr-runner.log.
 def log(msg):
@@ -52,11 +59,14 @@ def critical_log(msg):
         call([zwrite, '-q', '-d', '-n', '-c', 'moira', '-i', 'incremental', '-m', progname + msg])
     slack = '/moira/bin/slack-send'
     if os.path.exists(slack):
-        call(slack, progname + msg)
+        call([slack, progname + msg])
 
 # Is hostname one we're canonical for?
 def canonical_for_hostname(hostname):
     if hostname.lower().endswith(default_domain) and hostname.count('.') == 2:
+        return True
+    canon_domains = domoira('get_alias', ('canon_domain', 'TYPE', '*'))
+    if hostname.lower().endswith(tuple(canon_domains)):
         return True
     return False
 
@@ -87,10 +97,6 @@ def get_moira_hostaddresses(hostname):
 
 def get_moira_host_identifiers(hostname):
     return domoira('get_host_identifier_mapping', (hostname, '*'))
-
-def get_moira_host_status(hostname):
-    data, = domoira('get_host', (hostname, '*'))
-    return int(data[9])
 
 def get_moira_host(hostname):
     return domoira('get_host', (hostname, '*'))
@@ -141,7 +147,15 @@ def ib_search_by_mach_id(mach_id):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_mach_id for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_mach_id for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_mach_id for URL %s, payload %s with HTTP status %s, %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -164,7 +178,15 @@ def ib_search_by_name(name):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name for URL %s, payload %s with HTTP status: %s, %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -213,7 +235,15 @@ def ib_create_host(record, myviews=None):
             ib_url = ib_base_url + '/record:host' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_create_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_create_host for host %s view %s with HTTP status %s, %s' % (ib_record['name'], view, r.status_code, r.text))
                 continue
@@ -242,7 +272,15 @@ def ib_delete_host(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host for host %s view %s' % (ib_record['name'], view))
                 continue
@@ -279,7 +317,7 @@ def ib_update_host(before, after):
             critical_log('Record already exists in view %s for new name %s, old name %s' % (view, before_record['name'], after_record['name']))
         elif len(mach_id_results[view]) == 0:
             log('No record exists for mach id %s in view %s, creating' % (moira_mach_id, view))
-            ib_create_host(after, myviews=view)
+            ib_create_host(after, myviews=[view])
         elif len(mach_id_results[view]) > 1:
             critical_log('Mutiple records exist for mach_id %s in view %s, should not happen!' % (moira_mach_id, view))
         elif mach_id_results[view][0]['extattrs']['moira_managed']['value'] != 1:
@@ -289,7 +327,15 @@ def ib_update_host(before, after):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(after_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(after_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_update_host for host %s view %s' % (after_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_update_host for host %s view %s' % (after_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_update_host for host %s view %s' % (after_record['name'], view))
                 continue
@@ -342,7 +388,15 @@ def ib_search_by_name_and_address(name, addr_type, address):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name_and_address for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name_and_address for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name_and_address for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -373,7 +427,15 @@ def ib_add_a_record(record):
             ib_url = ib_base_url + '/record:a' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view)) 
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
                 continue
@@ -399,7 +461,15 @@ def ib_add_aaaa_record(record):
             ib_url = ib_base_url + '/record:aaaa' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
                 continue
@@ -429,7 +499,15 @@ def ib_search_by_name_and_cname(name, alias):
 
     data = json.dumps(payload)
                
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_by_name_and_cname for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_by_name_and_cname for URL %s' % (ib_search_url))
+        return { 'error' : 'unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_by_name_and_cname for URL %s, payload %s with HTTP status %s: %s' % (ib_search_url, data, r.status_code, r.text))
         return { 'error' : r.text }
@@ -457,12 +535,20 @@ def ib_add_cname(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) > 0:
-            critical_log('A record already exists for name %s alias %s in view %s' % (ib_record['canonical'], ib_record['name']. view))
+            critical_log('A record already exists for name %s alias %s in view %s' % (ib_record['canonical'], ib_record['name'], view))
         else:
             ib_url = ib_base_url + '/record:cname' + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed in ib_add_cname for name %s alias %s view %s with HTTP status %s: %s' % (ib_record['canonical'], ib_record['name'], view, r.status_code, r.text))
                 continue
@@ -499,7 +585,15 @@ def ib_add_host_alias(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_alias for name %s alias %s view %s'  % (ib_record['name'], alias, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_alias for name %s alias %s view %s'  % (ib_record['name'], alias, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
@@ -507,7 +601,7 @@ def ib_add_host_alias(record):
             log('Added alias %s to host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
 
 def ib_add_host_identifier(record):
-    id_type = record[1]
+    id_type = record[1].upper()
     if id_type == 'DUID':
         ib_add_host_duid(record)
     elif id_type == 'HWADDR':
@@ -517,7 +611,7 @@ def ib_add_host_identifier(record):
 
 def ib_add_host_duid(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
+    id_type = record[1].upper()
     id_value = record[2]
     search_results = ib_search_by_name(ib_record['name'])
 
@@ -536,10 +630,8 @@ def ib_add_host_duid(record):
         else:
             search_result = search_results[view][0]
 
-            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
-                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
-            else:
-                ipv6addrs = [ {} ]
+            # If we got here, this is guaranteed to exist because of the data model Moira enforces.
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
 
             ipv6addrs[0]['duid'] = id_value
             ipv6addrs[0]['configure_for_dhcp'] = True
@@ -550,7 +642,15 @@ def ib_add_host_duid(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_duid for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
                 continue
@@ -559,8 +659,13 @@ def ib_add_host_duid(record):
 
 def ib_add_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
-    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    id_type = record[1].upper()
+    try:
+        id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    except:
+        critical_log('Unable to parse %s as a MAC address for host %s' % (id_type, record[0]))
+        return
+    
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -577,9 +682,8 @@ def ib_add_host_mac(record):
             critical_log('Multiple host records exist for %s while adding %s %s in view %s, should not happen' % (ib_record['name'], id_type, id_value, view))
         else:
             search_result = search_results[view][0]
-
-            # preserve existing IP address
             ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
+
             ipv4addrs[0]['mac'] = id_value
             ipv4addrs[0]['configure_for_dhcp'] = True
 
@@ -589,7 +693,15 @@ def ib_add_host_mac(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_mac for name %s %s %s in view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_mac for name %s %s %s in view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -640,7 +752,15 @@ def ib_add_host_ipv4_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -695,7 +815,15 @@ def ib_add_host_ipv6_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_add_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_add_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_add_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -734,11 +862,35 @@ def ib_add_hostrecord(record):
         primary_rr_value = ib_record['text']
         object = '/record:txt'
 
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
+        # Only one of these will be defined.
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error assigning PTR record')
+            return
+        
+        object = '/record:ptr'
+
     else:
         critical_log('Unexpected RR type %s in ib_add_hostrecord' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+    # Separate function because ib_record['name'] isn't defined for PTR records.
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
 
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
@@ -746,19 +898,77 @@ def ib_add_hostrecord(record):
 
     for view in views:
         ib_record['view'] = view
+        # PTR records referencing private IPs shouldn't be added to external view.
+        if view == 'external' and rr_type == 'PTR':
+            if 'ipv4addr' in ib_record and IPAddress(ib_record['ipv4addr']).is_private() == True:
+                continue
+            elif 'ipv6addr' in ib_record and IPAddress(ib_record['ipv6addr']).is_private() == True:
+                continue
         if len(search_results[view]) > 0:
-            critical_log('%s record already exists for name %s value %s in view %s, not adding' % (rr_type, ib_record['name'], primary_rr_value, view))
+            critical_log('%s record already exists for name %s value %s in view %s, not adding' % (rr_type, name, primary_rr_value, view))
         else:
             ib_url = ib_base_url + object + ib_common_args
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
-            if r.status_code != requests.codes.created:
-                critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+            try:
+                r = requests.post(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out creating RR type %s for name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception creating RR type %s for name %s view %s' % (rr_type, name, view))
                 continue
 
-            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
+            if r.status_code != requests.codes.created:
+                critical_log('Infoblox API call failed creating RR type %s for name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
+                continue
 
+            log('Created %s record for name %s value %s in view %s: %s' % (rr_type, name, primary_rr_value, view, r.text))
+
+def ib_search_hostrecord_ptr(ib_record):
+    object = '/record:ptr'
+    name = ib_record['ptrdname']
+    if 'ipv4addr' in ib_record:
+        search_key = 'ipv4addr'
+        value = ib_record['ipv4addr']
+    elif 'ipv6addr' in ib_record:
+        search_key = 'ipv6addr'
+        value = ib_record['ipv6addr']
+    else:
+        error = 'Internal error: ib_search_hostrecord_ptr passed malformed ib_record object'
+        critcal_log(error)
+        return { 'error' : error }
+
+    ib_search_url = ib_base_url + object + ib_common_args
+    headers = { 'Content-Type' : 'application/json' }
+    payload = { 'ptrdname' : name, search_key : value }
+
+    results_by_view = {}
+    for view in views:
+        results_by_view[view] = []
+
+    data = json.dumps(payload)
+
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_hostrecord_ptr for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_hostrecord_ptr for URL %s' % (ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+
+    if r.status_code != requests.codes.ok:
+        critical_log('Infoblox API call failed in ib_search_hostrecord_ptr for URL %s payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
+        return { 'error' : r.text }
+
+    response = r.json()
+    for item in response:
+        view = item['view']
+        results_by_view[view] = item
+
+    return results_by_view
+        
 def ib_search_hostrecord(name, rr_type, value):
     if rr_type == 'MX':
         object = '/record:mx'
@@ -780,7 +990,15 @@ def ib_search_hostrecord(name, rr_type, value):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_hostrecord for RR type %s URL %s' % (rr_type, ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_hostrecord for RR type %s URL %s' % (rr_type, ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_hostrecord for RR type %s URL %s payload %s with HTTP status: %s' % (rr_type, ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -830,7 +1048,15 @@ def ib_search_delegated_zone(fqdn):
 
     data = json.dumps(payload)
 
-    r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+    try:
+        r = requests.get(ib_search_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+    except requests.exceptions.ReadTimeout:
+        critical_log('Infoblox API call timed out in ib_search_delegated_zone for URL %s' % (ib_search_url))
+        return { 'error' : 'request timed out' }
+    except:
+        critical_log('Infoblox API call generated unexpected exception in ib_search_delegated_zone for URL %s' % (ib_search_url))
+        return { 'error' : 'generated unexpected exception' }
+    
     if r.status_code != requests.codes.ok:
         critical_log('Infoblox API call failed in ib_search_delegated_zone for URL %s, payload %s with HTTP status: %s' % (ib_search_url, data, r.status_code))
         return { 'error' : r.text }
@@ -877,7 +1103,14 @@ def ib_add_delegated_zone(record):
             headers = { 'Content-Type' : 'application/json' }
 
             data = json.dumps(ib_record)
-            r = requests.put(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out updating delegated zone %s in view %s' % (record[0].lower(), view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception  updating delegated zone %s in view %s' % (record[0].lower(), view))
+                continue
 
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed updating delegated zone %s in view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
@@ -890,13 +1123,51 @@ def ib_add_delegated_zone(record):
             headers = { 'Content-Type' : 'application/json' }
 
             data = json.dumps(ib_record)
-            r = requests.post(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.post(ib_url, data=data, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception creating delegated zone %s in view %s' % (ib_record['fqdn'], view))
+                continue
 
             if r.status_code != requests.codes.created:
                 critical_log('Infoblox API call failed creating delegated zone %s in view %s with HTTP return %s: %s' % (ib_record['fqdn'], view, r.status_code, r.text))
                 continue
 
             log('Created delegated zone %s with delegation to %s in view %s: %s' % (ib_record['fqdn'], ib_record['delegate_to'][0]['name'], view, r.text))
+
+def ptr_to_ib(record):
+    ib_ptr_record = {
+        'ptrdname' : record[0].lower(),
+        'disable' : False
+        }
+
+    # Figure out if we were given a v4 or v6 address.
+    address = unicode(record[2])
+    try:
+        addr_obj = ipaddress.ip_address(address)
+    except:
+        return { 'error' : 'Could not parse address as IPv4 or IPv6 address' }
+
+    if isinstance(addr_obj, ipaddress.IPv4Address):
+        ib_ptr_record['ipv4addr'] = str(addr_obj)
+    elif isinstance(addr_obj, ipaddress.IPv6Address):
+        ib_ptr_record['ipv6addr'] = str(addr_obj)
+    else:
+        # Shouldn't ever get here; we should be caught by the try block above.
+        return { 'error' : 'Could not parse address as IPv4 or IPv6 address' }
+        
+    ttl = int(record[3])
+    if ttl == default_ttl:
+        ib_ptr_record['ttl'] = default_ttl
+        ib_ptr_record['use_ttl'] = False
+    else:
+        ib_ptr_record['ttl'] = ttl
+        ib_ptr_record['use_ttl'] = True
+
+    return ib_ptr_record
 
 def txt_to_ib(record):
     ib_txt_record = {
@@ -983,7 +1254,15 @@ def ib_delete_a_record(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_a_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
                 continue
@@ -1006,7 +1285,15 @@ def ib_delete_aaaa_record(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_aaaa_record for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
                 continue
@@ -1029,7 +1316,15 @@ def ib_delete_cname(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_cname for name %s alias %s view %s' % (ib_record['canonical'], ib_record['name'], view))
                 continue
@@ -1053,15 +1348,27 @@ def ib_delete_host_alias(record):
             critical_log('Multiple host records exist for %s in view %s while deleting alias %s, should not happen!' % (ib_record['name'], view, alias))
         else:
             search_result = search_results[view][0]
+
+            if 'aliases' in search_results:
+                aliases = [ x for x in search_result['aliases'] if x != alias]
+            else:
+                aliases = [ ]
             
-            aliases = [ x for x in search_result['aliases'] if x != alias]
             ib_record['aliases'] = aliases
 
             ib_ref = search_result['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_alias for name %s alias %s view %s' % (ib_record['name'], alias, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_alias for name %s alias %s view %s with HTTP return %s: %s' % (ib_record['name'], alias, view, r.status_code, r.text))
                 continue
@@ -1069,7 +1376,7 @@ def ib_delete_host_alias(record):
             log('Deleted alias %s from host %s in view %s: %s' % (alias, ib_record['name'], view, r.text))
 
 def ib_delete_host_identifier(record):
-    id_type = record[1]
+    id_type = record[1].upper()
     if id_type == 'DUID':
         ib_delete_host_duid(record)
     elif id_type == 'HWADDR':
@@ -1079,7 +1386,7 @@ def ib_delete_host_identifier(record):
 
 def ib_delete_host_duid(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
+    id_type = record[1].upper()
     # Infoblox formats these things like MAC addresses, but longer, for some reason.
     id_value = ':'.join(s.encode('hex') for s in record[2].decode('hex'))
     search_results = ib_search_by_name(ib_record['name'])
@@ -1098,11 +1405,7 @@ def ib_delete_host_duid(record):
             critical_log('Multiple host records exist for %s in view %s while deleting %s %s, should not happen!' % (ib_record['name'], view, id_type, id_value))
         else:
             search_result = search_results[view][0]
-
-            if 'ipv6addrs' in search_result and 'ipv6addr' in search_result['ipv6addrs'][0]:
-                ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
-            else:
-                ipv6addrs = [ {} ]
+            ipv6addrs = [ { 'ipv6addr' : search_result['ipv6addrs'][0]['ipv6addr'] } ]
 
             if 'duid' in search_result['ipv6addrs'][0]:
                 if search_result['ipv6addrs'][0]['duid'] == id_value:
@@ -1118,7 +1421,15 @@ def ib_delete_host_duid(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_duid for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_duid for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -1127,8 +1438,13 @@ def ib_delete_host_duid(record):
 
 def ib_delete_host_mac(record):
     ib_record = { 'name' : record[0].lower() }
-    id_type = record[1]
-    id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    id_type = record[1].upper()
+    try: 
+        id_value = str(EUI(record[2], dialect=netaddr.mac_unix_expanded))
+    except:
+        critical_log('Unable to parse %s as MAC address for host %s' % (id_type, record[0]))
+        return
+
     search_results = ib_search_by_name(ib_record['name'])
 
     if 'error' in search_results:
@@ -1146,7 +1462,6 @@ def ib_delete_host_mac(record):
         else:
             # exactly one result
             search_result = search_results[view][0]
-
             ipv4addrs = [ { 'ipv4addr' : search_result['ipv4addrs'][0]['ipv4addr'] } ]
 
             if 'mac' in search_result['ipv4addrs'][0]:
@@ -1163,7 +1478,15 @@ def ib_delete_host_mac(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_mac for name %s %s %s view %s' % (ib_record['name'], id_type, id_value, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_mac for name %s %s %s view %s'% (ib_record['name'], id_type, id_value, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_mac for name %s %s %s view %s with HTTP return %s: %s' % (ib_record['name'], id_type, id_value, view, r.status_code, r.text))
                 continue
@@ -1198,7 +1521,7 @@ def ib_delete_host_ipv4_address(record):
                 if 'mac' in search_result['ipv4addrs'][0]:
                     ipv4addrs[0]['mac'] = search_result['ipv4addrs'][0]['mac']
                     ipv4addrs[0]['configure_for_dhcp'] = True
-                    ib_record['disable'] = True
+                ib_record['disable'] = True
 
             ib_record['ipv4addrs'] = ipv4addrs
 
@@ -1206,7 +1529,15 @@ def ib_delete_host_ipv4_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_ipv4_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_ipv4_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -1252,7 +1583,15 @@ def ib_delete_host_ipv6_address(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_host_ipv6_address for name %s address %s view %s' % (ib_record['name'], address, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_delete_host_ipv6_address for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], address, view, r.status_code, r.text))
                 continue
@@ -1280,13 +1619,38 @@ def ib_delete_hostrecord(record):
         ib_record = txt_to_ib(record)
         if 'error' in ib_record:
             critical_log(ib_record['error'])
+            return
         primary_rr_value = ib_record['text']
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+        if 'error' in ib_record:
+            critical_log(ib_record['error'])
+            return
+
+        # Only one of these will be defined
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error deleting PTR record')
+            return
+
+        object = '/record:ptr'
+                                                                                    
     else:
         critical_log('Unexpected RR type %s in ib_delete_hostrecord' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
-
+    # Separate function because ib_record['name'] isn't defined for PTR records.
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+        
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
         return
@@ -1298,18 +1662,26 @@ def ib_delete_hostrecord(record):
                 search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value.strip('"'))
         
         if len(search_results[view]) == 0:
-            log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, ib_record['name'], primary_rr_value, view))
+            log('No %s record exists for name %s value %s in view %s, not deleting' % (rr_type, name, primary_rr_value, view))
         else:
             ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_delete_hostrecord for RR type %s name %s view %s' % (rr_type, name, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+                critical_log('Infoblox API call failed in ib_delete_hostrecord for RR type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
 
-            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, ib_record['name'], primary_rr_value, view, r.text))
+            log('Deleted %s record for name %s value %s in view %s: %s' % (rr_type, name, primary_rr_value, view, r.text))
 
 def ib_delete_delegated_zone(record):
     ib_record = ns_to_ib(record)
@@ -1331,7 +1703,15 @@ def ib_delete_delegated_zone(record):
             new_delegated_to = [ x for x in search_results[view]['delegate_to'] if x not in deleted_delegation ]
 
             if len(new_delegated_to) == 0:
-                r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd))
+                try:
+                    r = requests.delete(ib_url, headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+                except requests.exceptions.ReadTimeout:
+                    critical_log('Infoblox API call timed out for DELETE in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                except:
+                    critical_log('Infoblox API call generated unexpected exception for DELETE in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                
                 if r.status_code != requests.codes.ok:
                     critical_log('Infoblox API call failed for DELETE in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
@@ -1364,7 +1744,15 @@ def ib_delete_delegated_zone(record):
                     del ib_record['fqdn']
                 
                 ib_record['delegate_to'] = new_delegated_to
-                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+                try:
+                    r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+                except requests.exceptions.ReadTimeout:
+                    critical_log('Infoblox API call timed out for PUT in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                except:
+                    critical_log('Infoblox API call generated unexpected exception for PUT in ib_delete_delegated_zone of zone %s view %s' % (record[0].lower(), view))
+                    continue
+                
                 if r.status_code != requests.codes.ok:
                     critical_log('Infoblox API call failed for PUT in ib_delete_delegated_zone of zone %s view %s with HTTP return %s: %s' % (record[0].lower(), view, r.status_code, r.text))
                     continue
@@ -1389,7 +1777,15 @@ def ib_set_aaaa_record_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_aaaa_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv6addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_aaaa_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv6addr'], view, r.status_code, r.text))
                 continue
@@ -1414,7 +1810,15 @@ def ib_set_a_record_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_a_record_ttl for name %s address %s view %s' % (ib_record['name'], ib_record['ipv4addr'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_a_record_ttl for name %s address %s view %s with HTTP return %s: %s' % (ib_record['name'], ib_record['ipv4addr'], view, r.status_code, r.text))
                 continue
@@ -1442,7 +1846,15 @@ def ib_set_host_ttl(record):
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
+                continue
+            
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed in ib_set_host_ttl for host %s view %s' % (ib_record['name'], view))
                 continue
@@ -1463,11 +1875,29 @@ def ib_set_record_ttl(record):
     elif rr_type == 'TXT':
         ib_record = txt_to_ib(record)
         primary_rr_value = ib_record['text']
+    elif rr_type == 'PTR':
+        ib_record = ptr_to_ib(record)
+
+        # Only one of these will be defined.
+        if 'ipv4addr' in ib_record:
+            primary_rr_value = ib_record['ipv4addr']
+        elif 'ipv6addr' in ib_record:
+            primary_rr_value = ib_record['ipv6addr']
+        else:
+            # Can't happen.
+            critical_log('Internal error modifying PTR record')
+            return
+                                                                                   
     else:
         critical_log('Unexpected RR type %s in ib_set_record_ttl' % (rr_type))
         return
 
-    search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
+    if rr_type == 'PTR':
+        name = ib_record['ptrdname']
+        search_results = ib_search_hostrecord_ptr(ib_record)
+    else:
+        name = ib_record['name']
+        search_results = ib_search_hostrecord(ib_record['name'], rr_type, primary_rr_value)
 
     if 'error' in search_results:
         log('ib_search_hostrecord returned error, aborting')
@@ -1476,18 +1906,26 @@ def ib_set_record_ttl(record):
     for view in views:
         ib_record['view'] = view
         if len(search_results[view]) == 0:
-            critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, ib_record['name'], primary_rr_value, view))
+            critical_log('No %s record exists for name %s value %s in view %s while setting TTL' % (rr_type, name, primary_rr_value, view))
         else:
             ib_ref = search_results[view]['_ref']
             ib_url = ib_base_url + '/' + ib_ref
             headers = { 'Content-Type' : 'application/json' }
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out in ib_set_record_ttl for type %s name %s view %s' % (rr_type, name, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception in ib_set_record_ttl for type %s name %s view %s' % (rr_type, name, view))
+                continue
+            
             if r.status_code != requests.codes.ok:
-                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, ib_record['name'], view, r.status_code, r.text))
+                critical_log('Infoblox API call failed in ib_set_record_ttl for type %s name %s view %s with HTTP return %s: %s' % (rr_type, name, view, r.status_code, r.text))
                 continue
 
-            log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, ib_record['name'], primary_rr_value, view, ib_record['ttl']))
+            log('Updated TTL for %s record %s value %s in view %s to %s' % (rr_type, name, primary_rr_value, view, ib_record['ttl']))
 
 def ib_set_delegated_zone_ttl(record):
     zonename = record[0].lower()
@@ -1520,7 +1958,14 @@ def ib_set_delegated_zone_ttl(record):
             if 'fqdn' in ib_record:
                 del ib_record['fqdn']
 
-            r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd))
+            try:
+                r = requests.put(ib_url, data=json.dumps(ib_record), headers=headers, auth=(ib_user, ib_passwd), timeout=ib_timeout)
+            except requests.exceptions.ReadTimeout:
+                critical_log('Infoblox API call timed out setting TTL for delegated zone %s view %s' % (zonename, view))
+                continue
+            except:
+                critical_log('Infoblox API call generated unexpected exception setting TTL for delegated zone %s view %s' % (zonename, view))
+                continue
 
             if r.status_code != requests.codes.ok:
                 critical_log('Infoblox API call failed setting TTL for delegated zone %s view %s with HTTP return %s: %s' % (zonename, view, r.status_code, r.text))
@@ -1650,10 +2095,10 @@ def do_machine(before, after):
                             ib_delete_cname(recordlist)
                             ib_add_host_alias(record)
                         elif canon_before == False and canon_after == False:
-                            ib_add_cname(record)
                             recordlist = list(record)
                             recordlist[1] = before_hostname
                             ib_delete_cname(recordlist)
+                            ib_add_cname(record)
 
                     # Host addreses        
                     for record in get_moira_hostaddresses(after_hostname):
@@ -1676,14 +2121,20 @@ def do_machine(before, after):
                                 elif addr_type == 'IPV6':
                                     ib_delete_aaaa_record(recordlist)
                 else:
-                    ib_update_host(before, after)
+                    # If hostname hasn't changed, canonical status can't have changed either.
+                    if canon_after == True:
+                        ib_update_host(before, after)
 
 # Handle hostalias incremental
 def do_hostalias(before, after):
     # Add
     if before == []:
+        alias = after[0]
+        if canonical_for_hostname(alias) == False:
+            return
+
         hostname = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[3])
         if status == 1:
             if canonical_for_hostname(hostname) == True:
                 ib_add_host_alias(after)
@@ -1703,9 +2154,15 @@ def do_hostaddress(before, after):
     # Add
     if before == []:
         hostname = after[0]
+        subnet_name = after[1]
         has_ptr = int(after[5])
         addr_type = after[2]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[10])
+
+        # Don't bother with processing addresses on select networks.
+        if subnet_name.lower().startswith(omitted_networks):
+            return
+
         if status == 1 and canonical_for_hostname(hostname) == True:
             if has_ptr == 1:
                 if addr_type == 'IPV4':
@@ -1713,17 +2170,22 @@ def do_hostaddress(before, after):
                 elif addr_type == 'IPV6':
                     ib_add_host_ipv6_address(after)
             else:
-                status = int(get_moira_host_status(hostname))
-                if status == 1:
-                    if addr_type == 'IPV4':
-                        ib_add_a_record(after)
-                    elif addr_type == 'IPV6':
-                        ib_add_aaaa_record(after)
+                if addr_type == 'IPV4':
+                    ib_add_a_record(after)
+                elif addr_type == 'IPV6':
+                    ib_add_aaaa_record(after)
     # Delete
     elif after == []:
         hostname = before[0]
+        subnet_name = before[1]
         has_ptr = int(before[5])
         addr_type = before[2]
+        status = int(before[10])
+
+        # Don't bother with processing addresses on select networks.
+        if subnet_name.lower().startswith(omitted_networks):
+            return
+
         if canonical_for_hostname(hostname) == True:
             if has_ptr == 1:
                 if addr_type == 'IPV4':
@@ -1731,29 +2193,31 @@ def do_hostaddress(before, after):
                 elif addr_type == 'IPV6':
                     ib_delete_host_ipv6_address(before)
             else:
-                status = int(get_moira_host_status(hostname))
-                if status == 1:
-                    if addr_type == 'IPV4':
-                        ib_delete_a_record(before)
-                    elif addr_type == 'IPV6':
-                        ib_delete_aaaa_record(before)
+                if addr_type == 'IPV4':
+                    ib_delete_a_record(before)
+                elif addr_type == 'IPV6':
+                    ib_delete_aaaa_record(before)
     # Update - TTL, PTR, or address might change, but only one at a time.
     else:
         hostname = after[0]
+        before_subnet_name = before[1]
+        after_subnet_name = after[1]
         before_ptr = int(before[5])
         after_ptr = int(after[5])
         addr_type = after[2]
         before_address = before[3]
         after_address = after[3]
 
-        status = int(get_moira_host_status(hostname))
+        status = int(after[10])
 
         if before_address != after_address:
             # This can only change if we're upgrading a host to a public address.
             # Otherwise it would be a delete and an add.
             if status == 1:
-                ib_delete_host_ipv4_address(before)
-                ib_add_host_ipv4_address(after)
+                if not before_subnet_nanme.lower().startswith(omitted_networks):
+                    ib_delete_host_ipv4_address(before)
+                if not after_subnet_name.lower().startswith(omitted_networks):
+                    ib_add_host_ipv4_address(after)
         elif before_ptr != after_ptr:
             # ptr bit changed.
             if status == 1:
@@ -1788,7 +2252,7 @@ def do_hostrecord(before, after):
     if before == []:
         hostname = after[0]
         rr_type = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[5])
         if status == 1 and canonical_for_hostname(hostname) == True:
             if rr_type in rr_types:
                 ib_add_hostrecord(after)
@@ -1807,7 +2271,7 @@ def do_hostrecord(before, after):
     else:
         hostname = after[0]
         rr_type = after[1]
-        status = int(get_moira_host_status(hostname))
+        status = int(after[5])
         if status == 1 and canonical_for_hostname(hostname) == True:
             if rr_type in rr_types:
                 ib_set_record_ttl(after)
@@ -1859,6 +2323,9 @@ while True:
     beforev = incrargv[3:3+beforec]
     afterv = incrargv[3+beforec:3+beforec+afterc]
 
+    # print arguments
+    print progname, ' '.join(map(str,incrargv))
+    
     if table == 'machine':
         do_machine(beforev, afterv)
     elif table == 'hostalias':

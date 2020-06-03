@@ -274,6 +274,7 @@ int setup_ghst(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
 int setup_ahad(struct query *q, char *argv[], client *cl);
+int setup_dhad(struct query *q, char *argv[], client *cl);
 int setup_uhp4(struct query *q, char *argv[], client *cl);
 int setup_srrt(struct query *q, char *argv[], client *cl);
 int setup_shap(struct query *q, char *argv[], client *cl);
@@ -287,6 +288,7 @@ int setup_aali(struct query *q, char *argv[], client *cl);
 int setup_sttl(struct query *q, char *argv[], client *cl);
 int setup_ahrr(struct query *q, char *argv[], client *cl);
 int setup_uust(struct query *q, char *argv[], client *cl);
+int setup_uupi(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);

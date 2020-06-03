@@ -8,6 +8,9 @@
 #define _moira_h_
 
 #ifdef _WIN32
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #ifndef strcasecmp
 #define strcasecmp      stricmp
@@ -62,6 +65,7 @@
 #define UNIQUE_GID	"create unique GID"
 #define UNIQUE_UID	"create unique UID"
 #define UNIQUE_LOGIN	"create unique login ID"
+#define UNIQUE_PIN	"create unique PIN"
 
 /* Structure used by Save Queue routines (for temporary storage of data) */
 struct save_queue

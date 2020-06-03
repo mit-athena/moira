@@ -53,9 +53,9 @@ int check_mailman_listname(char *name, const char *suffix);
 
 int setup_ausr(struct query *q, char *argv[], client *cl)
 {
-  int row, err;
+  int row, err, count;
   EXEC SQL BEGIN DECLARE SECTION;
-  int nuid, status;
+  int nuid, status, old_status;
   EXEC SQL END DECLARE SECTION;
   char *p;
 
@@ -64,7 +64,8 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
-  /* Temporary: don't let people modify accounts to status 3 */
+  /* Don't let people modify accounts to status 3 if they're
+   * not already status 3 and have reservations. */
   if (q->type == MR_Q_UPDATE)
     {
       if (q->version > 2)
@@ -72,7 +73,13 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
       else
 	status = atoi(argv[7]);
 
-      if (status == 3)
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	WHERE login = :argv[row - 1] AND reservations != CHR(0);
+
+      EXEC SQL SELECT status INTO :old_status FROM users
+	WHERE login = :argv[row - 1];
+
+      if (old_status != 3 && status == 3 && count > 0)
 	return MR_PERM;
     }
 
@@ -611,6 +618,8 @@ int setup_alis(struct query *q, char *argv[], client *cl)
     desc = argv[10 + idx];
   else if (q->version == 4)
     desc = argv[12 + idx];
+  else if (q->version >= 18)
+    desc = argv[15 + idx];
   else if (q->version >= 10)
     desc = argv[14 + idx];
 
@@ -632,6 +641,10 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   if (name[0] == '_')
     return MR_BAD_CHAR;
 
+  /* Don't let anyone take lists ending with -forwarding */
+  if (!strncasecmp(&name[strlen(name)-strlen("-forwarding")], "-forwarding", strlen("-forwarding")))
+    return MR_RESERVED;
+  
   for (p = (unsigned char *) desc; *p; p++)
     {
       if (*p == '\n')
@@ -797,6 +810,11 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
   if (cnt > 0)
     return MR_IN_USE;
 
+  EXEC SQL SELECT COUNT(name) INTO :cnt FROM machine
+    WHERE owner_id = :id AND owner_type = 'LIST';
+  if (cnt > 0)
+    return MR_IN_USE;
+
   EXEC SQL SELECT COUNT(name) INTO :cnt FROM servers
     WHERE acl_id = :id AND acl_type = 'LIST';
   if (cnt > 0)
@@ -804,6 +822,11 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
 
   EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
     WHERE sponsor_id = :id AND sponsor_type = 'LIST';
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
+    WHERE default_vpn_group = :id;
   if (cnt > 0)
     return MR_IN_USE;
 
@@ -936,18 +959,27 @@ EXEC SQL END DECLARE SECTION;
 
 int setup_afil(struct query *q, char *argv[], client *cl)
 {
-  char *type, *name;
+  char *type, *name, *label;
   int mach_id;
   EXEC SQL BEGIN DECLARE SECTION;
-  int ok;
+  int ok, count;
   char ftype[FILESYS_TYPE_SIZE + 10], *rwaccess;
   EXEC SQL END DECLARE SECTION;
 
+  label = argv[0];
   type = argv[1];
   mach_id = *(int *)argv[2];
   name = argv[3];
   rwaccess = argv[5];
   _var_phys_id = 0;
+
+  /* Does this name already exist as an alias? */
+  EXEC SQL SELECT COUNT(*) INTO :count FROM alias
+    WHERE name = :label AND type = 'FILESYS';
+  if (dbms_errno)
+    return mr_errcode;
+  if (count != 0)
+    return MR_EXISTS;
 
   sprintf(ftype, "fs_access_%s", type);
   EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
@@ -1448,6 +1480,7 @@ int setup_ahad(struct query *q, char **argv, client *cl)
   mid = *(int *)argv[0];
   sid = *(int *)argv[1];
   address = argv[2];
+  memset(buf, '\0', sizeof(buf));
 
   /* Don't allow adding addresses for non-MIT.EDU names. */
   EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
@@ -1524,7 +1557,7 @@ int setup_ahad(struct query *q, char **argv, client *cl)
 		break;
 	    }
 
-	  if (cnt != 0)
+	  if (cnt != 0 || strlen(buf) == 0)
 	    return MR_NO_ID;
 	  else
 	    strcpy(argv[2], buf);
@@ -1676,6 +1709,43 @@ int setup_ahad(struct query *q, char **argv, client *cl)
 	}
     }
 
+  return MR_SUCCESS;
+}
+
+int setup_dhad(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt, mid, sid;
+  char addr_type[SUBNET_ADDR_TYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  mid = *(int *)argv[0];
+  sid = *(int *)argv[1];
+
+  /* Get address type of specified subnet */
+  EXEC SQL SELECT addr_type INTO :addr_type FROM subnet WHERE snet_id = :sid;
+
+  if (!strcmp(strtrim(addr_type), "IPV4"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'HWADDR';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  else if (!strcmp(strtrim(addr_type), "IPV6"))
+    {
+      /* Do we have any host identifiers? */
+      EXEC SQL SELECT COUNT(*) INTO :cnt FROM machidentifiermap WHERE mach_id = :mid
+	AND mach_identifier_type = 'DUID';
+      if (dbms_errno)
+	return mr_errcode;
+      if (cnt > 0)
+	return MR_IN_USE;
+    }
+  
   return MR_SUCCESS;
 }
 
@@ -1856,6 +1926,28 @@ int setup_ahid(struct query *q, char **argv, client *cl)
     FROM machidentifiermap WHERE mach_id = :mid AND mach_identifier_type = :type;
   if (count)
     return MR_NOT_UNIQUE;
+
+  /* Host must have one and only one address of the appropriate type. */
+  if (!strcasecmp(type, "hwaddr"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV4';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
+    }
+  else if (!strcasecmp(type, "duid"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count
+	FROM hostaddress ha, subnet s WHERE ha.mach_id = :mid
+	AND ha.ptr = 1 AND ha.snet_id = s.snet_id AND s.addr_type = 'IPV6';
+      if (dbms_errno)
+	return mr_errcode;
+      if (count != 1)
+	return MR_ADDRESS;
+    }
 
   return MR_SUCCESS;
 }
@@ -2201,23 +2293,44 @@ int check_mailman_listname(char *name, const char *suffix)
 int canonical_for_hostname(char *name)
 {
   char *p;
+  char domain[ALIAS_TRANS_SIZE];
   int i;
 
   if (!strstr(name, ".MIT.EDU"))
     return MR_BAD_HOSTNAME;
+
+  for (p = name, i = 0; *p; p++)
+    {
+      if (*p == '.')
+	i++;
+    }
+    
+  /* Allow foo.mit.edu but not foo.subdomain.mit.edu unless it's in our whitelist */
+  if (i == 2)
+    return MR_SUCCESS;
   else
     {
-      for (p = name, i = 0; *p; p++)
+      EXEC SQL DECLARE csr_canon_domains CURSOR FOR
+	SELECT trans FROM alias WHERE name = 'canon_domain'
+	AND type = 'TYPE';
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr_canon_domains;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
 	{
-	  if (*p == '.')
-	    i++;
+	  EXEC SQL FETCH csr_canon_domains INTO :domain;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (strstr(name, strtrim(domain)))
+	    return MR_SUCCESS;
 	}
-      /* Allow foo.mit.edu but not foo.subdomain.mit.edu */
-      if (i != 2)
-	return MR_BAD_HOSTNAME;
     }
 
-  return MR_SUCCESS;
+  return MR_BAD_HOSTNAME;
 }
 
 int setup_sttl(struct query *q, char *argv[], client *cl)
@@ -2258,12 +2371,13 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, count;
-  char *rr_type, mname[MACHINE_NAME_SIZE];
+  char *rr_type, *rr_value, mname[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
   mid = *(int *)argv[0];
   rr_type = argv[1];
+  rr_value = argv[2];
 
   EXEC SQL SELECT name INTO :mname FROM machine WHERE mach_id = :mid;
   if (dbms_errno)
@@ -2274,6 +2388,18 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
   status = canonical_for_hostname(mname);
   if (status)
     return status;
+
+  /* Don't allow explicit PTR record if the address is already the primary
+     address for any record. */
+  if (!strcmp(rr_type, "PTR"))
+    {
+      EXEC SQL SELECT COUNT(*) INTO :count FROM hostaddress
+	WHERE address = :rr_value AND ptr = 1;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count > 0)
+	return MR_EXISTS;
+    }
 
   /* Don't allow adding NS records to anything that has other identifiers */
   if (!strcmp(rr_type, "NS"))
@@ -2303,19 +2429,142 @@ int setup_ahrr(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
-/* Temporary setup function for uust to prevent accounts from being set to deleted */
 int setup_uust(struct query *q, char *argv[], client *cl)
 {
-  int status;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int status, old_status, id, count = 0;
+  EXEC SQL END DECLARE SECTION;
 
   if (!strcmp(q->shortname, "uust"))
     {
+      id = *(int *)argv[0];
       status = atoi(argv[1]);
-      if (status == 3)
+
+      EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	WHERE users_id = :id AND reservations != CHR(0);
+
+      EXEC SQL SELECT status INTO :old_status FROM users
+	WHERE users_id = :id;
+
+      if (old_status != 3 && status == 3 && count > 0)
 	return MR_PERM;
     }
 
   return MR_SUCCESS;
 }
 
+int setup_uupi(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id, random_pin, count = 0, panic_count = 0;
+  char pin[PIN_LENGTH + 1], panic_pin[PIN_LENGTH + 1];
+  EXEC SQL END DECLARE SECTION;
 
+  /* The pin queries have changed sufficiently, that we can no longer
+   * allow the older queries as it does not guarantee uniqueness
+   */
+  if (q->version < 18)
+    return MR_VERSION_MISMATCH;
+
+  if (!strcmp(q->shortname, "uupi"))
+    {
+      id = *(int *)argv[0];
+      
+      if (!strcmp(argv[1], UNIQUE_PIN) || atoi(argv[1]) == -1)
+	{
+	  /* Generate a random pin */
+	  random_pin = generate_random_pin(PIN_LENGTH);
+	  
+	  /* Panic pin is the pin + 1 */
+	  sprintf(pin, "%d", random_pin);
+	  sprintf(panic_pin, "%d", random_pin + 1);
+
+	  /* Ensure that the pin we generated is unique */
+	  EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	    WHERE pin = :pin AND users_id != :id;
+
+	  EXEC SQL SELECT COUNT(*) INTO :panic_count FROM users
+	    WHERE pin = :panic_pin;
+	  
+	  while(count || panic_count) {
+	    random_pin = generate_random_pin(PIN_LENGTH);
+	  
+	    sprintf(pin, "%d", random_pin);
+	    sprintf(panic_pin, "%d", random_pin + 1);
+	    
+	    EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	      WHERE pin = :pin AND users_id != :id;
+
+	    EXEC SQL SELECT COUNT(*) INTO :panic_count FROM users
+	      WHERE pin = :panic_pin;
+	  }
+	}
+      else 
+	{
+	  /* Ensure that the PIN specified meets the length requirements
+	   * otherwise reject it.
+	   */
+	  if(strlen(argv[1]) > PIN_LENGTH) 
+	    return MR_ARG_TOO_LONG;
+	  
+	  if(strlen(argv[1]) < PIN_LENGTH) 
+	    return MR_ARG_TOO_SHORT;
+
+	  /* The user specified a pin, we return in use if there is 
+	   * an entry with the same pin already in the database 
+	   */ 
+	  strcpy(pin, argv[1]);
+	  
+	  EXEC SQL SELECT COUNT(*) INTO :count FROM users
+	    WHERE pin = :pin AND users_id != :id;
+	  
+	  if (count)
+	    return MR_IN_USE;
+	}
+      
+      strcpy(argv[1], pin);
+    }
+
+  return MR_SUCCESS;
+}
+
+void shuffle(int *array, size_t n)
+{
+  if (n > 1) 
+    {
+      size_t i;
+      for (i = 0; i < n - 1; i++) 
+        {
+          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+          int t = array[j];
+          array[j] = array[i];
+          array[i] = t;
+        }
+    }
+}
+
+int generate_random_pin(int numDigits) 
+{
+  int i, x;
+  int digits[] = {0,1,2,3,4,5,6,7,8,9};
+
+  /* Initialize the random generator */
+  srand(time(NULL));
+
+  /* Ensure the first digit of the array is not a zero */
+  while(digits[0] == 0) {
+    shuffle(digits, 10);
+  }
+  
+  /* Initialize our number */
+  x = digits[0];
+
+  /* Loop over the array until we have a sufficient number of digits */
+  for(i = 1; i < numDigits; ++i)
+    {
+      x *= 10;
+      x += digits[i];
+    }
+
+  return x;
+}

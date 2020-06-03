@@ -128,13 +128,23 @@ static char *gual15_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *gual_fields[] = {
+static char *gual16_fields[] = {
   "login",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *gual_fields[] = {
+  "login",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "twofactor_status",
+  "affiliation_basic", "affiliation_detailed", "department", "modtime", 
+  "modby", "modwith", "created", "creator",
 };
 
 static char *gubl2_fields[] = {
@@ -241,13 +251,23 @@ static char *guau15_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guau_fields[] = {
+static char *guau16_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guau_fields[] = {
+  "unix_uid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "twofactor_status",
+  "affiliation_basic", "affiliation_detailed", "department", "modtime", 
+  "modby", "modwith", "created", "creator",
 };
 
 static char *guan2_fields[] = {
@@ -297,13 +317,23 @@ static char *guan15_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guan_fields[] = {
+static char *guan16_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "twofactor_status", 
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guan_fields[] = {
+  "first", "last",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "twofactor_status", 
+  "affiliation_basic", "affiliation_detailed", "department", "modtime",
+  "modby", "modwith", "created", "creator",
 };
 
 static struct validate guan2_validate =
@@ -350,7 +380,7 @@ static struct validate guas_validate =
   0,
   0,
   0,
-  0,
+  access_member,
   0,
   get_sponsored_user_accounts,
 };
@@ -402,13 +432,23 @@ static char *guac15_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guac_fields[] = {
+static char *guac16_fields[] = {
   "class",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "twofactor_status", 
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guac_fields[] = {
+  "class",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "twofactor_status", 
+  "affiliation_basic", "affiliation_detailed", "department", "modtime",
+  "modby", "modwith", "created", "creator",
 };
 
 static char *guam2_fields[] = {
@@ -458,13 +498,23 @@ static char *guam15_fields[] = {
   "modtime", "modby", "modwith", "created", "creator",
 };
 
-static char *guam_fields[] = {
+static char *guam16_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
   "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
   "alternate_email", "alternate_phone", "twofactor_status",
   "affiliation_basic", "affiliation_detailed", "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guam_fields[] = {
+  "clearid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "sponsor_type", "sponsor_name", "expiration",
+  "alternate_email", "alternate_phone", "twofactor_status",
+  "affiliation_basic", "affiliation_detailed", "department", "modtime",
+  "modby", "modwith", "created", "creator",
 };
 
 static char *gsua_fields[] = {
@@ -1279,6 +1329,28 @@ static struct validate uust_validate = {
   set_modtime_by_id,
 };
 
+static char *uupi2_fields[] = {
+  "login",
+  "pin",
+};
+
+static struct valobj uupi2_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_CHAR, 1, USERS_TABLE, "pin"},
+};
+
+static struct validate uupi2_validate = {
+  uupi2_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  setup_uupi,
+  set_modtime_by_id,
+};
+
 static char *uupi_fields[] = {
   "login",
   "pin",
@@ -1286,7 +1358,7 @@ static char *uupi_fields[] = {
 
 static struct valobj uupi_valobj[] = {
   {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
-  {V_CHAR, 1, USERS_TABLE, "pin"},
+  {V_NUM, 1},
 };
 
 static struct validate uupi_validate = {
@@ -1297,13 +1369,40 @@ static struct validate uupi_validate = {
   0,
   "users_id",
   0,
-  0,
+  setup_uupi,
   set_modtime_by_id,
 };
 
 static char *gupi_fields[] = {
   "login",
   "pin",
+};
+
+static char *uuza_fields[] = {
+  "login",
+  "zoom_account",
+};
+
+static struct valobj uuza_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_CHAR, 1, USERS_TABLE, "zoom_account"},
+};
+
+static struct validate uuza_validate = {
+  uuza_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
+static char *guza_fields[] = {
+  "login",
+  "login", "zoom_account",
 };
 
 static char *gupo_fields[] = {
@@ -2324,7 +2423,7 @@ static struct validate dhad_validate = {
   3,
   0,
   access_ahad,
-  0,
+  setup_dhad,
   followup_dhad,
 };
 
@@ -2799,11 +2898,19 @@ static char *glin4_fields[] = {
   "description", "modtime", "modby", "modwith",
 };
 
-static char *glin_fields[] = {
+static char *glin10_fields[] = {
   "name",
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
   "memace_type", "memace_name", "description", "modtime", "modby", "modwith",
+};
+
+static char *glin_fields[] = {
+  "name",
+  "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
+  "memace_type", "memace_name", "description", "pacslist", "modtime", "modby",
+  "modwith",
 };
 
 static struct validate glin_validate = {
@@ -2917,10 +3024,46 @@ static struct validate alis4_validate = {
   set_modtime,
 };
 
-static char *alis_fields[] = {
+static char *alis10_fields[] = {
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
   "memace_type", "memace_name", "description",
+};
+
+static struct valobj alis10_valobj[] = {
+  {V_CHAR, 0, LIST_TABLE, "name"},
+  {V_NUM, 1},
+  {V_NUM, 2},
+  {V_NUM, 3},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_NUM, 8},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_TYPE, 10, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 11, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 12, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 13, 0, 0, "list_id", MR_ACE},
+  {V_LEN, 14, LIST_TABLE, "description"},
+};
+
+static struct validate alis10_validate = {
+  alis10_valobj,
+  15,
+  "name",
+  "name = '%s'",
+  1,
+  "list_id",
+  0,
+  setup_alis,
+  set_modtime,
+};
+
+static char *alis_fields[] = {
+  "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
+  "memace_type", "memace_name", "description", "pacslist", 
 };
 
 static struct valobj alis_valobj[] = {
@@ -2939,11 +3082,12 @@ static struct valobj alis_valobj[] = {
   {V_TYPE, 12, 0, "ace_type", 0, MR_ACE},
   {V_TYPEDATA, 13, 0, 0, "list_id", MR_ACE},
   {V_LEN, 14, LIST_TABLE, "description"},
+  {V_NUM, 15},
 };
 
 static struct validate alis_validate = {
   alis_valobj,
-  15,
+  16,
   "name",
   "name = '%s'",
   1,
@@ -3054,11 +3198,49 @@ static struct validate ulis4_validate = {
   set_modtime_by_id,
 };
 
-static char *ulis_fields[] = {
+static char *ulis10_fields[] = {
   "name",
   "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
   "memace_type", "memace_name", "description",
+};
+
+static struct valobj ulis10_valobj[] = {
+  {V_ID, 0, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_RENAME, 1, LIST_TABLE, "name", "list_id", MR_NOT_UNIQUE},
+  {V_NUM, 2},
+  {V_NUM, 3},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_NUM, 8},
+  {V_NUM, 9},
+  {V_ID, 10, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_TYPE, 11, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 12, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 13, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 14, 0, 0, "list_id", MR_ACE},
+  {V_LEN, 15, LIST_TABLE, "description"},
+};
+
+static struct validate ulis10_validate = {
+  ulis10_valobj,
+  16,
+  "name",
+  "list_id = %d",
+  1,
+  "list_id",
+  access_list,
+  setup_alis,
+  set_modtime_by_id,
+};
+
+static char *ulis_fields[] = {
+  "name",
+  "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  "nfsgroup", "mailman", "mailman_server", "ace_type", "ace_name", 
+  "memace_type", "memace_name", "description", "pacslist", 
 };
 
 static struct valobj ulis_valobj[] = {
@@ -3078,11 +3260,12 @@ static struct valobj ulis_valobj[] = {
   {V_TYPE, 13, 0, "ace_type", 0, MR_ACE},
   {V_TYPEDATA, 14, 0, 0, "list_id", MR_ACE},
   {V_LEN, 15, LIST_TABLE, "description"},
+  {V_NUM, 16},
 };
 
 static struct validate ulis_validate = {
   ulis_valobj,
-  16,
+  17,
   "name",
   "list_id = %d",
   1,
@@ -5357,9 +5540,27 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    gual_fields,
+    gual16_fields,
     29,
     28,
+    "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubl_validate,
+  },
+
+  {
+    /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN, v19 */
+    "get_user_account_by_login",
+    "gual",
+    19,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, department, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    gual_fields,
+    30,
+    29,
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -5483,9 +5684,27 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guau_fields,
+    guau16_fields,
     29,
     28,
+    "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubu_validate,
+  },
+
+  {
+    /* Q_GUAU - GET_USER_ACCOUNT_BY_UID, v19 */
+    "get_user_account_by_uid",
+    "guau",
+    19,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, department, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guau_fields,
+    30,
+    29,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -5609,9 +5828,27 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guan_fields,
+    guan16_fields,
     30,
     28,
+    "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
+    2,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v19 */
+    "get_user_account_by_name",
+    "guan",
+    19,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, department, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guan_fields,
+    31,
+    29,
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     "u.login",
@@ -5735,9 +5972,27 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guac_fields,
+    guac16_fields,
     29,
     28,
+    "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS, v19 */
+    "get_user_account_by_class",
+    "guac",
+    19,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, department, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guac_fields,
+    30,
+    29,
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -5771,7 +6026,7 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guam_fields,
+    guam3_fields,
     19,
     18,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
@@ -5861,9 +6116,27 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guam_fields,
+    guam16_fields,
     29,
     28,
+    "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID, v19 */
+    "get_user_account_by_id",
+    "guai",
+    19,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, u.sponsor_type, u.sponsor_id, u.expiration, u.alternate_email, u.alternate_phone, u.twofactor_status, u.affiliation_basic, u.affiliation_detailed, department, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guam_fields,
+    30,
+    29,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -6641,6 +6914,24 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "users SET pin = '%s'",
+    uupi2_fields,
+    2,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &uupi2_validate,
+  },
+
+  {
+    /* Q_UUPI - UPDATE_USER_PIN */
+    "update_user_pin",
+    "uupi",
+    18,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET pin = '%s'",
     uupi_fields,
     2,
     1,
@@ -6701,6 +6992,42 @@ struct query Queries[] = {
     "u.login = '%s' AND u.default_vpn_group = l.list_id",
     1,
     NULL,
+    NULL,
+  },
+
+  {
+    /* Q_UUPI - UPDATE_USER_ZOOM_ACCOUNT */
+    "update_user_zoom_account",
+    "uuza",
+    2,
+    MR_Q_UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET zoom_account = NVL('%s', 'NONE')",
+    uuza_fields,
+    2,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &uuza_validate,
+  },
+
+  {
+    /* Q_GUPI - GET_USER_ZOOM_ACCOUNT */
+    "get_user_zoom_account",
+    "guza",
+    2,
+    MR_Q_RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.zoom_account FROM users u",
+    guza_fields,
+    3,
+    2,
+    "u.login = '%s'",
+    1,
+    "u.login",
     NULL,
   },
 
@@ -8303,9 +8630,27 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "l.name, l.active, l.publicflg, l.hidden, l.maillist, l.grouplist, l.gid, l.nfsgroup, l.mailman, m.name, l.acl_type, l.acl_id, l.memacl_type, l.memacl_id, l.description, TO_CHAR(l.modtime, 'DD-mon-YYYY HH24:MI:SS'), l.modby, l.modwith FROM list l, machine m",
-    glin_fields,
+    glin10_fields,
     19,
     18,
+    "l.name LIKE '%s' AND m.mach_id = l.mailman_id",
+    1,
+    "l.name",
+    &glin_validate,
+  },
+
+  {
+    /* Q_GLIN - GET_LIST_INFO, v18 */
+    "get_list_info",
+    "glin",
+    18,
+    MR_Q_RETRIEVE,
+    "l",
+    LIST_TABLE,
+    "l.name, l.active, l.publicflg, l.hidden, l.maillist, l.grouplist, l.gid, l.nfsgroup, l.mailman, m.name, l.acl_type, l.acl_id, l.memacl_type, l.memacl_id, l.description, l.pacslist, TO_CHAR(l.modtime, 'DD-mon-YYYY HH24:MI:SS'), l.modby, l.modwith FROM list l, machine m",
+    glin_fields,
+    20,
+    19,
     "l.name LIKE '%s' AND m.mach_id = l.mailman_id",
     1,
     "l.name",
@@ -8393,9 +8738,27 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, nfsgroup, mailman, mailman_id, acl_type, acl_id, memacl_type, memacl_id, description, list_id) VALUES ('%s', %s, %s, %s, %s, %s, %s, %s, %s, %d, '%s', %d, '%s', %d, NVL('%s', CHR(0)), %s)",
+    alis10_fields,
+    15,
+    15,
+    0,
+    0,
+    NULL,
+    &alis10_validate,
+  },
+
+  {
+    /* Q_ALIS - ADD_LIST, v18 */ /* uses prefetch_value() for list_id */
+    "add_list",
+    "alis",
+    18,
+    MR_Q_APPEND,
+    "l",
+    LIST_TABLE,
+    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, nfsgroup, mailman, mailman_id, acl_type, acl_id, memacl_type, memacl_id, description, pacslist, list_id) VALUES ('%s', %s, %s, %s, %s, %s, %s, %s, %s, %d, '%s', %d, '%s', %d, NVL('%s', CHR(0)), %s, %s)",
     alis_fields,
-    15,
-    15,
+    16,
+    16,
     0,
     0,
     NULL,
@@ -8465,9 +8828,27 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "list SET name = '%s', active = %s, publicflg = %s, hidden = %s, maillist = %s, grouplist = %s, gid = %s, nfsgroup = %s, mailman = %s, mailman_id = %d, acl_type = '%s', acl_id = %d, memacl_type = '%s', memacl_id = %d, description = NVL('%s', CHR(0))",
-    ulis_fields,
+    ulis10_fields,
     16,
     15,
+    "list_id = %d",
+    1,
+    NULL,
+    &ulis10_validate,
+  },
+
+  {
+    /* Q_ULIS, UPDATE_LIST, v18 */
+    "update_list",
+    "ulis",
+    18,
+    MR_Q_UPDATE,
+    "l",
+    LIST_TABLE,
+    "list SET name = '%s', active = %s, publicflg = %s, hidden = %s, maillist = %s, grouplist = %s, gid = %s, nfsgroup = %s, mailman = %s, mailman_id = %d, acl_type = '%s', acl_id = %d, memacl_type = '%s', memacl_id = %d, description = NVL('%s', CHR(0)), pacslist = %s", 
+    ulis_fields,
+    17,
+    16,
     "list_id = %d",
     1,
     NULL,

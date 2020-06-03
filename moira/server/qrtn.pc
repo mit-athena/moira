@@ -780,11 +780,7 @@ int set_next_object_id(char *object, enum tables table, int limit)
   if (sqlca.sqlerrd[2] != 1)
     return MR_NO_ID;
 
-  /* current value in numvalues table has by definition been assigned.
-   * Increment it so we never reuse it.  For value types where we want
-   * reuse (limit == 1 case) we'll eventually loop back around.
-   */
-  starting_value = ++value;
+  starting_value = value;
 
   while (1)
     {

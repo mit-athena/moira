@@ -55,6 +55,7 @@ create index i_lis_mail on  list (maillist);
 create index i_lis_group on  list (grouplist);
 create index i_lis_gid on  list (gid);
 create index i_lis_nfsgroup on list (nfsgroup);
+create index i_lis_pacs on  list (pacslist);
 create index i_lis_acl on list (acl_id);
 create index i_lis_memacl on list (memacl_id);
 
@@ -110,3 +111,5 @@ create index i_incr_queue_ts on incremental_queue (timestamp);
 create index i_incr_queue_serv on incremental_queue (service);
 create index i_incr_queue_tsserv on incremental_queue (timestamp, service);
 create sequence incremental_seq increment by 1 start with 1 minvalue 1 maxvalue 2147483648 cycle nocache;
+
+create unique index i_school_codes_code on school_codes(code);

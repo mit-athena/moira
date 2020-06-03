@@ -246,4 +246,7 @@ ec	MR_VLAN_TAG,
 ec	MR_BAD_HOSTNAME,
 	"Hostname is not in .MIT.EDU domain"
 
+ec	MR_ARG_TOO_SHORT,
+	"An argument is too short"
+
 	end

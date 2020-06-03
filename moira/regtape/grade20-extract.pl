@@ -15,27 +15,33 @@ $grade20 = DBI->connect("dbi:Oracle:grade20", "moira", $g20pwd,
 $moira = DBI->connect("dbi:Oracle:moira", "moira", "moira",
                       { RaiseError => 1});
 
-# Get year we're running.  Month is always '09'.
-$month = "09";
+# Get year we're running. 
 $year = (localtime)[5];
 $year += 1900;
+$month = (localtime)[4];
+# months are zero-indexed.
+$month++;
+
+# Check for expected entry in the next 9 months.
+$end_month = $month + 9;
+$end_year = $year;
+if ($end_month > 12) {
+    $end_month = $end_month % 12;
+    $end_year++;
+}
 
 %mitemails = ();
 %rows = ();
 
 $admits_ref = $grade20->selectcol_arrayref("SELECT pidm, application_source from apbgn_application WHERE " .
-					   "year_of_expected_entry = " . $grade20->quote($year) .
-					   " AND month_of_expected_entry = " . $grade20->quote($month) . 
-					   " AND reply_code = 'A' AND admissions_program_type = 'G'", { Columns=>[1,2] });
+					   " TO_DATE(month_of_expected_entry || '/' || year_of_expected_entry, 'mm/yyyy') " .
+					   " >= TO_DATE('$month/$year', 'mm/yyyy') AND " .
+					   " TO_DATE(month_of_expected_entry || '/' || year_of_expected_entry, 'mm/yyyy') " .
+					   " <= TO_DATE('$end_month/$end_year', 'mm/yyyy') " .
+					   " AND reply_code IN ('A', 'CE') AND admissions_program_type = 'G'", { Columns=>[1,2] });
 %admits = @$admits_ref;
 
 foreach $pidm (keys %admits) {
-    # Are they from Sloan?  If so, skip.
-    if ($admits{$pidm} eq "ST") {
-	print STDERR "SLOAN: PIDM $pidm is from Sloan Slate, skipping.\n";
-	next;
-    }
-
     # get MITID, first, and last from SPRIDEN table.
     ($mitid, $first, $last) = $grade20->selectrow_array("SELECT spriden_id, spriden_first_name, spriden_last_name FROM spriden " .
 							"WHERE spriden_pidm = " . $grade20->quote($pidm) .
@@ -206,22 +212,23 @@ foreach $key (keys %rows) {
 
     # No record for this MIT ID.
     if ($count == 0) {
-	print ADD "$rows{$key}\n";
+	print ADD "$rows{$key}" . ",0" . "\n";
     } elsif ($count > 1) {
+	# This intentionally generates a file that won't be parsed by reg-token.py, as manual cleanup is required.
 	print MULTIPLE "$rows{$key}\n";
     } else {
 	($status) = $moira->selectrow_array("SELECT status FROM users WHERE clearid = " . $moira->quote($mitid));
 
 	if ($status eq "0") {
-	    print REG "$rows{$key}\n";
+	    print REG "$rows{$key}" . ",$status" . "\n";
 	} elsif ($status eq "1") {
-	    print ACTIVE "$rows{$key}\n";
+	    print ACTIVE "$rows{$key}" . ",$status" . "\n";
 	} elsif ($status eq "3") {
-	    print DELETED "$rows{$key}\n";
+	    print DELETED "$rows{$key}" . ",$status" . "\n";
 	} elsif ($status eq "10") {
-	    print SUSPENDED "$rows{$key}\n";
+	    print SUSPENDED "$rows{$key}" . ",$status" . "\n";
 	} else {
-	    print OTHER "$rows{$key}\n";
+	    print OTHER "$rows{$key}" . ",$status" . "\n";
 	}
     }
 }

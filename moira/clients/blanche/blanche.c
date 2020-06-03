@@ -27,9 +27,9 @@ RCSID("$HeadURL$ $Id$");
 
 /* flags from command line */
 int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
-int showusers, showstrings, showkerberos, showlists, showtags, showmachines;
+int showusers, showstrings, showkerberos, showlists, showtags, showmachines, showids;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
-int nfsgroup, mailman;
+int nfsgroup, mailman, pacslist;
 struct mrcl_ace_type *owner, *memacl;
 char *desc, *newname, *mailman_server, *gid;
 
@@ -63,8 +63,9 @@ int main(int argc, char **argv)
   /* clear all flags & lists */
   infoflg = verbose = syncflg = memberflg = recursflg = 0;
   noauth = showusers = showstrings = showkerberos = showlists = 0;
-  showtags = showmachines = createflag = setinfo = 0;
+  showtags = showmachines = showids = createflag = setinfo = 0;
   active = public = hidden = maillist = grouplist = nfsgroup = mailman = -1;
+  pacslist = -1;
   listname = newname = desc = gid = NULL;
   owner = NULL;
   memacl = NULL;
@@ -92,6 +93,10 @@ int main(int argc, char **argv)
 	    showlists++;
 	  else if (argis("k", "kerberos"))
 	    showkerberos++;
+	  else if (argis("mach", "machines"))
+	    showmachines++;
+	  else if (argis("id", "ids"))
+	    showids++;
 	  else if (argis("t", "tags"))
 	    showtags++;
 	  else if (argis("i", "info"))
@@ -288,6 +293,16 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("p", "pacs"))
+	    {
+	      setinfo++;
+	      pacslist = 1;
+	    }
+	  else if (argis("np", "notpacs"))
+	    {
+	      setinfo++;
+	      pacslist = 0;
+	    }
 	  else if (argis("D", "desc"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -306,7 +321,7 @@ int main(int argc, char **argv)
 		  setinfo++;
 		  ++arg;
 		  owner = mrcl_parse_member(*arg);
-		  if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE)
+		  if (!owner || owner->type == MRCL_M_STRING || owner->type == MRCL_M_MACHINE || owner->type == MRCL_M_ID)
 		    {
 		      com_err(whoami, 0, "Invalid owner format.  Must be one of USER, LIST, KERBEROS, or NONE.");
 		      exit(1);
@@ -322,7 +337,7 @@ int main(int argc, char **argv)
 		  setinfo++;
 		  ++arg;
 		  memacl = mrcl_parse_member(*arg);
-		  if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE)
+		  if (!memacl || memacl->type == MRCL_M_STRING || memacl->type == MRCL_M_MACHINE || memacl->type == MRCL_M_ID)
 		    {
 		      com_err(whoami, 0, "Invalid memacl format.  Must be one of USER, LIST, KERBEROS, or NONE.");
 		      exit(1);
@@ -372,11 +387,12 @@ int main(int argc, char **argv)
 
   /* If none of {users,strings,lists,kerberos,machines} specified, 
      turn them all on */
-  if (!(showusers || showstrings || showlists || showkerberos || showmachines))
-    showusers = showstrings = showlists = showkerberos = showmachines = 1;
+  if (!(showusers || showstrings || showlists || showkerberos || 
+	showmachines || showids))
+    showusers = showstrings = showlists = showkerberos = showmachines = showids = 1;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "blanche", 10, !noauth);
+  status = mrcl_connect(server, "blanche", 18, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Authentication error while working on list %s",
@@ -416,6 +432,7 @@ int main(int argc, char **argv)
 
       argv[L_NFSGROUP] = (nfsgroup == 1) ? "1" : "0";
       argv[L_MAILMAN] = (mailman == 1) ? "1" : "0";
+      argv[L_PACSLIST] = (pacslist == 1) ? "1" : "0";
       argv[L_DESC] = desc ? desc : "none";
 
       if (mailman)
@@ -471,13 +488,13 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE] = "USER";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE] = "LIST";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
@@ -488,11 +505,11 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE] = argv[L_ACE_NAME] = "NONE";
-	      status = mr_query("add_list", 15, argv, NULL, NULL);
+	      status = mr_query("add_list", 16, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -501,7 +518,7 @@ int main(int argc, char **argv)
 	  argv[L_ACE_TYPE] = "USER";
 	  argv[L_ACE_NAME] = get_username();
 
-	  status = mr_query("add_list", 15, argv, NULL, NULL);
+	  status = mr_query("add_list", 16, argv, NULL, NULL);
 	}
 
       if (status)
@@ -541,6 +558,8 @@ int main(int argc, char **argv)
 	argv[L_NFSGROUP + 1] = nfsgroup ? "1" : "0";
       if (mailman != -1)
 	argv[L_MAILMAN + 1] = mailman ? "1" : "0";
+      if (pacslist != -1)
+	argv[L_PACSLIST + 1] = pacslist ? "1" : "0";
 
       /* If someone toggled the mailman bit, but didn't specify a server,
        * default to [ANY].
@@ -598,13 +617,13 @@ int main(int argc, char **argv)
 	    case MRCL_M_ANY:
 	    case MRCL_M_USER:
 	      argv[L_ACE_TYPE + 1] = "USER";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      if (owner->type != MRCL_M_ANY || status != MR_USER)
 		break;
 
 	    case MRCL_M_LIST:
 	      argv[L_ACE_TYPE + 1] = "LIST";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 
 	    case MRCL_M_KERBEROS:
@@ -615,16 +634,16 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      if (status == MRCL_REJECT)
 		exit(1);
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 	    case MRCL_M_NONE:
 	      argv[L_ACE_TYPE + 1] = argv[L_ACE_NAME + 1] = "NONE";
-	      status = mr_query("update_list", 16, argv, NULL, NULL);
+	      status = mr_query("update_list", 17, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = mr_query("update_list", 16, argv, NULL, NULL);
+	status = mr_query("update_list", 17, argv, NULL, NULL);
 
       if (status)
 	{
@@ -818,7 +837,19 @@ int main(int argc, char **argv)
               success = 0;
             }
           free(membervec[2]);
-        }
+	  break;
+	case MRCL_M_ID:
+	  membervec[1] = "ID";
+	  status = mr_query("delete_member_from_list", 3, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while deleting member %s from %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  break;
+	}
     }
 
   /* Process the add list */
@@ -979,6 +1010,29 @@ int main(int argc, char **argv)
 	      success = 0;
 	    }
 	  free(membervec[2]);
+	  break;
+	case MRCL_M_ID:
+	  membervec[1] = "ID";
+	  status = mrcl_validate_id_member(membervec[1], &membervec[1], membervec[2], &membervec[2]);
+	  if (mrcl_get_message())
+	    mrcl_com_err(whoami);
+	  if (status == MRCL_REJECT)
+	    {
+	      success = 0;
+	      break;
+	    }
+
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while adding member %s to %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  free(membervec[1]);
+	  free(membervec[2]);
+	  break;
 	}
     }
 
@@ -1077,6 +1131,18 @@ int main(int argc, char **argv)
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
+	  break;
+	case MRCL_M_ID:
+	  membervec[1] = "ID";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while adding member %s to %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  break;
 	}
     }
 
@@ -1108,43 +1174,47 @@ void usage(char **argv)
 #define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s listname [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v  | -verbose",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v    | -verbose",
 	  "-C   | -create");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-m  | -members",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-m    | -members",
 	  "-R   | -rename newname");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u  | -users",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u    | -users",
 	  "-P   | -public");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l  | -lists",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l    | -lists",
 	  "-NP  | -private");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-s  | -strings",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-s    | -strings",
 	  "-A   | -active");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-k  | -kerberos",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-k    | -kerberos",
 	  "-I   | -inactive");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i  | -info",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-mach | -machines",
+	  "-id  | -ids");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i    | -info",
 	  "-V   | -visible");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r  | -recursive",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r    | -recursive",
 	  "-H   | -hidden");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-a  | -add member",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-a    | -add member",
 	  "-M   | -mail");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d  | -delete member",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d    | -delete member",
 	  "-NM  | -notmail");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-al | -addlist filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-al   | -addlist filename",
 	  "-G   | -group");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dl | -deletelist filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dl   | -deletelist filename",
 	  "-NG  | -notgroup");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-f  | -file filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-f    | -file filename",
 	  "-N   | -nfs");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-at | -addtagged member tag",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-at   | -addtagged member tag",
 	  "-NN  | -notnfs");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ct | -changetag member tag",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ct   | -changetag member tag",
 	  "-mm  | -mailman");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-t  | -tags",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-t    | -tags",
 	  "-nmm | -notmailman");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D  | -desc description",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D    | -desc description",
 	  "-ms  | -mailman_server server");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-O  | -owner owner",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-O    | -owner owner",
 	  "-MA  | -memacl membership_acl"); 
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n  | -noauth",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-p    | -pacs",
+	  "-np  | -notpacs"); 
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n    | -noauth",
 	  "-db  | -database host[:port]");
   exit(1);
 }
@@ -1183,6 +1253,11 @@ void show_list_member(struct mrcl_ace_type *memberstruct)
 	return;
       s = "MACHINE";
       break;
+    case MRCL_M_ID:
+      if (!showids)
+	return;
+      s = "ID";
+      break;
     case MRCL_M_ANY:
       printf("%s\n", memberstruct->name);
       return;
@@ -1201,6 +1276,8 @@ void show_list_member(struct mrcl_ace_type *memberstruct)
 	printf("STRING:%s", memberstruct->name);
       else if (memberstruct->type == MRCL_M_MACHINE)
 	printf("MACHINE:%s", memberstruct->name);
+      else if (memberstruct->type == MRCL_M_ID)
+	printf("ID:%s", memberstruct->name);
       else
 	printf("%s", memberstruct->name);
     }
@@ -1235,6 +1312,8 @@ int show_list_info(int argc, char **argv, void *hint)
   if (atoi(argv[L_MAILMAN]))
     printf("%s is a Mailman list on server %s\n", argv[L_NAME],
 	   argv[L_MAILMAN_SERVER]);
+  printf("%s is %sa PACS list\n", argv[L_NAME], 
+	 atoi(argv[L_PACSLIST]) ? "" : "not ");
   printf("Owner: %s %s\n", argv[L_ACE_TYPE], argv[L_ACE_NAME]);
   if (strcmp(argv[L_MEMACE_TYPE], "NONE"))
     printf("Membership ACL: %s %s\n", argv[L_MEMACE_TYPE], 
@@ -1346,6 +1425,9 @@ int get_list_members(int argc, char **argv, void *sq)
       break;
     case 'M':
       m->type = MRCL_M_MACHINE;
+      break;
+    case 'I':
+      m->type = MRCL_M_ID;
       break;
     }
   m->name = strdup(argv[1]);
